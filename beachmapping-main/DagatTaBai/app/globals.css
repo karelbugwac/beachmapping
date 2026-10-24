@@ -1,0 +1,183 @@
+@import '../styles/owner-tokens.css';
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 40% 98%;
+    --foreground: 222 47% 11%;
+    --surface: 0 0% 100%;
+    --border: 214 32% 91%;
+  }
+
+  .dark {
+    --background: 0 0% 4%;
+    --foreground: 0 0% 98%;
+    --surface: 0 0% 7%;
+    --border: 0 0% 16%;
+  }
+
+  body {
+    @apply bg-slate-50 text-slate-900 antialiased min-h-screen flex flex-col transition-colors duration-300;
+    font-family: var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
+  }
+
+  h1,
+  h2,
+  h3,
+  .font-heading {
+    font-family: var(--font-inter), system-ui, sans-serif;
+    letter-spacing: -0.01em;
+    font-weight: 700;
+  }
+
+  .dark body {
+    background-color: #09090b;
+    color: #f4f4f5;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  html {
+    overflow-x: hidden;
+    width: 100%;
+    max-width: 100vw;
+  }
+}
+
+/* Luxury visual accents */
+.glass-card {
+  background: rgba(255, 255, 255, 0.82);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(226, 232, 240, 0.8);
+}
+
+.dark .glass-card {
+  background: rgba(18, 18, 22, 0.85);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glow-ambient {
+  box-shadow: 0 10px 30px -10px rgba(2, 132, 199, 0.25);
+}
+
+.dark .glow-ambient {
+  box-shadow: 0 12px 36px -10px rgba(2, 132, 199, 0.15);
+}
+
+/* Neutral monochrome dark mode filter for Leaflet OSM tiles (no API-key basemap) */
+.dark .leaflet-tile-pane {
+  filter: brightness(0.75) invert(1) contrast(2.2) grayscale(0.9) brightness(0.85);
+}
+
+@keyframes floatSlow {
+
+  0%,
+  100% {
+    transform: translateY(0px);
+  }
+
+  50% {
+    transform: translateY(-8px);
+  }
+}
+
+@keyframes pulseSubtle {
+
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+
+  50% {
+    opacity: 0.85;
+    transform: scale(1.03);
+  }
+}
+
+.animate-float-slow {
+  animation: floatSlow 6s ease-in-out infinite;
+}
+
+.animate-float-delayed {
+  animation: floatSlow 7s ease-in-out 1.5s infinite;
+}
+
+/* Custom scrollbar */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background: #1e293b;
+}
+
+/* Leaflet map styles */
+.leaflet-container {
+  width: 100%;
+  height: 100%;
+  z-index: 10;
+  font-family: var(--font-inter), system-ui, sans-serif;
+}
+
+/* Ensure Leaflet divIcon containers are completely transparent without default borders */
+.beach-pin-marker,
+.user-loc-marker,
+.hero-custom-marker {
+  background: transparent !important;
+  border: none !important;
+}
+
+/* Map label styling: Noto Sans, strong readability, subtle text halo, no card background */
+.beach-map-label {
+  background: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+  color: #0b1a26 !important;
+  font-family: var(--font-noto-sans), system-ui, sans-serif !important;
+  font-weight: 700 !important;
+  font-size: 11.5px !important;
+  text-shadow:
+    -1.5px -1.5px 0 #ffffff,
+    1.5px -1.5px 0 #ffffff,
+    -1.5px 1.5px 0 #ffffff,
+    1.5px 1.5px 0 #ffffff,
+    0 1px 4px rgba(255, 255, 255, 0.9) !important;
+  white-space: nowrap !important;
+  pointer-events: none !important;
+}
+
+.dark .beach-map-label {
+  color: #ffffff !important;
+  text-shadow:
+    -1.5px -1.5px 0 #07111a,
+    1.5px -1.5px 0 #07111a,
+    -1.5px 1.5px 0 #07111a,
+    1.5px 1.5px 0 #07111a,
+    0 1px 4px rgba(0, 0, 0, 0.95) !important;
+}
+
+.beach-map-label::before {
+  display: none !important;
+}

@@ -1,0 +1,111 @@
+/* ==========================================================================
+   DAGAT TA BAI — BOUTIQUE COASTAL OPERATOR CONSOLE DESIGN SYSTEM TOKENS
+   Studio-crafted tokens for Catmon beach resort management.
+   ========================================================================== */
+
+:root,
+[data-theme='light'] {
+  /* Coastal Palette: Sun-bleached sand, deep ocean ink, seafoam, coral */
+  --color-sand-50: #FBF7EF;       /* Canvas / Page background */
+  --color-sand-100: #F3EBDC;      /* Subtle panels, cards & ledger */
+  --color-sand-200: #E8DCB8;      /* Hairline borders & dividers */
+  --color-sand-300: #D8C6A5;      /* Secondary borders & disabled */
+  --color-surface: #FFFDF9;       /* Elevated white sand surface */
+  
+  --color-sea-900: #0B2E36;       /* Deep ocean ink (sidebar & strong headers) */
+  --color-sea-700: #145A66;       /* Mid-depth coastal sea */
+  --color-seafoam-200: #CFE6DF;   /* Shallow-water seafoam highlight */
+  --color-seafoam-100: #E7F3F0;   /* Light seafoam tint */
+  
+  --color-coral: #CF4530;         /* Singular primary action accent (white text) */
+  --color-coral-hover: #B83B28;   /* Hover state */
+  --color-sun: #F0A93A;           /* Warm sunlight accent (rating star & open dot) */
+  
+  --color-text: #14262B;          /* High-contrast sea ink reading text */
+  --color-muted: #56686B;         /* Subtle secondary reading text */
+  --color-sidebar-bg: #0B2E36;    /* Sidebar background */
+  --color-sidebar-text: #FBF7EF;  /* Sidebar text */
+  --color-sidebar-muted: #8EA7AC; /* Sidebar secondary text */
+
+  /* Type Scale: 12 / 14 / 16 / 20 / 28 / 40 */
+  --font-serif: var(--font-serif), 'Newsreader', 'Fraunces', Georgia, serif;
+  --font-sans: var(--font-sans), 'Figtree', -apple-system, BlinkMacSystemFont, sans-serif;
+  
+  --text-xs: 12px;
+  --text-sm: 14px;
+  --text-base: 16px;
+  --text-lg: 20px;
+  --text-xl: 28px;
+  --text-2xl: 40px;
+
+  /* Spacing Scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+
+  /* Shape & Radii (12-16px, no rounded-3xl) */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+
+  /* Hairline borders & single soft shadow */
+  --border-hairline: 1px solid var(--color-sand-200);
+  --shadow-soft: 0 4px 20px -2px rgba(11, 46, 54, 0.06);
+
+  /* Transitions */
+  --transition-fast: 220ms cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+/* ==========================================================================
+   DARK THEME: "NIGHT TIDE" (TRUE WARM CHARCOAL / BLACK, NOT BLUISH DARK)
+   ========================================================================== */
+[data-theme='dark'],
+.dark {
+  --color-sand-50: #0A0D0E;       /* Deep warm charcoal-black canvas */
+  --color-sand-100: #121516;      /* Subtle panel & card background */
+  --color-sand-200: #222627;      /* Subtle hairline borders */
+  --color-sand-300: #303637;      /* Secondary borders */
+  --color-surface: #151819;       /* Elevated dark surface */
+  
+  --color-sea-900: #0E1213;       /* Neutral black-toned ink */
+  --color-sea-700: #29383A;       /* Subtle dark sea tone */
+  --color-seafoam-200: #A3C7BD;   /* Seafoam accent with high AA contrast */
+  --color-seafoam-100: #162425;   /* Dark seafoam tint */
+  
+  --color-coral: #CF4530;         /* Same energetic coral */
+  --color-coral-hover: #B83B28;
+  --color-sun: #F0A93A;           /* Same warm sun */
+  
+  --color-text: #F4F6F5;          /* Crisp high-contrast light text */
+  --color-muted: #96A0A2;         /* Muted neutral gray text */
+  --color-sidebar-bg: #090B0C;    /* Deep black sidebar */
+  --color-sidebar-text: #F4F6F5;
+  --color-sidebar-muted: #7F8A8C;
+
+  --border-hairline: 1px solid var(--color-sand-200);
+  --shadow-soft: 0 4px 24px -2px rgba(0, 0, 0, 0.65);
+}
+
+/* Tabular numbers for clean ledger stats */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Respect user accessibility motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
