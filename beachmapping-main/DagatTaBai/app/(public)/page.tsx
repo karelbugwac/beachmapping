@@ -10,6 +10,8 @@ import {
   ArrowRight,
   TrafficCone,
   Wrench,
+  ChevronDown,
+  ChevronUp,
 } from 'lucide-react';
 import { BeachCard } from '@/components/beach-card';
 import type { BeachRecord } from '@/lib/db/beaches';
@@ -34,19 +36,25 @@ const HeroMapSection = dynamic(
 
 export default function HomePage() {
   const [systemTestimonials, setSystemTestimonials] = useState<SystemTestimonial[]>([]);
-  const [featuredBeaches, setFeaturedBeaches] = useState<BeachRecord[]>([]);
+  const [allBeaches, setAllBeaches] = useState<BeachRecord[]>([]);
+  const [isExpanded, setIsExpanded] = useState(false);
   const [beachesLoading, setBeachesLoading] = useState(true);
   const profileSectionRef = useRef<HTMLElement>(null);
   const panoramaSectionRef = useRef<HTMLElement>(null);
   const pulseSectionRef = useRef<HTMLElement>(null);
   const registrySectionRef = useRef<HTMLElement>(null);
 
+  const INITIAL_BEACH_COUNT = 3;
+  const displayedBeaches = isExpanded
+    ? allBeaches
+    : allBeaches.slice(0, INITIAL_BEACH_COUNT);
+
   useEffect(() => {
     fetch('/api/beaches', { cache: 'no-store' })
       .then(async (response) => {
         if (!response.ok) throw new Error('Could not load beach profiles.');
         const data = await response.json();
-        setFeaturedBeaches(Array.isArray(data) ? data.slice(0, 3) : []);
+        setAllBeaches(Array.isArray(data) ? data : []);
       })
       .catch((error) => console.error('Failed to load featured beaches:', error))
       .finally(() => setBeachesLoading(false));
@@ -116,18 +124,62 @@ export default function HomePage() {
 
       <section
         ref={profileSectionRef}
-        className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full relative z-20"
+        className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto w-full relative z-20 scroll-mt-16"
       >
         <div className="text-center mb-8 sm:mb-10">
           <h2 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-slate-950 dark:text-white leading-tight">
             Beach Profiles
           </h2>
+          <p className="mt-2 text-xs sm:text-sm text-slate-600 dark:text-zinc-400 max-w-xl mx-auto">
+            Discover verified beaches, resorts, and shorelines across Catmon, Cebu.
+          </p>
         </div>
 
-        {featuredBeaches.length > 0 ? (
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3">
-            {featuredBeaches.map((beach) => <BeachCard key={beach.id} beach={beach} />)}
-          </div>
+        {displayedBeaches.length > 0 ? (
+          <>
+            <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 lg:grid-cols-3 transition-all duration-300">
+              {displayedBeaches.map((beach) => (
+                <BeachCard key={beach.id} beach={beach} />
+              ))}
+            </div>
+
+            {/* Bottom Arrow to Show More Beaches */}
+            {allBeaches.length > INITIAL_BEACH_COUNT && (
+              <div className="mt-10 sm:mt-12 flex flex-col items-center justify-center">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (isExpanded) {
+                      setIsExpanded(false);
+                      profileSectionRef.current?.scrollIntoView({ behavior: 'smooth' });
+                    } else {
+                      setIsExpanded(true);
+                    }
+                  }}
+                  className="group relative inline-flex items-center gap-3 px-6 py-3.5 rounded-full bg-white dark:bg-zinc-900 border border-slate-200/90 dark:border-zinc-800 text-slate-800 dark:text-zinc-200 hover:text-sky-600 dark:hover:text-sky-400 font-semibold text-sm shadow-sm hover:shadow-md hover:border-sky-300 dark:hover:border-sky-700/60 transition-all duration-300 cursor-pointer focus:outline-none focus:ring-2 focus:ring-sky-500/40"
+                  aria-expanded={isExpanded}
+                >
+                  <span>
+                    {isExpanded
+                      ? 'Show Less Beaches'
+                      : `Show More Beaches (${allBeaches.length - INITIAL_BEACH_COUNT} more)`}
+                  </span>
+                  <div className="w-7 h-7 rounded-full bg-sky-50 dark:bg-sky-950/60 text-sky-600 dark:text-sky-400 border border-sky-100 dark:border-sky-900/60 flex items-center justify-center transition-transform duration-300 group-hover:bg-sky-100 dark:group-hover:bg-sky-900/80">
+                    {isExpanded ? (
+                      <ChevronUp className="w-4 h-4 transition-transform duration-200 group-hover:-translate-y-0.5" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 transition-transform duration-200 group-hover:translate-y-0.5 animate-bounce" />
+                    )}
+                  </div>
+                </button>
+                <p className="mt-2.5 text-[11px] text-slate-500 dark:text-zinc-400">
+                  {isExpanded
+                    ? `Showing all ${allBeaches.length} verified beaches in Catmon`
+                    : `Showing 3 of ${allBeaches.length} beaches · Click arrow to view all`}
+                </p>
+              </div>
+            )}
+          </>
         ) : (
           <p className="py-12 text-center text-sm text-slate-600 dark:text-slate-300">
             {beachesLoading ? 'Loading verified beach listings…' : 'No active verified beach listings yet.'}
@@ -179,7 +231,7 @@ export default function HomePage() {
                 <iframe
                   id="tour-embeded"
                   name="Raniola"
-                  src="https://tour.panoee.net/iframe/69c122dd0b3ba72d3e32cbc1"
+                  src="https://tour.panoee.net/6ac4b494035368b0747a8077"
                   frameBorder="0"
                   width="100%"
                   height="100%"

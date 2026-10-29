@@ -39,8 +39,27 @@ export const BEACH_COLORS: Record<string, string> = {
   '33333333-3333-3333-3333-333333333305': '#8b5cf6', // Hinagdan → Royal Amethyst
 };
 
+const PIN_PALETTE = [
+  '#0284c7', // Ocean Blue
+  '#ec4899', // Coral Pink
+  '#f59e0b', // Warm Amber
+  '#10b981', // Marine Emerald
+  '#8b5cf6', // Royal Amethyst
+  '#06b6d4', // Cyan Wave
+  '#f97316', // Sunset Tangerine
+  '#14b8a6', // Deep Teal
+];
+
 export function getBeachPinColor(id: string): string {
-  return BEACH_COLORS[id] || '#0284c7';
+  if (BEACH_COLORS[id]) return BEACH_COLORS[id];
+  if (!id) return '#0284c7';
+  let hash = 0;
+  for (let i = 0; i < id.length; i++) {
+    hash = (hash << 5) - hash + id.charCodeAt(i);
+    hash |= 0;
+  }
+  const index = Math.abs(hash) % PIN_PALETTE.length;
+  return PIN_PALETTE[index];
 }
 
 function createTeardropPinSvg(color: string, isSelected: boolean): string {

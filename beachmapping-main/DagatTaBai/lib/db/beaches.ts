@@ -6,6 +6,8 @@ export interface BeachPhoto {
   photo_url: string;
   created_at?: string;
   likes?: number;
+  price?: string;
+  description?: string;
 }
 
 export interface BeachExternalLink {
@@ -135,11 +137,51 @@ export async function getBeachBySlug(slug: string): Promise<BeachRecord | null> 
         beach_external_links ( label, url )
       `);
 
-    const { data: dbBeach, error } = isUuid
-      ? await query.eq('id', normalized).maybeSingle()
-      : await query.eq('slug', normalized).maybeSingle();
+    let dbBeach: any = null;
+    if (isUuid) {
+      const { data, error } = await query.eq('id', normalized).maybeSingle();
+      if (!error && data) dbBeach = data;
+    } else {
+      const { data, error } = await query.eq('slug', normalized).maybeSingle();
+      if (!error && data) {
+        dbBeach = data;
+      } else {
+        // Fallback 1: prefix match on slug (e.g. majestique matches majestique-beach)
+        const prefixRes = await supabase
+          .from('beaches')
+          .select(`
+            *,
+            beach_activities ( name ),
+            beach_facilities ( name ),
+            beach_external_links ( label, url )
+          `)
+          .ilike('slug', `${normalized}%`)
+          .limit(1)
+          .maybeSingle();
+        if (!prefixRes.error && prefixRes.data) {
+          dbBeach = prefixRes.data;
+        } else {
+          // Fallback 2: search by resort name
+          const cleanName = normalized.replace(/[-_]+/g, ' ').trim();
+          const nameRes = await supabase
+            .from('beaches')
+            .select(`
+              *,
+              beach_activities ( name ),
+              beach_facilities ( name ),
+              beach_external_links ( label, url )
+            `)
+            .ilike('name', `%${cleanName}%`)
+            .limit(1)
+            .maybeSingle();
+          if (!nameRes.error && nameRes.data) {
+            dbBeach = nameRes.data;
+          }
+        }
+      }
+    }
 
-    if (!error && dbBeach) {
+    if (dbBeach) {
       const b = dbBeach as any;
 
       // Parse opening_hours if it's a JSON string

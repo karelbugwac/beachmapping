@@ -49,23 +49,48 @@ function toOwnerBeach(row: any) {
   };
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   try {
-    const auth = await authorizeRoles(['beach_owner', 'beach_manager']);
+    const auth = await authorizeRoles(['beach_owner', 'beach_manager', 'admin']);
     if (!auth.authorized) {
       return NextResponse.json({ error: auth.message }, { status: auth.status });
     }
     const ownerId = auth.user.id;
+    const url = new URL(request.url);
+    const requestedBeachId = url.searchParams.get('beach_id');
+    const requestedSlug = url.searchParams.get('slug');
 
     const adminSupabase = createAdminClient();
-    const { data, error } = await (adminSupabase.from('beaches') as any)
-      .select('*')
-      .eq('owner_id', ownerId)
-      .maybeSingle();
+
+    // If a specific beach is requested by id or slug:
+    if (requestedBeachId || requestedSlug) {
+      let query = (adminSupabase.from('beaches') as any).select('*');
+      if (requestedBeachId) {
+        query = query.eq('id', requestedBeachId);
+      } else if (requestedSlug) {
+        query = query.eq('slug', requestedSlug);
+      }
+      if (auth.role !== 'admin') {
+        query = query.eq('owner_id', ownerId);
+      }
+      const { data, error } = await query.maybeSingle();
+      if (error) throw error;
+      return NextResponse.json(data ? [toOwnerBeach(data)] : [], { headers: noStoreHeaders });
+    }
+
+    // Otherwise, fetch all beaches belonging to this owner (or all beaches if admin)
+    let query = (adminSupabase.from('beaches') as any).select('*');
+    if (auth.role !== 'admin') {
+      query = query.eq('owner_id', ownerId);
+    }
+    const { data, error } = await query.order('name');
 
     if (error) throw error;
 
-    return NextResponse.json(data ? [toOwnerBeach(data)] : [], { headers: noStoreHeaders });
+    return NextResponse.json(
+      Array.isArray(data) ? data.map(toOwnerBeach) : [],
+      { headers: noStoreHeaders }
+    );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to load owner beach.';
     console.error('Owner beach GET error:', message);
@@ -75,7 +100,7 @@ export async function GET() {
 
 export async function POST(request: Request) {
   try {
-    const auth = await authorizeRoles(['beach_owner', 'beach_manager']);
+    const auth = await authorizeRoles(['beach_owner', 'beach_manager', 'admin']);
     if (!auth.authorized) {
       return NextResponse.json({ error: auth.message }, { status: auth.status });
     }
@@ -91,50 +116,76 @@ export async function POST(request: Request) {
       );
     }
 
-    const parsedLatitude = Number(body.latitude);
-    const parsedLongitude = Number(body.longitude);
-    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+    const parsedLatitude = parseFloat(String(body.latitude));
+    const parsedLongitude = parseFloat(String(body.longitude));
+    const slug = typeof body.slug === 'string' && body.slug.trim()
+      ? body.slug.trim()
+      : name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
     
-    const beachPayload = {
-      name,
-      slug,
-      owner_id: ownerId,
-      description: body.description || '',
-      location,
-      latitude: Number.isFinite(parsedLatitude) ? parsedLatitude : 10.6348,
-      longitude: Number.isFinite(parsedLongitude) ? parsedLongitude : 124.0275,
-      cover_image_url: body.cover_image || body.cover_image_url || null,
-      profile_image_url: body.profile_image || body.profile_image_url || null,
-      virtual_tour_url: body.virtual_tour_url || null,
-      images: Array.isArray(body.images) ? body.images : [],
-      opening_hours: typeof body.opening_hours === 'object' ? JSON.stringify(body.opening_hours) : (body.opening_hours || '8:00 AM - 6:00 PM'),
-      entrance_fee: `${body.entrance_fee_adults || ''}|${body.entrance_fee_children || ''}`,
-      cottage_fee: body.cottage_fee || null,
-      rules: body.rules || null,
-      contact_phone: body.contact_phone || null,
-      contact_email: body.contact_email || null,
-      status: 'active',
-      updated_at: new Date().toISOString(),
-    };
-
-    console.log('API /api/owner/beach - Saving to database:', {
-      opening_hours: beachPayload.opening_hours,
-      entrance_fee: beachPayload.entrance_fee,
-    });
-
     const adminSupabase = createAdminClient();
     let result;
     if (typeof body.id === 'string' && body.id) {
-      result = await (adminSupabase.from('beaches') as any)
-        .update(beachPayload)
+      // Find existing beach to preserve slug and owner_id if needed
+      const { data: existing } = await (adminSupabase.from('beaches') as any)
+        .select('slug, owner_id')
         .eq('id', body.id)
-        .eq('owner_id', ownerId)
-        .select('*')
         .maybeSingle();
+
+      const beachPayload = {
+        name,
+        slug: existing?.slug || slug,
+        owner_id: existing?.owner_id || ownerId,
+        description: body.description || '',
+        location,
+        latitude: Number.isFinite(parsedLatitude) ? parsedLatitude : 10.6348,
+        longitude: Number.isFinite(parsedLongitude) ? parsedLongitude : 124.0275,
+        cover_image_url: body.cover_image || body.cover_image_url || null,
+        profile_image_url: body.profile_image || body.profile_image_url || null,
+        virtual_tour_url: body.virtual_tour_url || null,
+        images: Array.isArray(body.images) ? body.images : [],
+        opening_hours: typeof body.opening_hours === 'object' ? JSON.stringify(body.opening_hours) : (body.opening_hours || '8:00 AM - 6:00 PM'),
+        entrance_fee: `${body.entrance_fee_adults || ''}|${body.entrance_fee_children || ''}`,
+        cottage_fee: body.cottage_fee || null,
+        rules: body.rules || null,
+        contact_phone: body.contact_phone || null,
+        contact_email: body.contact_email || null,
+        status: 'active',
+        updated_at: new Date().toISOString(),
+      };
+
+      let query = (adminSupabase.from('beaches') as any)
+        .update(beachPayload)
+        .eq('id', body.id);
+
+      if (auth.role !== 'admin') {
+        query = query.eq('owner_id', ownerId);
+      }
+      result = await query.select('*').maybeSingle();
       if (!result.error && !result.data) {
-        return NextResponse.json({ error: 'Owner beach not found.' }, { status: 404, headers: noStoreHeaders });
+        return NextResponse.json({ error: 'Beach not found or unauthorized.' }, { status: 404, headers: noStoreHeaders });
       }
     } else {
+      const beachPayload = {
+        name,
+        slug,
+        owner_id: ownerId,
+        description: body.description || '',
+        location,
+        latitude: Number.isFinite(parsedLatitude) ? parsedLatitude : 10.6348,
+        longitude: Number.isFinite(parsedLongitude) ? parsedLongitude : 124.0275,
+        cover_image_url: body.cover_image || body.cover_image_url || null,
+        profile_image_url: body.profile_image || body.profile_image_url || null,
+        virtual_tour_url: body.virtual_tour_url || null,
+        images: Array.isArray(body.images) ? body.images : [],
+        opening_hours: typeof body.opening_hours === 'object' ? JSON.stringify(body.opening_hours) : (body.opening_hours || '8:00 AM - 6:00 PM'),
+        entrance_fee: `${body.entrance_fee_adults || ''}|${body.entrance_fee_children || ''}`,
+        cottage_fee: body.cottage_fee || null,
+        rules: body.rules || null,
+        contact_phone: body.contact_phone || null,
+        contact_email: body.contact_email || null,
+        status: 'active',
+        updated_at: new Date().toISOString(),
+      };
       result = await (adminSupabase.from('beaches') as any)
         .insert(beachPayload)
         .select('*')

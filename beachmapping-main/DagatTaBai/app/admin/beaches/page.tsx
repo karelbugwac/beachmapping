@@ -6,6 +6,15 @@ import { ArrowLeft, Compass, Eye, Ban, CheckCircle2, Trash2 } from 'lucide-react
 import type { BeachRecord } from '@/lib/db/beaches';
 import { showToast } from '@/components/ui/feedback-toasts';
 
+function formatHours(hours: string | Record<string, string>): string {
+  if (typeof hours === 'string') return hours;
+  if (typeof hours === 'object' && hours !== null) {
+    const list = Object.values(hours).filter(h => h && h !== 'CLOSE' && h !== 'Closed');
+    if (list.length > 0) return String(list[0]);
+  }
+  return 'Not set';
+}
+
 export default function AdminBeachesPage() {
   const [beaches, setBeaches] = useState<BeachRecord[]>([]);
   const [loading, setLoading] = useState(true);
@@ -97,7 +106,7 @@ export default function AdminBeachesPage() {
                   <td className="py-3.5 px-4 font-semibold text-amber-600">
                     ★ {b.average_rating.toFixed(1)}
                   </td>
-                  <td className="py-3.5 px-4 text-slate-600 dark:text-gray-300">{b.opening_hours}</td>
+                  <td className="py-3.5 px-4 text-slate-600 dark:text-gray-300">{formatHours(b.opening_hours)}</td>
                   <td className="py-3.5 px-4">
                     <span
                       className={`px-2 py-0.5 rounded text-[11px] font-bold uppercase ${

@@ -162,10 +162,12 @@ export default function InteractiveMapPage() {
     };
   }, []);
 
-  // Auto-select beach from URL parameter
+  // Auto-select beach from URL parameter (supports both UUID id and human-readable slug)
   useEffect(() => {
     if (beachIdFromUrl && beaches.length > 0) {
-      const beach = beaches.find((b) => b.id === beachIdFromUrl);
+      const beach = beaches.find(
+        (b) => b.id === beachIdFromUrl || b.slug === beachIdFromUrl
+      );
       if (beach) {
         setSelectedBeach(beach);
       }
@@ -446,6 +448,8 @@ export default function InteractiveMapPage() {
           selectedBeachId={selectedBeach?.id}
           routeActive={routeActive}
           routeCoordinates={routeData?.coordinates || null}
+          center={selectedBeach ? [selectedBeach.latitude, selectedBeach.longitude] : [10.6348, 124.0275]}
+          zoom={selectedBeach ? 16 : 15}
         />
       </div>
 

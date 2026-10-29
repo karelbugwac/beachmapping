@@ -113,6 +113,7 @@ export default function OwnerDashboardPage() {
   const reviewCount = reviews?.totalReviews || 0;
 
   const quickActions = [
+    { label: 'Map Coordinates', icon: MapPin, href: '/owner/beach?tab=location', color: 'bg-emerald-50 text-emerald-600 dark:bg-emerald-900/30 dark:text-emerald-400' },
     { label: 'Add Photos', icon: ImageIcon, href: '/owner/beach#photos', color: 'bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400' },
     { label: 'Edit Info', icon: Edit, href: '/owner/beach', color: 'bg-green-50 text-green-600 dark:bg-green-900/30 dark:text-green-400' },
     { label: 'Manage Cottages', icon: Home, href: '/owner/beach#cottages', color: 'bg-purple-50 text-purple-600 dark:bg-purple-900/30 dark:text-purple-400' },
@@ -204,6 +205,21 @@ export default function OwnerDashboardPage() {
               <div className="flex items-center gap-2 text-sm">
                 <MapPin size={16} className="text-gray-500" />
                 <span className="text-gray-900 dark:text-white">{beach?.location}</span>
+              </div>
+              <div className="flex items-center justify-between gap-2 p-2.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg text-xs">
+                <div className="flex items-center gap-2">
+                  <span className="font-semibold text-gray-700 dark:text-gray-300">Map Coordinates:</span>
+                  <span className="font-mono font-bold text-blue-600 dark:text-blue-400">
+                    {beach?.latitude}° N, {beach?.longitude}° E
+                  </span>
+                </div>
+                <Link
+                  href="/owner/beach?tab=location"
+                  className="font-semibold text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+                >
+                  <span>Change Pin</span>
+                  <ChevronRight size={12} />
+                </Link>
               </div>
               <div className="flex items-center gap-2 text-sm">
                 <Clock size={16} className="text-gray-500" />

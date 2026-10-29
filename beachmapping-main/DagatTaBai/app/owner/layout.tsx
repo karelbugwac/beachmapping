@@ -5,6 +5,16 @@ import { usePathname } from 'next/navigation';
 import { AppShell } from '@/components/owner/AppShell';
 import type { BeachRecord } from '@/lib/db/beaches';
 
+function parseOpeningHours(hours: any): string {
+  if (!hours) return '8:00 AM – 6:00 PM';
+  if (typeof hours === 'string') return hours;
+  if (typeof hours === 'object') {
+    const list = Object.values(hours).filter((h: any) => h && h !== 'CLOSE' && h !== 'Closed');
+    if (list.length > 0) return String(list[0]);
+  }
+  return '8:00 AM – 6:00 PM';
+}
+
 export default function OwnerLayout({
   children,
 }: {
@@ -48,7 +58,7 @@ export default function OwnerLayout({
       beachName={beach?.name || 'Catmon Beach Resort'}
       beachSlug={beach?.slug || beach?.id}
       isOpenNow={true}
-      openingHours={beach?.opening_hours || '8:00 AM – 6:00 PM'}
+      openingHours={parseOpeningHours(beach?.opening_hours)}
       reviewCount={reviewCount}
       unreadNotifications={0}
     >
