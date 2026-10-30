@@ -67,7 +67,7 @@ export function HeroMapSection() {
             There&apos;s more to every destination than meets the eye.
           </p>
 
-          <div className="pt-2">
+          <div className="pt-6 sm:pt-8">
             <Link
               href={user ? '/map' : '/login?redirect=/map'}
               onClick={(e) => {

@@ -91,8 +91,8 @@ export function Navbar() {
   const navLinks = [
     { label: 'Home', href: '/' },
     { label: 'Weather', href: '/weather' },
-    { label: 'Guidelines', href: '/community-guidelines' },
-    { label: 'Feedback', href: '/feedback' },
+    { label: 'Apply', href: '/apply' },
+
     { label: 'About', href: '/about' },
     { label: 'Contact', href: '/contact' },
   ];
@@ -173,7 +173,7 @@ export function Navbar() {
           readIds.push(notif.id);
           localStorage.setItem('dtb_read_notifs', JSON.stringify(readIds));
         }
-      } catch {}
+      } catch { }
     }
     setNotificationsOpen(false);
     if (notif.link) {
@@ -199,7 +199,7 @@ export function Navbar() {
                 priority
               />
             </div>
-            <span className="font-sans font-extrabold text-xl sm:text-2xl tracking-tight text-[#1F3F74] dark:text-[#4987BA] leading-none">
+            <span className="font-sans font-bold text-lg sm:text-xl tracking-tight text-[#1F3F74] dark:text-[#4987BA] leading-none">
               Dagat Ta Bai
             </span>
           </Link>
@@ -214,11 +214,10 @@ export function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`group relative inline-flex items-center px-3.5 lg:px-4 text-xs font-semibold transition-colors duration-150 ${
-                    isActive
+                  className={`group relative inline-flex items-center px-3.5 lg:px-4 text-xs font-semibold transition-colors duration-150 ${isActive
                       ? 'text-[#1F3F74] dark:text-[#4987BA] font-bold'
                       : 'text-slate-600 dark:text-slate-300 hover:text-[#1F3F74] dark:hover:text-white'
-                  }`}
+                    }`}
                 >
                   <span>{link.label}</span>
                   {isActive ? (
@@ -288,11 +287,10 @@ export function Navbar() {
                             <div
                               key={n.id}
                               onClick={() => handleNotificationClick(n)}
-                              className={`p-3.5 flex items-start gap-3 cursor-pointer transition-colors ${
-                                n.read
+                              className={`p-3.5 flex items-start gap-3 cursor-pointer transition-colors ${n.read
                                   ? 'hover:bg-slate-50 dark:hover:bg-slate-800/40 opacity-75'
                                   : 'bg-sky-50/40 dark:bg-sky-950/20 hover:bg-sky-50 dark:hover:bg-sky-950/40'
-                              }`}
+                                }`}
                             >
                               <div className="p-2 rounded-xl bg-slate-100 dark:bg-slate-800 text-sky-600 dark:text-sky-400 flex-shrink-0 mt-0.5">
                                 {n.type === 'weather' ? (
@@ -475,11 +473,10 @@ export function Navbar() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`block px-3.5 py-2 text-xs transition-colors rounded-r-lg ${
-                    isActive
+                  className={`block px-3.5 py-2 text-xs transition-colors rounded-r-lg ${isActive
                       ? 'text-[#1F3F74] dark:text-[#4987BA] font-bold border-l-[3px] border-[#1F3F74] dark:border-[#4987BA] bg-blue-50/50 dark:bg-neutral-900/50'
                       : 'text-slate-600 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800'
-                  }`}
+                    }`}
                 >
                   {link.label}
                 </Link>

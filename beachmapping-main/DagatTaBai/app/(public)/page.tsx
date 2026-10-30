@@ -112,12 +112,12 @@ export default function HomePage() {
       {/* Hero Section */}
       <HeroMapSection />
 
-      {/* Section 1: See Beyond the Pictures (DARK DIVE BLUE Background #1F3F74 - Compact Balanced Spacing) */}
+      {/* Section 1: See Beyond the Pictures (DARK DIVE BLUE Background #1F3F74 - Harmonious Balanced Spacing) */}
       <section className="w-full bg-[#1F3F74] dark:bg-[#14284b] text-white transition-colors duration-200 relative z-20">
-        <div className="py-8 sm:py-12 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto text-center">
-          <ScrollReveal direction="up" duration={650} className="space-y-4 sm:space-y-5 flex flex-col items-center">
+        <div className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto text-center">
+          <ScrollReveal direction="up" duration={650} className="space-y-5 sm:space-y-6 flex flex-col items-center">
             <div>
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-sans font-extrabold tracking-tight text-white leading-[1.15]">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-white leading-tight">
                 See Beyond the Pictures
               </h2>
             </div>
@@ -145,12 +145,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Section 2: Your Beach Guide (WHITE Background - Compact Spacing) */}
+      {/* Section 2: Your Beach Guide (WHITE Background - Harmonious Spacing, Dive Header) */}
       <section className="w-full bg-white dark:bg-black border-b border-slate-100 dark:border-neutral-900 transition-colors duration-200 relative">
-        <div className="py-10 sm:py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <ScrollReveal direction="up" duration={650}>
-            <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-slate-950 dark:text-white">
+            <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-14">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-[#1F3F74] dark:text-[#4987BA] leading-tight">
                 Your Beach Guide
               </h2>
               <p className="mt-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
@@ -203,12 +203,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Section 3: Take a 360° Look Around (DARK DIVE BLUE Background #1F3F74 - Centered Header & Subheader, Virtual Tour Below) */}
+      {/* Section 3: Take a 360° Look Around (DARK DIVE BLUE Background #1F3F74 - Harmonious Spacing, Centered Header & Tour) */}
       <section className="w-full bg-[#1F3F74] dark:bg-[#14284b] text-white border-b border-white/10 transition-colors duration-200 relative overflow-hidden">
-        <div className="py-10 sm:py-14 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           {/* Centered Header & Subheader */}
           <ScrollReveal direction="up" duration={650}>
-            <div className="text-center max-w-3xl mx-auto mb-8 sm:mb-10 space-y-3">
+            <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-12 space-y-3">
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-white leading-tight">
                 Take a 360° Look Around
               </h2>
@@ -240,12 +240,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Section 4: What People Are Saying (WHITE Background - Horizontal Swipe/Scroll on Mobile) */}
+      {/* Section 4: What People Are Saying (WHITE Background - Harmonious Spacing, Dive Header) */}
       <section className="w-full bg-white dark:bg-black border-b border-slate-100 dark:border-neutral-900 transition-colors duration-200 relative">
-        <div className="py-10 sm:py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <ScrollReveal direction="up" duration={600}>
-            <div className="text-center max-w-2xl mx-auto mb-8 sm:mb-10">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-slate-950 dark:text-white">
+            <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-[#1F3F74] dark:text-[#4987BA] leading-tight">
                 What People Are Saying
               </h2>
               <p className="mt-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
@@ -329,9 +329,9 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Section 5: Be Part of Dagat Ta Bai (DARK DIVE BLUE Background #1F3F74 - Compact Spacing, Single Clean Button) */}
+      {/* Section 5: Be Part of Dagat Ta Bai (DARK DIVE BLUE Background #1F3F74 - Harmonious Spacing, Single Clean Button) */}
       <section className="w-full bg-[#1F3F74] dark:bg-[#14284b] text-white border-b border-white/10 transition-colors duration-200 relative overflow-hidden">
-        <div className="py-10 sm:py-12 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto relative z-10 text-center space-y-4">
+        <div className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto relative z-10 text-center space-y-5">
           <ScrollReveal direction="up" duration={650}>
             <div className="space-y-3">
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-white leading-tight">
@@ -355,19 +355,19 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Section 6: Help Make Dagat Ta Bai Better (WHITE Background - Compact Spacing) */}
+      {/* Section 6: Help Make Dagat Ta Bai Better (WHITE Background - Harmonious Spacing, Dive Header) */}
       <section className="w-full bg-white dark:bg-black border-b border-slate-100 dark:border-neutral-900 transition-colors duration-200 relative">
-        <div className="py-10 sm:py-12 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+        <div className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <ScrollReveal direction="up" duration={650}>
-            <div className="max-w-2xl mx-auto text-center space-y-4">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-slate-950 dark:text-white">
+            <div className="max-w-2xl mx-auto text-center space-y-5">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-[#1F3F74] dark:text-[#4987BA] leading-tight">
                 Help Make Dagat Ta Bai Better
               </h2>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-lg mx-auto">
                 Your feedback helps us create a more reliable experience for everyone.
               </p>
 
-              <div className="pt-3">
+              <div className="pt-5 sm:pt-6">
                 {/* Blue button on white background */}
                 <Link
                   href="/feedback"

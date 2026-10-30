@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { cookies } from 'next/headers';
 import { createAdminClient, createServerSupabaseClient } from '@/lib/supabase/server';
 
 export async function GET(request: NextRequest) {
@@ -17,6 +18,19 @@ export async function GET(request: NextRequest) {
     if (error) {
       console.error('Supabase code exchange error:', error);
       return NextResponse.redirect(`${siteUrl}/login?error=code_exchange_failed`);
+    }
+
+    // Clean up temporary OAuth code-verifier and state cookies to prevent header bloat
+    try {
+      const cookieStore = await cookies();
+      const allCookies = cookieStore.getAll();
+      for (const c of allCookies) {
+        if (c.name.includes('code-verifier') || c.name.includes('oauth-state')) {
+          cookieStore.delete(c.name);
+        }
+      }
+    } catch {
+      // Best-effort cookie cleanup
     }
 
     const isPlatformAdmin = data.user.email?.toLowerCase() === 'official.dagattabai@gmail.com';
