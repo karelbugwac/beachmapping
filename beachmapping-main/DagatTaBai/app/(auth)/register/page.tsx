@@ -1,13 +1,21 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
-import { UserPlus, Lock, Mail, User } from 'lucide-react';
+import {
+  Eye,
+  EyeOff,
+  AlertCircle,
+  CheckCircle2,
+  ChevronLeft,
+} from 'lucide-react';
 import { showToast } from '@/components/ui/feedback-toasts';
 
 export default function UserRegisterPage() {
   const router = useRouter();
+
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -15,11 +23,50 @@ export default function UserRegisterPage() {
     confirmPassword: '',
     agreeConsent: false,
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [touched, setTouched] = useState({
+    name: false,
+    email: false,
+    password: false,
+    confirmPassword: false,
+  });
+
+  // ── Validation ──────────────────────────────────────────────
+  const nameValid = formData.name.trim().length >= 2;
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email);
+  const passwordChecks = useMemo(
+    () => ({
+      minLength: formData.password.length >= 6,
+      hasLetter: /[a-zA-Z]/.test(formData.password),
+      hasNumber: /\d/.test(formData.password),
+    }),
+    [formData.password],
+  );
+  const passwordValid =
+    passwordChecks.minLength && passwordChecks.hasLetter && passwordChecks.hasNumber;
+  const confirmValid =
+    formData.confirmPassword.length > 0 &&
+    formData.password === formData.confirmPassword;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (formData.password !== formData.confirmPassword) {
+    setTouched({ name: true, email: true, password: true, confirmPassword: true });
+
+    if (!nameValid) {
+      showToast('Please enter your full name.', 'error');
+      return;
+    }
+    if (!emailValid) {
+      showToast('Please enter a valid email address.', 'error');
+      return;
+    }
+    if (!passwordValid) {
+      showToast('Please check the password requirements.', 'error');
+      return;
+    }
+    if (!confirmValid) {
       showToast('Passwords do not match.', 'error');
       return;
     }
@@ -48,7 +95,9 @@ export default function UserRegisterPage() {
       }
 
       if (data.requiresEmailConfirmation) {
-        showToast('Account created. Check your email to confirm it before signing in.');
+        showToast(
+          'Account created. Check your email to confirm it before signing in.',
+        );
         router.push('/login');
       } else {
         showToast('Your account was created successfully.');
@@ -67,27 +116,318 @@ export default function UserRegisterPage() {
     window.location.href = '/api/auth/google';
   };
 
+  const inputCls = (fieldTouched: boolean, isValid: boolean, hasValue: boolean) =>
+    `w-full px-5 py-3.5 text-sm bg-white dark:bg-[#121212] border rounded-full text-slate-900 dark:text-white caret-[#21386F] dark:caret-[#4987BA] placeholder:text-transparent focus:outline-none focus:ring-2 transition-all duration-200 ${
+      fieldTouched && !isValid && hasValue
+        ? 'border-red-400 dark:border-red-600 focus:ring-red-500/20'
+        : 'border-slate-300 dark:border-neutral-800 focus:border-[#21386F] dark:focus:border-[#4987BA] focus:ring-[#21386F] dark:focus:ring-[#4987BA]'
+    }`;
+
   return (
-    <div className="min-h-[80vh] flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md bg-white dark:bg-ocean-900 p-8 rounded-2xl border border-slate-200 dark:border-ocean-800 shadow-sm space-y-6">
-        <div className="text-center space-y-1">
-          <div className="w-12 h-12 rounded-full bg-sky-100 dark:bg-sky-950/60 text-sky-700 dark:text-sky-400 flex items-center justify-center mx-auto mb-2">
-            <UserPlus className="w-6 h-6" />
-          </div>
-          <h1 className="text-2xl font-bold text-slate-900 dark:text-white font-heading">
-            Create an Account
+    <div className="min-h-screen flex flex-col justify-between items-center px-4 py-8 bg-[#f8fafc] dark:bg-black transition-colors duration-200">
+      {/* ── Top Navigation (Left-aligned) ─────────────────── */}
+      <div className="w-full px-4 sm:px-8 md:px-12 flex items-center justify-start">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-1 text-xs sm:text-sm font-medium text-slate-500 hover:text-[#21386F] dark:text-neutral-400 dark:hover:text-white transition-colors group"
+        >
+          <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
+          <span>Back to Home</span>
+        </Link>
+      </div>
+
+      {/* ── Main Seamless Form Area (No Box Container) ─────── */}
+      <div className="w-full max-w-sm sm:max-w-md my-auto py-4">
+        
+        {/* Header: Logo + Join the Coast + Subheader */}
+        <div className="flex flex-col items-center text-center mb-8 sm:mb-9">
+          <Link href="/" className="inline-block transition-transform hover:scale-105 mb-3.5">
+            <div className="relative w-16 h-16 flex items-center justify-center">
+              <Image
+                src="/images/logo.png"
+                alt="Dagat Ta Bai Logo"
+                width={64}
+                height={64}
+                className="object-contain"
+                priority
+              />
+            </div>
+          </Link>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#21386F] dark:text-[#4987BA]">
+            Join the Coast
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400">
-            Join the Dagat Ta Bai community to explore and review beaches in Catmon, Cebu.
+          <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1 font-normal leading-relaxed max-w-xs mx-auto">
+            Discover. Explore. Experience Binongkalan.
           </p>
         </div>
 
+        {/* ── Form (Credentials First) ────────────────────── */}
+        <form onSubmit={handleSubmit} className="space-y-5">
+          {/* Full Name Category (Sentence case, proper category spacing) */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-neutral-300 ml-1">
+              Full name
+            </label>
+            <div className="relative">
+              <input
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) =>
+                  setFormData({ ...formData, name: e.target.value })
+                }
+                onBlur={() => setTouched((t) => ({ ...t, name: true }))}
+                className={inputCls(touched.name, nameValid, !!formData.name)}
+              />
+              {touched.name && formData.name && !nameValid && (
+                <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                  <AlertCircle className="w-4 h-4 text-red-500" />
+                </div>
+              )}
+            </div>
+          </div>
+
+          {/* Email Address Category (Sentence case) */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-neutral-300 ml-1">
+              Email address
+            </label>
+            <div className="relative">
+              <input
+                type="email"
+                required
+                value={formData.email}
+                onChange={(e) =>
+                  setFormData({ ...formData, email: e.target.value })
+                }
+                onBlur={() => setTouched((t) => ({ ...t, email: true }))}
+                className={inputCls(touched.email, emailValid, !!formData.email)}
+              />
+              {touched.email && formData.email && !emailValid && (
+                <div className="absolute right-4 top-1/2 -translate-y-1/2">
+                  <AlertCircle className="w-4 h-4 text-red-500" />
+                </div>
+              )}
+            </div>
+            {touched.email && formData.email && !emailValid && (
+              <p className="text-[11px] text-red-500 flex items-center gap-1 mt-1 ml-2">
+                <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                Please enter a valid email address
+              </p>
+            )}
+          </div>
+
+          {/* Password Category (Sentence case) */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-neutral-300 ml-1">
+              Password
+            </label>
+            <div className="relative">
+              <input
+                type={showPassword ? 'text' : 'password'}
+                required
+                value={formData.password}
+                onChange={(e) =>
+                  setFormData({ ...formData, password: e.target.value })
+                }
+                onBlur={() => setTouched((t) => ({ ...t, password: true }))}
+                className={`w-full pl-5 pr-12 py-3.5 text-sm bg-white dark:bg-[#121212] border rounded-full text-slate-900 dark:text-white caret-[#21386F] dark:caret-[#4987BA] placeholder:text-transparent focus:outline-none focus:ring-2 transition-all duration-200 ${
+                  touched.password && !passwordValid && formData.password
+                    ? 'border-red-400 dark:border-red-600 focus:ring-red-500/20'
+                    : 'border-slate-300 dark:border-neutral-800 focus:border-[#21386F] dark:focus:border-[#4987BA] focus:ring-[#21386F] dark:focus:ring-[#4987BA]'
+                }`}
+              />
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                {touched.password && formData.password && !passwordValid && (
+                  <AlertCircle className="w-4 h-4 text-red-500" />
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="p-1 rounded-full text-slate-500 dark:text-neutral-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-neutral-800 transition-colors"
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                >
+                  {showPassword ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+
+            {/* Password Requirements Checklist (No box container) */}
+            {touched.password && formData.password && !passwordValid && (
+              <div className="mt-1.5 px-3 py-1.5 space-y-1">
+                <p className="text-[10px] font-semibold text-slate-600 dark:text-neutral-400 mb-0.5">
+                  Password must have:
+                </p>
+                {[
+                  { check: passwordChecks.minLength, label: 'At least 6 characters' },
+                  { check: passwordChecks.hasLetter, label: 'At least one letter' },
+                  { check: passwordChecks.hasNumber, label: 'At least one number' },
+                ].map((item) => (
+                  <div key={item.label} className="flex items-center gap-2">
+                    {item.check ? (
+                      <CheckCircle2 className="w-3 h-3 text-[#21386F] dark:text-[#4987BA] flex-shrink-0" />
+                    ) : (
+                      <div className="w-3.5 h-3.5 rounded-full border-[1.5px] border-slate-300 dark:border-neutral-600 flex-shrink-0" />
+                    )}
+                    <span
+                      className={`text-[10px] ${
+                        item.check
+                          ? 'text-[#21386F] dark:text-[#4987BA] font-medium'
+                          : 'text-slate-500 dark:text-neutral-400'
+                      }`}
+                    >
+                      {item.label}
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          {/* Confirm Password Category (Sentence case) */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-slate-700 dark:text-neutral-300 ml-1">
+              Confirm password
+            </label>
+            <div className="relative">
+              <input
+                type={showConfirm ? 'text' : 'password'}
+                required
+                value={formData.confirmPassword}
+                onChange={(e) =>
+                  setFormData({ ...formData, confirmPassword: e.target.value })
+                }
+                onBlur={() =>
+                  setTouched((t) => ({ ...t, confirmPassword: true }))
+                }
+                className={`w-full pl-5 pr-12 py-3.5 text-sm bg-white dark:bg-[#121212] border rounded-full text-slate-900 dark:text-white caret-[#21386F] dark:caret-[#4987BA] placeholder:text-transparent focus:outline-none focus:ring-2 transition-all duration-200 ${
+                  touched.confirmPassword &&
+                  !confirmValid &&
+                  formData.confirmPassword
+                    ? 'border-red-400 dark:border-red-600 focus:ring-red-500/20'
+                    : 'border-slate-300 dark:border-neutral-800 focus:border-[#21386F] dark:focus:border-[#4987BA] focus:ring-[#21386F] dark:focus:ring-[#4987BA]'
+                }`}
+              />
+              <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
+                {touched.confirmPassword && formData.confirmPassword && (
+                  confirmValid ? (
+                    <CheckCircle2 className="w-4 h-4 text-[#21386F] dark:text-[#4987BA]" />
+                  ) : (
+                    <AlertCircle className="w-4 h-4 text-red-500" />
+                  )
+                )}
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm(!showConfirm)}
+                  className="p-1 rounded-full text-slate-500 dark:text-neutral-400 hover:text-slate-800 dark:hover:text-white hover:bg-slate-200 dark:hover:bg-neutral-800 transition-colors"
+                  aria-label={showConfirm ? 'Hide password' : 'Show password'}
+                >
+                  {showConfirm ? (
+                    <EyeOff className="w-4 h-4" />
+                  ) : (
+                    <Eye className="w-4 h-4" />
+                  )}
+                </button>
+              </div>
+            </div>
+            {touched.confirmPassword &&
+              formData.confirmPassword &&
+              !confirmValid && (
+                <p className="text-[11px] text-red-500 flex items-center gap-1 mt-1 ml-2">
+                  <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                  Passwords do not match
+                </p>
+              )}
+          </div>
+
+          {/* Privacy & Terms Consent (Clean & borderless - no container) */}
+          <div className="pt-1 px-1">
+            <label className="flex items-start gap-2.5 cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={formData.agreeConsent}
+                onChange={(e) =>
+                  setFormData({ ...formData, agreeConsent: e.target.checked })
+                }
+                className="mt-0.5 w-4 h-4 rounded border-slate-300 dark:border-neutral-700 text-[#21386F] focus:ring-[#21386F]/30 cursor-pointer accent-[#21386F]"
+              />
+              <span className="text-[11px] text-slate-600 dark:text-neutral-400 leading-relaxed">
+                I agree to the{' '}
+                <Link
+                  href="/privacy"
+                  target="_blank"
+                  className="text-[#21386F] dark:text-[#4987BA] font-semibold underline hover:opacity-80"
+                >
+                  Privacy Policy (RA 10173)
+                </Link>{' '}
+                and{' '}
+                <Link
+                  href="/terms"
+                  target="_blank"
+                  className="text-[#21386F] dark:text-[#4987BA] font-semibold underline hover:opacity-80"
+                >
+                  Terms of Use
+                </Link>
+                .
+              </span>
+            </label>
+          </div>
+
+          {/* Primary Submit Button: Oblong rounded-full, No arrow */}
+          <button
+            type="submit"
+            disabled={loading}
+            className="group relative w-full py-3.5 mt-2 bg-[#21386F] hover:bg-[#264D89] dark:bg-[#21386F] dark:hover:bg-[#2B5F9D] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm rounded-full transition-all duration-200 shadow-md hover:shadow-lg shadow-[#21386F]/25 flex items-center justify-center cursor-pointer"
+          >
+            {loading ? (
+              <div className="flex items-center justify-center gap-2">
+                <svg
+                  className="animate-spin w-4 h-4"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  />
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  />
+                </svg>
+                <span>Creating account...</span>
+              </div>
+            ) : (
+              <span>Create Account</span>
+            )}
+          </button>
+        </form>
+
+        {/* ── Standard Divider: Clean sentence case ───────── */}
+        <div className="relative flex items-center gap-3 my-4">
+          <div className="flex-1 h-px bg-slate-200 dark:bg-neutral-800" />
+          <span className="text-xs text-slate-400 dark:text-neutral-500 font-normal select-none">
+            or register with
+          </span>
+          <div className="flex-1 h-px bg-slate-200 dark:bg-neutral-800" />
+        </div>
+
+        {/* ── Google OAuth Button (Oblong rounded-full) ────── */}
         <button
           type="button"
           onClick={handleGoogleSignIn}
-          className="w-full py-2.5 px-4 border border-slate-300 dark:border-ocean-700 bg-white dark:bg-ocean-800 hover:bg-slate-50 dark:hover:bg-ocean-700 rounded-xl text-slate-700 dark:text-sand-100 text-xs sm:text-sm font-semibold transition-colors flex items-center justify-center gap-2.5 shadow-2xs"
+          className="w-full py-3.5 px-5 bg-white dark:bg-[#121212] border border-slate-300 dark:border-neutral-800 hover:bg-slate-50 dark:hover:bg-neutral-900 rounded-full text-slate-700 dark:text-neutral-200 text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-3 shadow-2xs hover:shadow-xs cursor-pointer"
         >
-          <svg className="w-4 h-4" viewBox="0 0 24 24">
+          <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24">
             <path
               fill="#4285F4"
               d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -108,122 +448,20 @@ export default function UserRegisterPage() {
           <span>Continue with Google</span>
         </button>
 
-        <div className="relative flex items-center justify-center">
-          <div className="border-t border-slate-200 dark:border-ocean-800 w-full"></div>
-          <span className="bg-white dark:bg-ocean-900 px-3 text-[11px] text-slate-400 dark:text-slate-500 absolute uppercase tracking-wider font-semibold">
-            or register with email
-          </span>
-        </div>
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Full Name
-            </label>
-            <div className="relative">
-              <User className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                required
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                placeholder="Maria Santos"
-                className="w-full pl-9 pr-3 py-2 text-sm bg-white dark:bg-ocean-950 border border-slate-200 dark:border-ocean-800 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Email Address
-            </label>
-            <div className="relative">
-              <Mail className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="email"
-                required
-                value={formData.email}
-                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                placeholder="maria@example.com"
-                className="w-full pl-9 pr-3 py-2 text-sm bg-white dark:bg-ocean-950 border border-slate-200 dark:border-ocean-800 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Password
-            </label>
-            <div className="relative">
-              <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="password"
-                required
-                minLength={6}
-                value={formData.password}
-                onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                placeholder="••••••••"
-                className="w-full pl-9 pr-3 py-2 text-sm bg-white dark:bg-ocean-950 border border-slate-200 dark:border-ocean-800 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
-              />
-            </div>
-          </div>
-
-          <div>
-            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-              Confirm Password
-            </label>
-            <div className="relative">
-              <Lock className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="password"
-                required
-                minLength={6}
-                value={formData.confirmPassword}
-                onChange={(e) => setFormData({ ...formData, confirmPassword: e.target.value })}
-                placeholder="••••••••"
-                className="w-full pl-9 pr-3 py-2 text-sm bg-white dark:bg-ocean-950 border border-slate-200 dark:border-ocean-800 rounded-xl text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
-              />
-            </div>
-          </div>
-
-          <div className="p-3 bg-slate-50 dark:bg-ocean-950 rounded-xl border border-slate-200 dark:border-ocean-800">
-            <label className="flex items-start gap-2.5 cursor-pointer">
-              <input
-                type="checkbox"
-                checked={formData.agreeConsent}
-                onChange={(e) => setFormData({ ...formData, agreeConsent: e.target.checked })}
-                className="mt-0.5 w-4 h-4 text-sky-600 border-slate-300 dark:border-ocean-700 rounded focus:ring-sky-500 cursor-pointer"
-              />
-              <span className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-                I have read and agree to the{' '}
-                <Link href="/privacy" target="_blank" className="text-sky-600 dark:text-sky-400 font-semibold underline">
-                  Privacy Policy (RA 10173)
-                </Link>{' '}
-                and{' '}
-                <Link href="/terms" target="_blank" className="text-sky-600 dark:text-sky-400 font-semibold underline">
-                  Terms of Use
-                </Link>
-                .
-              </span>
-            </label>
-          </div>
-
-          <button
-            type="submit"
-            disabled={loading}
-            className="w-full py-2.5 bg-sky-600 hover:bg-sky-700 disabled:opacity-50 text-white font-semibold text-sm rounded-xl transition-colors shadow-sm cursor-pointer"
-          >
-            {loading ? 'Creating account...' : 'Create Account'}
-          </button>
-        </form>
-
-        <div className="text-center border-t border-slate-100 dark:border-ocean-800 pt-3 text-xs text-slate-600 dark:text-slate-400">
+        {/* ── Link to Login (Line above completely removed) ── */}
+        <p className="text-center text-sm text-slate-600 dark:text-neutral-400 pt-5">
           Already have an account?{' '}
-          <Link href="/login" className="text-sky-600 dark:text-sky-400 font-semibold hover:underline">
+          <Link
+            href="/login"
+            className="text-[#21386F] dark:text-[#4987BA] font-bold hover:underline transition-colors"
+          >
             Sign in
           </Link>
-        </div>
+        </p>
       </div>
+
+      {/* Empty bottom anchor */}
+      <div className="w-full max-w-sm sm:max-w-md" />
     </div>
   );
 }

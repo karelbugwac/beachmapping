@@ -79,10 +79,14 @@ export function Navbar() {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
 
-  // Dedicated admin, owner, and staff portals have their own specialized layout/sidebar
-  if (pathname?.startsWith('/admin') || pathname?.startsWith('/owner') || pathname?.startsWith('/staff')) {
-    return null;
-  }
+  const isDedicatedPortal =
+    pathname?.startsWith('/admin') ||
+    pathname?.startsWith('/owner') ||
+    pathname?.startsWith('/staff') ||
+    pathname === '/login' ||
+    pathname === '/register' ||
+    pathname === '/forgot-password' ||
+    pathname === '/reset-password';
 
   const navLinks = [
     { label: 'Home', href: '/' },
@@ -95,13 +99,15 @@ export function Navbar() {
 
   // Fetch session user on mount and route changes
   useEffect(() => {
+    if (isDedicatedPortal) return;
+
     fetch('/api/auth/session')
       .then((res) => res.json())
       .then((data) => {
         setUser(data.user || null);
       })
       .catch(() => setUser(null));
-  }, [pathname]);
+  }, [pathname, isDedicatedPortal]);
 
   // Load read notifications from localStorage
   useEffect(() => {
@@ -132,6 +138,9 @@ export function Navbar() {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  // Dedicated admin, owner, and staff portals have their own specialized layout/sidebar.
+  if (isDedicatedPortal) return null;
 
   const handleSignOut = async () => {
     try {
@@ -175,7 +184,7 @@ export function Navbar() {
   const unreadCount = notifications.filter((n) => !n.read).length;
 
   return (
-    <header className="sticky top-0 z-40 bg-white/95 dark:bg-[#09090b]/95 backdrop-blur-md border-b border-slate-200/80 dark:border-neutral-800 transition-colors duration-200">
+    <header className="sticky top-0 z-40 bg-white/95 dark:bg-black/95 backdrop-blur-md border-b border-slate-200/80 dark:border-neutral-900 transition-colors duration-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-18 gap-4">
           {/* Logo -> Name */}
@@ -190,7 +199,7 @@ export function Navbar() {
                 priority
               />
             </div>
-            <span className="font-sans font-bold text-xl sm:text-2xl tracking-tight text-slate-950 dark:text-white leading-none">
+            <span className="font-serif font-bold text-xl sm:text-2xl tracking-tight text-slate-950 dark:text-white leading-none">
               Dagat Ta Bai
             </span>
           </Link>
@@ -207,7 +216,7 @@ export function Navbar() {
                   href={link.href}
                   className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-150 ${
                     isActive
-                      ? 'text-[#0284c7] dark:text-[#38bdf8] bg-sky-50 dark:bg-sky-950/50 font-bold'
+                      ? 'text-[#21386F] dark:text-[#4987BA] bg-blue-50 dark:bg-neutral-900 font-bold'
                       : 'text-slate-600 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-800/80'
                   }`}
                 >
@@ -382,7 +391,7 @@ export function Navbar() {
               /* Public / Unauthenticated: Sign Up button */
               <Link
                 href="/register"
-                className="inline-flex items-center justify-center px-5 py-2 text-xs font-bold text-white bg-slate-950 hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-100 rounded-full transition-colors shadow-xs"
+                className="inline-flex items-center justify-center px-5 py-2 text-xs font-bold text-white bg-[#21386F] hover:bg-[#264D89] dark:bg-[#21386F] dark:hover:bg-[#2B5F9D] rounded-full transition-colors shadow-sm"
               >
                 Sign Up
               </Link>
@@ -450,7 +459,7 @@ export function Navbar() {
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-b border-slate-200 dark:border-neutral-800 bg-white dark:bg-[#09090b] px-4 pt-3 pb-5 space-y-3">
+        <div className="md:hidden border-b border-slate-200 dark:border-neutral-900 bg-white dark:bg-black px-4 pt-3 pb-5 space-y-3">
           <div className="space-y-1 text-xs font-semibold text-slate-700 dark:text-slate-300">
             {navLinks.map((link) => {
               const isActive =
@@ -463,7 +472,7 @@ export function Navbar() {
                   onClick={() => setMobileMenuOpen(false)}
                   className={`block px-3 py-2 rounded-lg transition-colors ${
                     isActive
-                      ? 'text-[#0284c7] dark:text-[#38bdf8] bg-sky-50 dark:bg-sky-950/50 font-bold'
+                      ? 'text-[#21386F] dark:text-[#4987BA] bg-blue-50 dark:bg-neutral-900 font-bold'
                       : 'hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
                 >
@@ -516,7 +525,7 @@ export function Navbar() {
               <Link
                 href="/register"
                 onClick={() => setMobileMenuOpen(false)}
-                className="block text-center px-4 py-2.5 text-xs font-bold text-white bg-slate-950 dark:bg-white dark:text-slate-950 rounded-full"
+                className="block text-center px-4 py-2.5 text-xs font-bold text-white bg-[#21386F] hover:bg-[#264D89] dark:bg-[#21386F] dark:hover:bg-[#2B5F9D] rounded-full"
               >
                 Sign Up
               </Link>

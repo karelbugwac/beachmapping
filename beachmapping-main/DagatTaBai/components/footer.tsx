@@ -13,13 +13,17 @@ export function Footer() {
     pathname?.startsWith('/map') ||
     pathname?.startsWith('/admin') ||
     pathname?.startsWith('/owner') ||
-    pathname?.startsWith('/staff')
+    pathname?.startsWith('/staff') ||
+    pathname === '/login' ||
+    pathname === '/register' ||
+    pathname === '/forgot-password' ||
+    pathname === '/reset-password'
   ) {
     return null;
   }
 
   return (
-    <footer className="bg-[#fcfbf9] dark:bg-[#09090b] border-t border-slate-200/90 dark:border-neutral-800 transition-colors duration-200 pt-10 pb-8 text-slate-800 dark:text-slate-200">
+    <footer className="bg-[#fcfbf9] dark:bg-black border-t border-slate-200/90 dark:border-neutral-900 transition-colors duration-200 pt-10 pb-8 text-slate-800 dark:text-slate-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-8 items-start">

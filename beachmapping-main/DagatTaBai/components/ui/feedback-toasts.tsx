@@ -42,30 +42,35 @@ export function FeedbackToasts() {
   };
 
   return (
-    <div className="fixed right-4 top-4 z-[200] flex w-[min(24rem,calc(100vw-2rem))] flex-col gap-2" aria-live="polite">
+    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[200] flex w-[min(26rem,calc(100vw-2rem))] flex-col items-center gap-2 pointer-events-none" aria-live="polite">
       {toasts.map((toast) => {
         const Icon = toast.kind === 'success' ? CheckCircle2 : AlertCircle;
         const colors = toast.kind === 'success'
-          ? 'border-emerald-200 bg-white text-emerald-950'
-          : 'border-red-200 bg-white text-red-950';
-        const iconColor = toast.kind === 'success' ? 'text-emerald-600' : 'text-red-600';
+          ? 'border-emerald-200 bg-white text-emerald-950 shadow-lg dark:bg-neutral-900 dark:border-emerald-800 dark:text-emerald-100'
+          : 'border-red-600 bg-red-600 text-white shadow-xl shadow-red-950/25';
+        const iconColor = toast.kind === 'success' ? 'text-emerald-600 dark:text-emerald-400' : 'text-white';
+        const formattedMsg = toast.message
+          ? toast.message.charAt(0).toUpperCase() + toast.message.slice(1)
+          : '';
 
         return (
           <div
             key={toast.id}
             role={toast.kind === 'error' ? 'alert' : 'status'}
-            className={`flex items-start gap-3 rounded-lg border p-4 shadow-lg ${colors}`}
+            className={`pointer-events-auto flex items-center gap-2.5 rounded-full px-5 py-3 shadow-lg ${colors} animate-in fade-in slide-in-from-top-4 duration-300 w-full`}
           >
-            <Icon className={`mt-0.5 h-5 w-5 shrink-0 ${iconColor}`} />
-            <p className="min-w-0 flex-1 text-sm font-medium">{toast.message}</p>
-            <button
-              type="button"
-              onClick={() => dismiss(toast.id)}
-              className="-mr-1 -mt-1 rounded p-1 text-slate-500 hover:bg-slate-100"
-              aria-label="Dismiss notification"
-            >
-              <X className="h-4 w-4" />
-            </button>
+            <Icon className={`h-4 w-4 shrink-0 ${iconColor}`} />
+            <p className="min-w-0 flex-1 text-xs sm:text-sm font-semibold">{formattedMsg}</p>
+            {toast.kind !== 'error' && (
+              <button
+                type="button"
+                onClick={() => dismiss(toast.id)}
+                className="-mr-1 rounded-full p-1 text-slate-500 hover:bg-slate-100 transition-colors"
+                aria-label="Dismiss notification"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
           </div>
         );
       })}

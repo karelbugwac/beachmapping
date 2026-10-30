@@ -19,7 +19,7 @@ interface ChatMessage {
 
 export function AiChatWidget() {
   const pathname = usePathname();
-  const isPortal = pathname?.startsWith('/admin') || pathname?.startsWith('/owner') || pathname?.startsWith('/staff');
+  const isPortal = pathname?.startsWith('/admin') || pathname?.startsWith('/owner') || pathname?.startsWith('/staff') || pathname === '/login' || pathname === '/register' || pathname === '/forgot-password' || pathname === '/reset-password';
 
   const [isOpen, setIsOpen] = useState(false);
   const [input, setInput] = useState('');

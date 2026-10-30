@@ -46,7 +46,7 @@ export default function RootLayout({
       className={`${inter.variable}`}
       suppressHydrationWarning
     >
-      <body className="flex flex-col min-h-screen bg-slate-50 dark:bg-[#09090b] text-slate-900 dark:text-zinc-100 transition-colors duration-200">
+      <body className="flex flex-col min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-zinc-100 transition-colors duration-200">
         <ThemeProvider>
           <FeedbackToasts />
           <VisitorTracker />
