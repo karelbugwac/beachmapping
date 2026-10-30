@@ -72,7 +72,7 @@ export default function UserLoginPage() {
       <div className="w-full px-4 sm:px-8 md:px-12 flex items-center justify-start">
         <Link
           href="/"
-          className="inline-flex items-center gap-1 text-xs sm:text-sm font-medium text-slate-500 hover:text-[#21386F] dark:text-neutral-400 dark:hover:text-white transition-colors group"
+          className="inline-flex items-center gap-1 text-xs sm:text-sm font-medium text-slate-500 hover:text-[#1F3F74] dark:text-neutral-400 dark:hover:text-white transition-colors group"
         >
           <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
           <span>Back to Home</span>
@@ -96,7 +96,7 @@ export default function UserLoginPage() {
               />
             </div>
           </Link>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#21386F] dark:text-[#4987BA]">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1F3F74] dark:text-[#4987BA]">
             Welcome back
           </h1>
           <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1 font-normal leading-relaxed max-w-xs mx-auto">
@@ -118,10 +118,10 @@ export default function UserLoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 onBlur={() => setTouched((t) => ({ ...t, email: true }))}
-                className={`w-full px-5 py-3.5 text-sm bg-white dark:bg-[#121212] border rounded-full text-slate-900 dark:text-white caret-[#21386F] dark:caret-[#4987BA] placeholder:text-transparent focus:outline-none focus:ring-2 transition-all duration-200 ${
+                className={`w-full px-5 py-3.5 text-sm bg-white dark:bg-[#121212] border rounded-full text-slate-900 dark:text-white caret-[#1F3F74] dark:caret-[#4987BA] placeholder:text-transparent focus:outline-none focus:ring-2 transition-all duration-200 ${
                   touched.email && !emailValid && email
                     ? 'border-red-400 dark:border-red-600 focus:ring-red-500/20'
-                    : 'border-slate-300 dark:border-neutral-800 focus:border-[#21386F] dark:focus:border-[#4987BA] focus:ring-[#21386F] dark:focus:ring-[#4987BA]'
+                    : 'border-slate-300 dark:border-neutral-800 focus:border-[#1F3F74] dark:focus:border-[#4987BA] focus:ring-[#1F3F74] dark:focus:ring-[#4987BA]'
                 }`}
               />
               {touched.email && email && !emailValid && (
@@ -146,7 +146,7 @@ export default function UserLoginPage() {
               </label>
               <Link
                 href="/forgot-password"
-                className="text-[11px] text-[#21386F] dark:text-[#4987BA] font-semibold hover:underline transition-colors"
+                className="text-[11px] text-[#1F3F74] dark:text-[#4987BA] font-semibold hover:underline transition-colors"
               >
                 Forgot password?
               </Link>
@@ -158,10 +158,10 @@ export default function UserLoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 onBlur={() => setTouched((t) => ({ ...t, password: true }))}
-                className={`w-full pl-5 pr-12 py-3.5 text-sm bg-white dark:bg-[#121212] border rounded-full text-slate-900 dark:text-white caret-[#21386F] dark:caret-[#4987BA] placeholder:text-transparent focus:outline-none focus:ring-2 transition-all duration-200 ${
+                className={`w-full pl-5 pr-12 py-3.5 text-sm bg-white dark:bg-[#121212] border rounded-full text-slate-900 dark:text-white caret-[#1F3F74] dark:caret-[#4987BA] placeholder:text-transparent focus:outline-none focus:ring-2 transition-all duration-200 ${
                   touched.password && !password
                     ? 'border-red-400 dark:border-red-600 focus:ring-red-500/20'
-                    : 'border-slate-300 dark:border-neutral-800 focus:border-[#21386F] dark:focus:border-[#4987BA] focus:ring-[#21386F] dark:focus:ring-[#4987BA]'
+                    : 'border-slate-300 dark:border-neutral-800 focus:border-[#1F3F74] dark:focus:border-[#4987BA] focus:ring-[#1F3F74] dark:focus:ring-[#4987BA]'
                 }`}
               />
               <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
@@ -188,7 +188,7 @@ export default function UserLoginPage() {
           <button
             type="submit"
             disabled={loading}
-            className="group relative w-full py-3.5 mt-2 bg-[#21386F] hover:bg-[#264D89] dark:bg-[#21386F] dark:hover:bg-[#2B5F9D] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm rounded-full transition-all duration-200 shadow-md hover:shadow-lg shadow-[#21386F]/25 flex items-center justify-center cursor-pointer"
+            className="group relative w-full py-3.5 mt-2 bg-[#1F3F74] hover:bg-[#285091] dark:bg-[#1F3F74] dark:hover:bg-[#285091] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm rounded-full transition-all duration-200 shadow-md hover:shadow-lg shadow-[#1F3F74]/25 flex items-center justify-center cursor-pointer"
           >
             {loading ? (
               <div className="flex items-center justify-center gap-2">
@@ -256,7 +256,7 @@ export default function UserLoginPage() {
           Don&apos;t have an account?{' '}
           <Link
             href="/register"
-            className="text-[#21386F] dark:text-[#4987BA] font-bold hover:underline transition-colors"
+            className="text-[#1F3F74] dark:text-[#4987BA] font-bold hover:underline transition-colors"
           >
             Register here
           </Link>

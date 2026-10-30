@@ -23,7 +23,7 @@ export function Footer() {
   }
 
   return (
-    <footer className="bg-[#fcfbf9] dark:bg-black border-t border-slate-200/90 dark:border-neutral-900 transition-colors duration-200 pt-10 pb-8 text-slate-800 dark:text-slate-200">
+    <footer className="bg-white dark:bg-black border-t border-slate-200/80 dark:border-neutral-900 transition-colors duration-200 pt-10 pb-8 text-slate-800 dark:text-slate-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
 
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-12 gap-8 lg:gap-8 items-start">
@@ -39,13 +39,13 @@ export function Footer() {
                   className="object-contain w-full h-full"
                 />
               </div>
-              <span className="font-serif font-bold text-xl tracking-tight text-slate-950 dark:text-white">
+              <span className="font-sans font-extrabold text-xl tracking-tight text-[#1F3F74] dark:text-[#4987BA]">
                 Dagat Ta Bai
               </span>
             </Link>
             <div className="space-y-1.5">
               <p className="text-sm font-semibold text-slate-900 dark:text-white tracking-tight">
-                Find beaches, not filters.
+                See beyond pictures
               </p>
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-xs">
                 Real beaches. Real coastlines. No filters, no pretending. Dagat Ta Bai keeps Binongkalan, Catmon raw, real, and worth discovering.
@@ -67,6 +67,11 @@ export function Footer() {
                 <li>
                   <Link href="/weather" className="hover:text-slate-900 dark:hover:text-white transition-colors">
                     Weather
+                  </Link>
+                </li>
+                <li>
+                  <Link href="/feedback" className="hover:text-slate-900 dark:hover:text-white transition-colors">
+                    Feedback
                   </Link>
                 </li>
                 <li>
@@ -126,7 +131,7 @@ export function Footer() {
 
         </div>
 
-        <div className="pt-6 border-t border-slate-200/80 dark:border-slate-800 text-center text-xs text-slate-500 dark:text-slate-400">
+        <div className="pt-6 border-t border-slate-200/60 dark:border-neutral-900 text-center text-xs text-slate-500 dark:text-slate-400">
           <p>© 2026 Dagat Ta Bai. All rights reserved.</p>
         </div>
 

@@ -70,7 +70,7 @@ export default function ForgotPasswordPage() {
         {!sent ? (
           <Link
             href="/login"
-            className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-500 hover:text-[#21386F] dark:text-neutral-400 dark:hover:text-white transition-colors group"
+            className="inline-flex items-center gap-1.5 text-xs sm:text-sm font-semibold text-slate-500 hover:text-[#1F3F74] dark:text-neutral-400 dark:hover:text-white transition-colors group"
           >
             <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
             <span>Back to Sign In</span>
@@ -86,12 +86,12 @@ export default function ForgotPasswordPage() {
           /* ── Sent / Success View (Header, Logo & Subtitle completely removed) ── */
           <div className="py-4 text-center space-y-5">
             {/* Standard Blue Checkmark Icon: Blue border outside, transparent inside, blue check */}
-            <div className="w-16 h-16 rounded-full border-2 border-[#21386F] dark:border-[#4987BA] bg-transparent text-[#21386F] dark:text-[#4987BA] flex items-center justify-center mx-auto">
+            <div className="w-16 h-16 rounded-full border-2 border-[#1F3F74] dark:border-[#4987BA] bg-transparent text-[#1F3F74] dark:text-[#4987BA] flex items-center justify-center mx-auto">
               <Check className="w-8 h-8 stroke-[2.5]" />
             </div>
 
             <div className="space-y-2">
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#21386F] dark:text-[#4987BA]">
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1F3F74] dark:text-[#4987BA]">
                 Recovery Email Sent
               </h1>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-neutral-300 leading-relaxed max-w-sm mx-auto">
@@ -103,7 +103,7 @@ export default function ForgotPasswordPage() {
             <div className="pt-3">
               <Link
                 href="/login"
-                className="inline-flex items-center justify-center w-full py-3.5 bg-[#21386F] hover:bg-[#264D89] dark:bg-[#21386F] dark:hover:bg-[#2B5F9D] text-white font-bold text-sm rounded-full transition-all duration-200 shadow-md hover:shadow-lg shadow-[#21386F]/25 cursor-pointer"
+                className="inline-flex items-center justify-center w-full py-3.5 bg-[#1F3F74] hover:bg-[#285091] dark:bg-[#1F3F74] dark:hover:bg-[#285091] text-white font-bold text-sm rounded-full transition-all duration-200 shadow-md hover:shadow-lg shadow-[#1F3F74]/25 cursor-pointer"
               >
                 Return to Sign In
               </Link>
@@ -126,7 +126,7 @@ export default function ForgotPasswordPage() {
                   />
                 </div>
               </Link>
-              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#21386F] dark:text-[#4987BA]">
+              <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1F3F74] dark:text-[#4987BA]">
                 Reset Password
               </h1>
               <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1 font-normal leading-relaxed max-w-xs mx-auto">
@@ -146,16 +146,16 @@ export default function ForgotPasswordPage() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     onBlur={() => setTouched(true)}
-                    className={`w-full px-5 py-3.5 text-sm bg-white dark:bg-[#121212] border rounded-full text-slate-900 dark:text-white caret-[#21386F] dark:caret-[#4987BA] placeholder:text-transparent focus:outline-none focus:ring-2 transition-all duration-200 ${
+                    className={`w-full px-5 py-3.5 text-sm bg-white dark:bg-[#121212] border rounded-full text-slate-900 dark:text-white caret-[#1F3F74] dark:caret-[#4987BA] placeholder:text-transparent focus:outline-none focus:ring-2 transition-all duration-200 ${
                       touched && !emailValid && email
                         ? 'border-red-400 dark:border-red-600 focus:ring-red-500/20'
-                        : 'border-slate-300 dark:border-neutral-800 focus:border-[#21386F] dark:focus:border-[#4987BA] focus:ring-[#21386F] dark:focus:ring-[#4987BA]'
+                        : 'border-slate-300 dark:border-neutral-800 focus:border-[#1F3F74] dark:focus:border-[#4987BA] focus:ring-[#1F3F74] dark:focus:ring-[#4987BA]'
                     }`}
                   />
                   {touched && email && (
                     <div className="absolute right-4 top-1/2 -translate-y-1/2">
                       {emailValid ? (
-                        <CheckCircle2 className="w-4 h-4 text-[#21386F] dark:text-[#4987BA]" />
+                        <CheckCircle2 className="w-4 h-4 text-[#1F3F74] dark:text-[#4987BA]" />
                       ) : (
                         <AlertCircle className="w-4 h-4 text-red-500" />
                       )}
@@ -164,11 +164,11 @@ export default function ForgotPasswordPage() {
                 </div>
               </div>
 
-              {/* BUTTON: #21386F Oblong rounded-full, no arrow */}
+              {/* BUTTON: #1F3F74 Oblong rounded-full, no arrow */}
               <button
                 type="submit"
                 disabled={loading}
-                className="group w-full py-3.5 mt-2 bg-[#21386F] hover:bg-[#264D89] dark:bg-[#21386F] dark:hover:bg-[#2B5F9D] disabled:opacity-50 text-white font-bold text-sm rounded-full transition-all duration-200 shadow-md hover:shadow-lg shadow-[#21386F]/25 flex items-center justify-center cursor-pointer"
+                className="group w-full py-3.5 mt-2 bg-[#1F3F74] hover:bg-[#285091] dark:bg-[#1F3F74] dark:hover:bg-[#285091] disabled:opacity-50 text-white font-bold text-sm rounded-full transition-all duration-200 shadow-md hover:shadow-lg shadow-[#1F3F74]/25 flex items-center justify-center cursor-pointer"
               >
                 {loading ? 'Sending link...' : 'Send Reset Link'}
               </button>
@@ -178,7 +178,7 @@ export default function ForgotPasswordPage() {
               Remember your password?{' '}
               <Link
                 href="/login"
-                className="text-[#21386F] dark:text-[#4987BA] font-bold hover:underline transition-colors"
+                className="text-[#1F3F74] dark:text-[#4987BA] font-bold hover:underline transition-colors"
               >
                 Sign in
               </Link>

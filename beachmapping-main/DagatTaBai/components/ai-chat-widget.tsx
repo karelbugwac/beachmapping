@@ -179,14 +179,14 @@ export function AiChatWidget() {
         <button
           type="button"
           onClick={() => setIsOpen(true)}
-          className="group relative w-20 h-20 sm:w-24 sm:h-24 shadow-lg hover:shadow-xl transition-all duration-200 hover:scale-105"
+          className="group relative w-20 h-20 sm:w-24 sm:h-24 bg-transparent border-0 p-0 outline-none focus:outline-none shadow-none cursor-pointer transition-transform duration-300 hover:scale-105 active:scale-95 animate-float-slow select-none"
           aria-label="Open Bai AI Guide"
         >
           <Image
             src="/images/bai.png"
             alt="Bai AI Guide - Click to chat"
             fill
-            className="object-contain"
+            className="object-contain drop-shadow-[0_8px_14px_rgba(0,0,0,0.18)] dark:drop-shadow-[0_8px_16px_rgba(0,0,0,0.45)] group-hover:drop-shadow-[0_12px_20px_rgba(0,0,0,0.28)] transition-all duration-300 pointer-events-none"
           />
         </button>
       )}

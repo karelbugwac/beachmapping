@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
-  MapPin,
+  Map,
 } from 'lucide-react';
 
 export function HeroMapSection() {
@@ -59,19 +59,12 @@ export function HeroMapSection() {
       {/* Centered Content */}
       <div className="relative z-10 flex flex-col items-center justify-center h-full px-4 sm:px-6 lg:px-8 text-center">
         <div className="max-w-3xl mx-auto space-y-4 sm:space-y-5">
-          <h1 className="font-sans font-bold tracking-tight text-white leading-[1.2] text-2xl sm:text-3xl lg:text-4xl drop-shadow-lg">
-            Discover the{' '}
-            <span className="whitespace-nowrap text-[#38bdf8]">Coastal Paradise</span>{' '}
-            <span className="whitespace-nowrap">
-              of{' '}
-              <span className="text-[#38bdf8]">
-                Binongkalan
-              </span>
-            </span>
+          <h1 className="font-sans font-extrabold tracking-tight text-white leading-[1.2] text-2xl sm:text-3xl lg:text-4xl drop-shadow-lg">
+            Discover the Coastal Paradise of Binongkalan
           </h1>
 
           <p className="text-xs sm:text-sm text-white/90 leading-relaxed max-w-2xl mx-auto drop-shadow-md">
-            Plan your ultimate beach getaway with live wave updates, real-time weather analytics, and customized AI beach intelligence.
+            There&apos;s more to every destination than meets the eye.
           </p>
 
           <div className="pt-2">
@@ -83,9 +76,9 @@ export function HeroMapSection() {
                   router.push('/login?redirect=/map');
                 }
               }}
-              className="inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl bg-[#0284c7] hover:bg-[#0369a1] text-white font-bold text-xs sm:text-sm transition-all duration-200 shadow-lg shadow-sky-500/25 hover:shadow-sky-500/40 hover:-translate-y-0.5 active:translate-y-0 group"
+              className="inline-flex items-center justify-center gap-2 px-7 py-3 rounded-full bg-[#1F3F74] hover:bg-[#285091] dark:bg-[#1F3F74] dark:hover:bg-[#285091] text-white font-bold text-xs sm:text-sm transition-all duration-200 shadow-xl shadow-blue-950/30 hover:shadow-blue-900/50 hover:-translate-y-0.5 active:translate-y-0 group border border-white/20"
             >
-              <MapPin className="w-4 h-4 transition-transform group-hover:scale-110" />
+              <Map className="w-4 h-4 transition-transform group-hover:scale-110" />
               <span>Explore Beaches</span>
             </Link>
           </div>

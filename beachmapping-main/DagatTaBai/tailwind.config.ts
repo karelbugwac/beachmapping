@@ -36,8 +36,8 @@ const config: Config = {
           950: '#0b1b26',
         },
         dtb: {
-          navy: '#21386F',     // Deep Navy Blue (Primary buttons & key highlights)
-          midnight: '#264D89', // Midnight Blue
+          navy: '#1F3F74',     // Dive Navy Blue (Primary buttons & key highlights)
+          midnight: '#254B8A', // Midnight Blue
           ocean: '#2B5F9D',    // Ocean Blue
           classic: '#3A72AC',  // Classic Blue
           sky: '#4987BA',      // Ocean Sky Blue
@@ -50,10 +50,10 @@ const config: Config = {
           400: '#4987BA',  // Ocean Sky Blue
           500: '#3A72AC',  // Classic Blue
           600: '#2B5F9D',  // Ocean Blue
-          700: '#264D89',  // Midnight Blue
-          800: '#21386F',  // Deep Navy Blue (button color!)
-          900: '#17274f',
-          950: '#0e1832',
+          700: '#254B8A',  // Midnight Blue
+          800: '#1F3F74',  // Dive Navy Blue (button color!)
+          900: '#14284b',
+          950: '#0c1930',
         },
       },
       fontFamily: {

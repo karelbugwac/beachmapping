@@ -117,10 +117,10 @@ export default function UserRegisterPage() {
   };
 
   const inputCls = (fieldTouched: boolean, isValid: boolean, hasValue: boolean) =>
-    `w-full px-5 py-3.5 text-sm bg-white dark:bg-[#121212] border rounded-full text-slate-900 dark:text-white caret-[#21386F] dark:caret-[#4987BA] placeholder:text-transparent focus:outline-none focus:ring-2 transition-all duration-200 ${
+    `w-full px-5 py-3.5 text-sm bg-white dark:bg-[#121212] border rounded-full text-slate-900 dark:text-white caret-[#1F3F74] dark:caret-[#4987BA] placeholder:text-transparent focus:outline-none focus:ring-2 transition-all duration-200 ${
       fieldTouched && !isValid && hasValue
         ? 'border-red-400 dark:border-red-600 focus:ring-red-500/20'
-        : 'border-slate-300 dark:border-neutral-800 focus:border-[#21386F] dark:focus:border-[#4987BA] focus:ring-[#21386F] dark:focus:ring-[#4987BA]'
+        : 'border-slate-300 dark:border-neutral-800 focus:border-[#1F3F74] dark:focus:border-[#4987BA] focus:ring-[#1F3F74] dark:focus:ring-[#4987BA]'
     }`;
 
   return (
@@ -129,7 +129,7 @@ export default function UserRegisterPage() {
       <div className="w-full px-4 sm:px-8 md:px-12 flex items-center justify-start">
         <Link
           href="/"
-          className="inline-flex items-center gap-1 text-xs sm:text-sm font-medium text-slate-500 hover:text-[#21386F] dark:text-neutral-400 dark:hover:text-white transition-colors group"
+          className="inline-flex items-center gap-1 text-xs sm:text-sm font-medium text-slate-500 hover:text-[#1F3F74] dark:text-neutral-400 dark:hover:text-white transition-colors group"
         >
           <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
           <span>Back to Home</span>
@@ -153,7 +153,7 @@ export default function UserRegisterPage() {
               />
             </div>
           </Link>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#21386F] dark:text-[#4987BA]">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1F3F74] dark:text-[#4987BA]">
             Join the Coast
           </h1>
           <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1 font-normal leading-relaxed max-w-xs mx-auto">
@@ -231,10 +231,10 @@ export default function UserRegisterPage() {
                   setFormData({ ...formData, password: e.target.value })
                 }
                 onBlur={() => setTouched((t) => ({ ...t, password: true }))}
-                className={`w-full pl-5 pr-12 py-3.5 text-sm bg-white dark:bg-[#121212] border rounded-full text-slate-900 dark:text-white caret-[#21386F] dark:caret-[#4987BA] placeholder:text-transparent focus:outline-none focus:ring-2 transition-all duration-200 ${
+                className={`w-full pl-5 pr-12 py-3.5 text-sm bg-white dark:bg-[#121212] border rounded-full text-slate-900 dark:text-white caret-[#1F3F74] dark:caret-[#4987BA] placeholder:text-transparent focus:outline-none focus:ring-2 transition-all duration-200 ${
                   touched.password && !passwordValid && formData.password
                     ? 'border-red-400 dark:border-red-600 focus:ring-red-500/20'
-                    : 'border-slate-300 dark:border-neutral-800 focus:border-[#21386F] dark:focus:border-[#4987BA] focus:ring-[#21386F] dark:focus:ring-[#4987BA]'
+                    : 'border-slate-300 dark:border-neutral-800 focus:border-[#1F3F74] dark:focus:border-[#4987BA] focus:ring-[#1F3F74] dark:focus:ring-[#4987BA]'
                 }`}
               />
               <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
@@ -269,14 +269,14 @@ export default function UserRegisterPage() {
                 ].map((item) => (
                   <div key={item.label} className="flex items-center gap-2">
                     {item.check ? (
-                      <CheckCircle2 className="w-3 h-3 text-[#21386F] dark:text-[#4987BA] flex-shrink-0" />
+                      <CheckCircle2 className="w-3 h-3 text-[#1F3F74] dark:text-[#4987BA] flex-shrink-0" />
                     ) : (
                       <div className="w-3.5 h-3.5 rounded-full border-[1.5px] border-slate-300 dark:border-neutral-600 flex-shrink-0" />
                     )}
                     <span
                       className={`text-[10px] ${
                         item.check
-                          ? 'text-[#21386F] dark:text-[#4987BA] font-medium'
+                          ? 'text-[#1F3F74] dark:text-[#4987BA] font-medium'
                           : 'text-slate-500 dark:text-neutral-400'
                       }`}
                     >
@@ -304,18 +304,18 @@ export default function UserRegisterPage() {
                 onBlur={() =>
                   setTouched((t) => ({ ...t, confirmPassword: true }))
                 }
-                className={`w-full pl-5 pr-12 py-3.5 text-sm bg-white dark:bg-[#121212] border rounded-full text-slate-900 dark:text-white caret-[#21386F] dark:caret-[#4987BA] placeholder:text-transparent focus:outline-none focus:ring-2 transition-all duration-200 ${
+                className={`w-full pl-5 pr-12 py-3.5 text-sm bg-white dark:bg-[#121212] border rounded-full text-slate-900 dark:text-white caret-[#1F3F74] dark:caret-[#4987BA] placeholder:text-transparent focus:outline-none focus:ring-2 transition-all duration-200 ${
                   touched.confirmPassword &&
                   !confirmValid &&
                   formData.confirmPassword
                     ? 'border-red-400 dark:border-red-600 focus:ring-red-500/20'
-                    : 'border-slate-300 dark:border-neutral-800 focus:border-[#21386F] dark:focus:border-[#4987BA] focus:ring-[#21386F] dark:focus:ring-[#4987BA]'
+                    : 'border-slate-300 dark:border-neutral-800 focus:border-[#1F3F74] dark:focus:border-[#4987BA] focus:ring-[#1F3F74] dark:focus:ring-[#4987BA]'
                 }`}
               />
               <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
                 {touched.confirmPassword && formData.confirmPassword && (
                   confirmValid ? (
-                    <CheckCircle2 className="w-4 h-4 text-[#21386F] dark:text-[#4987BA]" />
+                    <CheckCircle2 className="w-4 h-4 text-[#1F3F74] dark:text-[#4987BA]" />
                   ) : (
                     <AlertCircle className="w-4 h-4 text-red-500" />
                   )
@@ -353,14 +353,14 @@ export default function UserRegisterPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, agreeConsent: e.target.checked })
                 }
-                className="mt-0.5 w-4 h-4 rounded border-slate-300 dark:border-neutral-700 text-[#21386F] focus:ring-[#21386F]/30 cursor-pointer accent-[#21386F]"
+                className="mt-0.5 w-4 h-4 rounded border-slate-300 dark:border-neutral-700 text-[#1F3F74] focus:ring-[#1F3F74]/30 cursor-pointer accent-[#1F3F74]"
               />
               <span className="text-[11px] text-slate-600 dark:text-neutral-400 leading-relaxed">
                 I agree to the{' '}
                 <Link
                   href="/privacy"
                   target="_blank"
-                  className="text-[#21386F] dark:text-[#4987BA] font-semibold underline hover:opacity-80"
+                  className="text-[#1F3F74] dark:text-[#4987BA] font-semibold underline hover:opacity-80"
                 >
                   Privacy Policy (RA 10173)
                 </Link>{' '}
@@ -368,7 +368,7 @@ export default function UserRegisterPage() {
                 <Link
                   href="/terms"
                   target="_blank"
-                  className="text-[#21386F] dark:text-[#4987BA] font-semibold underline hover:opacity-80"
+                  className="text-[#1F3F74] dark:text-[#4987BA] font-semibold underline hover:opacity-80"
                 >
                   Terms of Use
                 </Link>
@@ -381,7 +381,7 @@ export default function UserRegisterPage() {
           <button
             type="submit"
             disabled={loading}
-            className="group relative w-full py-3.5 mt-2 bg-[#21386F] hover:bg-[#264D89] dark:bg-[#21386F] dark:hover:bg-[#2B5F9D] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm rounded-full transition-all duration-200 shadow-md hover:shadow-lg shadow-[#21386F]/25 flex items-center justify-center cursor-pointer"
+            className="group relative w-full py-3.5 mt-2 bg-[#1F3F74] hover:bg-[#285091] dark:bg-[#1F3F74] dark:hover:bg-[#285091] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm rounded-full transition-all duration-200 shadow-md hover:shadow-lg shadow-[#1F3F74]/25 flex items-center justify-center cursor-pointer"
           >
             {loading ? (
               <div className="flex items-center justify-center gap-2">
@@ -453,7 +453,7 @@ export default function UserRegisterPage() {
           Already have an account?{' '}
           <Link
             href="/login"
-            className="text-[#21386F] dark:text-[#4987BA] font-bold hover:underline transition-colors"
+            className="text-[#1F3F74] dark:text-[#4987BA] font-bold hover:underline transition-colors"
           >
             Sign in
           </Link>

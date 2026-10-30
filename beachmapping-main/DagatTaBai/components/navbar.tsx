@@ -199,13 +199,13 @@ export function Navbar() {
                 priority
               />
             </div>
-            <span className="font-serif font-bold text-xl sm:text-2xl tracking-tight text-slate-950 dark:text-white leading-none">
+            <span className="font-sans font-extrabold text-xl sm:text-2xl tracking-tight text-[#1F3F74] dark:text-[#4987BA] leading-none">
               Dagat Ta Bai
             </span>
           </Link>
 
           {/* Center Navigation Links: Home, Weather, About, Contact */}
-          <nav className="hidden md:flex items-center gap-1 lg:gap-2">
+          <nav className="hidden md:flex items-stretch self-stretch h-full gap-0.5 lg:gap-1">
             {navLinks.map((link) => {
               const isActive =
                 pathname === link.href ||
@@ -214,13 +214,18 @@ export function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all duration-150 ${
+                  className={`group relative inline-flex items-center px-3.5 lg:px-4 text-xs font-semibold transition-colors duration-150 ${
                     isActive
-                      ? 'text-[#21386F] dark:text-[#4987BA] bg-blue-50 dark:bg-neutral-900 font-bold'
-                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-100/80 dark:hover:bg-slate-800/80'
+                      ? 'text-[#1F3F74] dark:text-[#4987BA] font-bold'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-[#1F3F74] dark:hover:text-white'
                   }`}
                 >
-                  {link.label}
+                  <span>{link.label}</span>
+                  {isActive ? (
+                    <span className="absolute bottom-0 left-0 right-0 h-[3px] bg-[#1F3F74] dark:bg-[#4987BA]" />
+                  ) : (
+                    <span className="absolute bottom-0 left-0 right-0 h-[2px] bg-slate-300 dark:bg-neutral-700 scale-x-0 group-hover:scale-x-100 transition-transform duration-200 origin-center" />
+                  )}
                 </Link>
               );
             })}
@@ -391,7 +396,7 @@ export function Navbar() {
               /* Public / Unauthenticated: Sign Up button */
               <Link
                 href="/register"
-                className="inline-flex items-center justify-center px-5 py-2 text-xs font-bold text-white bg-[#21386F] hover:bg-[#264D89] dark:bg-[#21386F] dark:hover:bg-[#2B5F9D] rounded-full transition-colors shadow-sm"
+                className="inline-flex items-center justify-center px-5 py-2 text-xs font-bold text-white bg-[#1F3F74] hover:bg-[#285091] dark:bg-[#1F3F74] dark:hover:bg-[#285091] rounded-full transition-colors shadow-sm"
               >
                 Sign Up
               </Link>
@@ -470,10 +475,10 @@ export function Navbar() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`block px-3 py-2 rounded-lg transition-colors ${
+                  className={`block px-3.5 py-2 text-xs transition-colors rounded-r-lg ${
                     isActive
-                      ? 'text-[#21386F] dark:text-[#4987BA] bg-blue-50 dark:bg-neutral-900 font-bold'
-                      : 'hover:bg-slate-50 dark:hover:bg-slate-800'
+                      ? 'text-[#1F3F74] dark:text-[#4987BA] font-bold border-l-[3px] border-[#1F3F74] dark:border-[#4987BA] bg-blue-50/50 dark:bg-neutral-900/50'
+                      : 'text-slate-600 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800'
                   }`}
                 >
                   {link.label}
@@ -525,7 +530,7 @@ export function Navbar() {
               <Link
                 href="/register"
                 onClick={() => setMobileMenuOpen(false)}
-                className="block text-center px-4 py-2.5 text-xs font-bold text-white bg-[#21386F] hover:bg-[#264D89] dark:bg-[#21386F] dark:hover:bg-[#2B5F9D] rounded-full"
+                className="block text-center px-4 py-2.5 text-xs font-bold text-white bg-[#1F3F74] hover:bg-[#285091] dark:bg-[#1F3F74] dark:hover:bg-[#285091] rounded-full"
               >
                 Sign Up
               </Link>
