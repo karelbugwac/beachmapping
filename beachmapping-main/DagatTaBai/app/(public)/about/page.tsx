@@ -1,11 +1,13 @@
 'use client';
 
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   HeartHandshake,
   Search,
   HandHeart,
   User,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { ScrollReveal } from '@/components/ui/scroll-reveal';
 
@@ -76,53 +78,45 @@ const teamMembers: TeamMember[] = [
 
 export default function AboutPage() {
   const [activeIndex, setActiveIndex] = useState(0);
+  const [touchStartX, setTouchStartX] = useState<number | null>(null);
 
   const total = teamMembers.length;
-  const nextIntervalRef = useRef<NodeJS.Timeout | null>(null);
-  const prevIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const prevIndex = (activeIndex - 1 + total) % total;
+  const nextIndex = (activeIndex + 1) % total;
 
-  // Clean up timers on unmount
-  useEffect(() => {
-    return () => {
-      if (nextIntervalRef.current) clearInterval(nextIntervalRef.current);
-      if (prevIntervalRef.current) clearInterval(prevIntervalRef.current);
-    };
-  }, []);
+  const currentMember = teamMembers[activeIndex];
+  const prevMember = teamMembers[prevIndex];
+  const nextMember = teamMembers[nextIndex];
 
-  // Continuous hover forward stepping: 1 -> 2 -> 3 -> 4 -> 5 -> 6 -> 7 -> 8 -> 9 -> 1
-  const handleMouseEnterRight = () => {
-    setActiveIndex((prev) => (prev + 1) % total);
-    if (nextIntervalRef.current) clearInterval(nextIntervalRef.current);
-    nextIntervalRef.current = setInterval(() => {
-      setActiveIndex((prev) => (prev + 1) % total);
-    }, 1100);
-  };
-
-  const handleMouseLeaveRight = () => {
-    if (nextIntervalRef.current) {
-      clearInterval(nextIntervalRef.current);
-      nextIntervalRef.current = null;
-    }
-  };
-
-  // Continuous hover backward stepping: 9 -> 8 -> 7 -> 6 -> 5 -> 4 -> 3 -> 2 -> 1
-  const handleMouseEnterLeft = () => {
+  // Previous and Next Navigation
+  const handlePrev = () => {
     setActiveIndex((prev) => (prev === 0 ? total - 1 : prev - 1));
-    if (prevIntervalRef.current) clearInterval(prevIntervalRef.current);
-    prevIntervalRef.current = setInterval(() => {
-      setActiveIndex((prev) => (prev === 0 ? total - 1 : prev - 1));
-    }, 1100);
   };
 
-  const handleMouseLeaveLeft = () => {
-    if (prevIntervalRef.current) {
-      clearInterval(prevIntervalRef.current);
-      prevIntervalRef.current = null;
+  const handleNext = () => {
+    setActiveIndex((prev) => (prev + 1) % total);
+  };
+
+  // Mobile Touch Swipe Handlers
+  const handleTouchStart = (e: React.TouchEvent) => {
+    setTouchStartX(e.touches[0].clientX);
+  };
+
+  const handleTouchEnd = (e: React.TouchEvent) => {
+    if (touchStartX === null) return;
+    const touchEndX = e.changedTouches[0].clientX;
+    const diff = touchStartX - touchEndX;
+
+    // Swiped left -> advance forward
+    if (diff > 40) {
+      handleNext();
     }
+    // Swiped right -> advance backward
+    else if (diff < -40) {
+      handlePrev();
+    }
+    setTouchStartX(null);
   };
-
-  // Card width constant (in pixels) for smooth horizontal track sliding
-  const CARD_WIDTH = 240;
 
   return (
     <div className="flex flex-col min-h-screen bg-white dark:bg-black text-slate-900 dark:text-white font-sans transition-colors duration-200 overflow-x-hidden">
@@ -171,7 +165,7 @@ export default function AboutPage() {
               </p>
             </ScrollReveal>
 
-            {/* Pillar 3: Shared Growth, Shared Value (Icon: HandHeart - Matching Image 1) */}
+            {/* Pillar 3: Shared Growth, Shared Value (Icon: HandHeart) */}
             <ScrollReveal direction="up" delay={300} duration={600} className="px-6 sm:px-8 py-6 md:py-2 flex flex-col items-center space-y-3 group">
               <div className="h-10 flex items-center justify-center">
                 <HandHeart className="w-9 h-9 text-[#1F3F74] dark:text-[#4987BA] stroke-[1.8] transition-transform duration-300 group-hover:scale-110" />
@@ -233,112 +227,108 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ── SECTION 4: MEET OUR TEAM (DARK DIVE BLUE #1F3F74 - TRUE HORIZONTAL SLIDING CAROUSEL) ── */}
+      {/* ── SECTION 4: MEET OUR TEAM (DARK DIVE BLUE #1F3F74 - 3 MEMBERS WITH '<' '>' BUTTONS) ── */}
       <section className="w-full bg-[#1F3F74] dark:bg-[#14284b] text-white py-16 sm:py-24 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
-        <div className="max-w-6xl mx-auto">
+        <div className="max-w-5xl mx-auto">
           
           <ScrollReveal direction="up" duration={650}>
-            <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16">
+            <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12">
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-white leading-tight">
                 Meet Our Team
               </h2>
-              <p className="mt-2 text-xs sm:text-sm text-blue-100/90">
-                Hover to the right or left to smoothly slide through all team members.
-              </p>
             </div>
           </ScrollReveal>
 
-          {/* ── Physical Horizontal Slider Viewport with Side Hover Zones ── */}
-          <div className="relative w-full max-w-4xl mx-auto overflow-hidden py-8">
-            
-            {/* Left Hover Zone: Cycles backward smoothly while cursor is over left side */}
+          {/* ── 3-Member Stage with Mobile Touch Swipe & Click Centering ── */}
+          <div
+            onTouchStart={handleTouchStart}
+            onTouchEnd={handleTouchEnd}
+            className="relative max-w-2xl sm:max-w-3xl mx-auto grid grid-cols-[1fr_auto_1fr] items-center justify-items-center py-4 select-none touch-pan-y"
+          >
+
+            {/* 1. LEFT SIDE PROFILE (Click to center) */}
             <div
-              onMouseEnter={handleMouseEnterLeft}
-              onMouseLeave={handleMouseLeaveLeft}
-              onClick={() => setActiveIndex((prev) => (prev === 0 ? total - 1 : prev - 1))}
-              className="absolute left-0 top-0 bottom-0 w-24 sm:w-36 z-30 cursor-pointer bg-gradient-to-r from-[#1F3F74] via-[#1F3F74]/60 to-transparent flex items-center justify-start pl-2 group"
-              title="Hover to slide backward"
+              onClick={handlePrev}
+              className="w-full flex flex-col items-center justify-center opacity-45 hover:opacity-90 scale-85 hover:scale-95 transition-all duration-300 cursor-pointer text-center group px-1 sm:px-2 max-w-[150px] sm:max-w-[180px]"
+              title={prevMember.name}
             >
-              <span className="sr-only">Slide backward</span>
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-2 border-white/60 bg-white/10 backdrop-blur-xs flex items-center justify-center shadow-lg transition-transform group-hover:border-white flex-shrink-0">
+                {prevMember.image ? (
+                  <img src={prevMember.image} alt={prevMember.name} className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-10 h-10 sm:w-12 sm:h-12 stroke-[1.6] text-white/80" />
+                )}
+              </div>
+              <span className="mt-2.5 text-xs text-white/80 font-medium block truncate max-w-full">
+                {prevMember.name}
+              </span>
+              <span className="text-[10px] text-white/60 block mt-0.5 line-clamp-1 max-w-full">
+                {prevMember.role}
+              </span>
             </div>
 
-            {/* Right Hover Zone: Cycles forward smoothly while cursor is over right side */}
-            <div
-              onMouseEnter={handleMouseEnterRight}
-              onMouseLeave={handleMouseLeaveRight}
-              onClick={() => setActiveIndex((prev) => (prev + 1) % total)}
-              className="absolute right-0 top-0 bottom-0 w-24 sm:w-36 z-30 cursor-pointer bg-gradient-to-l from-[#1F3F74] via-[#1F3F74]/60 to-transparent flex items-center justify-end pr-2 group"
-              title="Hover to slide forward"
-            >
-              <span className="sr-only">Slide forward</span>
+            {/* 2. CENTER ACTIVE PROFILE (Prominent, Glowing Ring, Centered, Name & Position Underneath) */}
+            <div className="flex flex-col items-center scale-100 transition-all duration-300 text-center px-2 sm:px-6 flex-shrink-0">
+              <div className="relative w-28 h-28 sm:w-36 sm:h-36 rounded-full overflow-hidden border-4 border-white shadow-2xl ring-4 ring-white/30 bg-white/20 backdrop-blur-md flex items-center justify-center transition-all duration-300 flex-shrink-0">
+                {currentMember.image ? (
+                  <img src={currentMember.image} alt={currentMember.name} className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-14 h-14 sm:w-16 sm:h-16 stroke-[1.6] text-white" />
+                )}
+              </div>
+
+              {/* Name & Position Directly Underneath */}
+              <div className="text-center mt-3 sm:mt-4 space-y-1">
+                <span className="block text-base sm:text-lg font-bold text-white tracking-wide">
+                  {currentMember.name}
+                </span>
+                <span className="block text-xs sm:text-sm text-sky-200 font-medium">
+                  {currentMember.role}
+                </span>
+              </div>
             </div>
 
-            {/* Moving Track: Physically shifts horizontally with cubic-bezier easing */}
+            {/* 3. RIGHT SIDE PROFILE (Click to center) */}
             <div
-              className="flex items-center transition-transform duration-700 ease-out"
-              style={{
-                transform: `translateX(calc(50% - ${activeIndex * CARD_WIDTH + CARD_WIDTH / 2}px))`,
-              }}
+              onClick={handleNext}
+              className="w-full flex flex-col items-center justify-center opacity-45 hover:opacity-90 scale-85 hover:scale-95 transition-all duration-300 cursor-pointer text-center group px-1 sm:px-2 max-w-[150px] sm:max-w-[180px]"
+              title={nextMember.name}
             >
-              {teamMembers.map((member, index) => {
-                const isActive = index === activeIndex;
-
-                return (
-                  <div
-                    key={member.id}
-                    onClick={() => setActiveIndex(index)}
-                    style={{ width: `${CARD_WIDTH}px` }}
-                    className="flex-shrink-0 flex flex-col items-center justify-center text-center px-4 cursor-pointer select-none transition-all duration-500"
-                  >
-                    {/* Circular Avatar */}
-                    <div
-                      className={`rounded-full overflow-hidden flex items-center justify-center transition-all duration-500 ${
-                        isActive
-                          ? 'w-28 h-28 sm:w-36 sm:h-36 border-4 border-white shadow-2xl ring-4 ring-white/30 bg-white/20 backdrop-blur-md scale-105 opacity-100'
-                          : 'w-20 h-20 sm:w-24 sm:h-24 border-2 border-white/50 bg-white/10 backdrop-blur-xs scale-85 opacity-45 hover:opacity-75'
-                      }`}
-                    >
-                      {member.image ? (
-                        <img
-                          src={member.image}
-                          alt={member.name}
-                          className="w-full h-full object-cover"
-                        />
-                      ) : (
-                        <User
-                          className={`stroke-[1.6] text-white ${
-                            isActive ? 'w-14 h-14 sm:w-18 sm:h-18' : 'w-10 h-10 sm:w-12 sm:h-12 text-white/80'
-                          }`}
-                        />
-                      )}
-                    </div>
-
-                    {/* Member Name and Position Directly Underneath */}
-                    <div className="mt-3 sm:mt-4 space-y-0.5">
-                      <span
-                        className={`block font-bold tracking-wide transition-all duration-300 ${
-                          isActive
-                            ? 'text-base sm:text-lg text-white'
-                            : 'text-xs sm:text-sm text-white/70'
-                        }`}
-                      >
-                        {member.name}
-                      </span>
-                      <span
-                        className={`block font-medium transition-all duration-300 ${
-                          isActive
-                            ? 'text-xs sm:text-sm text-sky-200'
-                            : 'text-[10px] text-white/50'
-                        }`}
-                      >
-                        {member.role}
-                      </span>
-                    </div>
-                  </div>
-                );
-              })}
+              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-2 border-white/60 bg-white/10 backdrop-blur-xs flex items-center justify-center shadow-lg transition-transform group-hover:border-white flex-shrink-0">
+                {nextMember.image ? (
+                  <img src={nextMember.image} alt={nextMember.name} className="w-full h-full object-cover" />
+                ) : (
+                  <User className="w-10 h-10 sm:w-12 sm:h-12 stroke-[1.6] text-white/80" />
+                )}
+              </div>
+              <span className="mt-2.5 text-xs text-white/80 font-medium block truncate max-w-full">
+                {nextMember.name}
+              </span>
+              <span className="text-[10px] text-white/60 block mt-0.5 line-clamp-1 max-w-full">
+                {nextMember.role}
+              </span>
             </div>
 
+          </div>
+
+          {/* ── '<' and '>' Navigation Buttons ── */}
+          <div className="flex items-center justify-center gap-6 mt-6">
+            <button
+              type="button"
+              onClick={handlePrev}
+              className="w-11 h-11 rounded-full bg-white/15 hover:bg-white/30 active:scale-95 text-white flex items-center justify-center transition-all backdrop-blur-md shadow-md cursor-pointer border border-white/20"
+              title="Previous Member"
+            >
+              <ChevronLeft className="w-5 h-5 stroke-[2.5]" />
+            </button>
+            <button
+              type="button"
+              onClick={handleNext}
+              className="w-11 h-11 rounded-full bg-white/15 hover:bg-white/30 active:scale-95 text-white flex items-center justify-center transition-all backdrop-blur-md shadow-md cursor-pointer border border-white/20"
+              title="Next Member"
+            >
+              <ChevronRight className="w-5 h-5 stroke-[2.5]" />
+            </button>
           </div>
 
         </div>

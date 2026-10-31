@@ -9,6 +9,8 @@ import { ThemeProvider } from '@/components/theme-provider';
 import { CookieConsent } from '@/components/cookie-consent';
 import { FeedbackToasts } from '@/components/ui/feedback-toasts';
 import { VisitorTracker } from '@/components/visitor-tracker';
+import { PageLoader } from '@/components/page-loader';
+import { Suspense } from 'react';
 
 const inter = Inter({
   subsets: ['latin'],
@@ -48,6 +50,9 @@ export default function RootLayout({
     >
       <body className="flex flex-col min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-zinc-100 transition-colors duration-200">
         <ThemeProvider>
+          <Suspense fallback={null}>
+            <PageLoader />
+          </Suspense>
           <FeedbackToasts />
           <VisitorTracker />
           <Navbar />

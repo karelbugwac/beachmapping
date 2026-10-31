@@ -1,90 +1,139 @@
 import React from 'react';
-import Link from 'next/link';
-import { FileText, Shield, AlertCircle, Scale, CheckCircle2 } from 'lucide-react';
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-zinc-100 transition-colors duration-200">
+    <div className="min-h-screen bg-white dark:bg-black text-slate-900 dark:text-zinc-100 transition-colors duration-200">
       
-      {/* ── Page Header ───────────────────────────────────── */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 sm:pt-14 pb-8 text-center space-y-3">
-        <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-50 dark:bg-blue-950/60 text-[#1F3F74] dark:text-[#4987BA] text-xs font-bold tracking-wide uppercase shadow-2xs">
-          <Scale className="w-3.5 h-3.5" />
-          <span>Legal Agreement &amp; Platform Rules</span>
-        </div>
-        <h1 className="text-3xl sm:text-4xl lg:text-5xl font-extrabold text-[#1F3F74] dark:text-white tracking-tight leading-tight">
+      {/* ── Page Header (Placed Higher Up, Frameless) ── */}
+      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-6 text-center space-y-1.5">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold text-[#1F3F74] dark:text-[#4987BA] tracking-tight leading-tight">
           Terms of Use
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-          Last Updated: August 2026 · Barangay Binongkalan, Catmon, Cebu
+          Updated on November 3, 2026
         </p>
       </div>
 
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 space-y-8">
+      {/* ── Frameless Content (Justified Paragraph Descriptions) ── */}
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 space-y-7 text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
         
-        <div className="bg-white dark:bg-[#121215] p-6 sm:p-10 rounded-3xl border border-slate-200/80 dark:border-neutral-800 shadow-xs space-y-8 text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
-          
-          <section className="space-y-2.5">
-            <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-white flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-blue-50 dark:bg-blue-950/70 text-[#1F3F74] dark:text-sky-300 text-xs flex items-center justify-center font-bold">1</span>
-              <span>Acceptance of Terms</span>
-            </h2>
-            <p>
-              By accessing or using the <strong>Dagat Ta Bai</strong> website, mobile views, and services, you agree to be bound by these Terms of Use and our Privacy Policy. If you do not agree with any part of these terms, you must discontinue using our platform.
-            </p>
-          </section>
+        {/* Section 1 */}
+        <section className="space-y-1.5">
+          <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-[#4987BA]">
+            1. Acceptance of Terms
+          </h2>
+          <p style={{ textAlign: 'justify' }}>
+            By accessing or using the Dagat Ta Bai website and services, you agree to follow these Terms of Use. If you do not agree with these terms, please stop using the platform.
+          </p>
+        </section>
 
-          <section className="space-y-2.5 border-t border-slate-100 dark:border-neutral-800 pt-6">
-            <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-white flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-blue-50 dark:bg-blue-950/70 text-[#1F3F74] dark:text-sky-300 text-xs flex items-center justify-center font-bold">2</span>
-              <span>User Accounts &amp; Conduct</span>
-            </h2>
-            <p>
-              Users are responsible for maintaining the confidentiality of their credentials and actions originating from their account. Abusive behavior, fraudulent reviews, spamming, harassment of local operators, or attempting to compromise platform security will result in immediate termination of account access.
-            </p>
-          </section>
+        {/* Section 2 */}
+        <section className="space-y-1.5 border-t border-slate-200 dark:border-neutral-800 pt-5">
+          <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-[#4987BA]">
+            2. User Accounts and Responsibilities
+          </h2>
+          <p style={{ textAlign: 'justify' }}>
+            Users are responsible for keeping their login credentials secure and for all activities under their accounts. Users must provide accurate information and must not engage in fraudulent reviews, spamming, harassment, or activities that may harm the platform or other users.
+          </p>
+        </section>
 
-          <section className="space-y-2.5 border-t border-slate-100 dark:border-neutral-800 pt-6">
-            <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-white flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-blue-50 dark:bg-blue-950/70 text-[#1F3F74] dark:text-sky-300 text-xs flex items-center justify-center font-bold">3</span>
-              <span>Beach Owner Verification &amp; Listings</span>
-            </h2>
-            <p>
-              Resort operators applying to list destinations certify under penalty of law that they hold the legal authority, Mayor&apos;s permit, or land title/lease required to operate the beach property. Submitting fraudulent documentation is prohibited and subject to legal prosecution under Philippine laws.
-            </p>
-          </section>
+        {/* Section 3 */}
+        <section className="space-y-1.5 border-t border-slate-200 dark:border-neutral-800 pt-5">
+          <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-[#4987BA]">
+            3. Establishment Registration and Verification
+          </h2>
+          <p style={{ textAlign: 'justify' }}>
+            Beach and resort owners must submit valid business permits and accurate establishment details when applying for registration. Dagat Ta Bai reserves the right to reject, suspend, or remove listings that contain false information or fail to meet verification requirements.
+          </p>
+        </section>
 
-          <section className="space-y-2.5 border-t border-slate-100 dark:border-neutral-800 pt-6">
-            <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-white flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-blue-50 dark:bg-blue-950/70 text-[#1F3F74] dark:text-sky-300 text-xs flex items-center justify-center font-bold">4</span>
-              <span>User Content &amp; Review Ownership</span>
-            </h2>
-            <p>
-              By posting reviews, feedback, or photographs, you grant Dagat Ta Bai a non-exclusive, royalty-free license to display this content on the platform. Content must reflect real visits and not infringe on intellectual property or privacy rights.
-            </p>
-          </section>
+        {/* Section 4 */}
+        <section className="space-y-1.5 border-t border-slate-200 dark:border-neutral-800 pt-5">
+          <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-[#4987BA]">
+            4. Reviews and User-Submitted Content
+          </h2>
+          <p style={{ textAlign: 'justify' }}>
+            Reviews, ratings, and photographs must be honest and based on actual experiences. Users must not post misleading, offensive, fraudulent, or copyrighted content without permission. By submitting content, users grant Dagat Ta Bai permission to display it on the platform.
+          </p>
+        </section>
 
-          <section className="space-y-2.5 border-t border-slate-100 dark:border-neutral-800 pt-6">
-            <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-white flex items-center gap-2">
-              <span className="w-6 h-6 rounded-full bg-blue-50 dark:bg-blue-950/70 text-[#1F3F74] dark:text-sky-300 text-xs flex items-center justify-center font-bold">5</span>
-              <span>Disclaimer on Weather &amp; Tidal Information</span>
-            </h2>
-            <p>
-              Weather, wave swell, and tidal cycle telemetry on Dagat Ta Bai are provided for general trip-planning purposes. Always follow official Philippine Coast Guard (PCG) advisories, LGU notices, and on-site resort lifeguards during inclement sea conditions.
-            </p>
-          </section>
+        {/* Section 5 */}
+        <section className="space-y-1.5 border-t border-slate-200 dark:border-neutral-800 pt-5">
+          <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-[#4987BA]">
+            5. Accuracy of Establishment Listings
+          </h2>
+          <p style={{ textAlign: 'justify' }}>
+            Dagat Ta Bai aims to provide accurate establishment information. However, resort owners are responsible for keeping their listings updated, including rates, amenities, operating hours, and available services. Visitors are encouraged to confirm important details directly with the establishment before visiting.
+          </p>
+        </section>
 
-          <div className="pt-4 border-t border-slate-100 dark:border-neutral-800 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs">
-            <span className="text-slate-500">Have questions about these terms?</span>
-            <Link
-              href="/contact"
-              className="inline-flex items-center justify-center px-5 py-2.5 rounded-full bg-[#1F3F74] hover:bg-[#285091] text-white font-bold transition-all shadow-xs"
-            >
-              Contact Legal Support
-            </Link>
-          </div>
+        {/* Section 6 */}
+        <section className="space-y-1.5 border-t border-slate-200 dark:border-neutral-800 pt-5">
+          <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-[#4987BA]">
+            6. Weather and Tidal Information Disclaimer
+          </h2>
+          <p style={{ textAlign: 'justify' }}>
+            Weather updates and tidal forecasts are provided for general travel planning only. These forecasts do not guarantee safe swimming or boating conditions. Users must follow official weather advisories, local government warnings, and safety instructions from resort staff or lifeguards.
+          </p>
+        </section>
 
-        </div>
+        {/* Section 7 */}
+        <section className="space-y-1.5 border-t border-slate-200 dark:border-neutral-800 pt-5">
+          <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-[#4987BA]">
+            7. Platform Availability and Changes
+          </h2>
+          <p style={{ textAlign: 'justify' }}>
+            Dagat Ta Bai aims to keep its services accessible and working properly. However, temporary interruptions may occur due to maintenance, technical issues, or circumstances beyond our control. We reserve the right to update, modify, or discontinue any part of the platform when necessary.
+          </p>
+        </section>
+
+        {/* Section 8 */}
+        <section className="space-y-2 border-t border-slate-200 dark:border-neutral-800 pt-5">
+          <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-[#4987BA]">
+            8. Prohibited Activities
+          </h2>
+          <p style={{ textAlign: 'justify' }}>Users must not:</p>
+          <ul className="space-y-1 list-disc pl-5 text-slate-600 dark:text-slate-400">
+            <li style={{ textAlign: 'justify' }}>Submit fake reviews or false establishment information.</li>
+            <li style={{ textAlign: 'justify' }}>Upload harmful, misleading, or unauthorized content.</li>
+            <li style={{ textAlign: 'justify' }}>Impersonate another person or business.</li>
+            <li style={{ textAlign: 'justify' }}>Attempt to access restricted areas or interfere with platform security.</li>
+            <li style={{ textAlign: 'justify' }}>Use the platform for scams, spam, or other unlawful activities.</li>
+          </ul>
+          <p className="pt-1 text-slate-600 dark:text-slate-400" style={{ textAlign: 'justify' }}>
+            Violations may result in account suspension, listing removal, or termination of access.
+          </p>
+        </section>
+
+        {/* Section 9 */}
+        <section className="space-y-1.5 border-t border-slate-200 dark:border-neutral-800 pt-5">
+          <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-[#4987BA]">
+            9. Limitation of Liability
+          </h2>
+          <p style={{ textAlign: 'justify' }}>
+            Dagat Ta Bai is a platform for discovering coastal destinations and accessing travel information. We are not responsible for disputes between visitors and establishments, changes in resort services or prices, or incidents that occur during visits. Users are responsible for making informed decisions and observing proper safety precautions.
+          </p>
+        </section>
+
+        {/* Section 10 */}
+        <section className="space-y-1.5 border-t border-slate-200 dark:border-neutral-800 pt-5">
+          <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-[#4987BA]">
+            10. Changes to These Terms
+          </h2>
+          <p style={{ textAlign: 'justify' }}>
+            Dagat Ta Bai may update these Terms of Use when necessary. Any changes will be posted on this page. Continued use of the platform after changes are published means you accept the updated terms.
+          </p>
+        </section>
+
+        {/* Section 11 */}
+        <section className="space-y-1.5 border-t border-slate-200 dark:border-neutral-800 pt-5">
+          <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-[#4987BA]">
+            11. Contact and Concerns
+          </h2>
+          <p style={{ textAlign: 'justify' }}>
+            For questions, concerns, or reports regarding these Terms of Use, users may contact the Dagat Ta Bai team through our official contact channels.
+          </p>
+        </section>
 
       </div>
     </div>

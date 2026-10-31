@@ -172,106 +172,114 @@ export function AiChatWidget() {
 
   if (isPortal) return null;
 
+  // Filter messages so that empty assistant placeholders don't show an empty chat bubble
+  const visibleMessages = messages.filter(
+    (msg) => msg.sender === 'user' || (msg.sender === 'assistant' && msg.text.trim().length > 0)
+  );
+
+  // Check if AI is thinking before first text chunk arrives
+  const isThinking =
+    loading &&
+    (!messages.length ||
+      messages[messages.length - 1].sender === 'user' ||
+      !messages[messages.length - 1].text.trim());
+
   return (
     <div className="fixed bottom-5 right-5 z-50">
-      {/* Floating Trigger Button - Just the image */}
+      {/* Floating Trigger Button with active online beacon */}
       {!isOpen && (
-        <button
-          type="button"
-          onClick={() => setIsOpen(true)}
-          className="group relative w-20 h-20 sm:w-24 sm:h-24 bg-transparent border-0 p-0 outline-none focus:outline-none shadow-none cursor-pointer transition-transform duration-300 hover:scale-105 active:scale-95 animate-float-slow select-none"
-          aria-label="Open Bai AI Guide"
-        >
-          <Image
-            src="/images/bai.png"
-            alt="Bai AI Guide - Click to chat"
-            fill
-            className="object-contain drop-shadow-[0_8px_14px_rgba(0,0,0,0.18)] dark:drop-shadow-[0_8px_16px_rgba(0,0,0,0.45)] group-hover:drop-shadow-[0_12px_20px_rgba(0,0,0,0.28)] transition-all duration-300 pointer-events-none"
-          />
-        </button>
+        <div className="relative group">
+          <button
+            type="button"
+            onClick={() => setIsOpen(true)}
+            className="group relative w-20 h-20 sm:w-24 sm:h-24 bg-transparent border-0 p-0 outline-none focus:outline-none shadow-none cursor-pointer transition-transform duration-300 hover:scale-105 active:scale-95 animate-float-slow select-none flex items-center justify-center"
+            aria-label="Open Bai AI Guide"
+          >
+            <Image
+              src="/images/bai.png"
+              alt="Bai AI Guide - Click to chat"
+              width={96}
+              height={96}
+              className="object-contain drop-shadow-[0_8px_16px_rgba(31,63,116,0.25)] dark:drop-shadow-[0_8px_20px_rgba(0,0,0,0.5)] group-hover:drop-shadow-[0_12px_24px_rgba(31,63,116,0.35)] transition-all duration-300 pointer-events-none"
+            />
+            {/* Live emerald beacon indicator */}
+            <span className="absolute top-2 right-2 flex h-3.5 w-3.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 ring-2 ring-white dark:ring-black"></span>
+            </span>
+          </button>
+        </div>
       )}
 
-      {/* Expanded Chat Drawer */}
+      {/* Modern AI Chat Window - Square / Non-Rounded Modern Architecture */}
       {isOpen && (
-        <div className="bg-sand-50 dark:bg-ocean-950 w-[92vw] sm:w-[380px] h-[520px] max-h-[80vh] rounded-2xl shadow-2xl border border-sand-300 dark:border-ocean-800 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-4 duration-200">
+        <div className="bg-white dark:bg-[#0c1424] w-[92vw] sm:w-[390px] h-[530px] max-h-[82vh] rounded-none shadow-2xl border border-slate-300 dark:border-neutral-800 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-150">
           
-          {/* Header */}
-          <div className="bg-ocean-900 dark:bg-ocean-900 text-sand-50 p-4 flex items-center justify-between border-b border-ocean-800">
+          {/* Header: Pure Signature Dive Blue - Clean & Minimalist */}
+          <div className="bg-[#1F3F74] dark:bg-[#12223d] text-white px-4 py-3 flex items-center justify-between border-b border-white/10 select-none">
             <div className="flex items-center gap-2.5">
-              <div className="relative w-8 h-8 rounded-xl overflow-hidden bg-sand-200 dark:bg-ocean-800 p-1 flex items-center justify-center">
+              <div className="relative w-8 h-8 rounded-full overflow-hidden bg-white/15 p-0.5 flex items-center justify-center ring-1 ring-white/20 flex-shrink-0">
                 <Image
                   src="/images/bai.png"
-                  alt="Bai Assistant Mascot"
-                  width={32}
-                  height={32}
+                  alt="Bai"
+                  width={30}
+                  height={30}
                   className="object-contain"
                 />
+                <span className="absolute bottom-0 right-0 w-2 h-2 bg-emerald-400 rounded-full ring-2 ring-[#1F3F74]" />
               </div>
-              <div>
-                <h3 className="text-sm font-bold leading-tight flex items-center gap-1.5 font-heading">
-                  <span>Bai</span>
-                  <span className="text-[10px] bg-ocean-800 text-sand-200 px-1.5 py-0.5 rounded">
-                    Local Guide
-                  </span>
+              <div className="flex items-center gap-2">
+                <h3 className="text-sm font-sans font-extrabold tracking-tight text-white leading-none">
+                  Bai
                 </h3>
-                <p className="text-[10px] text-sand-300 leading-none mt-0.5">
-                  Barangay Binongkalan, Catmon
-                </p>
+                <span className="text-[10px] bg-white/15 text-blue-100 font-semibold px-2 py-0.5 rounded-none border border-white/20">
+                  Local Guide
+                </span>
               </div>
             </div>
 
             <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={() => void handleClearHistory()}
-              disabled={!signedIn}
-              className="rounded-lg p-1 text-sand-300 hover:bg-ocean-800 hover:text-white disabled:opacity-40"
-              aria-label="Delete saved chat history"
-              title={signedIn ? 'Delete your saved chat history' : 'Sign in to save or delete history'}
-            >
-              <Trash2 size={16} />
-            </button>
-            <button
-              type="button"
-              onClick={() => setIsOpen(false)}
-              className="text-sand-300 hover:text-white p-1 rounded-lg hover:bg-ocean-800 transition-colors"
-              aria-label="Close Chat"
-            >
-              <X size={18} />
-            </button>
+              <button
+                type="button"
+                onClick={() => void handleClearHistory()}
+                disabled={!signedIn}
+                className="p-1.5 text-blue-200 hover:bg-white/15 hover:text-white transition-colors disabled:opacity-40 cursor-pointer"
+                aria-label="Delete saved chat history"
+                title={signedIn ? 'Delete your saved chat history' : 'Sign in to save or delete history'}
+              >
+                <Trash2 size={15} />
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="p-1.5 text-blue-200 hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
+                aria-label="Close Chat"
+              >
+                <X size={17} />
+              </button>
             </div>
           </div>
 
-          {/* Messages Area */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-3 bg-sand-100/60 dark:bg-ocean-950 text-xs">
-            {messages.map((msg) => (
+          {/* Messages Stream: Clean Modern Flow without Repetitive Profile Avatars */}
+          <div className="flex-1 p-4 overflow-y-auto space-y-3.5 bg-slate-50/60 dark:bg-[#09101d] text-xs">
+            {visibleMessages.map((msg) => (
               <div
                 key={msg.id}
-                className={`flex gap-2.5 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
               >
-                {msg.sender === 'assistant' && (
-                  <div className="relative w-6 h-6 rounded-lg overflow-hidden flex-shrink-0 bg-sand-200 dark:bg-ocean-800 p-0.5 flex items-center justify-center mt-1">
-                    <Image
-                      src="/images/bai.png"
-                      alt="Bai"
-                      width={24}
-                      height={24}
-                      className="object-contain"
-                    />
-                  </div>
-                )}
-
                 <div
-                  className={`max-w-[82%] rounded-2xl px-3.5 py-2.5 space-y-1 ${
+                  className={`max-w-[86%] px-3.5 py-2.5 space-y-1 rounded-none ${
                     msg.sender === 'user'
-                      ? 'bg-ocean-800 text-white rounded-br-xs shadow-2xs'
-                      : 'bg-sand-50 dark:bg-ocean-900 text-ocean-950 dark:text-sand-100 border border-sand-300/80 dark:border-ocean-800 rounded-bl-xs shadow-2xs'
+                      ? 'bg-[#1F3F74] dark:bg-[#234b87] text-white shadow-xs border border-[#162e55]'
+                      : 'bg-white dark:bg-[#132035] text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-800 border-l-2 border-l-[#1F3F74] dark:border-l-[#4987BA] shadow-xs'
                   }`}
                 >
-                  <p className="whitespace-pre-line leading-relaxed">{msg.text}</p>
+                  <p className="whitespace-pre-line leading-relaxed text-xs">
+                    {msg.text}
+                  </p>
                   <span
-                    className={`text-[9px] block text-right ${
-                      msg.sender === 'user' ? 'text-sand-300' : 'text-sand-600 dark:text-sand-400'
+                    className={`text-[9.5px] block text-right font-medium ${
+                      msg.sender === 'user' ? 'text-blue-200/80' : 'text-slate-400 dark:text-slate-500'
                     }`}
                   >
                     {msg.timestamp}
@@ -280,55 +288,66 @@ export function AiChatWidget() {
               </div>
             ))}
 
-            {loading && (
-              <div className="flex gap-2 items-center text-xs text-sand-600 dark:text-sand-400 pl-8">
-                <span className="animate-pulse">Bai is verifying local information...</span>
+            {/* Thinking State: Only 3 Bouncing Dots - Absolutely NO Empty Chat Bubble */}
+            {isThinking && (
+              <div className="flex items-center gap-1.5 py-2 px-1">
+                <span className="w-2 h-2 rounded-full bg-[#1F3F74] dark:bg-[#4987BA] animate-bounce" />
+                <span className="w-2 h-2 rounded-full bg-[#1F3F74] dark:bg-[#4987BA] animate-bounce [animation-delay:0.2s]" />
+                <span className="w-2 h-2 rounded-full bg-[#1F3F74] dark:bg-[#4987BA] animate-bounce [animation-delay:0.4s]" />
               </div>
             )}
+
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Quick Prompts */}
-          <div className="p-2 border-t border-sand-200 dark:border-ocean-800 bg-sand-50 dark:bg-ocean-900 flex gap-1.5 overflow-x-auto text-[11px] no-scrollbar">
+          {/* Quick Prompts: Modern Square Chips */}
+          <div className="px-3 py-2 border-t border-slate-200 dark:border-neutral-800 bg-white dark:bg-[#0c1424] flex gap-1.5 overflow-x-auto text-[11px] no-scrollbar">
             <button
               type="button"
               onClick={() => setInput('Which beaches are listed in the verified database?')}
-              className="px-2.5 py-1 rounded-lg bg-sand-200/80 dark:bg-ocean-800 text-ocean-950 dark:text-sand-200 hover:bg-sand-300 dark:hover:bg-ocean-700 whitespace-nowrap transition-colors"
+              className="px-2.5 py-1 rounded-none bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-[#1F3F74] hover:text-white dark:hover:bg-[#1F3F74] dark:hover:text-white border border-slate-200 dark:border-slate-700 whitespace-nowrap transition-colors font-medium cursor-pointer"
             >
               Listed beaches
             </button>
             <button
               type="button"
               onClick={() => setInput('Which beach is best for snorkeling?')}
-              className="px-2.5 py-1 rounded-lg bg-sand-200/80 dark:bg-ocean-800 text-ocean-950 dark:text-sand-200 hover:bg-sand-300 dark:hover:bg-ocean-700 whitespace-nowrap transition-colors"
+              className="px-2.5 py-1 rounded-none bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-[#1F3F74] hover:text-white dark:hover:bg-[#1F3F74] dark:hover:text-white border border-slate-200 dark:border-slate-700 whitespace-nowrap transition-colors font-medium cursor-pointer"
             >
               Snorkeling spot
             </button>
             <button
               type="button"
               onClick={() => setInput('What are the entrance fees?')}
-              className="px-2.5 py-1 rounded-lg bg-sand-200/80 dark:bg-ocean-800 text-ocean-950 dark:text-sand-200 hover:bg-sand-300 dark:hover:bg-ocean-700 whitespace-nowrap transition-colors"
+              className="px-2.5 py-1 rounded-none bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-[#1F3F74] hover:text-white dark:hover:bg-[#1F3F74] dark:hover:text-white border border-slate-200 dark:border-slate-700 whitespace-nowrap transition-colors font-medium cursor-pointer"
             >
               Entrance fees
             </button>
+            <button
+              type="button"
+              onClick={() => setInput('What is the current tide status and sea condition?')}
+              className="px-2.5 py-1 rounded-none bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-[#1F3F74] hover:text-white dark:hover:bg-[#1F3F74] dark:hover:text-white border border-slate-200 dark:border-slate-700 whitespace-nowrap transition-colors font-medium cursor-pointer"
+            >
+              Tide status
+            </button>
           </div>
 
-          {/* Input Form */}
+          {/* Input Form: Sharp Modern Docked Input (No Verified Footer Text) */}
           <form
             onSubmit={handleSend}
-            className="p-3 border-t border-sand-200 dark:border-ocean-800 bg-sand-50 dark:bg-ocean-900 flex items-center gap-2"
+            className="p-3 border-t border-slate-200 dark:border-neutral-800 bg-white dark:bg-[#0c1424] flex items-center gap-2"
           >
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask about cottages, fees, tides..."
-              className="flex-1 bg-white dark:bg-ocean-950 border border-sand-300 dark:border-ocean-800 rounded-xl px-3.5 py-2 text-xs text-ocean-950 dark:text-sand-50 placeholder:text-sand-500 dark:placeholder:text-ocean-400 focus:outline-none focus:ring-1 focus:ring-ocean-500"
+              className="flex-1 bg-slate-50 dark:bg-[#132035] border border-slate-200 dark:border-slate-800 rounded-none px-3.5 py-2 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-[#1F3F74] transition-all"
             />
             <button
               type="submit"
               disabled={loading || !input.trim()}
-              className="w-8 h-8 rounded-xl bg-ocean-800 hover:bg-ocean-900 dark:bg-ocean-700 dark:hover:bg-ocean-600 disabled:opacity-50 text-white flex items-center justify-center transition-colors flex-shrink-0"
+              className="w-8 h-8 rounded-none bg-[#1F3F74] hover:bg-[#16305a] active:scale-95 text-white flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-xs flex-shrink-0 cursor-pointer"
               aria-label="Send message"
             >
               <Send size={13} />

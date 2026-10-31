@@ -188,18 +188,18 @@ export function Navbar() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-16 sm:h-18 gap-4">
           {/* Logo -> Name */}
-          <Link href="/" className="flex items-center gap-2.5 group flex-shrink-0">
-            <div className="relative w-9 h-9 sm:w-10 sm:h-10 flex-shrink-0 flex items-center justify-center">
+          <Link href="/" className="inline-flex items-center gap-2.5 group flex-shrink-0">
+            <div className="relative w-8 h-8 flex-shrink-0 flex items-center justify-center">
               <Image
                 src="/images/logo.png"
                 alt="Dagat Ta Bai Logo"
-                width={40}
-                height={40}
+                width={34}
+                height={34}
                 className="object-contain w-full h-full"
                 priority
               />
             </div>
-            <span className="font-sans font-bold text-lg sm:text-xl tracking-tight text-[#1F3F74] dark:text-[#4987BA] leading-none">
+            <span className="font-sans font-extrabold text-xl tracking-tight text-[#1F3F74] dark:text-[#4987BA]">
               Dagat Ta Bai
             </span>
           </Link>
@@ -214,7 +214,7 @@ export function Navbar() {
                 <Link
                   key={link.href}
                   href={link.href}
-                  className={`group relative inline-flex items-center px-3.5 lg:px-4 text-xs font-semibold transition-colors duration-150 ${isActive
+                  className={`group relative inline-flex items-center px-3.5 lg:px-4 text-sm font-medium transition-colors duration-150 ${isActive
                       ? 'text-[#1F3F74] dark:text-[#4987BA] font-bold'
                       : 'text-slate-600 dark:text-slate-300 hover:text-[#1F3F74] dark:hover:text-white'
                     }`}
@@ -463,7 +463,7 @@ export function Navbar() {
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
         <div className="md:hidden border-b border-slate-200 dark:border-neutral-900 bg-white dark:bg-black px-4 pt-3 pb-5 space-y-3">
-          <div className="space-y-1 text-xs font-semibold text-slate-700 dark:text-slate-300">
+          <div className="space-y-1 text-sm font-semibold text-slate-700 dark:text-slate-300">
             {navLinks.map((link) => {
               const isActive =
                 pathname === link.href ||
@@ -473,7 +473,7 @@ export function Navbar() {
                   key={link.href}
                   href={link.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className={`block px-3.5 py-2 text-xs transition-colors rounded-r-lg ${isActive
+                  className={`block px-3.5 py-2.5 text-sm transition-colors rounded-r-lg ${isActive
                       ? 'text-[#1F3F74] dark:text-[#4987BA] font-bold border-l-[3px] border-[#1F3F74] dark:border-[#4987BA] bg-blue-50/50 dark:bg-neutral-900/50'
                       : 'text-slate-600 dark:text-slate-300 hover:text-slate-950 dark:hover:text-white hover:bg-slate-50 dark:hover:bg-slate-800'
                     }`}
