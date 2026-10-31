@@ -78,6 +78,29 @@ export default function BeachOwnerApplicationPage() {
   const permitInputRef = useRef<HTMLInputElement>(null);
   const ownershipInputRef = useRef<HTMLInputElement>(null);
 
+  // ── STEP VALIDATION HELPERS ──────────────────────────────────
+  const isStep2Valid = () => {
+    const nameVal = formData.applicant_full_name.trim();
+    const emailVal = formData.applicant_email.trim();
+    const mobileVal = formData.contact_info.trim();
+    const addressVal = formData.beach_location.trim();
+
+    if (!nameVal) return false;
+    if (!emailVal || !emailVal.includes('@')) return false;
+    const emailParts = emailVal.split('@');
+    if (!emailParts[1] || !emailParts[1].includes('.')) return false;
+    if (!mobileVal || mobileVal.length !== 10) return false;
+    if (!addressVal) return false;
+
+    return true;
+  };
+
+  const isStep3Valid = () => {
+    const businessVal = formData.business_name.trim();
+    const beachVal = formData.beach_name.trim();
+    return Boolean(businessVal && beachVal);
+  };
+
   // ── INLINE VALIDATION ERROR CHECKERS ─────────────────────────
   const getFullNameError = () => {
     if (attemptedStep2 && !formData.applicant_full_name.trim()) {
@@ -263,7 +286,7 @@ export default function BeachOwnerApplicationPage() {
 
     if (currentStep === 2) {
       setAttemptedStep2(true);
-      if (getFullNameError() || getEmailError() || getMobileError() || getAddressError()) {
+      if (!isStep2Valid()) {
         triggerError('Please fill out the necessary fields before proceeding.');
         return;
       }
@@ -275,7 +298,7 @@ export default function BeachOwnerApplicationPage() {
 
     if (currentStep === 3) {
       setAttemptedStep3(true);
-      if (getBusinessNameError() || getBeachNameError()) {
+      if (!isStep3Valid()) {
         triggerError('Please fill out the necessary fields before proceeding.');
         return;
       }
@@ -420,9 +443,21 @@ export default function BeachOwnerApplicationPage() {
                     return (
                       <div
                         key={s.num}
-                        className={`flex flex-col items-center ${isCompleted ? 'cursor-pointer' : 'cursor-default'}`}
+                        className="flex flex-col items-center cursor-pointer"
                         onClick={() => {
-                          if (isCompleted) {
+                          if (s.num > currentStep) {
+                            if (currentStep === 2 && !isStep2Valid()) {
+                              setAttemptedStep2(true);
+                              triggerError('Please fill out the necessary fields before proceeding.');
+                              return;
+                            }
+                            if (currentStep === 3 && !isStep3Valid()) {
+                              setAttemptedStep3(true);
+                              triggerError('Please fill out the necessary fields before proceeding.');
+                              return;
+                            }
+                          }
+                          if (isCompleted || s.num <= currentStep) {
                             setCurrentStep(s.num);
                             window.scrollTo({ top: 120, behavior: 'smooth' });
                           }
