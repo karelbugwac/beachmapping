@@ -97,11 +97,6 @@ export function Footer() {
                     Registration Portal
                   </Link>
                 </li>
-                <li>
-                  <Link href="/owner-requirements" className="hover:text-slate-900 dark:hover:text-white transition-colors">
-                    Listing Guidelines
-                  </Link>
-                </li>
               </ul>
             </div>
 

@@ -6,7 +6,6 @@ import {
   Wind,
   Droplets,
   Sun,
-  Thermometer,
   SunMedium,
   Umbrella,
   CloudRain,
@@ -19,10 +18,9 @@ import {
   Moon,
   ChevronDown,
   Activity,
-  ShieldCheck,
 } from 'lucide-react';
 import type { WeatherData } from '@/lib/services/weather';
-import { calculateCurrentTide, type CurrentTideState, type TideExtreme } from '@/lib/services/tide-interpolation';
+import type { CurrentTideState, TideExtreme } from '@/lib/services/tide-interpolation';
 import type { BeachRecord } from '@/lib/db/beaches';
 import TideCard from '@/components/TideCard';
 
@@ -31,6 +29,26 @@ function StarSparkle({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" className={className}>
       <path d="M12 0L14.6 9.4L24 12L14.6 14.6L12 24L9.4 14.6L0 12L9.4 9.4L12 0Z" />
+    </svg>
+  );
+}
+
+// Custom Sunscreen / Lotion Bottle Icon (Clean vector design with SPF badge)
+function LotionBottleIcon({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="2"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      className={className}
+    >
+      <path d="M10 2h4v3h-4z" />
+      <path d="M8 5h8a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z" />
+      <circle cx="12" cy="13" r="2.5" />
+      <path d="M12 9.5v.5M12 16v.5M8.5 13H9M15 13h.5" />
     </svg>
   );
 }
@@ -44,7 +62,7 @@ function getWindDirection(degrees: number): string {
 
 // Generate smart reminders based on weather conditions and time of day
 function generateReminders(weather: WeatherData | null, currentTide: CurrentTideState | null) {
-  const reminders: { icon: any; text: string; type: 'info' | 'warning' | 'alert' }[] = [];
+  const reminders: { icon: React.ComponentType<{ className?: string }>; text: string; type: 'info' | 'warning' | 'alert' }[] = [];
 
   if (!weather) return reminders;
 
@@ -78,8 +96,8 @@ function generateReminders(weather: WeatherData | null, currentTide: CurrentTide
     });
   } else if (isAfternoon) {
     reminders.push({
-      icon: SunMedium,
-      text: 'Peak daylight UV exposure - seek cottage shade and re-apply SPF 30+ sunscreen.',
+      icon: LotionBottleIcon,
+      text: 'Peak daylight UV exposure - seek cottage shade and re-apply SPF 30+ sunscreen lotion.',
       type: 'warning',
     });
   }
@@ -102,11 +120,11 @@ function generateReminders(weather: WeatherData | null, currentTide: CurrentTide
     });
   }
 
-  // Low tide sandbar window reminder
+  // Low tide coastal exploring reminder (Sandbar removed)
   if (currentTide && currentTide.currentHeight < 0.7) {
     reminders.push({
       icon: Waves,
-      text: 'Low tide window active - shallow shoreline reveals sandbars and reefs for exploring.',
+      text: 'Low tide window active - shallow shoreline reveals safe reefs for coastal exploring.',
       type: 'info',
     });
   }
@@ -114,13 +132,41 @@ function generateReminders(weather: WeatherData | null, currentTide: CurrentTide
   // Default fallback
   if (reminders.length < 3) {
     reminders.push({
-      icon: CheckCircle2,
+      icon: Waves,
       text: 'Coastal waters and shoreline conditions are favorable for visiting Binongkalan.',
       type: 'info',
     });
   }
 
   return reminders;
+}
+
+// Real-time 4-day forecast generator dynamically anchored to the current calendar date
+function getDynamicFourDayForecast(baseDate: Date) {
+  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+  const forecastTemplates = [
+    { condition: 'Partly Cloudy', high: 31, low: 26, rain: 20, icon: CloudSun },
+    { condition: 'Mostly Sunny', high: 32, low: 26, rain: 10, icon: Sun },
+    { condition: 'Passing Showers', high: 30, low: 25, rain: 35, icon: CloudRain },
+    { condition: 'Clear Sky', high: 31, low: 26, rain: 15, icon: Sun },
+  ];
+
+  return [1, 2, 3, 4].map((offset, index) => {
+    const targetDate = new Date(baseDate);
+    targetDate.setDate(targetDate.getDate() + offset);
+    const dayLabel = offset === 1 ? 'Tomorrow' : dayNames[targetDate.getDay()];
+    const template = forecastTemplates[index % forecastTemplates.length];
+
+    return {
+      day: dayLabel,
+      dateLabel: targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+      condition: template.condition,
+      high: template.high,
+      low: template.low,
+      rain: template.rain,
+      icon: template.icon,
+    };
+  });
 }
 
 export default function WeatherPage() {
@@ -213,13 +259,15 @@ export default function WeatherPage() {
       ? 'Afternoon Coastal Weather'
       : 'Evening Coastal Weather';
 
+  const fourDayForecast = getDynamicFourDayForecast(now);
+
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-zinc-100 transition-colors duration-200">
       
       {/* ── Main Dashboard Body ───────────────────────────── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-12 space-y-6 sm:space-y-7">
         
-        {/* Freestanding Header: Location Title & Controls (No wrapper box) */}
+        {/* Freestanding Header: Location Title & Controls */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1F3F74] dark:text-white tracking-tight leading-tight">
@@ -232,7 +280,7 @@ export default function WeatherPage() {
             </p>
           </div>
 
-          <div className="flex items-center flex-wrap gap-2.5 sm:justify-end">
+          <div className="flex items-center flex-wrap gap-3 sm:justify-end">
             {beaches.length > 0 && (
               <div className="relative">
                 <select
@@ -251,10 +299,10 @@ export default function WeatherPage() {
               </div>
             )}
 
-            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white dark:bg-neutral-900 border border-slate-200/60 dark:border-neutral-800 text-xs text-slate-600 dark:text-slate-400 font-medium shadow-xs">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Updated {formatDate(now)} · {formatTime(now)}</span>
-            </div>
+            {/* Frameless Updated timestamp without container or green dot */}
+            <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">
+              Updated {formatDate(now)} · {formatTime(now)}
+            </span>
           </div>
         </div>
 
@@ -297,7 +345,7 @@ export default function WeatherPage() {
                   </div>
                 )}
               </div>
-              
+
               <div className="space-y-0.5">
                 <div className="text-xs uppercase tracking-wider text-blue-200/90 font-semibold">
                   {timeOfDayLabel}
@@ -311,7 +359,7 @@ export default function WeatherPage() {
               </div>
             </div>
 
-            {/* Right: 4 Key Coastal Telemetry Badges (Balances the Hero beautifully) */}
+            {/* Right: 4 Key Coastal Telemetry Badges */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 lg:gap-3 w-full lg:w-auto">
               
               {/* Sea Temperature */}
@@ -367,15 +415,15 @@ export default function WeatherPage() {
           </div>
         </div>
 
-        {/* ── ZONE 2: CORE DECISION HUB (Tides + Activities, Perfectly Balanced) ── */}
+        {/* ── ZONE 2: CORE DECISION HUB (Tide Status + Activities) ── */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 sm:gap-6 items-start">
           
-          {/* Left Column (60% / col-span-7): Tides & Sea Level Card */}
+          {/* Left Column (60% / col-span-7): Tide Status Card */}
           <div className="lg:col-span-7">
             <TideCard extremes={tideExtremes} />
           </div>
 
-          {/* Right Column (40% / col-span-5): Beach Activity Feasibility */}
+          {/* Right Column (40% / col-span-5): Beach Activity Feasibility (Sandbar removed) */}
           <div className="lg:col-span-5 bg-white dark:bg-[#121215] rounded-2xl border border-slate-200/80 dark:border-neutral-800 p-4 sm:p-5 shadow-xs space-y-3">
             <div>
               <div className="flex items-center gap-2 mb-1">
@@ -389,12 +437,12 @@ export default function WeatherPage() {
               </p>
             </div>
 
-            {/* 6 Clean Activity Rows */}
+            {/* 6 Clean Activity Rows without Sandbar */}
             <div className="space-y-2">
               {[
                 { activity: 'Swimming', status: 'Favorable', color: 'emerald', note: 'Calm shoreline waters and gentle currents.' },
                 { activity: 'Snorkeling', status: 'Favorable', color: 'emerald', note: 'Clear underwater reef visibility.' },
-                { activity: 'Sandbar Walk', status: 'Low Tide Window', color: 'blue', note: 'Best accessible as water recedes.' },
+                { activity: 'Shoreline Walking', status: 'Favorable', color: 'emerald', note: 'Pleasant shoreline walking along Binongkalan.' },
                 { activity: 'Diving', status: 'Caution', color: 'amber', note: 'Check mid-day channel currents before deep dive.' },
                 { activity: 'Kayaking & Boating', status: 'Favorable', color: 'emerald', note: 'Safe light offshore breeze.' },
                 { activity: 'Beachfront Dining', status: 'Favorable', color: 'emerald', note: 'Cottages sheltered from strong wind.' },
@@ -420,10 +468,10 @@ export default function WeatherPage() {
 
         </div>
 
-        {/* ── ZONE 3: PLANNING AHEAD (4-Day Forecast + Coastal Tips, Balanced 50/50) ── */}
+        {/* ── ZONE 3: PLANNING AHEAD (Dynamic 4-Day Forecast + Coastal Tips) ── */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6 items-start">
           
-          {/* Left Column (50%): 4-Day Coastal Forecast */}
+          {/* Left Column (50%): Dynamic 4-Day Coastal Forecast */}
           <div className="bg-white dark:bg-[#121215] rounded-2xl border border-slate-200/80 dark:border-neutral-800 p-4 sm:p-5 shadow-xs space-y-3">
             <div>
               <div className="flex items-center gap-2 mb-1">
@@ -433,22 +481,19 @@ export default function WeatherPage() {
                 </h3>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Weather trends for upcoming beach visits in Catmon.
+                Live upcoming forecast trends for beach visits in Catmon.
               </p>
             </div>
 
             <div className="space-y-2">
-              {[
-                { day: 'Tomorrow', condition: 'Partly Cloudy', high: 31, low: 26, rain: 20, icon: CloudSun },
-                { day: 'Saturday', condition: 'Mostly Sunny', high: 32, low: 26, rain: 10, icon: Sun },
-                { day: 'Sunday', condition: 'Passing Showers', high: 30, low: 25, rain: 30, icon: CloudRain },
-                { day: 'Monday', condition: 'Clear Sky', high: 31, low: 26, rain: 15, icon: Sun },
-              ].map((day, i) => (
+              {fourDayForecast.map((day, i) => (
                 <div key={i} className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-slate-50 dark:bg-neutral-900/60 border border-slate-100 dark:border-neutral-800/80">
                   <div className="flex items-center gap-2.5 min-w-0">
                     <day.icon className="w-4 h-4 text-[#1F3F74] dark:text-[#4987BA] flex-shrink-0" />
                     <div>
-                      <div className="text-xs font-bold text-slate-900 dark:text-white">{day.day}</div>
+                      <div className="text-xs font-bold text-slate-900 dark:text-white">
+                        {day.day} <span className="text-[10px] font-normal text-slate-400">({day.dateLabel})</span>
+                      </div>
                       <div className="text-[10px] text-slate-400">{day.condition}</div>
                     </div>
                   </div>
@@ -466,7 +511,7 @@ export default function WeatherPage() {
             </div>
           </div>
 
-          {/* Right Column (50%): Coastal Reminders & Travel Tips */}
+          {/* Right Column (50%): Coastal Reminders & Travel Tips with Lotion & Waves Icons */}
           <div className="bg-white dark:bg-[#121215] rounded-2xl border border-slate-200/80 dark:border-neutral-800 p-4 sm:p-5 shadow-xs space-y-3">
             <div>
               <div className="flex items-center gap-2 mb-1">

@@ -28,7 +28,7 @@ export default function TideCard({ extremes }: TideCardProps) {
     return (
       <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-neutral-800 dark:bg-[#121215]">
         <h3 className="font-bold text-sm text-[#1F3F74] dark:text-white uppercase tracking-wider">
-          Tides &amp; Water Levels
+          Tide Status
         </h3>
         <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">Loading tide records for Catmon coast...</p>
       </div>
@@ -78,7 +78,7 @@ export default function TideCard({ extremes }: TideCardProps) {
   const tideLabel = isRising ? 'Rising Tide (Gataob)' : 'Receding Tide (Gahunas)';
   const tideAdvice = isRising
     ? 'Water is deepening towards high tide. Ideal for swimming.'
-    : 'Water is shallowing towards low tide. Great for sandbar walks.';
+    : 'Water is shallowing towards low tide. Great for shoreline walking.';
 
   // Sample tide every 10 minutes from 00:00 to 24:00 Manila time
   const samples: { time: Date; height: number }[] = [];
@@ -119,7 +119,7 @@ export default function TideCard({ extremes }: TideCardProps) {
       {/* Top Header: Waves icon removed, arrow removed from status pill */}
       <div className="flex items-center justify-between gap-3">
         <h3 className="font-bold text-sm text-[#1F3F74] dark:text-white uppercase tracking-wider">
-          Tides &amp; Water Levels
+          Tide Status
         </h3>
 
         {/* Clean status pill without arrow */}
