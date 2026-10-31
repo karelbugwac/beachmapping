@@ -11,6 +11,7 @@ import {
   Clock,
   CheckCircle2,
   RefreshCw,
+  Users,
 } from 'lucide-react';
 import { AnalyticsBarChart, type AnalyticsPoint } from '@/components/ui/analytics-bar-chart';
 import { showToast } from '@/components/ui/feedback-toasts';
@@ -23,6 +24,7 @@ export default function AdminDashboardPage() {
     totalVisitors: 0,
     pendingTours: 0,
     pendingCoords: 0,
+    totalUsers: 0,
     loading: true,
   });
   const [visitorPoints, setVisitorPoints] = useState<AnalyticsPoint[] | null>(null);
@@ -35,12 +37,13 @@ export default function AdminDashboardPage() {
 
   const loadStats = async () => {
     try {
-      const [appRes, beachRes, analyticsRes, tourRes, coordRes] = await Promise.all([
+      const [appRes, beachRes, analyticsRes, tourRes, coordRes, userRes] = await Promise.all([
         fetch('/api/applications', { cache: 'no-store' }),
         fetch('/api/beaches', { cache: 'no-store' }),
         fetch('/api/admin/analytics/visitors', { cache: 'no-store' }),
         fetch('/api/admin/beaches/tour-requests', { cache: 'no-store' }),
         fetch('/api/admin/beaches/coordinate-requests', { cache: 'no-store' }),
+        fetch('/api/admin/users', { cache: 'no-store' }),
       ]);
 
       const appData = await appRes.json();
@@ -48,6 +51,7 @@ export default function AdminDashboardPage() {
       const analyticsData = analyticsRes.ok ? await analyticsRes.json() : null;
       const tourData = tourRes.ok ? await tourRes.json() : null;
       const coordData = coordRes.ok ? await coordRes.json() : null;
+      const userData = userRes.ok ? await userRes.json() : null;
 
       const apps = Array.isArray(appData.applications) ? appData.applications : [];
       const pending = apps.filter((a: any) => a.status === 'pending').length;
@@ -55,6 +59,7 @@ export default function AdminDashboardPage() {
       const totalVisitors = analyticsData?.totalVisitors || 0;
       const pendingTours = typeof tourData?.pendingCount === 'number' ? tourData.pendingCount : 0;
       const pendingCoords = typeof coordData?.pendingCount === 'number' ? coordData.pendingCount : 0;
+      const totalUsers = typeof userData?.stats?.total === 'number' ? userData.stats.total : (Array.isArray(userData?.users) ? userData.users.length : 0);
 
       setStats({
         pendingApplications: pending,
@@ -63,6 +68,7 @@ export default function AdminDashboardPage() {
         totalVisitors,
         pendingTours,
         pendingCoords,
+        totalUsers,
         loading: false,
       });
       setVisitorPoints(Array.isArray(analyticsData?.points) ? analyticsData.points : null);
@@ -126,7 +132,7 @@ export default function AdminDashboardPage() {
         )}
       </section>
 
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         <Link
           href="/admin/applications"
           className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:-translate-y-0.5 hover:border-sky-400 transition-all duration-150 group"
@@ -143,7 +149,7 @@ export default function AdminDashboardPage() {
             {stats.loading ? '...' : stats.pendingApplications}
           </div>
           <span className="mt-2 block text-[11px] text-slate-400 group-hover:text-sky-600 transition-colors">
-            Requires admin permit review &amp; approval →
+            Permit review required →
           </span>
         </Link>
 
@@ -163,7 +169,27 @@ export default function AdminDashboardPage() {
             {stats.loading ? '...' : stats.activeBeaches}
           </div>
           <span className="mt-2 block text-[11px] text-slate-400 group-hover:text-sky-600 transition-colors">
-            Live in Catmon directory &amp; interactive map →
+            Live in Catmon map →
+          </span>
+        </Link>
+
+        <Link
+          href="/admin/users"
+          className="bg-white dark:bg-slate-900 p-5 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:-translate-y-0.5 hover:border-sky-400 transition-all duration-150 group"
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">
+              Registered Users
+            </span>
+            <div className="w-9 h-9 rounded-xl bg-indigo-50 dark:bg-indigo-950/50 text-indigo-600 flex items-center justify-center">
+              <Users className="w-4 h-4" />
+            </div>
+          </div>
+          <div className="mt-4 text-3xl font-black text-indigo-600 leading-none">
+            {stats.loading ? '...' : stats.totalUsers}
+          </div>
+          <span className="mt-2 block text-[11px] text-slate-400 group-hover:text-sky-600 transition-colors">
+            Manage citizens &amp; owners →
           </span>
         </Link>
 
@@ -183,7 +209,7 @@ export default function AdminDashboardPage() {
             {stats.loading ? '...' : stats.totalApplications}
           </div>
           <span className="mt-2 block text-[11px] text-slate-400 group-hover:text-sky-600 transition-colors">
-            Total historical submissions received →
+            Total submissions →
           </span>
         </Link>
 
@@ -206,7 +232,7 @@ export default function AdminDashboardPage() {
       </div>
 
       {/* Primary Action Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow duration-150 space-y-4">
           <div className="flex items-center gap-3">
             <div className="w-11 h-11 rounded-xl bg-amber-100 dark:bg-amber-950 text-amber-700 dark:text-amber-400 flex items-center justify-center">
@@ -244,31 +270,57 @@ export default function AdminDashboardPage() {
                   Manage Beaches
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Directory, Coordinates &amp; 360° Tours
+                  Directory, Coordinates &amp; Tours
                 </p>
               </div>
             </div>
             <div className="flex items-center gap-1.5 flex-wrap">
               {stats.pendingCoords > 0 && (
                 <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-amber-500 text-white animate-pulse">
-                  {stats.pendingCoords} coord request{stats.pendingCoords > 1 ? 's' : ''}
+                  {stats.pendingCoords} coord
                 </span>
               )}
               {stats.pendingTours > 0 && (
                 <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-blue-600 text-white animate-pulse">
-                  {stats.pendingTours} tour request{stats.pendingTours > 1 ? 's' : ''}
+                  {stats.pendingTours} tour
                 </span>
               )}
             </div>
           </div>
           <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-            Moderate beach listings, review and approve map pin coordinate changes and 360° virtual tours from beach owners, directly adjust listings, or update publication statuses.
+            Moderate beach listings, review and approve map pin coordinate changes and 360° virtual tours from beach owners, or update publication statuses.
           </p>
           <Link
             href="/admin/beaches"
             className="inline-flex items-center gap-1.5 text-xs font-bold text-sky-600 dark:text-sky-400 hover:underline"
           >
             <span>Open Manage Beaches</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
+        </div>
+
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow duration-150 space-y-4">
+          <div className="flex items-center gap-3">
+            <div className="w-11 h-11 rounded-xl bg-indigo-100 dark:bg-indigo-950 text-indigo-700 dark:text-indigo-400 flex items-center justify-center">
+              <Users className="w-5 h-5" />
+            </div>
+            <div>
+              <h2 className="font-bold text-sm text-slate-900 dark:text-white">
+                User Management
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-slate-400">
+                Accounts, Roles &amp; Status
+              </p>
+            </div>
+          </div>
+          <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
+            View all registered users and details. Edit credentials, activate/deactivate/suspend accounts, or delete accounts under municipal policy.
+          </p>
+          <Link
+            href="/admin/users"
+            className="inline-flex items-center gap-1.5 text-xs font-bold text-sky-600 dark:text-sky-400 hover:underline"
+          >
+            <span>Manage User Accounts</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>
@@ -288,7 +340,7 @@ export default function AdminDashboardPage() {
             </div>
           </div>
           <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-            Moderate visitor reviews, flags, and tourist feedback. Ensure constructive comments and safe content guidelines.
+            Moderate visitor reviews, flags, and tourist feedback. Ensure constructive comments, resolve reports, and enforce content guidelines.
           </p>
           <Link
             href="/admin/reviews"

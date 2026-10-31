@@ -19,6 +19,7 @@ import {
   Sun,
   Moon,
   ChevronRight,
+  Users,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { useTheme } from '@/components/theme-provider';
@@ -36,6 +37,7 @@ export default function AdminLayout({
   const [pendingCount, setPendingCount] = useState<number>(0);
   const [pendingTourCount, setPendingTourCount] = useState<number>(0);
   const [pendingCoordCount, setPendingCoordCount] = useState<number>(0);
+  const [pendingReportCount, setPendingReportCount] = useState<number>(0);
   const [previousPendingCount, setPreviousPendingCount] = useState<number>(0);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const isInitialLoadRef = useRef(true);
@@ -112,6 +114,15 @@ export default function AdminLayout({
           }
         })
         .catch(() => {});
+
+      fetch('/api/admin/reviews')
+        .then((res) => res.json())
+        .then((data) => {
+          if (Array.isArray(data.reports)) {
+            setPendingReportCount(data.reports.length);
+          }
+        })
+        .catch(() => {});
     };
 
     fetchCounts();
@@ -174,10 +185,16 @@ export default function AdminLayout({
       badge: (pendingTourCount + pendingCoordCount) > 0 ? (pendingTourCount + pendingCoordCount) : null,
     },
     {
+      label: 'User Management',
+      href: '/admin/users',
+      icon: Users,
+      badge: null,
+    },
+    {
       label: 'Review Moderation',
       href: '/admin/reviews',
       icon: MessageSquare,
-      badge: null,
+      badge: pendingReportCount > 0 ? pendingReportCount : null,
     },
     {
       label: 'Admin Account',
