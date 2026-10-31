@@ -45,8 +45,11 @@ import {
   Copy,
   Crosshair,
   Search,
+  Lock,
 } from 'lucide-react';
 import type { BeachRecord, BeachPhoto } from '@/lib/db/beaches';
+import type { TourRequestData } from '@/lib/services/tourRequests';
+import type { CoordinateRequestData } from '@/lib/services/coordinateRequests';
 import { VirtualTourModal, extractTourEmbedUrl } from '@/components/virtual-tour-modal';
 import { LocationPickerModal } from '@/components/map/location-picker-modal';
 
@@ -174,6 +177,15 @@ export default function ManageBeachPage() {
   const [showTourModal, setShowTourModal] = useState(false);
   const [tempTourInput, setTempTourInput] = useState('');
   const [showTourPreviewModal, setShowTourPreviewModal] = useState(false);
+  const [previewTourTargetUrl, setPreviewTourTargetUrl] = useState<string | null>(null);
+  const [tourRequest, setTourRequest] = useState<TourRequestData | null>(null);
+  const [loadingTourRequest, setLoadingTourRequest] = useState(false);
+  const [tourRequesterNote, setTourRequesterNote] = useState('');
+  const [isSubmittingTourRequest, setIsSubmittingTourRequest] = useState(false);
+
+  const [coordinateRequest, setCoordinateRequest] = useState<CoordinateRequestData | null>(null);
+  const [loadingCoordinateRequest, setLoadingCoordinateRequest] = useState(false);
+  const [isSubmittingCoordRequest, setIsSubmittingCoordRequest] = useState(false);
 
   const [showProfileModal, setShowProfileModal] = useState(false);
   const [tempProfileInput, setTempProfileInput] = useState('');
@@ -257,6 +269,122 @@ export default function ManageBeachPage() {
 
   const cottageFileInputRef = useRef<HTMLInputElement>(null);
 
+  const loadTourRequest = async (id: string) => {
+    try {
+      setLoadingTourRequest(true);
+      const res = await fetch(`/api/owner/beach/tour-request?beach_id=${encodeURIComponent(id)}`, {
+        cache: 'no-store',
+      });
+      const data = await res.json();
+      if (data.success && data.request) {
+        setTourRequest(data.request);
+      } else {
+        setTourRequest(null);
+      }
+    } catch {
+      setTourRequest(null);
+    } finally {
+      setLoadingTourRequest(false);
+    }
+  };
+
+  const handleSubmitTourRequest = async () => {
+    if (!beachId) {
+      showToast('Please select a beach first.', 'error');
+      return;
+    }
+    const cleanUrl = extractTourEmbedUrl(tempTourInput) || tempTourInput.trim();
+    if (!cleanUrl) {
+      showToast('Please enter a valid 360 tour URL or embed code.', 'error');
+      return;
+    }
+
+    try {
+      setIsSubmittingTourRequest(true);
+      const res = await fetch('/api/owner/beach/tour-request', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          beach_id: beachId,
+          requested_tour_url: cleanUrl,
+          requester_note: tourRequesterNote.trim() || undefined,
+        }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to submit tour request.');
+
+      showToast('360° Virtual Tour request submitted to Admin for approval!', 'success');
+      setShowTourModal(false);
+      setTourRequesterNote('');
+      await loadTourRequest(beachId);
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Failed to submit request.', 'error');
+    } finally {
+      setIsSubmittingTourRequest(false);
+    }
+  };
+
+  const handleCancelTourRequest = async () => {
+    if (!beachId) return;
+    if (!confirm('Are you sure you want to cancel your pending 360° tour request?')) return;
+
+    try {
+      setIsSubmittingTourRequest(true);
+      const res = await fetch(`/api/owner/beach/tour-request?beach_id=${encodeURIComponent(beachId)}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to cancel tour request.');
+
+      showToast('360° Virtual Tour request cancelled.');
+      setTourRequest(null);
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Failed to cancel request.', 'error');
+    } finally {
+      setIsSubmittingTourRequest(false);
+    }
+  };
+
+  const loadCoordinateRequest = async (id: string) => {
+    try {
+      setLoadingCoordinateRequest(true);
+      const res = await fetch(`/api/owner/beach/coordinate-request?beach_id=${encodeURIComponent(id)}`, {
+        cache: 'no-store',
+      });
+      const data = await res.json();
+      if (data.success && data.request) {
+        setCoordinateRequest(data.request);
+      } else {
+        setCoordinateRequest(null);
+      }
+    } catch {
+      setCoordinateRequest(null);
+    } finally {
+      setLoadingCoordinateRequest(false);
+    }
+  };
+
+  const handleCancelCoordinateRequest = async () => {
+    if (!beachId) return;
+    if (!confirm('Are you sure you want to cancel your pending coordinate & pin request?')) return;
+
+    try {
+      setIsSubmittingCoordRequest(true);
+      const res = await fetch(`/api/owner/beach/coordinate-request?beach_id=${encodeURIComponent(beachId)}`, {
+        method: 'DELETE',
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to cancel coordinate request.');
+
+      showToast('Beach coordinate update request cancelled.', 'success');
+      setCoordinateRequest(null);
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Failed to cancel request.', 'error');
+    } finally {
+      setIsSubmittingCoordRequest(false);
+    }
+  };
+
   const handleSelectBeach = (b: BeachRecord) => {
     setBeachId(b.id);
     setBeachSlug(b.slug || b.id);
@@ -290,6 +418,8 @@ export default function ManageBeachPage() {
       contact_email: b.contact_email || '',
     });
     setImages(Array.isArray(b.images) ? b.images : []);
+    void loadTourRequest(b.id);
+    void loadCoordinateRequest(b.id);
   };
 
   useEffect(() => {
@@ -569,47 +699,93 @@ export default function ManageBeachPage() {
                   <div className="flex gap-2">
                     <button
                       type="button"
-                      onClick={() => setShowTourPreviewModal(true)}
+                      onClick={() => {
+                        setPreviewTourTargetUrl(formData.virtual_tour_url);
+                        setShowTourPreviewModal(true);
+                      }}
                       className="px-5 py-3 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors flex items-center gap-2"
                     >
                       <Compass size={18} />
                       <span>Explore 360° Tour</span>
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setTempTourInput(formData.virtual_tour_url);
-                        setShowTourModal(true);
-                      }}
-                      className="px-3.5 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg text-sm font-medium transition-colors border border-gray-200 dark:border-gray-700 flex items-center gap-1.5"
-                      title="Edit 360° Tour Link or Embed"
-                    >
-                      <Edit size={16} />
-                      <span className="text-xs">Edit Tour</span>
-                    </button>
+                    {tourRequest?.status === 'pending' ? (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTempTourInput(tourRequest.requested_tour_url || '');
+                          setTourRequesterNote(tourRequest.requester_note || '');
+                          setShowTourModal(true);
+                        }}
+                        className="px-3.5 py-3 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 text-amber-800 dark:text-amber-300 rounded-lg text-sm font-semibold transition-colors border border-amber-200 dark:border-amber-800 flex items-center gap-1.5 shadow-xs"
+                        title="360° Tour Update Pending Admin Approval"
+                      >
+                        <Clock size={16} className="text-amber-600 animate-pulse" />
+                        <span className="text-xs">Update Pending</span>
+                      </button>
+                    ) : (
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setTempTourInput(formData.virtual_tour_url || '');
+                          setTourRequesterNote('');
+                          setShowTourModal(true);
+                        }}
+                        className="px-3.5 py-3 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg text-sm font-medium transition-colors border border-gray-200 dark:border-gray-700 flex items-center gap-1.5"
+                        title="Ask Admin Permission to Update 360° Tour"
+                      >
+                        <Edit size={16} />
+                        <span className="text-xs">Request Tour Update</span>
+                      </button>
+                    )}
                   </div>
-                ) : (
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setTempTourInput('');
-                        setShowTourModal(true);
-                      }}
-                      className="px-5 py-3 bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-900/60 rounded-lg text-sm font-medium transition-colors border border-blue-200 dark:border-blue-800 flex items-center gap-2"
-                    >
-                      <Compass size={18} />
-                      <span>Set Up 360° Tour</span>
-                    </button>
-                  )}
+                ) : tourRequest?.status === 'pending' ? (
                   <button
                     type="button"
-                    onClick={() => setShowLocationModal(true)}
-                    className="px-4 py-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg text-sm font-semibold transition-colors border border-gray-200 dark:border-gray-700 flex items-center gap-2 shadow-sm"
-                    title="Change beach latitude, longitude, and map pin location"
+                    onClick={() => {
+                      setTempTourInput(tourRequest.requested_tour_url || '');
+                      setTourRequesterNote(tourRequest.requester_note || '');
+                      setShowTourModal(true);
+                    }}
+                    className="px-5 py-3 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 text-amber-800 dark:text-amber-300 rounded-lg text-sm font-semibold transition-colors border border-amber-200 dark:border-amber-800 flex items-center gap-2 shadow-xs"
                   >
-                    <MapPin size={17} className="text-blue-600" />
-                    <span>Change Coordinates &amp; Pin</span>
+                    <Clock size={18} className="text-amber-600 animate-pulse" />
+                    <span>360° Tour Pending Approval</span>
                   </button>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTempTourInput('');
+                      setTourRequesterNote('');
+                      setShowTourModal(true);
+                    }}
+                    className="px-5 py-3 bg-blue-50 hover:bg-blue-100 text-blue-700 dark:bg-blue-950/40 dark:text-blue-300 dark:hover:bg-blue-900/60 rounded-lg text-sm font-medium transition-colors border border-blue-200 dark:border-blue-800 flex items-center gap-2"
+                  >
+                    <Compass size={18} />
+                    <span>Request 360° Tour</span>
+                  </button>
+                )}
+                  {coordinateRequest?.status === 'pending' ? (
+                    <button
+                      type="button"
+                      onClick={() => setShowLocationModal(true)}
+                      className="px-4 py-3 bg-amber-50 dark:bg-amber-950/40 hover:bg-amber-100 text-amber-800 dark:text-amber-300 rounded-lg text-sm font-semibold transition-colors border border-amber-200 dark:border-amber-800 flex items-center gap-2 shadow-xs"
+                      title="Coordinates update is currently pending admin review"
+                    >
+                      <Clock size={17} className="text-amber-600 animate-pulse" />
+                      <span>Coordinates Pending Approval</span>
+                    </button>
+                  ) : (
+                    <button
+                      type="button"
+                      onClick={() => setShowLocationModal(true)}
+                      className="px-4 py-3 bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-lg text-sm font-semibold transition-colors border border-gray-200 dark:border-gray-700 flex items-center gap-2 shadow-sm"
+                      title="Request changes to beach latitude, longitude, and map pin location"
+                    >
+                      <MapPin size={17} className="text-blue-600" />
+                      <span>Request Coordinates &amp; Pin</span>
+                    </button>
+                  )}
                 </div>
             </div>
           </div>
@@ -755,16 +931,23 @@ export default function ManageBeachPage() {
               <div className="flex items-center justify-between gap-2 mb-2">
                 <div className="flex items-center gap-2">
                   <MapPin className="w-5 h-5 text-blue-600" />
-                  <p className="text-xs text-gray-500 dark:text-gray-400">Map Location & Coordinates</p>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">Map Location &amp; Coordinates</p>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => setShowLocationModal(true)}
-                  className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
-                >
-                  <Edit size={12} />
-                  <span>Edit Pin</span>
-                </button>
+                {coordinateRequest?.status === 'pending' ? (
+                  <span className="inline-flex items-center gap-1 px-2 py-0.5 text-[10px] font-bold rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                    <Clock size={10} className="animate-pulse" />
+                    Pending Approval
+                  </span>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={() => setShowLocationModal(true)}
+                    className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 dark:text-blue-400 hover:underline"
+                  >
+                    <Edit size={12} />
+                    <span>Request Change</span>
+                  </button>
+                )}
               </div>
               <p className="text-sm font-semibold text-gray-900 dark:text-white break-words mb-2">
                 {formData.location || 'No address specified'}
@@ -778,10 +961,14 @@ export default function ManageBeachPage() {
               <button
                 type="button"
                 onClick={() => setShowLocationModal(true)}
-                className="text-xs font-semibold text-white bg-blue-600 hover:bg-blue-700 px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 shadow-sm"
+                className={`text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1 shadow-sm ${
+                  coordinateRequest?.status === 'pending'
+                    ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                    : 'text-white bg-blue-600 hover:bg-blue-700'
+                }`}
               >
                 <MapPin size={13} />
-                <span>Set Coordinates</span>
+                <span>{coordinateRequest?.status === 'pending' ? 'Review Proposed Pin' : 'Request Coordinates'}</span>
               </button>
               <Link 
                 href={`/map?beach=${beachSlug || beachId}`}
@@ -959,10 +1146,23 @@ export default function ManageBeachPage() {
                       <button
                         type="button"
                         onClick={() => setShowLocationModal(true)}
-                        className="inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-sm"
+                        className={`inline-flex items-center gap-1.5 px-3.5 py-1.5 text-xs font-bold rounded-xl transition-colors shadow-sm ${
+                          coordinateRequest?.status === 'pending'
+                            ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                            : 'text-white bg-blue-600 hover:bg-blue-700'
+                        }`}
                       >
-                        <Crosshair size={13} />
-                        <span>Change Coordinates / Pin</span>
+                        {coordinateRequest?.status === 'pending' ? (
+                          <>
+                            <Clock size={13} className="animate-pulse" />
+                            <span>Coordinates Pending Approval</span>
+                          </>
+                        ) : (
+                          <>
+                            <Crosshair size={13} />
+                            <span>Request Coordinates / Pin</span>
+                          </>
+                        )}
                       </button>
                     </div>
                   </div>
@@ -1224,22 +1424,44 @@ export default function ManageBeachPage() {
               <div className="bg-white dark:bg-gray-900 p-6 rounded-2xl border border-gray-200 dark:border-gray-700 space-y-6">
                 <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-4 border-b border-gray-200 dark:border-gray-700">
                   <div>
-                    <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                      <MapPin className="text-blue-600" size={22} />
-                      <span>Beach Map Coordinates &amp; Pin</span>
-                    </h2>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                        <MapPin className="text-blue-600" size={22} />
+                        <span>Beach Map Coordinates &amp; Pin</span>
+                      </h2>
+                      {coordinateRequest?.status === 'pending' ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 border border-amber-200 dark:border-amber-800">
+                          <Clock size={12} className="animate-pulse" />
+                          <span>Pending Admin Approval</span>
+                        </span>
+                      ) : coordinateRequest?.status === 'rejected' ? (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-bold bg-rose-100 text-rose-800 dark:bg-rose-950/60 dark:text-rose-300 border border-rose-200 dark:border-rose-800">
+                          <AlertCircle size={12} />
+                          <span>Request Rejected</span>
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-50 text-blue-700 dark:bg-blue-950/60 dark:text-blue-300 border border-blue-200 dark:border-blue-800">
+                          <ShieldCheck size={12} />
+                          <span>Admin-Protected Location</span>
+                        </span>
+                      )}
+                    </div>
                     <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">
-                      Change the latitude and longitude of your beach so guests can locate you on the interactive map.
+                      Coordinates define your exact pin location on Catmon&apos;s public interactive map. Changes require Admin verification.
                     </p>
                   </div>
-                  <div className="flex items-center gap-2">
+                  <div className="flex items-center gap-2 flex-wrap">
                     <button
                       type="button"
                       onClick={() => setShowLocationModal(true)}
-                      className="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-colors shadow-sm flex items-center gap-1.5"
+                      className={`px-4 py-2 text-xs font-bold rounded-xl transition-colors shadow-sm flex items-center gap-1.5 ${
+                        coordinateRequest?.status === 'pending'
+                          ? 'bg-amber-600 hover:bg-amber-700 text-white'
+                          : 'bg-blue-600 hover:bg-blue-700 text-white'
+                      }`}
                     >
                       <Crosshair size={14} />
-                      <span>Open Map Picker</span>
+                      <span>{coordinateRequest?.status === 'pending' ? 'Review Proposed Pin' : 'Pick Pin on Map'}</span>
                     </button>
                     <Link
                       href={`/map?beach=${beachSlug || beachId}`}
@@ -1253,187 +1475,217 @@ export default function ManageBeachPage() {
                   </div>
                 </div>
 
-                {/* Direct Numeric Inputs */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                      Latitude (°N)
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        step="any"
-                        value={formData.latitude}
-                        onChange={(e) => setFormData({ ...formData, latitude: e.target.value })}
-                        placeholder="e.g. 10.634800"
-                        className="w-full pl-3.5 pr-12 py-2.5 text-sm font-mono bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-600 text-gray-900 dark:text-white"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-400">
-                        °N
-                      </span>
+                {/* Banner 1: Pending Approval Notice */}
+                {coordinateRequest?.status === 'pending' && (
+                  <div className="p-4 sm:p-5 bg-amber-50/90 dark:bg-amber-950/40 rounded-2xl border border-amber-200 dark:border-amber-800/80 space-y-3.5">
+                    <div className="flex items-start justify-between gap-3 flex-wrap">
+                      <div className="flex items-start gap-3">
+                        <div className="w-9 h-9 rounded-xl bg-amber-100 dark:bg-amber-900/60 text-amber-700 dark:text-amber-300 flex items-center justify-center shrink-0">
+                          <Clock size={18} className="animate-pulse" />
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-bold text-amber-950 dark:text-amber-200">
+                            Coordinate Update Request Awaiting Admin Review
+                          </h4>
+                          <p className="text-xs text-amber-800 dark:text-amber-300/90 mt-0.5">
+                            You proposed a new map pin location. Once an administrator approves your request, your listing on the public map will update automatically.
+                          </p>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleCancelCoordinateRequest}
+                        disabled={isSubmittingCoordRequest}
+                        className="px-3 py-1.5 text-xs font-semibold text-rose-700 dark:text-rose-300 hover:bg-rose-100 dark:hover:bg-rose-900/40 rounded-lg transition-colors border border-rose-200 dark:border-rose-800 disabled:opacity-50 flex items-center gap-1"
+                      >
+                        {isSubmittingCoordRequest ? <Loader2 size={12} className="animate-spin" /> : <X size={12} />}
+                        <span>Cancel Request</span>
+                      </button>
                     </div>
-                    <p className="text-[11px] text-gray-500 mt-1">Example: 10.634800 (Binongkalan, Catmon)</p>
-                  </div>
 
-                  <div>
-                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                      Longitude (°E)
-                    </label>
-                    <div className="relative">
-                      <input
-                        type="number"
-                        step="any"
-                        value={formData.longitude}
-                        onChange={(e) => setFormData({ ...formData, longitude: e.target.value })}
-                        placeholder="e.g. 124.027500"
-                        className="w-full pl-3.5 pr-12 py-2.5 text-sm font-mono bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-600 text-gray-900 dark:text-white"
-                      />
-                      <span className="absolute right-3 top-1/2 -translate-y-1/2 text-xs font-semibold text-gray-400">
-                        °E
-                      </span>
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-1">
+                      <div className="p-3 bg-white/90 dark:bg-gray-800/90 rounded-xl border border-amber-200/70 dark:border-amber-800/50">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                          Proposed Latitude
+                        </span>
+                        <p className="text-xs font-mono font-bold text-amber-800 dark:text-amber-300 mt-0.5">
+                          {Number(coordinateRequest.requested_latitude).toFixed(6)}° N
+                        </p>
+                      </div>
+                      <div className="p-3 bg-white/90 dark:bg-gray-800/90 rounded-xl border border-amber-200/70 dark:border-amber-800/50">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                          Proposed Longitude
+                        </span>
+                        <p className="text-xs font-mono font-bold text-amber-800 dark:text-amber-300 mt-0.5">
+                          {Number(coordinateRequest.requested_longitude).toFixed(6)}° E
+                        </p>
+                      </div>
+                      <div className="p-3 bg-white/90 dark:bg-gray-800/90 rounded-xl border border-amber-200/70 dark:border-amber-800/50">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-gray-500 dark:text-gray-400">
+                          Proposed Address
+                        </span>
+                        <p className="text-xs font-medium text-gray-900 dark:text-white mt-0.5 truncate">
+                          {coordinateRequest.requested_location || formData.location || 'Not specified'}
+                        </p>
+                      </div>
                     </div>
-                    <p className="text-[11px] text-gray-500 mt-1">Example: 124.027500 (Catmon Coast)</p>
-                  </div>
-                </div>
 
-                {/* Location Address input */}
-                <div>
-                  <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
-                    Beach Location Address
-                  </label>
-                  <div className="flex gap-2">
-                    <input
-                      type="text"
-                      value={formData.location}
-                      onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                      placeholder="e.g., Binongkalan, Catmon, Cebu, Philippines"
-                      className="flex-1 px-3.5 py-2.5 text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-2 focus:ring-blue-600 text-gray-900 dark:text-white"
-                    />
+                    {coordinateRequest.requester_note && (
+                      <div className="p-3 bg-white/70 dark:bg-gray-800/70 rounded-xl border border-amber-200/60 dark:border-amber-800/40 text-xs">
+                        <span className="font-bold text-amber-900 dark:text-amber-200 block mb-0.5">
+                          Your Note to Admin:
+                        </span>
+                        <p className="text-gray-700 dark:text-gray-300 italic">
+                          &ldquo;{coordinateRequest.requester_note}&rdquo;
+                        </p>
+                      </div>
+                    )}
+
+                    <div className="pt-1 flex items-center gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setShowLocationModal(true)}
+                        className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-xl text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5"
+                      >
+                        <MapPin size={13} />
+                        <span>Adjust Proposed Coordinates on Map</span>
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Banner 2: Rejected Request Feedback */}
+                {coordinateRequest?.status === 'rejected' && (
+                  <div className="p-4 sm:p-5 bg-rose-50/90 dark:bg-rose-950/40 rounded-2xl border border-rose-200 dark:border-rose-800/80 space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-rose-100 dark:bg-rose-900/60 text-rose-700 dark:text-rose-300 flex items-center justify-center shrink-0">
+                        <AlertCircle size={18} />
+                      </div>
+                      <div>
+                        <h4 className="text-sm font-bold text-rose-950 dark:text-rose-200">
+                          Previous Coordinate Request Rejected by Admin
+                        </h4>
+                        <p className="text-xs text-rose-800 dark:text-rose-300/90 mt-0.5">
+                          <strong className="text-rose-950 dark:text-rose-100">Admin Reason:</strong>{' '}
+                          {coordinateRequest.rejection_reason || 'Coordinates could not be verified by the administrator.'}
+                        </p>
+                      </div>
+                    </div>
                     <button
                       type="button"
-                      onClick={handleGeocode}
-                      disabled={geocoding}
-                      className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs font-semibold rounded-xl border border-gray-200 dark:border-gray-700 transition-colors flex items-center gap-1.5 flex-shrink-0"
-                    >
-                      {geocoding ? <Loader2 size={14} className="animate-spin" /> : <Search size={14} />}
-                      <span>Lookup Coordinates</span>
-                    </button>
-                  </div>
-                </div>
-
-                {/* GPS and Quick Helper tools */}
-                <div className="p-4 bg-gray-50 dark:bg-gray-800/60 rounded-xl border border-gray-200 dark:border-gray-700 space-y-3">
-                  <div className="flex items-center justify-between flex-wrap gap-2">
-                    <p className="text-xs font-bold text-gray-700 dark:text-gray-300">
-                      Auto-Positioning Tools
-                    </p>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        if (!navigator.geolocation) {
-                          showToast('Geolocation is not supported by your browser.', 'error');
-                          return;
-                        }
-                        navigator.geolocation.getCurrentPosition(
-                          (pos) => {
-                            setFormData({
-                              ...formData,
-                              latitude: pos.coords.latitude.toFixed(6),
-                              longitude: pos.coords.longitude.toFixed(6),
-                            });
-                            showToast('🎯 GPS coordinates captured from your current device!');
-                          },
-                          (err) => {
-                            showToast(`GPS Error: ${err.message}`, 'error');
-                          },
-                          { enableHighAccuracy: true }
-                        );
-                      }}
-                      className="px-3.5 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-bold shadow-sm transition-colors flex items-center gap-1.5"
+                      onClick={() => setShowLocationModal(true)}
+                      className="px-4 py-2 bg-rose-600 hover:bg-rose-700 text-white rounded-xl text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5"
                     >
                       <Crosshair size={13} />
-                      <span>🎯 Use My Current GPS Location</span>
+                      <span>Submit Revised Coordinates for Approval</span>
                     </button>
                   </div>
-                  <div className="flex flex-wrap gap-2">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setFormData({ ...formData, latitude: '10.634800', longitude: '124.027500' });
-                        showToast('Coordinates set to Binongkalan Center');
-                      }}
-                      className="px-3 py-1.5 bg-white dark:bg-gray-700 text-xs text-gray-700 dark:text-gray-300 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100"
-                    >
-                      Binongkalan Center (10.6348, 124.0275)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setFormData({ ...formData, latitude: '10.642500', longitude: '124.030200' });
-                        showToast('Coordinates set to North Shoreline (LiteBay)');
-                      }}
-                      className="px-3 py-1.5 bg-white dark:bg-gray-700 text-xs text-gray-700 dark:text-gray-300 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100"
-                    >
-                      North Shoreline (10.6425, 124.0302)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setFormData({ ...formData, latitude: '10.638800', longitude: '124.029200' });
-                        showToast('Coordinates set to Hinagdan Point');
-                      }}
-                      className="px-3 py-1.5 bg-white dark:bg-gray-700 text-xs text-gray-700 dark:text-gray-300 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100"
-                    >
-                      Hinagdan Point (10.6388, 124.0292)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setFormData({ ...formData, latitude: '10.646800', longitude: '124.031500' });
-                        showToast('Coordinates set to Majestique Cove');
-                      }}
-                      className="px-3 py-1.5 bg-white dark:bg-gray-700 text-xs text-gray-700 dark:text-gray-300 rounded-lg border border-gray-200 dark:border-gray-600 hover:bg-gray-100"
-                    >
-                      Majestique Cove (10.6468, 124.0315)
-                    </button>
+                )}
+
+                {/* Security Restriction & Explanation Box */}
+                <div className="p-4 bg-blue-50/70 dark:bg-blue-950/30 rounded-2xl border border-blue-200/80 dark:border-blue-800/60 flex items-start gap-3 text-xs text-blue-900 dark:text-blue-300">
+                  <div className="w-8 h-8 rounded-lg bg-blue-100 dark:bg-blue-900/60 text-blue-700 dark:text-blue-300 flex items-center justify-center shrink-0 mt-0.5">
+                    <Lock size={16} />
+                  </div>
+                  <div>
+                    <p className="font-bold text-blue-950 dark:text-blue-200">
+                      Coordinates &amp; Map Pins are Admin-Protected
+                    </p>
+                    <p className="mt-1 text-blue-800/90 dark:text-blue-300/80 leading-relaxed">
+                      To prevent accidental misplaced markers and preserve accurate maritime navigation for tourists, resort owners cannot directly change live coordinates in the database. Instead, use the interactive map picker to drop a pin and request Admin verification.
+                    </p>
                   </div>
                 </div>
 
-                {/* Save button */}
-                <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-2">
+                {/* Current Active Coordinates (Read-Only) */}
+                <div className="space-y-4">
+                  <h3 className="text-sm font-bold text-gray-900 dark:text-white flex items-center gap-2">
+                    <CheckCircle2 size={16} className="text-emerald-600" />
+                    <span>Currently Verified &amp; Active Coordinates</span>
+                  </h3>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center justify-between">
+                        <span>Latitude (°N)</span>
+                        <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                          Live on Map
+                        </span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          readOnly
+                          value={formData.latitude}
+                          className="w-full pl-3.5 pr-16 py-2.5 text-sm font-mono bg-gray-100 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-700 dark:text-gray-300 cursor-not-allowed select-all"
+                        />
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-gray-400">
+                          <Lock size={13} />
+                          <span className="text-xs font-semibold">°N</span>
+                        </div>
+                      </div>
+                      <p className="text-[11px] text-gray-400 mt-1">Direct numeric typing locked</p>
+                    </div>
+
+                    <div>
+                      <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5 flex items-center justify-between">
+                        <span>Longitude (°E)</span>
+                        <span className="text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/60 px-2 py-0.5 rounded-full border border-emerald-200 dark:border-emerald-800">
+                          Live on Map
+                        </span>
+                      </label>
+                      <div className="relative">
+                        <input
+                          type="text"
+                          readOnly
+                          value={formData.longitude}
+                          className="w-full pl-3.5 pr-16 py-2.5 text-sm font-mono bg-gray-100 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-700 dark:text-gray-300 cursor-not-allowed select-all"
+                        />
+                        <div className="absolute right-3 top-1/2 -translate-y-1/2 flex items-center gap-1.5 text-gray-400">
+                          <Lock size={13} />
+                          <span className="text-xs font-semibold">°E</span>
+                        </div>
+                      </div>
+                      <p className="text-[11px] text-gray-400 mt-1">Direct numeric typing locked</p>
+                    </div>
+                  </div>
+
+                  {/* Location Address */}
+                  <div>
+                    <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                      Beach Location Address (Published)
+                    </label>
+                    <div className="relative">
+                      <input
+                        type="text"
+                        readOnly
+                        value={formData.location || 'No address specified'}
+                        className="w-full pl-3.5 pr-10 py-2.5 text-sm bg-gray-100 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 rounded-xl text-gray-700 dark:text-gray-300 cursor-not-allowed"
+                      />
+                      <Lock size={14} className="text-gray-400 absolute right-3.5 top-1/2 -translate-y-1/2" />
+                    </div>
+                    <p className="text-[11px] text-gray-400 mt-1">
+                      To adjust your address along with your map marker, submit a request via the interactive map picker below.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Primary Action Button Box */}
+                <div className="pt-4 border-t border-gray-200 dark:border-gray-700 flex flex-col sm:flex-row items-center justify-between gap-3">
+                  <div className="text-xs text-gray-500 dark:text-gray-400">
+                    Need to move your pin to a new entrance, driveway, or shoreline point?
+                  </div>
                   <button
                     type="button"
                     onClick={() => setShowLocationModal(true)}
-                    className="w-full sm:w-auto px-4 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs font-bold rounded-xl border border-gray-200 dark:border-gray-700 transition-colors flex items-center justify-center gap-2"
+                    className="w-full sm:w-auto px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-colors shadow-md flex items-center justify-center gap-2"
                   >
-                    <MapPin size={15} className="text-blue-600" />
-                    <span>Visual Map Pin Picker</span>
-                  </button>
-                  <button
-                    type="button"
-                    disabled={isSubmitting}
-                    onClick={async () => {
-                      const lat = parseFloat(formData.latitude);
-                      const lng = parseFloat(formData.longitude);
-                      if (isNaN(lat) || lat < -90 || lat > 90) {
-                        showToast('Please enter a valid Latitude between -90 and 90.', 'error');
-                        return;
-                      }
-                      if (isNaN(lng) || lng < -180 || lng > 180) {
-                        showToast('Please enter a valid Longitude between -180 and 180.', 'error');
-                        return;
-                      }
-                      await saveBeachData({
-                        location: formData.location,
-                        latitude: formData.latitude,
-                        longitude: formData.longitude,
-                      });
-                      showToast('Beach coordinates & location saved to database!');
-                    }}
-                    className="w-full sm:w-auto px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-xl transition-colors shadow-md flex items-center justify-center gap-2 disabled:opacity-50"
-                  >
-                    {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : <Save size={14} />}
-                    <span>Save Coordinates to Database</span>
+                    <MapPin size={15} />
+                    <span>
+                      {coordinateRequest?.status === 'pending'
+                        ? 'Adjust Pending Coordinate Request'
+                        : 'Request Coordinates & Map Pin Change'}
+                    </span>
                   </button>
                 </div>
               </div>
@@ -1810,49 +2062,145 @@ export default function ManageBeachPage() {
             </div>
 
             {/* 360° Virtual Tour Card */}
-            <div className="bg-white dark:bg-gray-900 p-6 rounded-lg border border-gray-200 dark:border-gray-700">
-              <div className="flex justify-between items-center mb-3">
+            <div className="bg-white dark:bg-gray-900 p-6 rounded-lg border border-gray-200 dark:border-gray-700 space-y-4">
+              <div className="flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <Compass className="w-5 h-5 text-blue-600" />
                   <h2 className="text-lg font-bold text-gray-900 dark:text-white">360° Virtual Tour</h2>
                 </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setTempTourInput(formData.virtual_tour_url || '');
-                    setShowTourModal(true);
-                  }}
-                  className="inline-flex items-center gap-1.5 px-3 py-1 text-xs font-semibold text-blue-600 border border-gray-200 dark:border-gray-700 rounded-full bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
-                >
-                  <Edit size={12} />
-                  {formData.virtual_tour_url ? 'Edit' : 'Configure'}
-                </button>
+                {tourRequest?.status === 'pending' ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300">
+                    <Clock size={12} className="animate-pulse" />
+                    Pending Approval
+                  </span>
+                ) : tourRequest?.status === 'rejected' ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300">
+                    <AlertCircle size={12} />
+                    Needs Revision
+                  </span>
+                ) : formData.virtual_tour_url ? (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
+                    <CheckCircle2 size={12} />
+                    Live &amp; Verified
+                  </span>
+                ) : (
+                  <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-600 dark:bg-gray-800 dark:text-gray-400">
+                    Not Configured
+                  </span>
+                )}
               </div>
-              <p className="text-xs text-gray-600 dark:text-gray-400 mb-3 leading-relaxed">
-                {formData.virtual_tour_url
-                  ? 'Your interactive 360° tour is configured and live on your public beach page.'
-                  : 'Add an interactive 360° tour so visitors can explore your beach resort online.'}
+
+              <p className="text-xs text-gray-600 dark:text-gray-400 leading-relaxed">
+                360° virtual tours require Admin approval before being published to protect listing quality, ensure verified photosphere imagery, and maintain accurate navigation for tourists.
               </p>
-              {formData.virtual_tour_url ? (
-                <button
-                  type="button"
-                  onClick={() => setShowTourPreviewModal(true)}
-                  className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5"
-                >
-                  <Compass size={14} />
-                  Preview 360° Tour
-                </button>
-              ) : (
+
+              {/* Pending Request Status Box */}
+              {tourRequest?.status === 'pending' && (
+                <div className="p-4 bg-amber-50/80 dark:bg-amber-950/40 rounded-xl border border-amber-200 dark:border-amber-800/60 space-y-3">
+                  <div className="flex items-center gap-2 text-xs font-bold text-amber-900 dark:text-amber-200">
+                    <Clock size={14} className="text-amber-600" />
+                    <span>Awaiting Admin Approval</span>
+                  </div>
+                  <div className="p-2 bg-white dark:bg-gray-900 rounded border border-amber-100 dark:border-amber-900 text-[11px] font-mono text-slate-700 dark:text-gray-300 break-all">
+                    {extractTourEmbedUrl(tourRequest.requested_tour_url) || tourRequest.requested_tour_url}
+                  </div>
+                  {tourRequest.requester_note && (
+                    <p className="text-xs text-amber-800 dark:text-amber-300 italic">
+                      &ldquo;{tourRequest.requester_note}&rdquo;
+                    </p>
+                  )}
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPreviewTourTargetUrl(tourRequest.requested_tour_url);
+                        setShowTourPreviewModal(true);
+                      }}
+                      className="flex-1 py-1.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1"
+                    >
+                      <Eye size={13} />
+                      <span>Preview Requested Tour</span>
+                    </button>
+                    <button
+                      type="button"
+                      disabled={isSubmittingTourRequest}
+                      onClick={handleCancelTourRequest}
+                      className="px-3 py-1.5 bg-white dark:bg-gray-900 border border-amber-300 dark:border-amber-800 hover:bg-amber-100 text-amber-800 dark:text-amber-200 text-xs font-semibold rounded-lg transition-colors"
+                    >
+                      Cancel Request
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* Rejected Request Feedback Box */}
+              {tourRequest?.status === 'rejected' && (
+                <div className="p-4 bg-red-50/80 dark:bg-red-950/40 rounded-xl border border-red-200 dark:border-red-800/60 space-y-2">
+                  <div className="flex items-center gap-2 text-xs font-bold text-red-900 dark:text-red-200">
+                    <AlertCircle size={14} className="text-red-600" />
+                    <span>Previous Tour Request Declined</span>
+                  </div>
+                  <p className="text-xs text-red-700 dark:text-red-300">
+                    <strong>Admin Reason:</strong> {tourRequest.rejection_reason || 'Tour submission did not meet publication standards.'}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setTempTourInput(tourRequest.requested_tour_url || '');
+                      setTourRequesterNote('');
+                      setShowTourModal(true);
+                    }}
+                    className="w-full py-2 bg-red-600 hover:bg-red-700 text-white text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1 mt-2"
+                  >
+                    <Edit size={13} />
+                    <span>Submit Revised Request</span>
+                  </button>
+                </div>
+              )}
+
+              {/* Live Tour Controls */}
+              {formData.virtual_tour_url && (
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPreviewTourTargetUrl(formData.virtual_tour_url);
+                      setShowTourPreviewModal(true);
+                    }}
+                    className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-xs"
+                  >
+                    <Compass size={14} />
+                    <span>Explore Live 360° Tour</span>
+                  </button>
+                  {tourRequest?.status !== 'pending' && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setTempTourInput(formData.virtual_tour_url || '');
+                        setTourRequesterNote('');
+                        setShowTourModal(true);
+                      }}
+                      className="px-3 py-2 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs font-semibold rounded-lg transition-colors border border-gray-200 dark:border-gray-700"
+                    >
+                      Request Change
+                    </button>
+                  )}
+                </div>
+              )}
+
+              {/* No Tour Configured & No Request */}
+              {!formData.virtual_tour_url && tourRequest?.status !== 'pending' && tourRequest?.status !== 'rejected' && (
                 <button
                   type="button"
                   onClick={() => {
                     setTempTourInput('');
+                    setTourRequesterNote('');
                     setShowTourModal(true);
                   }}
-                  className="w-full py-2 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-xs font-bold rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors flex items-center justify-center gap-1.5"
+                  className="w-full py-2.5 bg-blue-50 dark:bg-blue-950/40 text-blue-600 dark:text-blue-300 border border-blue-200 dark:border-blue-800 text-xs font-bold rounded-lg hover:bg-blue-100 dark:hover:bg-blue-900/60 transition-colors flex items-center justify-center gap-1.5"
                 >
                   <Compass size={14} />
-                  Add Embed Code / URL
+                  <span>Request 360° Virtual Tour Approval</span>
                 </button>
               )}
             </div>
@@ -2723,14 +3071,21 @@ export default function ManageBeachPage() {
           </div>
         </div>
       )}
-      {/* 360° Tour Configuration Modal */}
+      {/* 360° Tour Configuration / Approval Request Modal */}
       {showTourModal && (
         <div className="fixed inset-0 bg-gray-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
           <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-xl w-full overflow-hidden border border-gray-200 dark:border-gray-700 shadow-2xl">
             <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
               <div className="flex items-center gap-2">
                 <Compass className="w-5 h-5 text-blue-600" />
-                <h3 className="text-lg font-bold text-gray-900 dark:text-white">360° Virtual Tour Settings</h3>
+                <div>
+                  <h3 className="text-lg font-bold text-gray-900 dark:text-white">
+                    Request 360° Virtual Tour
+                  </h3>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    Awaiting Admin Approval on Manage Beaches
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
@@ -2741,6 +3096,13 @@ export default function ManageBeachPage() {
               </button>
             </div>
             <div className="p-6 space-y-4">
+              <div className="p-3 bg-blue-50/80 dark:bg-blue-950/40 rounded-lg border border-blue-200 dark:border-blue-900/60 text-xs text-blue-900 dark:text-blue-200 flex items-start gap-2.5">
+                <ShieldCheck className="w-4 h-4 text-blue-600 shrink-0 mt-0.5" />
+                <p>
+                  Beach owners cannot directly publish 360° virtual tours. Enter your photosphere or embed code below to submit a request. The Admin will review and approve it on <strong>Manage Beaches</strong>.
+                </p>
+              </div>
+
               <div>
                 <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
                   Virtual Tour Link or &lt;iframe&gt; Embed Code
@@ -2749,41 +3111,55 @@ export default function ManageBeachPage() {
                   rows={4}
                   value={tempTourInput}
                   onChange={(e) => setTempTourInput(e.target.value)}
-                  placeholder={`Paste full iframe embed code or link here:\n<iframe src="https://kuula.co/share/..." width="100%" height="600"></iframe>\nOR\nhttps://momento360.com/e/u/...`}
+                  placeholder={`Paste full iframe embed code or link here:\n<iframe src="https://tour.panoee.net/iframe/..." width="100%" height="600"></iframe>\nOR\nhttps://kuula.co/share/...`}
                   className="w-full px-3 py-2 text-xs font-mono bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 text-gray-900 dark:text-white leading-relaxed resize-none"
                 />
                 <p className="text-[11px] text-gray-500 dark:text-gray-400 mt-1.5">
-                  Supports Google Maps Photosphere, Kuula, Momento360, Matterport, Pannellum, or direct iframe embed codes.
+                  Supports Panoee, Google Maps Photosphere, Kuula, Momento360, Matterport, or raw iframe embed codes.
                 </p>
               </div>
 
               {/* Detected URL Preview */}
               {tempTourInput.trim() && (
-                <div className="p-3 bg-blue-50 dark:bg-blue-950/40 rounded-lg border border-blue-100 dark:border-blue-900/50 text-xs">
-                  <span className="font-semibold text-blue-900 dark:text-blue-200 block mb-1">
-                    Detected Embed Source:
-                  </span>
-                  <p className="font-mono text-[11px] text-blue-700 dark:text-blue-300 break-all">
+                <div className="p-3 bg-slate-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 text-xs">
+                  <div className="flex items-center justify-between mb-1">
+                    <span className="font-semibold text-gray-900 dark:text-white">
+                      Detected Embed Source:
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        const clean = extractTourEmbedUrl(tempTourInput) || tempTourInput;
+                        setPreviewTourTargetUrl(clean);
+                        setShowTourPreviewModal(true);
+                      }}
+                      className="text-blue-600 dark:text-blue-400 hover:underline font-bold text-[11px] flex items-center gap-1"
+                    >
+                      <Eye size={12} />
+                      <span>Test Preview</span>
+                    </button>
+                  </div>
+                  <p className="font-mono text-[11px] text-blue-600 dark:text-blue-400 break-all">
                     {extractTourEmbedUrl(tempTourInput) || 'Invalid embed code or URL'}
                   </p>
                 </div>
               )}
 
+              {/* Note for Admin */}
+              <div>
+                <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1">
+                  Message / Note for Admin (Optional)
+                </label>
+                <textarea
+                  rows={2}
+                  value={tourRequesterNote}
+                  onChange={(e) => setTourRequesterNote(e.target.value)}
+                  placeholder="e.g. Updated new 360° panorama showing shoreline cottages and beach amenities."
+                  className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 text-gray-900 dark:text-white resize-none"
+                />
+              </div>
+
               <div className="flex gap-2 pt-2">
-                {formData.virtual_tour_url && (
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setFormData((prev) => ({ ...prev, virtual_tour_url: '' }));
-                      saveBeachData({ virtual_tour_url: '' });
-                      setShowTourModal(false);
-                      showToast('360° Virtual Tour removed.');
-                    }}
-                    className="px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold rounded-lg transition-colors border border-red-200"
-                  >
-                    Remove Tour
-                  </button>
-                )}
                 <button
                   type="button"
                   onClick={() => setShowTourModal(false)}
@@ -2793,16 +3169,12 @@ export default function ManageBeachPage() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => {
-                    const cleanUrl = extractTourEmbedUrl(tempTourInput) || tempTourInput.trim();
-                    setFormData((prev) => ({ ...prev, virtual_tour_url: cleanUrl }));
-                    saveBeachData({ virtual_tour_url: cleanUrl });
-                    setShowTourModal(false);
-                    showToast('360° Virtual Tour saved successfully.');
-                  }}
-                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg transition-colors"
+                  disabled={isSubmittingTourRequest || !tempTourInput.trim()}
+                  onClick={handleSubmitTourRequest}
+                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50 shadow-xs"
                 >
-                  Save Tour
+                  {isSubmittingTourRequest ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                  <span>Submit for Admin Approval</span>
                 </button>
               </div>
             </div>
@@ -3025,8 +3397,11 @@ export default function ManageBeachPage() {
       {/* 360° Virtual Tour Preview Modal */}
       <VirtualTourModal
         isOpen={showTourPreviewModal}
-        onClose={() => setShowTourPreviewModal(false)}
-        tourUrl={formData.virtual_tour_url}
+        onClose={() => {
+          setShowTourPreviewModal(false);
+          setPreviewTourTargetUrl(null);
+        }}
+        tourUrl={previewTourTargetUrl || formData.virtual_tour_url}
         beachName={formData.name || 'Your Beach'}
       />
 
@@ -3034,23 +3409,53 @@ export default function ManageBeachPage() {
       <LocationPickerModal
         isOpen={showLocationModal}
         onClose={() => setShowLocationModal(false)}
-        beachName={formData.name}
-        location={formData.location}
-        latitude={formData.latitude}
-        longitude={formData.longitude}
+        beachName={formData.name || 'Your Beach'}
+        location={coordinateRequest?.status === 'pending' ? coordinateRequest.requested_location : formData.location}
+        latitude={coordinateRequest?.status === 'pending' ? coordinateRequest.requested_latitude : formData.latitude}
+        longitude={coordinateRequest?.status === 'pending' ? coordinateRequest.requested_longitude : formData.longitude}
         publicMapSlug={beachSlug || beachId || undefined}
+        requireApprovalNotice={true}
+        submitButtonText={coordinateRequest?.status === 'pending' ? 'Update Coordinate Request' : 'Submit for Admin Approval'}
         onSave={async (coords) => {
-          setFormData((prev) => ({
-            ...prev,
-            location: coords.location,
-            latitude: coords.latitude,
-            longitude: coords.longitude,
-          }));
-          await saveBeachData({
-            location: coords.location,
-            latitude: coords.latitude,
-            longitude: coords.longitude,
-          });
+          if (!beachId) {
+            showToast('Please select a beach first.', 'error');
+            return;
+          }
+          const lat = parseFloat(coords.latitude);
+          const lng = parseFloat(coords.longitude);
+          if (isNaN(lat) || lat < -90 || lat > 90) {
+            showToast('Please enter a valid Latitude between -90 and 90.', 'error');
+            return;
+          }
+          if (isNaN(lng) || lng < -180 || lng > 180) {
+            showToast('Please enter a valid Longitude between -180 and 180.', 'error');
+            return;
+          }
+
+          setIsSubmittingCoordRequest(true);
+          try {
+            const res = await fetch('/api/owner/beach/coordinate-request', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                beach_id: beachId,
+                requested_latitude: lat,
+                requested_longitude: lng,
+                requested_location: coords.location.trim() || formData.location,
+                requester_note: coords.note?.trim() || undefined,
+              }),
+            });
+            const data = await res.json();
+            if (!res.ok) throw new Error(data.error || 'Failed to submit coordinate request.');
+
+            showToast('Coordinate update request submitted to Admin for approval!', 'success');
+            setShowLocationModal(false);
+            await loadCoordinateRequest(beachId);
+          } catch (err: unknown) {
+            showToast(err instanceof Error ? err.message : 'Failed to submit request.', 'error');
+          } finally {
+            setIsSubmittingCoordRequest(false);
+          }
         }}
       />
     </div>

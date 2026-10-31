@@ -21,6 +21,8 @@ export default function AdminDashboardPage() {
     totalApplications: 0,
     activeBeaches: 0,
     totalVisitors: 0,
+    pendingTours: 0,
+    pendingCoords: 0,
     loading: true,
   });
   const [visitorPoints, setVisitorPoints] = useState<AnalyticsPoint[] | null>(null);
@@ -33,26 +35,34 @@ export default function AdminDashboardPage() {
 
   const loadStats = async () => {
     try {
-      const [appRes, beachRes, analyticsRes] = await Promise.all([
+      const [appRes, beachRes, analyticsRes, tourRes, coordRes] = await Promise.all([
         fetch('/api/applications', { cache: 'no-store' }),
         fetch('/api/beaches', { cache: 'no-store' }),
         fetch('/api/admin/analytics/visitors', { cache: 'no-store' }),
+        fetch('/api/admin/beaches/tour-requests', { cache: 'no-store' }),
+        fetch('/api/admin/beaches/coordinate-requests', { cache: 'no-store' }),
       ]);
 
       const appData = await appRes.json();
       const beachData = await beachRes.json();
       const analyticsData = analyticsRes.ok ? await analyticsRes.json() : null;
+      const tourData = tourRes.ok ? await tourRes.json() : null;
+      const coordData = coordRes.ok ? await coordRes.json() : null;
 
       const apps = Array.isArray(appData.applications) ? appData.applications : [];
       const pending = apps.filter((a: any) => a.status === 'pending').length;
       const beaches = Array.isArray(beachData) ? beachData : [];
       const totalVisitors = analyticsData?.totalVisitors || 0;
+      const pendingTours = typeof tourData?.pendingCount === 'number' ? tourData.pendingCount : 0;
+      const pendingCoords = typeof coordData?.pendingCount === 'number' ? coordData.pendingCount : 0;
 
       setStats({
         pendingApplications: pending,
         totalApplications: apps.length,
         activeBeaches: beaches.length,
         totalVisitors,
+        pendingTours,
+        pendingCoords,
         loading: false,
       });
       setVisitorPoints(Array.isArray(analyticsData?.points) ? analyticsData.points : null);
@@ -224,27 +234,41 @@ export default function AdminDashboardPage() {
         </div>
 
         <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm hover:shadow-md transition-shadow duration-150 space-y-4">
-          <div className="flex items-center gap-3">
-            <div className="w-11 h-11 rounded-xl bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-400 flex items-center justify-center">
-              <Palmtree className="w-5 h-5" />
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="w-11 h-11 rounded-xl bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-400 flex items-center justify-center">
+                <Palmtree className="w-5 h-5" />
+              </div>
+              <div>
+                <h2 className="font-bold text-sm text-slate-900 dark:text-white">
+                  Manage Beaches
+                </h2>
+                <p className="text-xs text-slate-500 dark:text-slate-400">
+                  Directory, Coordinates &amp; 360° Tours
+                </p>
+              </div>
             </div>
-            <div>
-              <h2 className="font-bold text-sm text-slate-900 dark:text-white">
-                Manage Beaches
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Shoreline directory oversight
-              </p>
+            <div className="flex items-center gap-1.5 flex-wrap">
+              {stats.pendingCoords > 0 && (
+                <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-amber-500 text-white animate-pulse">
+                  {stats.pendingCoords} coord request{stats.pendingCoords > 1 ? 's' : ''}
+                </span>
+              )}
+              {stats.pendingTours > 0 && (
+                <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-blue-600 text-white animate-pulse">
+                  {stats.pendingTours} tour request{stats.pendingTours > 1 ? 's' : ''}
+                </span>
+              )}
             </div>
           </div>
           <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
-            Inspect all registered beach resorts, verify GPS coordinates, monitor entrance fee compliance, or suspend inactive listings.
+            Moderate beach listings, review and approve map pin coordinate changes and 360° virtual tours from beach owners, directly adjust listings, or update publication statuses.
           </p>
           <Link
             href="/admin/beaches"
             className="inline-flex items-center gap-1.5 text-xs font-bold text-sky-600 dark:text-sky-400 hover:underline"
           >
-            <span>Manage All Beaches</span>
+            <span>Open Manage Beaches</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </Link>
         </div>

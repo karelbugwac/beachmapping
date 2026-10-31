@@ -13,6 +13,7 @@ import {
   Compass,
   AlertCircle,
   HelpCircle,
+  ShieldCheck,
 } from 'lucide-react';
 import Link from 'next/link';
 import { showToast } from '@/components/ui/feedback-toasts';
@@ -25,7 +26,9 @@ interface LocationPickerModalProps {
   latitude: string | number;
   longitude: string | number;
   publicMapSlug?: string;
-  onSave: (data: { location: string; latitude: string; longitude: string }) => Promise<void>;
+  onSave: (data: { location: string; latitude: string; longitude: string; note?: string }) => Promise<void>;
+  requireApprovalNotice?: boolean;
+  submitButtonText?: string;
 }
 
 // Preset locations along Catmon coast for quick reference
@@ -45,10 +48,13 @@ export function LocationPickerModal({
   longitude,
   publicMapSlug,
   onSave,
+  requireApprovalNotice = false,
+  submitButtonText,
 }: LocationPickerModalProps) {
   const [tempLocation, setTempLocation] = useState(location || '');
   const [tempLat, setTempLat] = useState(String(latitude || '10.634800'));
   const [tempLng, setTempLng] = useState(String(longitude || '124.027500'));
+  const [requesterNote, setRequesterNote] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [isGeocoding, setIsGeocoding] = useState(false);
@@ -65,6 +71,7 @@ export function LocationPickerModal({
       setTempLocation(location || '');
       setTempLat(String(latitude || '10.634800'));
       setTempLng(String(longitude || '124.027500'));
+      setRequesterNote('');
     }
   }, [isOpen, location, latitude, longitude]);
 
@@ -275,8 +282,13 @@ export function LocationPickerModal({
         location: tempLocation.trim(),
         latitude: parsedLat.toFixed(6),
         longitude: parsedLng.toFixed(6),
+        note: requesterNote.trim() || undefined,
       });
-      showToast('Beach coordinates & location saved! Pin updated on the map.');
+      showToast(
+        requireApprovalNotice
+          ? 'Coordinates request submitted to Admin for approval!'
+          : 'Beach coordinates & location saved! Pin updated on the map.'
+      );
       onClose();
     } catch (err: any) {
       showToast(err?.message || 'Failed to save location coordinates.', 'error');
@@ -298,10 +310,12 @@ export function LocationPickerModal({
             </div>
             <div>
               <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
-                Set Beach Map Pin & Coordinates
+                {requireApprovalNotice ? 'Request Coordinates & Map Location Update' : 'Set Beach Map Pin & Coordinates'}
               </h2>
               <p className="text-xs text-gray-500 dark:text-gray-400">
-                Position your beach pin on the interactive map so guests can find you.
+                {requireApprovalNotice
+                  ? 'Position your beach pin on the map. The Admin will review and verify your coordinates.'
+                  : 'Position your beach pin on the interactive map so guests can find you.'}
               </p>
             </div>
           </div>
@@ -316,6 +330,17 @@ export function LocationPickerModal({
 
         {/* Modal Scrollable Body */}
         <div className="flex-1 overflow-y-auto p-5 space-y-5">
+          {requireApprovalNotice && (
+            <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl p-3.5 flex items-start gap-3">
+              <ShieldCheck className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
+              <div className="text-xs text-amber-900 dark:text-amber-200 space-y-1">
+                <p className="font-bold">Admin Approval Required for Coordinates</p>
+                <p className="text-amber-700 dark:text-amber-300">
+                  Beach owners cannot directly alter live coordinates or map pin locations. Submitting this form sends a request to the Dagat Ta Bai Admin for approval on <strong>Manage Beaches</strong>.
+                </p>
+              </div>
+            </div>
+          )}
           {/* Tip Banner */}
           <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 rounded-xl p-3.5 flex items-start gap-3">
             <HelpCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
@@ -470,6 +495,21 @@ export function LocationPickerModal({
               ))}
             </div>
           </div>
+
+          {requireApprovalNotice && (
+            <div className="pt-2">
+              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+                Message / Reason for Admin (Optional)
+              </label>
+              <textarea
+                rows={2}
+                value={requesterNote}
+                onChange={(e) => setRequesterNote(e.target.value)}
+                placeholder="e.g. Moved pin to our main shoreline entrance gate and beachfront parking area."
+                className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 text-gray-900 dark:text-white resize-none"
+              />
+            </div>
+          )}
         </div>
 
         {/* Modal Footer */}
@@ -510,12 +550,12 @@ export function LocationPickerModal({
               {isSaving ? (
                 <>
                   <Loader2 size={14} className="animate-spin" />
-                  <span>Saving Pin...</span>
+                  <span>{requireApprovalNotice ? 'Submitting Request...' : 'Saving Pin...'}</span>
                 </>
               ) : (
                 <>
                   <Check size={14} />
-                  <span>Save Map Location</span>
+                  <span>{submitButtonText || (requireApprovalNotice ? 'Submit for Admin Approval' : 'Save Map Location')}</span>
                 </>
               )}
             </button>

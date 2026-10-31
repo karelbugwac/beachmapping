@@ -34,6 +34,8 @@ export default function AdminLayout({
   const { theme, toggleTheme } = useTheme();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [pendingCount, setPendingCount] = useState<number>(0);
+  const [pendingTourCount, setPendingTourCount] = useState<number>(0);
+  const [pendingCoordCount, setPendingCoordCount] = useState<number>(0);
   const [previousPendingCount, setPreviousPendingCount] = useState<number>(0);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
   const isInitialLoadRef = useRef(true);
@@ -66,12 +68,12 @@ export default function AdminLayout({
     checkAuth();
   }, [pathname]);
 
-  // Fetch pending applications count for the sidebar badge with realtime updates
+  // Fetch pending applications count and tour requests count for the sidebar badge
   useEffect(() => {
     // Don't run on login page
     if (shouldRenderLogin) return;
     
-    const fetchCount = () => {
+    const fetchCounts = () => {
       fetch('/api/applications')
         .then((res) => res.json())
         .then((data) => {
@@ -92,16 +94,34 @@ export default function AdminLayout({
           }
         })
         .catch(() => {});
+
+      fetch('/api/admin/beaches/tour-requests')
+        .then((res) => res.json())
+        .then((data) => {
+          if (typeof data.pendingCount === 'number') {
+            setPendingTourCount(data.pendingCount);
+          }
+        })
+        .catch(() => {});
+
+      fetch('/api/admin/beaches/coordinate-requests')
+        .then((res) => res.json())
+        .then((data) => {
+          if (typeof data.pendingCount === 'number') {
+            setPendingCoordCount(data.pendingCount);
+          }
+        })
+        .catch(() => {});
     };
 
-    fetchCount();
+    fetchCounts();
     
     // Setup realtime subscription for applications
     const supabase = createClient();
     const applicationsChannel = supabase
       .channel('admin-applications-changes')
       .on('postgres_changes', { event: '*', schema: 'public', table: 'applications' }, () => {
-        fetchCount();
+        fetchCounts();
       })
       .subscribe();
 
@@ -151,7 +171,7 @@ export default function AdminLayout({
       label: 'Manage Beaches',
       href: '/admin/beaches',
       icon: Palmtree,
-      badge: null,
+      badge: (pendingTourCount + pendingCoordCount) > 0 ? (pendingTourCount + pendingCoordCount) : null,
     },
     {
       label: 'Review Moderation',

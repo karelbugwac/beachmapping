@@ -3,29 +3,8 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Compass, X, ExternalLink, Maximize2, Minimize2, Loader2, Sparkles, HelpCircle } from 'lucide-react';
 
-export function extractTourEmbedUrl(input: string | null | undefined): string | null {
-  if (!input) return null;
-  const trimmed = input.trim();
-  if (!trimmed) return null;
-
-  // Extract src from <iframe ... src="..." ...>
-  const iframeMatch = trimmed.match(/src=["']([^"']+)["']/i);
-  if (iframeMatch && iframeMatch[1]) {
-    return iframeMatch[1].trim();
-  }
-
-  // If already a valid URL
-  if (/^https?:\/\//i.test(trimmed)) {
-    return trimmed;
-  }
-
-  // If a domain without protocol
-  if (trimmed.includes('.') && !trimmed.includes('<') && !trimmed.includes(' ')) {
-    return `https://${trimmed}`;
-  }
-
-  return trimmed;
-}
+import { extractTourEmbedUrl } from '@/lib/utils/tourEmbed';
+export { extractTourEmbedUrl };
 
 interface VirtualTourModalProps {
   isOpen: boolean;

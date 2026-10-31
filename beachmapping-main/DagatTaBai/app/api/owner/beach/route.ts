@@ -125,9 +125,9 @@ export async function POST(request: Request) {
     const adminSupabase = createAdminClient();
     let result;
     if (typeof body.id === 'string' && body.id) {
-      // Find existing beach to preserve slug and owner_id if needed
+      // Find existing beach to preserve slug, owner_id, coordinates, and virtual_tour_url if needed
       const { data: existing } = await (adminSupabase.from('beaches') as any)
-        .select('slug, owner_id')
+        .select('slug, owner_id, virtual_tour_url, latitude, longitude, location')
         .eq('id', body.id)
         .maybeSingle();
 
@@ -136,12 +136,18 @@ export async function POST(request: Request) {
         slug: existing?.slug || slug,
         owner_id: existing?.owner_id || ownerId,
         description: body.description || '',
-        location,
-        latitude: Number.isFinite(parsedLatitude) ? parsedLatitude : 10.6348,
-        longitude: Number.isFinite(parsedLongitude) ? parsedLongitude : 124.0275,
+        // Beach owners cannot directly alter verified coordinates/location; only admin can edit directly or approve requests
+        location: auth.role === 'admin' ? location : (existing?.location || location),
+        latitude: auth.role === 'admin'
+          ? (Number.isFinite(parsedLatitude) ? parsedLatitude : 10.6348)
+          : (existing?.latitude !== undefined && existing?.latitude !== null ? Number(existing.latitude) : (Number.isFinite(parsedLatitude) ? parsedLatitude : 10.6348)),
+        longitude: auth.role === 'admin'
+          ? (Number.isFinite(parsedLongitude) ? parsedLongitude : 124.0275)
+          : (existing?.longitude !== undefined && existing?.longitude !== null ? Number(existing.longitude) : (Number.isFinite(parsedLongitude) ? parsedLongitude : 124.0275)),
         cover_image_url: body.cover_image || body.cover_image_url || null,
         profile_image_url: body.profile_image || body.profile_image_url || null,
-        virtual_tour_url: body.virtual_tour_url || null,
+        // Beach owners cannot directly edit 360 virtual tours; only admins can modify directly
+        virtual_tour_url: auth.role === 'admin' ? (body.virtual_tour_url || null) : (existing?.virtual_tour_url || null),
         images: Array.isArray(body.images) ? body.images : [],
         opening_hours: typeof body.opening_hours === 'object' ? JSON.stringify(body.opening_hours) : (body.opening_hours || '8:00 AM - 6:00 PM'),
         entrance_fee: `${body.entrance_fee_adults || ''}|${body.entrance_fee_children || ''}`,
@@ -175,7 +181,8 @@ export async function POST(request: Request) {
         longitude: Number.isFinite(parsedLongitude) ? parsedLongitude : 124.0275,
         cover_image_url: body.cover_image || body.cover_image_url || null,
         profile_image_url: body.profile_image || body.profile_image_url || null,
-        virtual_tour_url: body.virtual_tour_url || null,
+        // New beaches created by owners start without a verified virtual tour until admin approves one
+        virtual_tour_url: auth.role === 'admin' ? (body.virtual_tour_url || null) : null,
         images: Array.isArray(body.images) ? body.images : [],
         opening_hours: typeof body.opening_hours === 'object' ? JSON.stringify(body.opening_hours) : (body.opening_hours || '8:00 AM - 6:00 PM'),
         entrance_fee: `${body.entrance_fee_adults || ''}|${body.entrance_fee_children || ''}`,
