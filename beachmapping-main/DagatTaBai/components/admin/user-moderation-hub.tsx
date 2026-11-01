@@ -567,20 +567,20 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
         <div className="space-y-1">
           <Link
             href="/admin/dashboard"
-            className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-sky-600 dark:text-slate-400 dark:hover:text-white transition-colors"
+            className="hidden"
           >
             <ArrowRight className="w-3.5 h-3.5 rotate-180" />
-            <span>Back to Admin Dashboard</span>
+            <span className="hidden">Back to Admin Dashboard</span>
           </Link>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-slate-900 dark:text-white">
+            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#1F3F74] dark:text-[#4987BA]">
               User &amp; Review Management Hub
             </h1>
             <button
               type="button"
               onClick={refreshAll}
               disabled={refreshing}
-              className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
+              className="hidden"
               title="Refresh data"
             >
               <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-sky-600' : ''}`} />

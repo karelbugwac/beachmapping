@@ -1,27 +1,20 @@
 'use client';
 
 import React, { useEffect, useState, useMemo } from 'react';
-import Link from 'next/link';
+import Image from 'next/image';
 import {
-  ArrowLeft,
   Compass,
   Eye,
-  Ban,
   CheckCircle2,
-  Trash2,
-  Sparkles,
-  AlertCircle,
+  XCircle,
   Clock,
-  Check,
-  X,
-  Edit,
-  Plus,
+  Sparkles,
   Loader2,
-  ExternalLink,
-  ShieldCheck,
-  RefreshCw,
   MapPin,
-  Crosshair,
+  Palmtree,
+  Star,
+  X,
+  Upload,
 } from 'lucide-react';
 import type { BeachRecord } from '@/lib/db/beaches';
 import { showToast } from '@/components/ui/feedback-toasts';
@@ -30,34 +23,16 @@ import { LocationPickerModal } from '@/components/map/location-picker-modal';
 import type { TourRequestWithBeach } from '@/lib/services/tourRequests';
 import type { CoordinateRequestWithBeach } from '@/lib/services/coordinateRequests';
 
-function formatHours(hours: string | Record<string, string>): string {
-  if (typeof hours === 'string') return hours;
-  if (typeof hours === 'object' && hours !== null) {
-    const list = Object.values(hours).filter((h) => h && h !== 'CLOSE' && h !== 'Closed');
-    if (list.length > 0) return String(list[0]);
-  }
-  return 'Not set';
-}
-
 export default function AdminBeachesPage() {
   const [beaches, setBeaches] = useState<BeachRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [tourRequests, setTourRequests] = useState<TourRequestWithBeach[]>([]);
-  const [loadingRequests, setLoadingRequests] = useState(true);
-
-  // Coordinate requests state
   const [coordinateRequests, setCoordinateRequests] = useState<CoordinateRequestWithBeach[]>([]);
-  const [loadingCoordRequests, setLoadingCoordRequests] = useState(true);
 
   // Modals state
   const [previewTourUrl, setPreviewTourUrl] = useState<string | null>(null);
   const [previewTourBeachName, setPreviewTourBeachName] = useState<string>('');
   const [showPreviewModal, setShowPreviewModal] = useState(false);
-
-  // Admin Direct Tour Edit Modal
-  const [selectedBeachForTour, setSelectedBeachForTour] = useState<BeachRecord | null>(null);
-  const [adminTourInput, setAdminTourInput] = useState('');
-  const [isSavingTour, setIsSavingTour] = useState(false);
 
   // Admin Direct Coordinates Edit Modal (LocationPickerModal)
   const [selectedBeachForCoords, setSelectedBeachForCoords] = useState<BeachRecord | null>(null);
@@ -75,6 +50,27 @@ export default function AdminBeachesPage() {
   const [coordRejectReason, setCoordRejectReason] = useState('');
   const [isProcessingCoordAction, setIsProcessingCoordAction] = useState(false);
 
+  // Comprehensive "Edit Info" Modal State
+  const [editingBeach, setEditingBeach] = useState<BeachRecord | null>(null);
+  const [editTab, setEditTab] = useState<'basic' | 'tour' | 'coordinates' | 'rates' | 'photos'>('basic');
+  const [editForm, setEditForm] = useState({
+    id: '',
+    name: '',
+    description: '',
+    location: '',
+    latitude: '',
+    longitude: '',
+    virtual_tour_url: '',
+    contact_phone: '',
+    contact_email: '',
+    cover_image_url: '',
+    profile_image_url: '',
+    entrance_fee: '',
+    cottage_fee: '',
+    status: 'active',
+  });
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+
   // Fetch beaches
   const fetchBeaches = async () => {
     try {
@@ -83,7 +79,7 @@ export default function AdminBeachesPage() {
       if (!res.ok) throw new Error(data.error || 'Failed to load beach listings.');
       if (Array.isArray(data)) setBeaches(data);
     } catch (err: unknown) {
-      showToast(err instanceof Error ? err.message : 'Failed to load beach listings.', 'error');
+      console.error('Failed to load beach listings:', err);
     } finally {
       setLoading(false);
     }
@@ -92,34 +88,26 @@ export default function AdminBeachesPage() {
   // Fetch 360 tour requests
   const fetchTourRequests = async () => {
     try {
-      setLoadingRequests(true);
       const res = await fetch('/api/admin/beaches/tour-requests', { cache: 'no-store' });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to load tour requests.');
-      if (Array.isArray(data.requests)) {
+      if (Array.isArray(data?.requests)) {
         setTourRequests(data.requests);
       }
     } catch (err: unknown) {
       console.error('Failed to load tour requests:', err);
-    } finally {
-      setLoadingRequests(false);
     }
   };
 
   // Fetch coordinates requests
   const fetchCoordinateRequests = async () => {
     try {
-      setLoadingCoordRequests(true);
       const res = await fetch('/api/admin/beaches/coordinate-requests', { cache: 'no-store' });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to load coordinate requests.');
-      if (Array.isArray(data.requests)) {
+      if (Array.isArray(data?.requests)) {
         setCoordinateRequests(data.requests);
       }
     } catch (err: unknown) {
       console.error('Failed to load coordinate requests:', err);
-    } finally {
-      setLoadingCoordRequests(false);
     }
   };
 
@@ -127,6 +115,15 @@ export default function AdminBeachesPage() {
     void fetchBeaches();
     void fetchTourRequests();
     void fetchCoordinateRequests();
+
+    // Background auto-refresh every 30 seconds
+    const interval = setInterval(() => {
+      void fetchBeaches();
+      void fetchTourRequests();
+      void fetchCoordinateRequests();
+    }, 30000);
+
+    return () => clearInterval(interval);
   }, []);
 
   const pendingTourRequests = useMemo(() => {
@@ -137,6 +134,7 @@ export default function AdminBeachesPage() {
     return coordinateRequests.filter((r) => r.status === 'pending');
   }, [coordinateRequests]);
 
+  // Toggle Beach Status (Active / Suspended)
   const toggleBeachStatus = async (beach: BeachRecord) => {
     const status = beach.status === 'active' ? 'suspended' : 'active';
     try {
@@ -156,23 +154,6 @@ export default function AdminBeachesPage() {
     }
   };
 
-  const deleteBeach = async (beach: BeachRecord) => {
-    if (!confirm(`Are you sure you want to delete "${beach.name}"? This action cannot be undone.`)) return;
-    try {
-      const response = await fetch('/api/admin/beaches', {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: beach.id }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to delete beach listing.');
-      setBeaches((current) => current.filter((item) => item.id !== beach.id));
-      showToast('Beach listing deleted successfully.');
-    } catch (error: unknown) {
-      showToast(error instanceof Error ? error.message : 'Failed to delete beach listing.', 'error');
-    }
-  };
-
   // Handle Approve Tour Request
   const handleApproveTour = async (req: TourRequestWithBeach) => {
     try {
@@ -188,7 +169,7 @@ export default function AdminBeachesPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to approve tour request.');
 
-      showToast(`360° Virtual Tour for "${req.beach?.name || 'Beach'}" approved and published!`, 'success');
+      showToast(`360° Virtual Tour for "${req.beach?.name || 'Beach'}" approved!`);
       await Promise.all([fetchBeaches(), fetchTourRequests()]);
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Failed to approve tour.', 'error');
@@ -198,7 +179,7 @@ export default function AdminBeachesPage() {
   };
 
   // Handle Reject Tour Request
-  const handleConfirmReject = async () => {
+  const handleRejectTour = async () => {
     if (!rejectingRequest) return;
     try {
       setIsProcessingAction(true);
@@ -208,59 +189,25 @@ export default function AdminBeachesPage() {
         body: JSON.stringify({
           action: 'reject',
           beach_id: rejectingRequest.beach_id,
-          rejection_reason: rejectReason.trim() || 'Tour submission did not meet publication standards.',
+          rejection_reason: rejectReason.trim() || undefined,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to reject tour request.');
 
-      showToast('360° Virtual Tour request rejected.');
+      showToast(`360° Virtual Tour request rejected.`);
       setRejectingRequest(null);
       setRejectReason('');
       await fetchTourRequests();
     } catch (err: unknown) {
-      showToast(err instanceof Error ? err.message : 'Failed to reject tour.', 'error');
+      showToast(err instanceof Error ? err.message : 'Failed to reject tour request.', 'error');
     } finally {
       setIsProcessingAction(false);
     }
   };
 
-  // Handle Direct Admin Tour Save
-  const handleSaveAdminTour = async () => {
-    if (!selectedBeachForTour) return;
-    const cleanUrl = extractTourEmbedUrl(adminTourInput) || adminTourInput.trim();
-
-    try {
-      setIsSavingTour(true);
-      const res = await fetch('/api/admin/beaches', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: selectedBeachForTour.id,
-          virtual_tour_url: cleanUrl || null,
-        }),
-      });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to update 360 virtual tour.');
-
-      showToast(
-        cleanUrl
-          ? `360° Virtual Tour saved and published for "${selectedBeachForTour.name}".`
-          : `360° Virtual Tour removed for "${selectedBeachForTour.name}".`,
-        'success'
-      );
-      setSelectedBeachForTour(null);
-      setAdminTourInput('');
-      await Promise.all([fetchBeaches(), fetchTourRequests()]);
-    } catch (err: unknown) {
-      showToast(err instanceof Error ? err.message : 'Failed to save virtual tour.', 'error');
-    } finally {
-      setIsSavingTour(false);
-    }
-  };
-
   // Handle Approve Coordinate Request
-  const handleApproveCoordinates = async (req: CoordinateRequestWithBeach) => {
+  const handleApproveCoord = async (req: CoordinateRequestWithBeach) => {
     try {
       setIsProcessingCoordAction(true);
       const res = await fetch('/api/admin/beaches/coordinate-requests', {
@@ -268,23 +215,23 @@ export default function AdminBeachesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'approve',
-          beach_id: req.beach_id,
+          request_id: req.id,
         }),
       });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to approve coordinates.');
+      if (!res.ok) throw new Error(data.error || 'Failed to approve coordinate request.');
 
-      showToast(`Map location & coordinates for "${req.beach?.name || 'Beach'}" approved!`, 'success');
+      showToast(`Map location coordinates for "${req.beach?.name || 'Beach'}" approved!`);
       await Promise.all([fetchBeaches(), fetchCoordinateRequests()]);
     } catch (err: unknown) {
-      showToast(err instanceof Error ? err.message : 'Failed to approve coordinates.', 'error');
+      showToast(err instanceof Error ? err.message : 'Failed to approve coordinate request.', 'error');
     } finally {
       setIsProcessingCoordAction(false);
     }
   };
 
   // Handle Reject Coordinate Request
-  const handleConfirmRejectCoordinates = async () => {
+  const handleRejectCoord = async () => {
     if (!rejectingCoordRequest) return;
     try {
       setIsProcessingCoordAction(true);
@@ -293,808 +240,868 @@ export default function AdminBeachesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'reject',
-          beach_id: rejectingCoordRequest.beach_id,
-          rejection_reason: coordRejectReason.trim() || 'Coordinates could not be verified by Admin.',
+          request_id: rejectingCoordRequest.id,
+          rejection_reason: coordRejectReason.trim() || undefined,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to reject coordinate request.');
 
-      showToast('Beach coordinate update request rejected.');
+      showToast('Coordinate request rejected.');
       setRejectingCoordRequest(null);
       setCoordRejectReason('');
       await fetchCoordinateRequests();
     } catch (err: unknown) {
-      showToast(err instanceof Error ? err.message : 'Failed to reject coordinates.', 'error');
+      showToast(err instanceof Error ? err.message : 'Failed to reject coordinate request.', 'error');
     } finally {
       setIsProcessingCoordAction(false);
     }
   };
 
-  // Handle Direct Admin Coordinates Save via LocationPickerModal
-  const handleSaveAdminCoordinates = async (data: { location: string; latitude: string; longitude: string }) => {
-    if (!selectedBeachForCoords) return;
-    const lat = parseFloat(data.latitude);
-    const lng = parseFloat(data.longitude);
-    if (isNaN(lat) || isNaN(lng)) {
-      showToast('Invalid coordinates provided.', 'error');
+  // Open "Edit Info" Modal
+  const openEditModal = (beach: BeachRecord) => {
+    setEditingBeach(beach);
+    setEditTab('basic');
+
+    // Strip +63 from phone if present for cleaner input
+    let cleanPhone = beach.contact_phone || '';
+    if (cleanPhone.startsWith('+63')) {
+      cleanPhone = cleanPhone.replace('+63', '').trim();
+    }
+
+    setEditForm({
+      id: beach.id,
+      name: beach.name || '',
+      description: beach.description || '',
+      location: beach.location || '',
+      latitude: beach.latitude ? String(beach.latitude) : '10.6348',
+      longitude: beach.longitude ? String(beach.longitude) : '124.0275',
+      virtual_tour_url: beach.virtual_tour_url || '',
+      contact_phone: cleanPhone,
+      contact_email: beach.contact_email || '',
+      cover_image_url: beach.cover_image_url || '',
+      profile_image_url: beach.profile_image_url || '',
+      entrance_fee: beach.entrance_fee ? String(beach.entrance_fee) : '',
+      cottage_fee: beach.cottage_fee ? String(beach.cottage_fee) : '',
+      status: beach.status || 'active',
+    });
+  };
+
+  // Save "Edit Info" Form
+  const handleSaveBeachInfo = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingBeach) return;
+
+    if (!editForm.name.trim()) {
+      showToast('Resort beach name is required.', 'error');
+      return;
+    }
+
+    if (editForm.contact_email && !editForm.contact_email.includes('@')) {
+      showToast('Valid contact email must include "@".', 'error');
+      return;
+    }
+
+    setIsSavingEdit(true);
+    try {
+      const payload: Record<string, any> = {
+        id: editForm.id,
+        name: editForm.name.trim(),
+        description: editForm.description.trim(),
+        location: editForm.location.trim(),
+        latitude: parseFloat(editForm.latitude) || 10.6348,
+        longitude: parseFloat(editForm.longitude) || 124.0275,
+        virtual_tour_url: editForm.virtual_tour_url.trim() || null,
+        contact_phone: editForm.contact_phone.trim() ? `+63 ${editForm.contact_phone.trim()}` : null,
+        contact_email: editForm.contact_email.trim() || null,
+        cover_image_url: editForm.cover_image_url.trim() || null,
+        profile_image_url: editForm.profile_image_url.trim() || null,
+        entrance_fee: editForm.entrance_fee ? parseFloat(editForm.entrance_fee) : null,
+        cottage_fee: editForm.cottage_fee ? parseFloat(editForm.cottage_fee) : null,
+      };
+
+      const res = await fetch('/api/admin/beaches', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Failed to save beach information.');
+
+      setBeaches((current) =>
+        current.map((b) => (b.id === editingBeach.id ? { ...b, ...data.beach } : b))
+      );
+
+      showToast(`Information for "${editForm.name}" updated successfully.`);
+      setEditingBeach(null);
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Failed to update beach.', 'error');
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  // Upload helper for PNG / JPG only
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, targetField: 'cover_image_url' | 'profile_image_url') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!['image/png', 'image/jpeg', 'image/jpg'].includes(file.type.toLowerCase())) {
+      showToast('Please upload an image in PNG or JPG format only.', 'error');
+      return;
+    }
+
+    if (file.size > 5 * 1024 * 1024) {
+      showToast('Image file size must be less than 5MB.', 'error');
       return;
     }
 
     try {
-      const res = await fetch('/api/admin/beaches', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: selectedBeachForCoords.id,
-          location: data.location.trim() || selectedBeachForCoords.location,
-          latitude: lat,
-          longitude: lng,
-        }),
-      });
-      const resData = await res.json();
-      if (!res.ok) throw new Error(resData.error || 'Failed to update coordinates.');
+      const uploadData = new FormData();
+      uploadData.append('file', file);
+      uploadData.append('category', targetField === 'cover_image_url' ? 'cover' : 'profile');
 
-      showToast(`Saved coordinates for "${selectedBeachForCoords.name}".`, 'success');
-      setSelectedBeachForCoords(null);
-      await Promise.all([fetchBeaches(), fetchCoordinateRequests()]);
+      const res = await fetch('/api/owner/beach/images', {
+        method: 'POST',
+        body: uploadData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || 'Upload failed.');
+
+      const url = data.photo_url || data.url;
+      if (url) {
+        setEditForm((prev) => ({ ...prev, [targetField]: url }));
+        showToast('Image uploaded successfully.');
+      }
     } catch (err: unknown) {
-      showToast(err instanceof Error ? err.message : 'Failed to save coordinates.', 'error');
+      showToast(err instanceof Error ? err.message : 'Image upload failed.', 'error');
     }
   };
 
-  // Open Preview Modal
-  const openTourPreview = (url: string | null | undefined, name: string) => {
-    if (!url) return;
-    setPreviewTourUrl(url);
-    setPreviewTourBeachName(name);
-    setShowPreviewModal(true);
-  };
-
   return (
-    <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-8">
-      {/* Back button */}
-      <Link
-        href="/admin/dashboard"
-        className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-gray-300 dark:hover:text-white transition-colors"
-      >
-        <ArrowLeft className="w-3.5 h-3.5" />
-        <span>Back to Admin Dashboard</span>
-      </Link>
-
-      {/* Page Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-2 border-b border-slate-200 dark:border-gray-800">
-        <div>
-          <div className="flex items-center gap-2 mb-1">
-            <h1 className="text-2xl font-bold text-slate-900 dark:text-white">
-              Manage Beaches, Coordinates &amp; 360° Tours
-            </h1>
-            <span className="px-2 py-0.5 text-[11px] font-bold rounded-full bg-blue-100 text-blue-700 dark:bg-blue-900/50 dark:text-blue-300">
-              Admin Moderation
-            </span>
-          </div>
-          <p className="text-xs text-slate-500 dark:text-gray-400">
-            Review pending map pin coordinate requests and 360° virtual tours from beach owners, directly adjust listings, or moderate publication statuses.
-          </p>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button
-            type="button"
-            onClick={() => {
-              void fetchBeaches();
-              void fetchTourRequests();
-              void fetchCoordinateRequests();
-              showToast('Refreshed beach, coordinates, and tour data.');
-            }}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-lg bg-white dark:bg-gray-800 border border-slate-200 dark:border-gray-700 text-slate-700 dark:text-gray-200 hover:bg-slate-50 dark:hover:bg-gray-700 transition-colors shadow-xs"
-          >
-            <RefreshCw className="w-3.5 h-3.5" />
-            <span>Refresh</span>
-          </button>
-        </div>
+    <div className="max-w-7xl mx-auto space-y-8 font-sans">
+      {/* Frameless Hero Header: Dive Blue */}
+      <div className="space-y-1.5">
+        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#1F3F74] dark:text-[#4987BA]">
+          Manage Beaches &amp; 360° Tours
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-500 dark:text-neutral-400 max-w-2xl">
+          Directory of registered beaches in Barangay Binongkalan. Oversee map pins, review proprietor requests, and directly manage 360° virtual tours.
+        </p>
       </div>
 
-      {/* SECTION 1: Pending Beach Coordinates & Map Location Requests */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
+      {/* Pending 360 Virtual Tour Requests */}
+      {pendingTourRequests.length > 0 && (
+        <div className="bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800 rounded-3xl p-6 space-y-4">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-blue-600/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 flex items-center justify-center">
-              <MapPin className="w-4 h-4" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <span>Pending Map Location &amp; Coordinates Requests</span>
-                {pendingCoordRequests.length > 0 ? (
-                  <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-amber-500 text-white animate-pulse">
-                    {pendingCoordRequests.length} Pending
-                  </span>
-                ) : (
-                  <span className="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
-                    All Verified
-                  </span>
-                )}
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-gray-400">
-                Resort owners must ask Admin permission before updating coordinates or map pin placements. Preview and approve them here.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {loadingCoordRequests ? (
-          <div className="p-8 text-center bg-white dark:bg-gray-900 rounded-xl border border-slate-200 dark:border-gray-800">
-            <Loader2 className="w-6 h-6 animate-spin text-blue-600 mx-auto mb-2" />
-            <p className="text-xs text-slate-500 dark:text-gray-400">Loading coordinate approval requests...</p>
-          </div>
-        ) : pendingCoordRequests.length === 0 ? (
-          <div className="p-6 bg-gradient-to-r from-emerald-50/60 to-blue-50/60 dark:from-emerald-950/20 dark:to-blue-950/20 rounded-xl border border-emerald-200/60 dark:border-emerald-800/40 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-300 flex items-center justify-center shrink-0">
-                <CheckCircle2 className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                  No Pending Coordinate Requests
-                </h4>
-                <p className="text-xs text-slate-600 dark:text-gray-300">
-                  All beach map pin repositioning requests have been processed. You can also edit or reposition pins directly in the table below.
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {pendingCoordRequests.map((req) => {
-              const beachName = req.beach?.name || 'Unknown Beach';
-              return (
-                <div
-                  key={req.beach_id}
-                  className="bg-white dark:bg-gray-900 rounded-xl border-2 border-amber-300 dark:border-amber-700/60 p-5 shadow-sm space-y-4 hover:shadow-md transition-shadow relative overflow-hidden"
-                >
-                  <div className="absolute top-0 right-0 px-3 py-1 bg-amber-500 text-white text-[10px] font-extrabold uppercase tracking-wider rounded-bl-lg">
-                    Awaiting Admin Approval
-                  </div>
-
-                  {/* Beach Header */}
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white pr-28">
-                      {beachName}
-                    </h3>
-                    <p className="text-xs text-slate-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
-                      <span>{req.beach?.location || 'Catmon, Cebu'}</span>
-                      {req.owner && (
-                        <span>• Submitted by {req.owner.full_name || req.owner.email}</span>
-                      )}
-                    </p>
-                  </div>
-
-                  {/* Proposed Coordinates Comparison Grid */}
-                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2.5">
-                    <div className="p-2.5 bg-slate-50 dark:bg-gray-800 rounded-lg border border-slate-200 dark:border-gray-700">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
-                        Proposed Latitude
-                      </span>
-                      <p className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400">
-                        {Number(req.requested_latitude).toFixed(6)}° N
-                      </p>
-                      {req.beach?.latitude !== undefined && (
-                        <p className="text-[10px] text-slate-400 mt-0.5">
-                          Current: {Number(req.beach.latitude).toFixed(4)}°
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="p-2.5 bg-slate-50 dark:bg-gray-800 rounded-lg border border-slate-200 dark:border-gray-700">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
-                        Proposed Longitude
-                      </span>
-                      <p className="text-xs font-mono font-bold text-blue-600 dark:text-blue-400">
-                        {Number(req.requested_longitude).toFixed(6)}° E
-                      </p>
-                      {req.beach?.longitude !== undefined && (
-                        <p className="text-[10px] text-slate-400 mt-0.5">
-                          Current: {Number(req.beach.longitude).toFixed(4)}°
-                        </p>
-                      )}
-                    </div>
-
-                    <div className="p-2.5 bg-slate-50 dark:bg-gray-800 rounded-lg border border-slate-200 dark:border-gray-700 col-span-2 sm:col-span-1">
-                      <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
-                        Proposed Address
-                      </span>
-                      <p className="text-xs font-medium text-slate-700 dark:text-gray-300 truncate">
-                        {req.requested_location || req.beach?.location || 'Unchanged'}
-                      </p>
-                    </div>
-                  </div>
-
-                  {/* Owner Note */}
-                  {req.requester_note && (
-                    <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-lg border border-amber-200 dark:border-amber-800/60 text-xs">
-                      <span className="font-bold text-amber-900 dark:text-amber-200 block mb-0.5">
-                        Owner&apos;s Message:
-                      </span>
-                      <p className="text-slate-700 dark:text-gray-300 italic">
-                        &ldquo;{req.requester_note}&rdquo;
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Actions */}
-                  <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 dark:border-gray-800">
-                    <button
-                      type="button"
-                      onClick={() => setPreviewCoordRequest(req)}
-                      className="px-3 py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/50 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5"
-                    >
-                      <Crosshair className="w-3.5 h-3.5" />
-                      <span>Preview Pin on Map</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      disabled={isProcessingCoordAction}
-                      onClick={() => void handleApproveCoordinates(req)}
-                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 ml-auto shadow-xs disabled:opacity-50"
-                    >
-                      {isProcessingCoordAction ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Check className="w-3.5 h-3.5" />
-                      )}
-                      <span>Approve &amp; Update Map</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      disabled={isProcessingCoordAction}
-                      onClick={() => {
-                        setRejectingCoordRequest(req);
-                        setCoordRejectReason('');
-                      }}
-                      className="px-3 py-2 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/50 text-red-600 dark:text-red-300 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1 disabled:opacity-50"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                      <span>Reject</span>
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
-      {/* SECTION 2: Pending 360 Virtual Tour Requests */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-blue-600/10 text-blue-600 dark:bg-blue-500/20 dark:text-blue-400 flex items-center justify-center">
-              <Compass className="w-4 h-4" />
-            </div>
-            <div>
-              <h2 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <span>Pending 360° Virtual Tour Requests</span>
-                {pendingTourRequests.length > 0 ? (
-                  <span className="px-2 py-0.5 text-xs font-bold rounded-full bg-amber-500 text-white animate-pulse">
-                    {pendingTourRequests.length} Pending
-                  </span>
-                ) : (
-                  <span className="px-2 py-0.5 text-[11px] font-semibold rounded-full bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300">
-                    All Approved
-                  </span>
-                )}
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-gray-400">
-                Resort owners must ask Admin permission before publishing 360° tours. Preview and approve them here.
-              </p>
-            </div>
-          </div>
-        </div>
-
-        {loadingRequests ? (
-          <div className="p-8 text-center bg-white dark:bg-gray-900 rounded-xl border border-slate-200 dark:border-gray-800">
-            <Loader2 className="w-6 h-6 animate-spin text-blue-600 mx-auto mb-2" />
-            <p className="text-xs text-slate-500 dark:text-gray-400">Loading tour approval requests...</p>
-          </div>
-        ) : pendingTourRequests.length === 0 ? (
-          <div className="p-6 bg-gradient-to-r from-emerald-50/60 to-blue-50/60 dark:from-emerald-950/20 dark:to-blue-950/20 rounded-xl border border-emerald-200/60 dark:border-emerald-800/40 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-emerald-100 dark:bg-emerald-900/50 text-emerald-600 dark:text-emerald-300 flex items-center justify-center shrink-0">
-                <CheckCircle2 className="w-5 h-5" />
-              </div>
-              <div>
-                <h4 className="text-sm font-bold text-slate-900 dark:text-white">
-                  No Pending 360° Tour Requests
-                </h4>
-                <p className="text-xs text-slate-600 dark:text-gray-300">
-                  All beach owner virtual tour submissions have been processed. You can also edit or assign tours directly in the table below.
-                </p>
-              </div>
-            </div>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {pendingTourRequests.map((req) => {
-              const cleanEmbed = extractTourEmbedUrl(req.requested_tour_url);
-              const beachName = req.beach?.name || 'Unknown Beach';
-              return (
-                <div
-                  key={req.beach_id}
-                  className="bg-white dark:bg-gray-900 rounded-xl border-2 border-amber-300 dark:border-amber-700/60 p-5 shadow-sm space-y-4 hover:shadow-md transition-shadow relative overflow-hidden"
-                >
-                  <div className="absolute top-0 right-0 px-3 py-1 bg-amber-500 text-white text-[10px] font-extrabold uppercase tracking-wider rounded-bl-lg">
-                    Awaiting Admin Approval
-                  </div>
-
-                  {/* Beach Header */}
-                  <div>
-                    <h3 className="text-base font-bold text-slate-900 dark:text-white pr-28">
-                      {beachName}
-                    </h3>
-                    <p className="text-xs text-slate-500 dark:text-gray-400 flex items-center gap-1 mt-0.5">
-                      <span>{req.beach?.location || 'Catmon, Cebu'}</span>
-                      {req.owner && (
-                        <span>• Submitted by {req.owner.full_name || req.owner.email}</span>
-                      )}
-                    </p>
-                  </div>
-
-                  {/* Owner Note */}
-                  {req.requester_note && (
-                    <div className="p-3 bg-amber-50 dark:bg-amber-950/40 rounded-lg border border-amber-200 dark:border-amber-800/60 text-xs">
-                      <span className="font-bold text-amber-900 dark:text-amber-200 block mb-0.5">
-                        Owner&apos;s Message:
-                      </span>
-                      <p className="text-slate-700 dark:text-gray-300 italic">
-                        &ldquo;{req.requester_note}&rdquo;
-                      </p>
-                    </div>
-                  )}
-
-                  {/* Tour URL Info */}
-                  <div className="p-2.5 bg-slate-50 dark:bg-gray-800 rounded-lg text-xs font-mono text-slate-700 dark:text-gray-300 break-all border border-slate-200 dark:border-gray-700">
-                    <span className="text-[10px] uppercase font-bold text-slate-400 block mb-0.5">
-                      Proposed Tour URL / Embed:
-                    </span>
-                    <span className="text-[11px] text-blue-600 dark:text-blue-400">
-                      {cleanEmbed || req.requested_tour_url}
-                    </span>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-slate-100 dark:border-gray-800">
-                    <button
-                      type="button"
-                      onClick={() => openTourPreview(req.requested_tour_url, beachName)}
-                      className="px-3 py-2 bg-blue-50 hover:bg-blue-100 dark:bg-blue-950/50 dark:hover:bg-blue-900/60 text-blue-700 dark:text-blue-300 rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5"
-                    >
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>Preview 360° Tour</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      disabled={isProcessingAction}
-                      onClick={() => void handleApproveTour(req)}
-                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-xs font-bold transition-colors flex items-center gap-1.5 ml-auto shadow-xs disabled:opacity-50"
-                    >
-                      {isProcessingAction ? (
-                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      ) : (
-                        <Check className="w-3.5 h-3.5" />
-                      )}
-                      <span>Approve &amp; Publish</span>
-                    </button>
-
-                    <button
-                      type="button"
-                      disabled={isProcessingAction}
-                      onClick={() => {
-                        setRejectingRequest(req);
-                        setRejectReason('');
-                      }}
-                      className="px-3 py-2 bg-red-50 hover:bg-red-100 dark:bg-red-950/40 dark:hover:bg-red-900/50 text-red-600 dark:text-red-300 rounded-lg text-xs font-semibold transition-colors flex items-center gap-1 disabled:opacity-50"
-                    >
-                      <X className="w-3.5 h-3.5" />
-                      <span>Reject</span>
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </section>
-
-      {/* SECTION 2: Beach Listings Table with 360 Tour Controls */}
-      <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h2 className="text-base font-bold text-slate-900 dark:text-white">
-              All Beach Listings
+            <Compass className="w-5 h-5 text-amber-600 dark:text-amber-400" />
+            <h2 className="text-sm font-bold text-amber-900 dark:text-amber-300">
+              Pending 360° Virtual Tour Requests ({pendingTourRequests.length})
             </h2>
-            <p className="text-xs text-slate-500 dark:text-gray-400">
-              Manage 360 tours, statuses, and public availability across all resorts.
-            </p>
           </div>
-        </div>
 
-        <div className="bg-white dark:bg-black rounded-xl border border-slate-200 dark:border-gray-800 shadow-sm overflow-hidden">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
-              <thead className="bg-slate-50 border-b border-slate-200 dark:border-gray-800 text-slate-500 dark:text-gray-400 uppercase tracking-wider font-semibold dark:bg-gray-900">
-                <tr>
-                  <th className="py-3.5 px-4">Beach Name &amp; Location</th>
-                  <th className="py-3.5 px-4">Map Coordinates &amp; Pin</th>
-                  <th className="py-3.5 px-4">Rating</th>
-                  <th className="py-3.5 px-4">Operating Hours</th>
-                  <th className="py-3.5 px-4">Listing Status</th>
-                  <th className="py-3.5 px-4">360° Virtual Tour</th>
-                  <th className="py-3.5 px-4 text-right">Moderation Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 dark:divide-gray-800 text-slate-700 dark:text-gray-300">
-                {!loading && beaches.length === 0 && (
-                  <tr>
-                    <td colSpan={7} className="py-12 text-center text-slate-500 dark:text-gray-400">
-                      No beach listings found.
-                    </td>
-                  </tr>
-                )}
-                {beaches.map((b) => {
-                  const hasTour = Boolean(b.virtual_tour_url);
-                  const pendingReq = tourRequests.find(
-                    (r) => r.beach_id === b.id && r.status === 'pending'
-                  );
-                  const pendingCoordReq = coordinateRequests.find(
-                    (r) => r.beach_id === b.id && r.status === 'pending'
-                  );
-
-                  return (
-                    <tr key={b.id} className="hover:bg-slate-50 dark:hover:bg-gray-900/60 transition-colors">
-                      {/* Name & Location */}
-                      <td className="py-3.5 px-4">
-                        <span className="font-bold text-slate-900 dark:text-white block">
-                          {b.name}
-                        </span>
-                        <span className="text-slate-400 text-[11px] dark:text-gray-400">
-                          {b.location}
-                        </span>
-                      </td>
-
-                      {/* Coordinates & Map Pin Column */}
-                      <td className="py-3.5 px-4">
-                        <div className="space-y-1">
-                          <div className="flex items-center gap-1.5 flex-wrap">
-                            {pendingCoordReq ? (
-                              <button
-                                type="button"
-                                onClick={() => setPreviewCoordRequest(pendingCoordReq)}
-                                className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 text-[11px] font-bold hover:bg-amber-200 transition-colors"
-                                title="Click to preview proposed pin on map"
-                              >
-                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                                <span>Coords Pending</span>
-                              </button>
-                            ) : b.latitude !== undefined && b.latitude !== null ? (
-                              <span className="font-mono text-[11px] text-slate-700 dark:text-gray-300">
-                                {Number(b.latitude).toFixed(4)}°N, {Number(b.longitude).toFixed(4)}°E
-                              </span>
-                            ) : (
-                              <span className="text-slate-400 text-[11px]">Not set</span>
-                            )}
-
-                            {/* Direct Admin Edit Pin Button */}
-                            <button
-                              type="button"
-                              onClick={() => setSelectedBeachForCoords(b)}
-                              className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded transition-colors"
-                              title="Directly Edit or Reposition Beach Map Pin as Admin"
-                            >
-                              <Edit className="w-3 h-3" />
-                              <span>Edit Pin</span>
-                            </button>
-
-                            <Link
-                              href={`/map?beach=${b.slug || b.id}`}
-                              target="_blank"
-                              className="p-1 text-slate-400 hover:text-blue-600 dark:hover:text-blue-400 rounded transition-colors"
-                              title="View Pin on Public Map"
-                            >
-                              <MapPin className="w-3.5 h-3.5" />
-                            </Link>
-                          </div>
-                        </div>
-                      </td>
-
-                      {/* Rating */}
-                      <td className="py-3.5 px-4 font-semibold text-amber-600">
-                        ★ {b.average_rating ? Number(b.average_rating).toFixed(1) : '5.0'}
-                      </td>
-
-                      {/* Hours */}
-                      <td className="py-3.5 px-4 text-slate-600 dark:text-gray-300">
-                        {formatHours(b.opening_hours)}
-                      </td>
-
-                      {/* Listing Status */}
-                      <td className="py-3.5 px-4">
-                        <span
-                          className={`px-2 py-0.5 rounded text-[11px] font-bold uppercase ${
-                            b.status === 'active'
-                              ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
-                              : 'bg-red-100 text-red-800 dark:bg-red-950/60 dark:text-red-300'
-                          }`}
-                        >
-                          {b.status}
-                        </span>
-                      </td>
-
-                      {/* 360 Tour Column */}
-                      <td className="py-3.5 px-4">
-                        <div className="flex items-center gap-1.5 flex-wrap">
-                          {pendingReq ? (
-                            <div className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300 text-[11px] font-bold">
-                              <span className="w-1.5 h-1.5 rounded-full bg-amber-500 animate-pulse" />
-                              <span>Request Pending</span>
-                            </div>
-                          ) : hasTour ? (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-100 text-blue-800 dark:bg-blue-950/60 dark:text-blue-300 text-[11px] font-bold">
-                              <Compass className="w-3 h-3 text-blue-600" />
-                              <span>Live 360°</span>
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 dark:bg-gray-800 dark:text-gray-400 text-[11px]">
-                              <span>None</span>
-                            </span>
-                          )}
-
-                          {/* Quick Preview or Direct Edit */}
-                          {hasTour && (
-                            <button
-                              type="button"
-                              onClick={() => openTourPreview(b.virtual_tour_url, b.name)}
-                              className="p-1 text-slate-500 hover:text-blue-600 dark:hover:text-blue-400 rounded transition-colors"
-                              title="Preview Live 360° Tour"
-                            >
-                              <Eye className="w-3.5 h-3.5" />
-                            </button>
-                          )}
-
-                          <button
-                            type="button"
-                            onClick={() => {
-                              setSelectedBeachForTour(b);
-                              setAdminTourInput(b.virtual_tour_url || '');
-                            }}
-                            className="inline-flex items-center gap-1 px-2 py-0.5 text-[11px] font-semibold text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-950/40 rounded transition-colors"
-                            title="Directly Edit or Set 360° Tour as Admin"
-                          >
-                            <Edit className="w-3 h-3" />
-                            <span>{hasTour ? 'Edit' : '+ Add'}</span>
-                          </button>
-                        </div>
-                      </td>
-
-                      {/* Moderation Actions */}
-                      <td className="py-3.5 px-4 text-right space-x-2">
-                        <Link
-                          href={`/beaches/${b.slug || b.id}`}
-                          target="_blank"
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-md font-semibold text-xs transition-colors dark:bg-gray-800 dark:text-white dark:hover:bg-gray-700 dark:border-black dark:border"
-                        >
-                          <Eye className="w-3.5 h-3.5" />
-                          <span>View</span>
-                        </Link>
-
-                        <button
-                          type="button"
-                          onClick={() => void toggleBeachStatus(b)}
-                          className={`inline-flex items-center gap-1 px-2.5 py-1.5 rounded-md font-semibold text-xs transition-colors ${
-                            b.status === 'active'
-                              ? 'bg-red-50 text-red-700 hover:bg-red-100 dark:bg-red-950/40 dark:text-red-300'
-                              : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300'
-                          }`}
-                        >
-                          {b.status === 'active' ? (
-                            <>
-                              <Ban className="w-3.5 h-3.5" />
-                              <span>Suspend</span>
-                            </>
-                          ) : (
-                            <>
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                              <span>Activate</span>
-                            </>
-                          )}
-                        </button>
-
-                        <button
-                          type="button"
-                          onClick={() => void deleteBeach(b)}
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 bg-red-50 hover:bg-red-100 text-red-700 rounded-md font-semibold text-xs transition-colors dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                          <span>Delete</span>
-                        </button>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </div>
-      </section>
-
-      {/* MODAL 1: Admin Direct 360 Tour Edit Modal */}
-      {selectedBeachForTour && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-lg w-full overflow-hidden border border-slate-200 dark:border-gray-800 shadow-2xl">
-            <div className="px-6 py-4 border-b border-slate-200 dark:border-gray-800 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <Compass className="w-5 h-5 text-blue-600" />
+          <div className="space-y-3">
+            {pendingTourRequests.map((req) => (
+              <div
+                key={req.id}
+                className="bg-white dark:bg-neutral-900 p-4 rounded-2xl border border-amber-100 dark:border-amber-900/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs"
+              >
                 <div>
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white">
-                    Manage 360° Virtual Tour
+                  <h3 className="font-bold text-sm text-[#1F3F74] dark:text-[#4987BA]">
+                    {req.beach?.name || 'Beach Listing'}
                   </h3>
-                  <p className="text-xs text-slate-500 dark:text-gray-400">
-                    {selectedBeachForTour.name}
+                  <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
+                    Proprietor submitted a 360° virtual tour for admin approval.
                   </p>
                 </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  {req.virtual_tour_url && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setPreviewTourUrl(req.virtual_tour_url);
+                        setPreviewTourBeachName(req.beach?.name || 'Beach');
+                        setShowPreviewModal(true);
+                      }}
+                      className="px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300 hover:bg-slate-200 cursor-pointer"
+                    >
+                      Preview Tour
+                    </button>
+                  )}
+                  <button
+                    type="button"
+                    onClick={() => handleApproveTour(req)}
+                    disabled={isProcessingAction}
+                    className="px-4 py-1.5 rounded-full text-xs font-bold bg-emerald-600 hover:bg-emerald-700 text-white shadow-2xs transition-all cursor-pointer"
+                  >
+                    Approve &amp; Publish
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRejectingRequest(req)}
+                    disabled={isProcessingAction}
+                    className="px-3 py-1.5 rounded-full text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
+                  >
+                    Reject
+                  </button>
+                </div>
               </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Pending Coordinate Requests */}
+      {pendingCoordRequests.length > 0 && (
+        <div className="bg-sky-50 dark:bg-sky-950/20 border border-sky-200 dark:border-sky-800 rounded-3xl p-6 space-y-4">
+          <div className="flex items-center gap-2">
+            <MapPin className="w-5 h-5 text-sky-600 dark:text-sky-400" />
+            <h2 className="text-sm font-bold text-sky-900 dark:text-sky-300">
+              Pending Map Coordinate Requests ({pendingCoordRequests.length})
+            </h2>
+          </div>
+
+          <div className="space-y-3">
+            {pendingCoordRequests.map((req) => (
+              <div
+                key={req.id}
+                className="bg-white dark:bg-neutral-900 p-4 rounded-2xl border border-sky-100 dark:border-sky-900/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-2xs"
+              >
+                <div>
+                  <h3 className="font-bold text-sm text-[#1F3F74] dark:text-[#4987BA]">
+                    {req.beach?.name || 'Beach Listing'}
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
+                    Proposed: {req.proposed_latitude.toFixed(5)}, {req.proposed_longitude.toFixed(5)}
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-2 flex-wrap">
+                  <button
+                    type="button"
+                    onClick={() => setPreviewCoordRequest(req)}
+                    className="px-3 py-1.5 rounded-full text-xs font-bold bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300 hover:bg-slate-200 cursor-pointer"
+                  >
+                    Inspect on Map
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleApproveCoord(req)}
+                    disabled={isProcessingCoordAction}
+                    className="px-4 py-1.5 rounded-full text-xs font-bold bg-[#1F3F74] hover:bg-[#18325c] text-white shadow-2xs transition-all cursor-pointer"
+                  >
+                    Approve Pin
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setRejectingCoordRequest(req)}
+                    disabled={isProcessingCoordAction}
+                    className="px-3 py-1.5 rounded-full text-xs font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
+                  >
+                    Reject
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Main Beaches Cards Grid */}
+      <div>
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-black text-[#1F3F74] dark:text-[#4987BA]">
+            Registered Beaches ({beaches.length})
+          </h2>
+        </div>
+
+        {loading ? (
+          <div className="py-24 text-center">
+            <Loader2 className="w-8 h-8 animate-spin mx-auto text-[#1F3F74] dark:text-[#4987BA] mb-2" />
+            <p className="text-xs font-semibold text-slate-400">Loading beach directory...</p>
+          </div>
+        ) : beaches.length === 0 ? (
+          <div className="p-12 text-center bg-white dark:bg-neutral-900 rounded-3xl border border-slate-200 dark:border-neutral-800 space-y-3">
+            <Palmtree className="w-10 h-10 mx-auto text-slate-300 dark:text-neutral-600" />
+            <h3 className="font-bold text-base text-[#1F3F74] dark:text-[#4987BA]">No beach listings registered</h3>
+            <p className="text-xs text-slate-400 max-w-sm mx-auto">
+              Approved resort applications will automatically generate beach cards here.
+            </p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {beaches.map((beach) => {
+              const hasTour = Boolean(beach.virtual_tour_url);
+              const isActive = beach.status === 'active';
+
+              return (
+                <div
+                  key={beach.id}
+                  className="bg-white dark:bg-neutral-900 rounded-3xl border border-slate-200 dark:border-neutral-800 shadow-xs hover:border-[#1F3F74] dark:hover:border-[#4987BA] transition-all overflow-hidden flex flex-col justify-between"
+                >
+                  {/* Card Image / Cover */}
+                  <div>
+                    <div className="relative h-44 w-full bg-slate-100 dark:bg-neutral-800 overflow-hidden">
+                      {beach.cover_image_url ? (
+                        <Image
+                          src={beach.cover_image_url}
+                          alt={beach.name}
+                          fill
+                          className="object-cover"
+                        />
+                      ) : (
+                        <div className="w-full h-full flex items-center justify-center text-slate-300 dark:text-neutral-600">
+                          <Palmtree className="w-12 h-12" />
+                        </div>
+                      )}
+
+                      {/* Top Badges */}
+                      <div className="absolute top-3 left-3 right-3 flex items-center justify-between gap-2">
+                        {/* Status Badge */}
+                        <span
+                          className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-wider shadow-sm ${
+                            isActive
+                              ? 'bg-emerald-500 text-white'
+                              : 'bg-rose-500 text-white'
+                          }`}
+                        >
+                          {isActive ? 'Active' : 'Suspended'}
+                        </span>
+
+                        {/* 360 Tour Badge */}
+                        {hasTour ? (
+                          <span
+                            className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-[10px] font-bold bg-[#1F3F74] text-white shadow-sm"
+                            title="360° Virtual Tour Active"
+                          >
+                            <Sparkles className="w-3 h-3 text-amber-300" />
+                            <span>360° Tour</span>
+                          </span>
+                        ) : (
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-semibold bg-black/60 text-white/80 backdrop-blur-xs">
+                            No Tour
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Card Content */}
+                    <div className="p-5 space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <h3 className="font-bold text-base text-[#1F3F74] dark:text-[#4987BA] truncate">
+                            {beach.name}
+                          </h3>
+                          <div className="flex items-center gap-1 text-slate-500 dark:text-neutral-400 text-xs mt-0.5">
+                            <MapPin className="w-3.5 h-3.5 flex-shrink-0 text-slate-400" />
+                            <span className="truncate">{beach.location || 'Barangay Binongkalan'}</span>
+                          </div>
+                        </div>
+
+                        {/* Rating */}
+                        <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 text-xs font-bold flex-shrink-0">
+                          <Star className="w-3.5 h-3.5 fill-current" />
+                          <span>{beach.average_rating ? Number(beach.average_rating).toFixed(1) : 'New'}</span>
+                        </div>
+                      </div>
+
+                      {/* Coordinates Info */}
+                      <div className="text-[11px] text-slate-400 dark:text-neutral-500 flex items-center justify-between">
+                        <span>GPS Coordinates:</span>
+                        <span className="font-mono text-slate-600 dark:text-neutral-400">
+                          {beach.latitude ? Number(beach.latitude).toFixed(4) : '—'}, {beach.longitude ? Number(beach.longitude).toFixed(4) : '—'}
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Card Bottom Actions */}
+                  <div className="p-5 pt-0 border-t border-slate-100 dark:border-neutral-800/80 mt-2 flex flex-col gap-2">
+                    <div className="grid grid-cols-2 gap-2 pt-3">
+                      {/* Edit Info Button (Opens Comprehensive Modal) */}
+                      <button
+                        type="button"
+                        onClick={() => openEditModal(beach)}
+                        className="w-full py-2.5 px-3 rounded-full bg-[#1F3F74] hover:bg-[#18325c] text-white text-xs font-bold shadow-xs transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                      >
+                        <span>Edit Info</span>
+                      </button>
+
+                      {/* 360 Tour Button (Direct Preview or Assign) */}
+                      {hasTour ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPreviewTourUrl(beach.virtual_tour_url);
+                            setPreviewTourBeachName(beach.name);
+                            setShowPreviewModal(true);
+                          }}
+                          className="w-full py-2.5 px-3 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-[#1F3F74] dark:text-[#4987BA] text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>View 360°</span>
+                        </button>
+                      ) : (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            openEditModal(beach);
+                            setEditTab('tour');
+                          }}
+                          className="w-full py-2.5 px-3 rounded-full border border-[#1F3F74] text-[#1F3F74] dark:border-[#4987BA] dark:text-[#4987BA] hover:bg-[#1F3F74]/10 text-xs font-bold transition-all flex items-center justify-center gap-1 cursor-pointer"
+                        >
+                          <Sparkles className="w-3.5 h-3.5" />
+                          <span>Add 360°</span>
+                        </button>
+                      )}
+                    </div>
+
+                    {/* Secondary Actions: Map Pin & Status */}
+                    <div className="flex items-center justify-between text-xs pt-1 px-1">
+                      <button
+                        type="button"
+                        onClick={() => setSelectedBeachForCoords(beach)}
+                        className="text-slate-500 dark:text-neutral-400 hover:text-[#1F3F74] dark:hover:text-[#4987BA] font-semibold flex items-center gap-1 cursor-pointer"
+                      >
+                        <MapPin className="w-3.5 h-3.5" />
+                        <span>Pin Location</span>
+                      </button>
+
+                      <button
+                        type="button"
+                        onClick={() => toggleBeachStatus(beach)}
+                        className={`font-semibold cursor-pointer ${
+                          isActive
+                            ? 'text-rose-600 hover:text-rose-700'
+                            : 'text-emerald-600 hover:text-emerald-700'
+                        }`}
+                      >
+                        {isActive ? 'Suspend' : 'Activate'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        )}
+      </div>
+
+      {/* ========================================================================= */}
+      {/* COMPREHENSIVE "EDIT INFO" MODAL (Admin Exclusive 360° Tour & Details)     */}
+      {/* ========================================================================= */}
+      {editingBeach && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="w-full max-w-3xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
+            {/* Modal Header */}
+            <div className="p-6 border-b border-slate-200 dark:border-neutral-800 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-black text-[#1F3F74] dark:text-[#4987BA]">
+                  Manage Information
+                </h3>
+                <p className="text-xs text-slate-500 dark:text-neutral-400">
+                  Editing: {editingBeach.name}
+                </p>
+              </div>
+
               <button
                 type="button"
-                onClick={() => setSelectedBeachForTour(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-gray-200 rounded-lg"
+                onClick={() => setEditingBeach(null)}
+                className="p-2 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-full hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors"
+                aria-label="Close dialog"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="p-6 space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-slate-700 dark:text-gray-300 mb-1">
-                  Virtual Tour URL or &lt;iframe&gt; Embed Code
-                </label>
-                <textarea
-                  rows={4}
-                  value={adminTourInput}
-                  onChange={(e) => setAdminTourInput(e.target.value)}
-                  placeholder={`Paste full iframe embed code or link here:\n<iframe src="https://tour.panoee.net/iframe/..." width="100%" height="600"></iframe>\nOR\nhttps://kuula.co/share/...`}
-                  className="w-full px-3 py-2 text-xs font-mono bg-slate-50 dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 text-slate-900 dark:text-white resize-none"
-                />
-                <p className="text-[11px] text-slate-500 dark:text-gray-400 mt-1">
-                  Supports Panoee, Google Maps Photosphere, Kuula, Momento360, Matterport, or raw iframe embeds.
-                </p>
-              </div>
+            {/* Modal Tabs */}
+            <div className="px-6 pt-3 border-b border-slate-200 dark:border-neutral-800 flex items-center gap-2 overflow-x-auto text-xs font-bold">
+              {[
+                { id: 'basic', label: 'Basic Info' },
+                { id: 'tour', label: '360° Virtual Tour (Admin)' },
+                { id: 'coordinates', label: 'Map Coordinates' },
+                { id: 'rates', label: 'Rates & Fees' },
+                { id: 'photos', label: 'Photos & Cover' },
+              ].map((tab) => (
+                <button
+                  key={tab.id}
+                  type="button"
+                  onClick={() => setEditTab(tab.id as any)}
+                  className={`px-4 py-2 rounded-full transition-all cursor-pointer whitespace-nowrap ${
+                    editTab === tab.id
+                      ? 'bg-[#1F3F74] text-white shadow-2xs dark:bg-[#4987BA]'
+                      : 'text-slate-600 dark:text-neutral-400 hover:bg-slate-100 dark:hover:bg-neutral-800'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
 
-              {/* Detected URL Preview */}
-              {adminTourInput.trim() && (
-                <div className="p-3 bg-blue-50 dark:bg-blue-950/40 rounded-lg border border-blue-100 dark:border-blue-900/50 text-xs">
-                  <div className="flex items-center justify-between mb-1">
-                    <span className="font-semibold text-blue-900 dark:text-blue-200">
-                      Detected Embed Source:
-                    </span>
-                    <button
-                      type="button"
-                      onClick={() =>
-                        openTourPreview(
-                          extractTourEmbedUrl(adminTourInput) || adminTourInput,
-                          selectedBeachForTour.name
-                        )
-                      }
-                      className="text-blue-600 dark:text-blue-400 hover:underline font-bold text-[11px] flex items-center gap-1"
-                    >
-                      <Eye className="w-3 h-3" />
-                      <span>Test Preview</span>
-                    </button>
+            {/* Modal Form Body */}
+            <form onSubmit={handleSaveBeachInfo} className="p-6 overflow-y-auto space-y-6 flex-1">
+              {/* TAB 1: BASIC INFO */}
+              {editTab === 'basic' && (
+                <div className="space-y-4">
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
+                      Beach Establishment Name *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editForm.name}
+                      onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
+                      placeholder="e.g. Catmon Beach Resort"
+                      className="w-full px-4 py-2.5 rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold placeholder:italic focus:outline-none focus:ring-2 focus:ring-[#1F3F74] dark:focus:ring-[#4987BA]"
+                    />
                   </div>
-                  <p className="font-mono text-[11px] text-blue-700 dark:text-blue-300 break-all">
-                    {extractTourEmbedUrl(adminTourInput) || 'Invalid embed code or URL'}
-                  </p>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
+                      Location Address *
+                    </label>
+                    <input
+                      type="text"
+                      required
+                      value={editForm.location}
+                      onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
+                      placeholder="e.g. Barangay Binongkalan, Catmon, Cebu"
+                      className="w-full px-4 py-2.5 rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold placeholder:italic focus:outline-none focus:ring-2 focus:ring-[#1F3F74] dark:focus:ring-[#4987BA]"
+                    />
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
+                        Official Phone Number
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-slate-500">
+                          +63
+                        </span>
+                        <input
+                          type="text"
+                          maxLength={10}
+                          value={editForm.contact_phone}
+                          onChange={(e) =>
+                            setEditForm({ ...editForm, contact_phone: e.target.value.replace(/\D/g, '') })
+                          }
+                          placeholder="9123456789"
+                          className="w-full pl-12 pr-4 py-2.5 rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold placeholder:italic focus:outline-none focus:ring-2 focus:ring-[#1F3F74] dark:focus:ring-[#4987BA]"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
+                        Official Contact Email
+                      </label>
+                      <input
+                        type="email"
+                        value={editForm.contact_email}
+                        onChange={(e) => setEditForm({ ...editForm, contact_email: e.target.value })}
+                        placeholder="contact@resort.ph"
+                        className="w-full px-4 py-2.5 rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold placeholder:italic focus:outline-none focus:ring-2 focus:ring-[#1F3F74] dark:focus:ring-[#4987BA]"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
+                      About &amp; Description
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={editForm.description}
+                      onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                      placeholder="Describe the beach shoreline, atmosphere, and amenities..."
+                      className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold placeholder:italic focus:outline-none focus:ring-2 focus:ring-[#1F3F74] dark:focus:ring-[#4987BA]"
+                    />
+                  </div>
                 </div>
               )}
 
-              <div className="flex items-center gap-2 pt-2">
-                {selectedBeachForTour.virtual_tour_url && (
+              {/* TAB 2: 360 VIRTUAL TOUR (ADMIN EXCLUSIVE) */}
+              {editTab === 'tour' && (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-2xl bg-sky-50 dark:bg-sky-950/20 border border-sky-200 dark:border-sky-800">
+                    <div className="flex items-center gap-2">
+                      <Sparkles className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+                      <h4 className="text-xs font-bold text-sky-900 dark:text-sky-300">
+                        Administrator Exclusive 360° Virtual Tour Privileges
+                      </h4>
+                    </div>
+                    <p className="text-[11px] text-sky-800 dark:text-sky-400 mt-1">
+                      As Administrator, you have direct rights to enter, embed, or update the 360° virtual tour iframe URL (Kuula, Google Street View, Matterport, etc.).
+                    </p>
+                  </div>
+
+                  <div className="space-y-1.5">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
+                      360° Virtual Tour URL / Embed Link
+                    </label>
+                    <input
+                      type="url"
+                      value={editForm.virtual_tour_url}
+                      onChange={(e) => setEditForm({ ...editForm, virtual_tour_url: e.target.value })}
+                      placeholder="https://kuula.co/share/... or Google Street View embed URL"
+                      className="w-full px-4 py-2.5 rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold placeholder:italic focus:outline-none focus:ring-2 focus:ring-[#1F3F74] dark:focus:ring-[#4987BA]"
+                    />
+                  </div>
+
+                  {/* Tour Live Preview inside Modal */}
+                  {editForm.virtual_tour_url && (
+                    <div className="space-y-2">
+                      <span className="text-xs font-bold text-slate-500">Live Preview:</span>
+                      <div className="relative h-64 w-full rounded-2xl overflow-hidden border border-slate-200 dark:border-neutral-800 bg-black">
+                        <iframe
+                          src={extractTourEmbedUrl(editForm.virtual_tour_url)}
+                          className="w-full h-full border-0"
+                          allow="accelerometer; gyroscope; magnetometer; vr"
+                          title="Tour Preview"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
+
+              {/* TAB 3: COORDINATES */}
+              {editTab === 'coordinates' && (
+                <div className="space-y-4">
+                  <p className="text-xs text-slate-500 dark:text-neutral-400">
+                    Set precise GPS coordinates for the interactive Barangay Binongkalan coastal map.
+                  </p>
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
+                        Latitude
+                      </label>
+                      <input
+                        type="number"
+                        step="any"
+                        required
+                        value={editForm.latitude}
+                        onChange={(e) => setEditForm({ ...editForm, latitude: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#1F3F74] dark:focus:ring-[#4987BA]"
+                      />
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
+                        Longitude
+                      </label>
+                      <input
+                        type="number"
+                        step="any"
+                        required
+                        value={editForm.longitude}
+                        onChange={(e) => setEditForm({ ...editForm, longitude: e.target.value })}
+                        className="w-full px-4 py-2.5 rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-[#1F3F74] dark:focus:ring-[#4987BA]"
+                      />
+                    </div>
+                  </div>
+
                   <button
                     type="button"
-                    disabled={isSavingTour}
                     onClick={() => {
-                      setAdminTourInput('');
-                      setTimeout(() => void handleSaveAdminTour(), 50);
+                      setSelectedBeachForCoords({
+                        ...editingBeach,
+                        latitude: parseFloat(editForm.latitude) || 10.6348,
+                        longitude: parseFloat(editForm.longitude) || 124.0275,
+                      });
                     }}
-                    className="px-4 py-2.5 bg-red-50 hover:bg-red-100 text-red-600 text-xs font-bold rounded-lg transition-colors border border-red-200 dark:border-red-800 disabled:opacity-50"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-xs font-bold text-[#1F3F74] dark:text-[#4987BA] transition-colors cursor-pointer"
                   >
-                    Remove Tour
+                    <MapPin className="w-4 h-4" />
+                    <span>Pick Point Directly on Interactive Map</span>
                   </button>
-                )}
+                </div>
+              )}
 
+              {/* TAB 4: RATES & FEES */}
+              {editTab === 'rates' && (
+                <div className="space-y-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
+                        Entrance Fee
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-slate-400">
+                          ₱
+                        </span>
+                        <input
+                          type="number"
+                          step="any"
+                          value={editForm.entrance_fee}
+                          onChange={(e) => setEditForm({ ...editForm, entrance_fee: e.target.value })}
+                          placeholder="50"
+                          className="w-full pl-8 pr-4 py-2.5 rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold placeholder:italic focus:outline-none focus:ring-2 focus:ring-[#1F3F74] dark:focus:ring-[#4987BA]"
+                        />
+                      </div>
+                    </div>
+
+                    <div className="space-y-1.5">
+                      <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
+                        Cottage Starting Fee
+                      </label>
+                      <div className="relative">
+                        <span className="absolute left-4 top-1/2 -translate-y-1/2 font-bold text-slate-400">
+                          ₱
+                        </span>
+                        <input
+                          type="number"
+                          step="any"
+                          value={editForm.cottage_fee}
+                          onChange={(e) => setEditForm({ ...editForm, cottage_fee: e.target.value })}
+                          placeholder="500"
+                          className="w-full pl-8 pr-4 py-2.5 rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold placeholder:italic focus:outline-none focus:ring-2 focus:ring-[#1F3F74] dark:focus:ring-[#4987BA]"
+                        />
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 5: PHOTOS */}
+              {editTab === 'photos' && (
+                <div className="space-y-6">
+                  {/* Cover Photo */}
+                  <div className="space-y-2">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
+                      Cover Banner Photo (PNG or JPG)
+                    </label>
+                    <div className="relative h-44 w-full rounded-2xl overflow-hidden border border-slate-200 dark:border-neutral-800 bg-slate-100 dark:bg-neutral-800 flex items-center justify-center">
+                      {editForm.cover_image_url ? (
+                        <Image
+                          src={editForm.cover_image_url}
+                          alt="Cover photo"
+                          fill
+                          className="object-cover"
+                        />
+                      ) : (
+                        <span className="text-xs text-slate-400">No cover image uploaded</span>
+                      )}
+                    </div>
+                    <label className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-xs font-bold text-[#1F3F74] dark:text-[#4987BA] transition-colors cursor-pointer">
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Upload New Cover Image</span>
+                      <input
+                        type="file"
+                        accept="image/png,image/jpeg,image/jpg"
+                        onChange={(e) => handleImageUpload(e, 'cover_image_url')}
+                        className="hidden"
+                      />
+                    </label>
+                  </div>
+                </div>
+              )}
+
+              {/* Modal Footer */}
+              <div className="pt-4 border-t border-slate-200 dark:border-neutral-800 flex items-center justify-end gap-3">
                 <button
                   type="button"
-                  onClick={() => setSelectedBeachForTour(null)}
-                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-slate-700 dark:text-gray-300 font-bold text-xs rounded-lg transition-colors"
+                  onClick={() => setEditingBeach(null)}
+                  className="px-5 py-2.5 rounded-full text-xs font-semibold text-slate-600 dark:text-neutral-400 hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
-
                 <button
-                  type="button"
-                  disabled={isSavingTour}
-                  onClick={handleSaveAdminTour}
-                  className="flex-1 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-1.5 shadow-sm disabled:opacity-50"
+                  type="submit"
+                  disabled={isSavingEdit}
+                  className="px-6 py-2.5 rounded-full bg-[#1F3F74] hover:bg-[#18325c] dark:bg-[#4987BA] dark:hover:bg-[#3a72a1] text-white text-xs font-bold shadow-md transition-all cursor-pointer"
                 >
-                  {isSavingTour ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                  <span>Save &amp; Publish Tour</span>
+                  {isSavingEdit ? 'Saving Changes...' : 'Save Changes'}
                 </button>
               </div>
-            </div>
+            </form>
           </div>
         </div>
       )}
 
-      {/* MODAL 2: Reject Tour Request Modal */}
+      {/* Reject 360 Tour Modal */}
       {rejectingRequest && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-md w-full overflow-hidden border border-slate-200 dark:border-gray-800 shadow-2xl">
-            <div className="px-6 py-4 border-b border-slate-200 dark:border-gray-800 flex items-center justify-between">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-red-600" />
-                <span>Reject 360° Virtual Tour Request</span>
-              </h3>
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="w-full max-w-md bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-3xl p-6 shadow-2xl space-y-4">
+            <h3 className="text-base font-bold text-[#1F3F74] dark:text-[#4987BA]">
+              Reject 360° Virtual Tour
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-neutral-400">
+              Provide an administrative reason for the proprietor of &ldquo;{rejectingRequest.beach?.name}&rdquo;.
+            </p>
+            <textarea
+              rows={3}
+              value={rejectReason}
+              onChange={(e) => setRejectReason(e.target.value)}
+              placeholder="e.g. Incomplete 360 stitching, broken link, or low resolution."
+              className="w-full p-3 rounded-2xl border border-slate-300 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold placeholder:italic focus:outline-none focus:ring-2 focus:ring-[#1F3F74]"
+            />
+            <div className="flex items-center justify-end gap-2">
               <button
                 type="button"
                 onClick={() => setRejectingRequest(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-gray-200 rounded-lg"
+                className="px-4 py-2 rounded-full text-xs font-semibold text-slate-600 dark:text-neutral-400 hover:bg-slate-100 cursor-pointer"
               >
-                <X className="w-5 h-5" />
+                Cancel
               </button>
-            </div>
-
-            <div className="p-6 space-y-4">
-              <p className="text-xs text-slate-600 dark:text-gray-300">
-                Provide a reason or feedback for the beach owner of{' '}
-                <strong className="text-slate-900 dark:text-white">
-                  {rejectingRequest.beach?.name || 'this beach'}
-                </strong>
-                :
-              </p>
-
-              <textarea
-                rows={3}
-                value={rejectReason}
-                onChange={(e) => setRejectReason(e.target.value)}
-                placeholder="e.g. Tour URL was inaccessible, orientation was distorted, or link is missing photosphere data."
-                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-slate-900 dark:text-white resize-none"
-              />
-
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setRejectingRequest(null)}
-                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-gray-800 text-slate-700 dark:text-gray-300 font-bold text-xs rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  disabled={isProcessingAction}
-                  onClick={handleConfirmReject}
-                  className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
-                >
-                  {isProcessingAction ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                  <span>Confirm Rejection</span>
-                </button>
-              </div>
+              <button
+                type="button"
+                onClick={handleRejectTour}
+                disabled={isProcessingAction}
+                className="px-5 py-2 rounded-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs cursor-pointer"
+              >
+                Confirm Rejection
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* MODAL 3: 360 Virtual Tour Interactive Preview Modal */}
+      {/* Reject Coordinate Request Modal */}
+      {rejectingCoordRequest && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="w-full max-w-md bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-3xl p-6 shadow-2xl space-y-4">
+            <h3 className="text-base font-bold text-[#1F3F74] dark:text-[#4987BA]">
+              Reject Coordinate Placement
+            </h3>
+            <p className="text-xs text-slate-500 dark:text-neutral-400">
+              Provide reason for rejecting new coordinates for &ldquo;{rejectingCoordRequest.beach?.name}&rdquo;.
+            </p>
+            <textarea
+              rows={3}
+              value={coordRejectReason}
+              onChange={(e) => setCoordRejectReason(e.target.value)}
+              placeholder="e.g. Coordinates placed in sea waters instead of shoreline property."
+              className="w-full p-3 rounded-2xl border border-slate-300 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold placeholder:italic focus:outline-none focus:ring-2 focus:ring-[#1F3F74]"
+            />
+            <div className="flex items-center justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setRejectingCoordRequest(null)}
+                className="px-4 py-2 rounded-full text-xs font-semibold text-slate-600 dark:text-neutral-400 hover:bg-slate-100 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleRejectCoord}
+                disabled={isProcessingCoordAction}
+                className="px-5 py-2 rounded-full bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs cursor-pointer"
+              >
+                Confirm Rejection
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 360 Virtual Tour Fullscreen Modal */}
       <VirtualTourModal
         isOpen={showPreviewModal}
         onClose={() => setShowPreviewModal(false)}
@@ -1102,96 +1109,61 @@ export default function AdminBeachesPage() {
         beachName={previewTourBeachName}
       />
 
-      {/* MODAL 4: Admin Direct Coordinates / Map Pin Edit Modal */}
+      {/* Map Location Picker Modal for Direct Admin Repositioning */}
       {selectedBeachForCoords && (
         <LocationPickerModal
-          isOpen={!!selectedBeachForCoords}
+          isOpen={true}
           onClose={() => setSelectedBeachForCoords(null)}
+          onSave={async (coords) => {
+            try {
+              const res = await fetch('/api/admin/beaches', {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  id: selectedBeachForCoords.id,
+                  latitude: coords.lat,
+                  longitude: coords.lng,
+                }),
+              });
+              const data = await res.json();
+              if (!res.ok) throw new Error(data.error || 'Failed to update coordinates.');
+
+              setBeaches((current) =>
+                current.map((b) => (b.id === selectedBeachForCoords.id ? { ...b, ...coords } : b))
+              );
+              if (editingBeach?.id === selectedBeachForCoords.id) {
+                setEditForm((prev) => ({
+                  ...prev,
+                  latitude: String(coords.lat),
+                  longitude: String(coords.lng),
+                }));
+              }
+
+              showToast(`Pin location updated to ${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}.`);
+              setSelectedBeachForCoords(null);
+            } catch (err: unknown) {
+              showToast(err instanceof Error ? err.message : 'Failed to update pin.', 'error');
+            }
+          }}
+          initialLat={Number(selectedBeachForCoords.latitude) || 10.6348}
+          initialLng={Number(selectedBeachForCoords.longitude) || 124.0275}
           beachName={selectedBeachForCoords.name}
-          location={selectedBeachForCoords.location}
-          latitude={selectedBeachForCoords.latitude ?? '10.634800'}
-          longitude={selectedBeachForCoords.longitude ?? '124.027500'}
-          publicMapSlug={selectedBeachForCoords.slug || selectedBeachForCoords.id}
-          requireApprovalNotice={false}
-          submitButtonText="Save Beach Pin & Coordinates"
-          onSave={handleSaveAdminCoordinates}
         />
       )}
 
-      {/* MODAL 5: Preview Proposed Pin on Interactive Map */}
+      {/* Map Inspector for Proposed Coordinates */}
       {previewCoordRequest && (
         <LocationPickerModal
-          isOpen={!!previewCoordRequest}
+          isOpen={true}
           onClose={() => setPreviewCoordRequest(null)}
-          beachName={previewCoordRequest.beach?.name || 'Proposed Pin Preview'}
-          location={previewCoordRequest.requested_location || previewCoordRequest.beach?.location || ''}
-          latitude={previewCoordRequest.requested_latitude}
-          longitude={previewCoordRequest.requested_longitude}
-          publicMapSlug={previewCoordRequest.beach?.slug || previewCoordRequest.beach?.id}
-          requireApprovalNotice={false}
-          submitButtonText="Close Pin Preview"
           onSave={async () => {
+            await handleApproveCoord(previewCoordRequest);
             setPreviewCoordRequest(null);
           }}
+          initialLat={previewCoordRequest.proposed_latitude}
+          initialLng={previewCoordRequest.proposed_longitude}
+          beachName={`Proposed for: ${previewCoordRequest.beach?.name}`}
         />
-      )}
-
-      {/* MODAL 6: Reject Coordinate Request Modal */}
-      {rejectingCoordRequest && (
-        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-gray-900 rounded-2xl max-w-md w-full overflow-hidden border border-slate-200 dark:border-gray-800 shadow-2xl">
-            <div className="px-6 py-4 border-b border-slate-200 dark:border-gray-800 flex items-center justify-between">
-              <h3 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
-                <AlertCircle className="w-4 h-4 text-red-600" />
-                <span>Reject Coordinate &amp; Map Pin Request</span>
-              </h3>
-              <button
-                type="button"
-                onClick={() => setRejectingCoordRequest(null)}
-                className="p-1.5 text-slate-400 hover:text-slate-600 dark:hover:text-gray-200 rounded-lg"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-4">
-              <p className="text-xs text-slate-600 dark:text-gray-300">
-                Provide a reason or feedback for the beach owner of{' '}
-                <strong className="text-slate-900 dark:text-white">
-                  {rejectingCoordRequest.beach?.name || 'this beach'}
-                </strong>
-                :
-              </p>
-
-              <textarea
-                rows={3}
-                value={coordRejectReason}
-                onChange={(e) => setCoordRejectReason(e.target.value)}
-                placeholder="e.g. Proposed pin appears in deep water, or coordinate values do not match resort address."
-                className="w-full px-3 py-2 text-xs bg-slate-50 dark:bg-gray-800 border border-slate-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-red-500 text-slate-900 dark:text-white resize-none"
-              />
-
-              <div className="flex gap-2">
-                <button
-                  type="button"
-                  onClick={() => setRejectingCoordRequest(null)}
-                  className="flex-1 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-gray-800 text-slate-700 dark:text-gray-300 font-bold text-xs rounded-lg transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  disabled={isProcessingCoordAction}
-                  onClick={handleConfirmRejectCoordinates}
-                  className="flex-1 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-lg transition-colors flex items-center justify-center gap-1.5 disabled:opacity-50"
-                >
-                  {isProcessingCoordAction ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : null}
-                  <span>Confirm Rejection</span>
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
       )}
     </div>
   );

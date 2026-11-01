@@ -194,7 +194,7 @@ export default function AdminApplicationDetailPage({
           href="/admin/applications"
           className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 text-white rounded-md text-xs font-semibold"
         >
-          <ArrowLeft className="w-3.5 h-3.5" />
+  
           <span>Back to Applications</span>
         </Link>
       </div>
@@ -207,14 +207,14 @@ export default function AdminApplicationDetailPage({
         href="/admin/applications"
         className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-white dark:hover:text-gray-300 transition-colors"
       >
-        <ArrowLeft className="w-3.5 h-3.5" />
+
         <span>Back to Applications List</span>
       </Link>
 
       <div className="bg-white dark:bg-black p-6 sm:p-8 rounded-xl border border-slate-200 dark:border-black shadow-sm space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 dark:border-gray-800 pb-4">
           <div>
-            <h1 className="text-xl font-bold text-slate-900 dark:text-white">
+            <h1 className="text-xl font-bold text-[#1F3F74] dark:text-[#4987BA]">
               Review Application: {application.beach_name}
             </h1>
             <p className="text-xs text-slate-500 dark:text-gray-300">

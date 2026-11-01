@@ -7,7 +7,7 @@ export async function GET() {
     const auth = await authorizeRoles(['admin']);
     if (!auth.authorized) return NextResponse.json({ error: auth.message }, { status: auth.status });
     const { data, error } = await (auth.adminClient.from('beaches') as any)
-      .select('id, name, slug, location, latitude, longitude, status, average_rating, opening_hours, virtual_tour_url, contact_phone, contact_email, owner_id, cover_image_url')
+      .select('*')
       .order('name', { ascending: true });
     if (error) throw error;
     return NextResponse.json(data || [], { headers: { 'Cache-Control': 'no-store, max-age=0' } });
@@ -22,7 +22,26 @@ export async function PATCH(request: NextRequest) {
     const auth = await authorizeRoles(['admin']);
     if (!auth.authorized) return NextResponse.json({ error: auth.message }, { status: auth.status });
     const body = await request.json();
-    const { id, status, virtual_tour_url, latitude, longitude, location } = body;
+    const {
+      id,
+      name,
+      description,
+      status,
+      virtual_tour_url,
+      latitude,
+      longitude,
+      location,
+      contact_phone,
+      contact_email,
+      cover_image_url,
+      profile_image_url,
+      opening_hours,
+      entrance_fee,
+      cottage_fee,
+      rules,
+      images,
+    } = body;
+
     if (typeof id !== 'string') {
       return NextResponse.json({ error: 'A beach ID is required.' }, { status: 400 });
     }
@@ -30,6 +49,9 @@ export async function PATCH(request: NextRequest) {
     const updates: Record<string, any> = {
       updated_at: new Date().toISOString(),
     };
+
+    if (name !== undefined) updates.name = String(name).trim();
+    if (description !== undefined) updates.description = String(description).trim();
 
     if (status !== undefined) {
       if (!['active', 'suspended'].includes(status)) {
@@ -61,6 +83,16 @@ export async function PATCH(request: NextRequest) {
     if (location !== undefined && typeof location === 'string') {
       updates.location = location.trim();
     }
+
+    if (contact_phone !== undefined) updates.contact_phone = contact_phone ? String(contact_phone).trim() : null;
+    if (contact_email !== undefined) updates.contact_email = contact_email ? String(contact_email).trim() : null;
+    if (cover_image_url !== undefined) updates.cover_image_url = cover_image_url ? String(cover_image_url).trim() : null;
+    if (profile_image_url !== undefined) updates.profile_image_url = profile_image_url ? String(profile_image_url).trim() : null;
+    if (opening_hours !== undefined) updates.opening_hours = opening_hours;
+    if (entrance_fee !== undefined) updates.entrance_fee = entrance_fee;
+    if (cottage_fee !== undefined) updates.cottage_fee = cottage_fee;
+    if (rules !== undefined) updates.rules = rules;
+    if (images !== undefined) updates.images = images;
 
     if (Object.keys(updates).length <= 1) {
       return NextResponse.json({ error: 'No valid fields provided to update.' }, { status: 400 });

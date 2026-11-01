@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { ShieldCheck, Loader2 } from 'lucide-react';
+import { ShieldCheck, Loader2, Eye, EyeOff } from 'lucide-react';
 import { showToast } from '@/components/ui/feedback-toasts';
 import { createClient } from '@/lib/supabase/client';
 
@@ -10,22 +10,29 @@ export default function AdminLoginPage() {
   const router = useRouter();
   const username = 'Administrator';
   const [adminPassword, setAdminPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const passwordInputRef = useRef<HTMLInputElement | null>(null);
   const submittingRef = useRef(false);
 
   useEffect(() => {
-    // Clear any existing session when visiting login page
+    // Clear any existing non-admin session when visiting login page
     const clearSession = async () => {
       try {
         const supabase = createClient();
-        await supabase.auth.signOut();
+        const { data: { session } } = await supabase.auth.getSession();
+        if (session) {
+          const email = session.user.email?.toLowerCase() || '';
+          if (!['official.dagattabai@gmail.com', 'admin@dagattabai.ph'].includes(email)) {
+            await supabase.auth.signOut();
+          }
+        }
       } catch (error) {
-        console.error('Error clearing session:', error);
+        console.error('Error clearing non-admin session:', error);
       }
     };
-    
-    clearSession();
+
+    void clearSession();
     passwordInputRef.current?.focus();
   }, []);
 
@@ -53,8 +60,19 @@ export default function AdminLoginPage() {
         throw new Error(data.error || 'Invalid Admin PIN.');
       }
 
+      // Also establish the client-side Supabase session directly
+      try {
+        const supabase = createClient();
+        await supabase.auth.signInWithPassword({
+          email: data.email || 'official.dagattabai@gmail.com',
+          password: nextPin,
+        });
+      } catch (clientAuthErr) {
+        console.warn('Client-side session sync notice:', clientAuthErr);
+      }
+
       showToast('Administrator signed in successfully.');
-      // Force redirect
+      // Force redirect to admin dashboard
       window.location.replace('/admin/dashboard');
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Authentication failed';
@@ -69,7 +87,7 @@ export default function AdminLoginPage() {
   const handleAdminLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (pin.length !== 6) {
-      showToast('Please enter all 6 digits of your Administrator password.', 'error');
+      showToast('Please enter all 6 digits of your Administrator PIN.', 'error');
       return;
     }
     await loginWithPin(pin);
@@ -84,26 +102,26 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-slate-50 dark:bg-black text-slate-900 dark:text-white font-sans">
-      <div className="w-full max-w-md bg-white dark:bg-black border border-slate-200 dark:border-black p-8 sm:p-10 rounded-2xl shadow-lg space-y-6">
+    <div className="min-h-screen flex items-center justify-center px-4 py-12 bg-slate-50 dark:bg-black text-slate-900 dark:text-neutral-100 font-sans">
+      <div className="w-full max-w-md bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 p-8 sm:p-10 rounded-3xl shadow-xl space-y-6">
         {/* Header */}
         <div className="text-center space-y-2">
-          <div className="w-14 h-14 rounded-2xl bg-sky-50 border border-sky-100 flex items-center justify-center mx-auto text-sky-600 shadow-xs">
+          <div className="w-14 h-14 rounded-full bg-[#1F3F74]/10 dark:bg-[#4987BA]/20 border border-[#1F3F74]/20 flex items-center justify-center mx-auto text-[#1F3F74] dark:text-[#4987BA] shadow-xs">
             <ShieldCheck className="w-7 h-7" />
           </div>
 
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white">
-            Admin Portal
+          <h1 className="text-2xl font-black tracking-tight text-[#1F3F74] dark:text-[#4987BA]">
+            Barangay Admin Portal
           </h1>
-          <p className="text-xs text-slate-500 max-w-xs mx-auto dark:text-gray-300">
-            Enter your Administrator password to access the management console.
+          <p className="text-xs text-slate-500 dark:text-neutral-400 max-w-xs mx-auto">
+            Barangay Binongkalan, Catmon • Enter your 6-digit administrator PIN to access the console.
           </p>
         </div>
 
         <form onSubmit={handleAdminLogin} className="space-y-6">
           {/* Fixed Username Field */}
-          <div className="space-y-2">
-            <label className="block text-xs font-semibold text-slate-700 dark:text-white">
+          <div className="space-y-1.5">
+            <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
               Username
             </label>
             <input
@@ -111,42 +129,54 @@ export default function AdminLoginPage() {
               value={username}
               disabled
               suppressHydrationWarning
-              className="w-full px-4 py-3 bg-slate-100 border border-slate-300 rounded-xl text-sm font-semibold text-slate-600 cursor-not-allowed dark:bg-gray-900 dark:border-black dark:text-gray-400"
+              className="w-full px-4 py-3 bg-slate-100 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 rounded-full text-sm font-semibold text-slate-600 dark:text-neutral-400 cursor-not-allowed"
             />
           </div>
 
-          {/* Admin password */}
-          <div className="space-y-3">
-            <label htmlFor="admin-password" className="block text-xs font-semibold text-slate-700">
-              Password
+          {/* Admin PIN */}
+          <div className="space-y-1.5">
+            <label htmlFor="admin-password" className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
+              6-Digit Security PIN
             </label>
-            <input
-              id="admin-password"
-              ref={passwordInputRef}
-              type="password"
-              inputMode="numeric"
-              autoComplete="current-password"
-              maxLength={6}
-              required
-              value={adminPassword}
-              onChange={(e) => handlePinChange(e.target.value)}
-              suppressHydrationWarning
-              className="w-full px-4 py-3 bg-white border border-slate-300 rounded-xl text-sm font-semibold text-slate-900 tracking-[0.35em] focus:outline-none focus:ring-2 focus:ring-sky-600/20 focus:border-sky-600 dark:bg-gray-900 dark:border-black dark:text-white dark:focus:ring-sky-400"
-            />
+            <div className="relative">
+              <input
+                id="admin-password"
+                ref={passwordInputRef}
+                type={showPassword ? 'text' : 'password'}
+                inputMode="numeric"
+                autoComplete="current-password"
+                maxLength={6}
+                required
+                value={adminPassword}
+                onChange={(e) => handlePinChange(e.target.value)}
+                placeholder="Enter 6-digit PIN"
+                suppressHydrationWarning
+                className="w-full px-4 py-3 bg-white dark:bg-black border border-slate-300 dark:border-neutral-700 rounded-full text-sm font-bold text-slate-900 dark:text-white placeholder:italic placeholder:font-normal placeholder:text-slate-400 tracking-[0.25em] text-center focus:outline-none focus:ring-2 focus:ring-[#1F3F74] dark:focus:ring-[#4987BA]"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-neutral-200"
+                tabIndex={-1}
+                aria-label={showPassword ? 'Hide PIN' : 'Show PIN'}
+              >
+                {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+              </button>
+            </div>
           </div>
 
           <button
             type="submit"
             disabled={loading || pin.length !== 6}
-            className="w-full py-3 bg-slate-900 hover:bg-slate-800 disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-sm tracking-wide rounded-xl transition-all shadow-sm flex items-center justify-center gap-2"
+            className="w-full py-3 bg-[#1F3F74] hover:bg-[#18325c] dark:bg-[#4987BA] dark:hover:bg-[#3a72a1] disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-sm tracking-wide rounded-full transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
           >
             {loading ? (
               <>
                 <Loader2 className="w-4 h-4 animate-spin" />
-                <span>Logging in...</span>
+                <span>Verifying PIN...</span>
               </>
             ) : (
-              <span>Login</span>
+              <span>Sign In to Console</span>
             )}
           </button>
         </form>
