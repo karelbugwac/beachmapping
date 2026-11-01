@@ -54,7 +54,6 @@ export default function OwnerLayout({
 
   return (
     <AppShell
-      operatorName={beach?.name ? `${beach.name} Staff` : 'Resort Staff'}
       beachName={beach?.name || 'Catmon Beach Resort'}
       beachSlug={beach?.slug || beach?.id}
       isOpenNow={true}

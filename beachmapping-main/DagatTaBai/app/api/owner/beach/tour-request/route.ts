@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { beach_id, requested_tour_url, requester_note } = body;
+    const { beach_id, requested_tour_url, requester_note, is_recapture } = body;
 
     if (!beach_id || typeof beach_id !== 'string') {
       return NextResponse.json(
@@ -66,9 +66,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    if (!requested_tour_url || typeof requested_tour_url !== 'string') {
+    const tourUrl = (typeof requested_tour_url === 'string' && requested_tour_url.trim())
+      ? requested_tour_url.trim()
+      : (is_recapture ? 'Recapture Request' : '');
+
+    if (!tourUrl) {
       return NextResponse.json(
-        { error: 'A 360 Virtual Tour URL or embed code is required.' },
+        { error: 'A 360 Virtual Tour URL or recapture description is required.' },
         { status: 400, headers: noStoreHeaders }
       );
     }
@@ -91,7 +95,7 @@ export async function POST(request: NextRequest) {
     const savedRequest = await submitTourRequest({
       beachId: beach_id,
       ownerId: auth.user.id,
-      requestedUrl: requested_tour_url,
+      requestedUrl: tourUrl,
       requesterNote: requester_note,
     });
 

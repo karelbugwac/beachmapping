@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Sidebar } from './Sidebar';
 import { Topbar } from './Topbar';
 
@@ -17,28 +17,46 @@ interface AppShellProps {
 
 export function AppShell({
   children,
-  operatorName = 'Resort Operator',
   beachName = 'Catmon Beach Resort',
   beachSlug,
-  isOpenNow = true,
-  openingHours = '8:00 AM – 6:00 PM',
   reviewCount = 0,
   unreadNotifications = 0,
 }: AppShellProps) {
   const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [collapsed, setCollapsed] = useState(false);
+
+  // Load sidebar collapsed preference
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem('dtb_owner_sidebar_collapsed');
+      if (saved === 'true') {
+        setCollapsed(true);
+      }
+    } catch {
+      // Ignore
+    }
+  }, []);
+
+  const handleToggleCollapse = () => {
+    setCollapsed((prev) => {
+      const next = !prev;
+      try {
+        localStorage.setItem('dtb_owner_sidebar_collapsed', String(next));
+      } catch {
+        // Ignore
+      }
+      return next;
+    });
+  };
 
   return (
-    <div
-      className="h-screen flex font-sans transition-colors duration-200 overflow-hidden"
-      style={{
-        backgroundColor: 'var(--color-sand-50)',
-        color: 'var(--color-text)',
-      }}
-    >
-      {/* 1. SIDEBAR (264px desktop / off-canvas drawer mobile) */}
+    <div className="h-screen flex font-sans bg-[#f8fafc] dark:bg-black text-slate-900 dark:text-slate-100 transition-colors duration-200 overflow-hidden">
+      {/* 1. SIDEBAR (Collapsible desktop / off-canvas drawer mobile) */}
       <Sidebar
         mobileOpen={mobileNavOpen}
         onClose={() => setMobileNavOpen(false)}
+        collapsed={collapsed}
+        onToggleCollapse={handleToggleCollapse}
         reviewCount={reviewCount}
         beachSlug={beachSlug}
         beachName={beachName}
@@ -50,18 +68,13 @@ export function AppShell({
         {/* Topbar Landmark */}
         <Topbar
           onOpenMobileNav={() => setMobileNavOpen(true)}
-          operatorName={operatorName}
-          isOpenNow={isOpenNow}
-          openingHours={openingHours}
+          beachName={beachName}
+          collapsed={collapsed}
+          onToggleCollapse={handleToggleCollapse}
         />
 
-        {/* Page Content: 1440px max width, 32px gutters, consistent left edge */}
-        <main
-          className="flex-1 p-6 sm:p-8 max-w-[1440px] w-full mx-auto overflow-y-auto"
-          style={{
-            animation: 'fadeUp 240ms ease-out forwards',
-          }}
-        >
+        {/* Page Content */}
+        <main className="flex-1 p-5 sm:p-7 max-w-[1440px] w-full mx-auto overflow-y-auto no-scrollbar">
           {children}
         </main>
       </div>
