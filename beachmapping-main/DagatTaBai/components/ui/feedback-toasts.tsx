@@ -1,16 +1,19 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { AlertCircle, CheckCircle2, X } from 'lucide-react';
+import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
 type ToastKind = 'success' | 'error';
 type ToastItem = { id: number; kind: ToastKind; message: string };
 type ToastEventDetail = { kind: ToastKind; message: string };
 
 export function showToast(message: string, kind: ToastKind = 'success') {
-  window.dispatchEvent(new CustomEvent<ToastEventDetail>('dagattabai:toast', {
-    detail: { kind, message },
-  }));
+  if (typeof window === 'undefined') return;
+  window.dispatchEvent(
+    new CustomEvent<ToastEventDetail>('dagattabai:toast', {
+      detail: { kind, message },
+    })
+  );
 }
 
 export function FeedbackToasts() {
@@ -24,10 +27,15 @@ export function FeedbackToasts() {
       const { kind, message } = (event as CustomEvent<ToastEventDetail>).detail;
       const id = ++nextId;
       setToasts((current) => [...current, { id, kind, message }]);
-      timers.set(id, setTimeout(() => {
-        setToasts((current) => current.filter((toast) => toast.id !== id));
-        timers.delete(id);
-      }, 5000));
+      
+      // Auto-dismiss after exactly 5 seconds
+      timers.set(
+        id,
+        setTimeout(() => {
+          setToasts((current) => current.filter((toast) => toast.id !== id));
+          timers.delete(id);
+        }, 5000)
+      );
     };
 
     window.addEventListener('dagattabai:toast', handleToast);
@@ -37,18 +45,14 @@ export function FeedbackToasts() {
     };
   }, []);
 
-  const dismiss = (id: number) => {
-    setToasts((current) => current.filter((toast) => toast.id !== id));
-  };
-
   return (
-    <div className="fixed top-6 left-1/2 -translate-x-1/2 z-[200] flex w-[min(26rem,calc(100vw-2rem))] flex-col items-center gap-2 pointer-events-none" aria-live="polite">
+    <div
+      className="fixed top-6 left-1/2 -translate-x-1/2 z-[300] flex w-auto max-w-[90vw] sm:max-w-md flex-col items-center gap-2 pointer-events-none"
+      aria-live="polite"
+    >
       {toasts.map((toast) => {
-        const Icon = toast.kind === 'success' ? CheckCircle2 : AlertCircle;
-        const colors = toast.kind === 'success'
-          ? 'border-emerald-200 bg-white text-emerald-950 shadow-lg dark:bg-neutral-900 dark:border-emerald-800 dark:text-emerald-100'
-          : 'border-red-600 bg-red-600 text-white shadow-xl shadow-red-950/25';
-        const iconColor = toast.kind === 'success' ? 'text-emerald-600 dark:text-emerald-400' : 'text-white';
+        const isSuccess = toast.kind === 'success';
+        const Icon = isSuccess ? CheckCircle2 : AlertCircle;
         const formattedMsg = toast.message
           ? toast.message.charAt(0).toUpperCase() + toast.message.slice(1)
           : '';
@@ -56,21 +60,15 @@ export function FeedbackToasts() {
         return (
           <div
             key={toast.id}
-            role={toast.kind === 'error' ? 'alert' : 'status'}
-            className={`pointer-events-auto flex items-center gap-2.5 rounded-full px-5 py-3 shadow-lg ${colors} animate-in fade-in slide-in-from-top-4 duration-300 w-full`}
+            role={isSuccess ? 'status' : 'alert'}
+            className={`pointer-events-auto flex items-center justify-center gap-2.5 rounded-full px-6 py-3.5 shadow-2xl text-white font-medium text-xs sm:text-sm tracking-wide animate-in fade-in slide-in-from-top-4 duration-300 ${
+              isSuccess
+                ? 'bg-emerald-600 shadow-emerald-950/20'
+                : 'bg-red-600 shadow-red-950/25'
+            }`}
           >
-            <Icon className={`h-4 w-4 shrink-0 ${iconColor}`} />
-            <p className="min-w-0 flex-1 text-xs sm:text-sm font-semibold">{formattedMsg}</p>
-            {toast.kind !== 'error' && (
-              <button
-                type="button"
-                onClick={() => dismiss(toast.id)}
-                className="-mr-1 rounded-full p-1 text-slate-500 hover:bg-slate-100 transition-colors"
-                aria-label="Dismiss notification"
-              >
-                <X className="h-3.5 w-3.5" />
-              </button>
-            )}
+            <Icon className="h-4 w-4 shrink-0 text-white" />
+            <span className="text-center">{formattedMsg}</span>
           </div>
         );
       })}

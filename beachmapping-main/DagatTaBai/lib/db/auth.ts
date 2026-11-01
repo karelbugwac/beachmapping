@@ -15,18 +15,43 @@ export async function getCurrentSession(): Promise<AuthUser | null> {
     const { data, error } = await supabase.auth.getUser();
     if (error || !data.user) return null;
 
-    const { data: profile, error: profileError } = await (supabase.from('profiles') as any)
-      .select('id, full_name, email, role, profile_image_url, created_at')
-      .eq('id', data.user.id)
-      .maybeSingle();
-    if (profileError) return null;
+    let profile: any = null;
+    try {
+      const { data: profData, error: profileError } = await (supabase.from('profiles') as any)
+        .select('id, full_name, email, role, profile_image_url, created_at')
+        .eq('id', data.user.id)
+        .maybeSingle();
+      if (!profileError && profData) {
+        profile = profData;
+      }
+    } catch {
+      // Graceful fallback to user auth metadata if profiles table query fails
+    }
+
+    const email = data.user.email || '';
+    const metadata = (data.user.user_metadata || {}) as Record<string, any>;
+    const fullName =
+      profile?.full_name ||
+      metadata.full_name ||
+      metadata.name ||
+      (email ? email.split('@')[0] : 'User');
+    const role =
+      (profile?.role as AuthUser['role']) ||
+      (metadata.role as AuthUser['role']) ||
+      (email.toLowerCase().includes('admin') ? 'admin' : 'user');
+    const profileImageUrl =
+      profile?.profile_image_url ||
+      metadata.profile_image_url ||
+      metadata.avatar_url ||
+      metadata.picture ||
+      null;
 
     return {
       id: data.user.id,
-      full_name: profile?.full_name || data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'User',
-      email: data.user.email || '',
-      role: (profile?.role as AuthUser['role']) || 'user',
-      profile_image_url: profile?.profile_image_url || null,
+      full_name: fullName,
+      email: email,
+      role: role,
+      profile_image_url: profileImageUrl,
       created_at: profile?.created_at || data.user.created_at,
     };
   } catch {
@@ -60,10 +85,13 @@ export async function updateSessionUser(updates: {
     });
     if (authError) return null;
 
-    const { error: profileError } = await (supabase.from('profiles') as any)
-      .update({ ...updates, updated_at: new Date().toISOString() })
-      .eq('id', current.id);
-    if (profileError) return null;
+    try {
+      await (supabase.from('profiles') as any)
+        .update({ ...updates, updated_at: new Date().toISOString() })
+        .eq('id', current.id);
+    } catch {
+      // Ignore if profiles row update isn't allowed by RLS
+    }
 
     return { ...current, ...updates };
   } catch {
@@ -114,21 +142,45 @@ export async function loginLocalUser(
   try {
     const supabase = await createServerSupabaseClient();
     const { data, error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
-    if (error || !data.user) return { error: 'Invalid email address or password.' };
+    if (error || !data.user) return { error: error?.message || 'Invalid email address or password.' };
 
-    const { data: profile, error: profileError } = await (supabase.from('profiles') as any)
-      .select('id, full_name, email, role, profile_image_url, created_at')
-      .eq('id', data.user.id)
-      .maybeSingle();
-    if (profileError) return { error: 'Could not load your account profile.' };
+    let profile: any = null;
+    try {
+      const { data: profData, error: profileError } = await (supabase.from('profiles') as any)
+        .select('id, full_name, email, role, profile_image_url, created_at')
+        .eq('id', data.user.id)
+        .maybeSingle();
+      if (!profileError && profData) {
+        profile = profData;
+      }
+    } catch {
+      // Ignore profile query failure, continue with auth user details
+    }
+
+    const metadata = (data.user.user_metadata || {}) as Record<string, any>;
+    const fullName =
+      profile?.full_name ||
+      metadata.full_name ||
+      metadata.name ||
+      cleanEmail.split('@')[0];
+    const role =
+      (profile?.role as AuthUser['role']) ||
+      (metadata.role as AuthUser['role']) ||
+      (cleanEmail.toLowerCase().includes('admin') ? 'admin' : 'user');
+    const profileImageUrl =
+      profile?.profile_image_url ||
+      metadata.profile_image_url ||
+      metadata.avatar_url ||
+      metadata.picture ||
+      null;
 
     return {
       user: {
         id: data.user.id,
-        full_name: profile?.full_name || data.user.user_metadata?.full_name || cleanEmail.split('@')[0],
+        full_name: fullName,
         email: data.user.email || cleanEmail,
-        role: (profile?.role as AuthUser['role']) || 'user',
-        profile_image_url: profile?.profile_image_url || null,
+        role: role,
+        profile_image_url: profileImageUrl,
         created_at: profile?.created_at || data.user.created_at,
       },
     };

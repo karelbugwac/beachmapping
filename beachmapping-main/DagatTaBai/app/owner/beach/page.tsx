@@ -16,6 +16,8 @@ import {
   Clock,
   Sparkles,
   Share2,
+  XCircle,
+  AlertTriangle,
 } from 'lucide-react';
 import type { BeachRecord, BeachPhoto } from '@/lib/db/beaches';
 import { VirtualTourModal } from '@/components/virtual-tour-modal';
@@ -46,10 +48,63 @@ interface ResortPost {
   likes: number;
 }
 
+interface ResortRuleItem {
+  id: string;
+  type: 'do' | 'dont';
+  title: string;
+  description: string;
+  category: string;
+}
+
+const DEFAULT_RESORT_RULES: ResortRuleItem[] = [
+  {
+    id: 'rule-1',
+    type: 'do',
+    category: 'Safety',
+    title: 'Wear life vests when swimming in deep areas',
+    description: 'Guests and children are advised to use personal floatation devices past the reef markers.',
+  },
+  {
+    id: 'rule-2',
+    type: 'do',
+    category: 'Environment',
+    title: 'Practice CLAYGO (Clean As You Go)',
+    description: 'Deposit all food packaging, plastics, and bottles into designated garbage bins located along the shoreline.',
+  },
+  {
+    id: 'rule-3',
+    type: 'do',
+    category: 'Etiquette',
+    title: 'Observe quiet hours after 10:00 PM',
+    description: 'Keep sound systems, portable karaoke, and outdoor music low to respect cottage neighbors and local residents.',
+  },
+  {
+    id: 'rule-4',
+    type: 'dont',
+    category: 'Safety',
+    title: 'No glass bottles or breakable containers on the sand',
+    description: 'Glass shards pose severe puncture hazards to barefoot swimmers and beachgoers.',
+  },
+  {
+    id: 'rule-5',
+    type: 'dont',
+    category: 'Environment',
+    title: 'No bonfires or uncontained open fires on the shoreline',
+    description: 'Use designated communal grilling stations only to protect coastal vegetation and prevent embers.',
+  },
+  {
+    id: 'rule-6',
+    type: 'dont',
+    category: 'Environment',
+    title: 'Do not step on or collect live coral and marine life',
+    description: 'Preserve Binongkalan marine life. Take pictures only and leave corals undisturbed.',
+  },
+];
+
 const DEFAULT_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export default function ManageInformationPage() {
-  const [activeTab, setActiveTab] = useState<'basic' | 'cottages' | 'facilities' | 'hours' | 'photos' | 'tour'>('basic');
+  const [activeTab, setActiveTab] = useState<'basic' | 'cottages' | 'facilities' | 'hours' | 'photos' | 'dos' | 'tour'>('basic');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [, setBeach] = useState<BeachRecord | null>(null);
@@ -178,6 +233,21 @@ export default function ManageInformationPage() {
     price: '',
     description: '',
     image_url: '',
+  });
+
+  // Do's & Don'ts Rules State
+  const [rules, setRules] = useState<ResortRuleItem[]>(DEFAULT_RESORT_RULES);
+  const [showAddRule, setShowAddRule] = useState(false);
+  const [newRule, setNewRule] = useState<{
+    type: 'do' | 'dont';
+    title: string;
+    description: string;
+    category: string;
+  }>({
+    type: 'do',
+    title: '',
+    description: '',
+    category: 'Safety',
   });
 
   // Photo upload state
@@ -554,10 +624,11 @@ export default function ManageInformationPage() {
       <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
         {[
           { key: 'basic', label: 'Basic Info' },
-          { key: 'cottages', label: 'Cottages & Rates' },
+          { key: 'cottages', label: 'Cottages & Rooms' },
           { key: 'facilities', label: 'Facilities & Parkings' },
           { key: 'hours', label: 'Operating Schedule' },
           { key: 'photos', label: 'Photos & Updates' },
+          { key: 'dos', label: "Do's & Don'ts" },
           { key: 'tour', label: '360° Virtual Tour' },
         ].map((tab) => {
           const isActive = activeTab === tab.key;
@@ -1401,6 +1472,163 @@ export default function ManageInformationPage() {
         </div>
       )}
 
+      {/* ── TAB: DO'S & DON'TS ── */}
+      {activeTab === 'dos' && (
+        <div className="space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
+                Resort Guidelines &amp; Regulations (Do&apos;s &amp; Don&apos;ts)
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
+                Establish clear safety policies, environmental guidelines, and conduct expectations for resort guests.
+              </p>
+            </div>
+
+            <button
+              type="button"
+              onClick={() => {
+                setNewRule({ type: 'do', title: '', description: '', category: 'Safety' });
+                setShowAddRule(true);
+              }}
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-bold shadow-xs cursor-pointer transition-all self-start sm:self-auto"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Guideline / Rule</span>
+            </button>
+          </div>
+
+          {/* Dual Columns: Do's vs Don'ts */}
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
+            {/* DO'S COLUMN */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between pb-2 border-b border-emerald-200 dark:border-emerald-900/60">
+                <div className="flex items-center gap-2">
+                  <span className="p-1 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400">
+                    <CheckCircle2 className="w-4 h-4" />
+                  </span>
+                  <h3 className="text-sm font-extrabold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
+                    Do&apos;s (Recommended &amp; Permitted)
+                  </h3>
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
+                  {rules.filter((r) => r.type === 'do').length} Guidelines
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {rules.filter((r) => r.type === 'do').map((rule) => (
+                  <div
+                    key={rule.id}
+                    className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-2xs hover:border-emerald-300 dark:hover:border-emerald-800 transition-colors flex items-start justify-between gap-3"
+                  >
+                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                      <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
+                      <div className="space-y-1 min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-bold text-slate-900 dark:text-white">
+                            {rule.title}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/40">
+                            {rule.category}
+                          </span>
+                        </div>
+                        {rule.description && (
+                          <p className="text-[11px] text-slate-500 dark:text-neutral-400 leading-relaxed">
+                            {rule.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRules(rules.filter((r) => r.id !== rule.id));
+                        setToast({ type: 'success', message: 'Guideline removed.' });
+                      }}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer flex-shrink-0"
+                      title="Delete guideline"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+
+                {rules.filter((r) => r.type === 'do').length === 0 && (
+                  <div className="py-8 text-center border-2 border-dashed border-slate-200 dark:border-neutral-800 rounded-2xl p-4 text-slate-400 text-xs">
+                    No &quot;Do&quot; guidelines registered. Click &quot;Add Guideline / Rule&quot; to add one.
+                  </div>
+                )}
+              </div>
+            </div>
+
+            {/* DON'TS COLUMN */}
+            <div className="space-y-4">
+              <div className="flex items-center justify-between pb-2 border-b border-red-200 dark:border-red-900/60">
+                <div className="flex items-center gap-2">
+                  <span className="p-1 rounded-full bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400">
+                    <XCircle className="w-4 h-4" />
+                  </span>
+                  <h3 className="text-sm font-extrabold text-red-800 dark:text-red-300 uppercase tracking-wider">
+                    Don&apos;ts (Strict Prohibitions)
+                  </h3>
+                </div>
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300">
+                  {rules.filter((r) => r.type === 'dont').length} Restrictions
+                </span>
+              </div>
+
+              <div className="space-y-3">
+                {rules.filter((r) => r.type === 'dont').map((rule) => (
+                  <div
+                    key={rule.id}
+                    className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-2xs hover:border-red-300 dark:hover:border-red-800 transition-colors flex items-start justify-between gap-3"
+                  >
+                    <div className="flex items-start gap-3 min-w-0 flex-1">
+                      <XCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
+                      <div className="space-y-1 min-w-0 flex-1">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="text-xs font-bold text-slate-900 dark:text-white">
+                            {rule.title}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900/40">
+                            {rule.category}
+                          </span>
+                        </div>
+                        {rule.description && (
+                          <p className="text-[11px] text-slate-500 dark:text-neutral-400 leading-relaxed">
+                            {rule.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setRules(rules.filter((r) => r.id !== rule.id));
+                        setToast({ type: 'success', message: 'Restriction removed.' });
+                      }}
+                      className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer flex-shrink-0"
+                      title="Delete restriction"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                ))}
+
+                {rules.filter((r) => r.type === 'dont').length === 0 && (
+                  <div className="py-8 text-center border-2 border-dashed border-slate-200 dark:border-neutral-800 rounded-2xl p-4 text-slate-400 text-xs">
+                    No &quot;Don&apos;t&quot; restrictions registered. Click &quot;Add Guideline / Rule&quot; to add one.
+                  </div>
+                )}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ── TAB 6: 360° VIRTUAL TOUR ── */}
       {activeTab === 'tour' && (
         <div className="space-y-6">
@@ -1765,6 +1993,144 @@ export default function ManageInformationPage() {
                   className="rounded-full px-6 py-2 bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-bold shadow-xs cursor-pointer"
                 >
                   Add Facility
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* ── MODAL: ADD RESORT GUIDELINE / RULE ── */}
+      {showAddRule && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-6 sm:p-8 max-w-lg w-full space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+            <div>
+              <h3 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
+                Add Resort Guideline / Policy
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1">
+                Configure guidelines, safety warnings, and rules for tourists visiting your resort.
+              </p>
+            </div>
+
+            <form
+              onSubmit={(e) => {
+                e.preventDefault();
+                if (!newRule.title.trim()) {
+                  setToast({ type: 'error', message: 'Rule title is required.' });
+                  return;
+                }
+                const item: ResortRuleItem = {
+                  id: `rule-${Date.now()}`,
+                  type: newRule.type,
+                  title: newRule.title.trim(),
+                  description: newRule.description.trim(),
+                  category: newRule.category || 'General',
+                };
+                setRules([...rules, item]);
+                setShowAddRule(false);
+                setNewRule({ type: 'do', title: '', description: '', category: 'Safety' });
+                setToast({ type: 'success', message: 'New resort rule added successfully!' });
+              }}
+              className="space-y-4"
+            >
+              {/* Type Switcher: Do vs Don't */}
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
+                  Rule Type *
+                </label>
+                <div className="grid grid-cols-2 p-1 bg-slate-100 dark:bg-neutral-950 rounded-full border border-slate-200 dark:border-neutral-800 gap-1">
+                  <button
+                    type="button"
+                    onClick={() => setNewRule({ ...newRule, type: 'do' })}
+                    className={`py-2 rounded-full text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                      newRule.type === 'do'
+                        ? 'bg-emerald-600 text-white shadow-xs'
+                        : 'text-slate-600 dark:text-neutral-400 hover:text-emerald-700'
+                    }`}
+                  >
+                    <CheckCircle2 className="w-3.5 h-3.5" />
+                    <span>Do (Permitted / Recommended)</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setNewRule({ ...newRule, type: 'dont' })}
+                    className={`py-2 rounded-full text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                      newRule.type === 'dont'
+                        ? 'bg-red-600 text-white shadow-xs'
+                        : 'text-slate-600 dark:text-neutral-400 hover:text-red-700'
+                    }`}
+                  >
+                    <XCircle className="w-3.5 h-3.5" />
+                    <span>Don&apos;t (Prohibited)</span>
+                  </button>
+                </div>
+              </div>
+
+              {/* Category Dropdown */}
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
+                  Category *
+                </label>
+                <div className="relative">
+                  <select
+                    value={newRule.category}
+                    onChange={(e) => setNewRule({ ...newRule, category: e.target.value })}
+                    className="w-full appearance-none rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 pl-4 pr-10 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#1F3F74]"
+                  >
+                    <option value="Safety">Safety</option>
+                    <option value="Shoreline Etiquette">Shoreline Etiquette</option>
+                    <option value="Environment">Environment &amp; Marine Life</option>
+                    <option value="Noise & Curfew">Noise &amp; Curfew</option>
+                    <option value="Pets">Pets Policy</option>
+                    <option value="General Policy">General Policy</option>
+                  </select>
+                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
+              </div>
+
+              {/* Title Input */}
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
+                  Rule Headline *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={newRule.title}
+                  onChange={(e) => setNewRule({ ...newRule, title: e.target.value })}
+                  placeholder={newRule.type === 'do' ? 'e.g. Wear life vests during high tide' : 'e.g. No glassware or bottles on shoreline'}
+                  className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs text-slate-900 dark:text-white placeholder:italic focus:outline-none focus:border-[#1F3F74]"
+                />
+              </div>
+
+              {/* Description */}
+              <div className="space-y-1">
+                <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
+                  Explanation / Details
+                </label>
+                <textarea
+                  rows={2}
+                  value={newRule.description}
+                  onChange={(e) => setNewRule({ ...newRule, description: e.target.value })}
+                  placeholder="Provide additional context or instructions for guests..."
+                  className="w-full rounded-2xl border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 p-3 text-xs text-slate-900 dark:text-white placeholder:italic focus:outline-none focus:border-[#1F3F74]"
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-3">
+                <button
+                  type="button"
+                  onClick={() => setShowAddRule(false)}
+                  className="rounded-full px-5 py-2 text-xs font-bold text-slate-600 dark:text-neutral-400 hover:bg-slate-100 dark:hover:bg-neutral-800 cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="rounded-full px-6 py-2 bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-bold shadow-xs cursor-pointer"
+                >
+                  Save Guideline
                 </button>
               </div>
             </form>

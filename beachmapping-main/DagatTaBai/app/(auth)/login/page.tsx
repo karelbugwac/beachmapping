@@ -1,9 +1,9 @@
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Eye,
   EyeOff,
@@ -13,8 +13,9 @@ import {
 } from 'lucide-react';
 import { showToast } from '@/components/ui/feedback-toasts';
 
-export default function UserLoginPage() {
+function UserLoginForm() {
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -40,6 +41,16 @@ export default function UserLoginPage() {
 
     setLoading(true);
     try {
+      // 1. Establish client-side Supabase session immediately
+      try {
+        const { createClient } = await import('@/lib/supabase/client');
+        const supabase = createClient();
+        await supabase.auth.signInWithPassword({ email, password });
+      } catch (clientAuthErr) {
+        console.warn('Client-side session sync notice:', clientAuthErr);
+      }
+
+      // 2. Establish server cookie session
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -52,7 +63,8 @@ export default function UserLoginPage() {
       }
 
       showToast('You are now signed in.');
-      router.push('/');
+      const redirectUrl = searchParams.get('redirect') || '/';
+      router.push(redirectUrl);
       router.refresh();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Invalid credentials.';
@@ -266,5 +278,13 @@ export default function UserLoginPage() {
       {/* Empty bottom anchor */}
       <div className="w-full max-w-sm sm:max-w-md" />
     </div>
+  );
+}
+
+export default function UserLoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#f8fafc] dark:bg-black" />}>
+      <UserLoginForm />
+    </Suspense>
   );
 }

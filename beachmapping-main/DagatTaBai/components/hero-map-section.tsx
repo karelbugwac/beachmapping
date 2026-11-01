@@ -69,14 +69,8 @@ export function HeroMapSection() {
 
           <div className="pt-6 sm:pt-8">
             <Link
-              href={user ? '/map' : '/login?redirect=/map'}
-              onClick={(e) => {
-                if (!user) {
-                  e.preventDefault();
-                  router.push('/login?redirect=/map');
-                }
-              }}
-              className="inline-flex items-center justify-center gap-2 px-7 py-3 rounded-full bg-[#1F3F74] hover:bg-[#285091] dark:bg-[#1F3F74] dark:hover:bg-[#285091] text-white font-bold text-xs sm:text-sm transition-all duration-200 shadow-xl shadow-blue-950/30 hover:shadow-blue-900/50 hover:-translate-y-0.5 active:translate-y-0 group border border-white/20"
+              href="/map"
+              className="inline-flex items-center justify-center gap-2 px-7 py-3 rounded-full bg-[#1F3F74] hover:bg-[#285091] dark:bg-[#1F3F74] dark:hover:bg-[#285091] text-white font-bold text-xs sm:text-sm transition-all duration-200 shadow-xl shadow-blue-950/30 hover:shadow-blue-900/50 hover:-translate-y-0.5 active:translate-y-0 group border border-white/20 cursor-pointer"
             >
               <Map className="w-4 h-4 transition-transform group-hover:scale-110" />
               <span>Explore Beaches</span>

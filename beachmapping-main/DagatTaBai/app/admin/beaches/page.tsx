@@ -63,8 +63,8 @@ export default function AdminBeachesPage() {
     virtual_tour_url: '',
     contact_phone: '',
     contact_email: '',
-    cover_image_url: '',
-    profile_image_url: '',
+    cover_image: '',
+    profile_image: '',
     entrance_fee: '',
     cottage_fee: '',
     status: 'active',
@@ -148,7 +148,11 @@ export default function AdminBeachesPage() {
       setBeaches((current) =>
         current.map((item) => (item.id === beach.id ? { ...item, status: data.beach.status } : item))
       );
-      showToast(`Beach listing ${status === 'active' ? 'activated' : 'suspended'}.`);
+      if (status === 'active') {
+        showToast(`Beach listing "${beach.name}" activated!`, 'success');
+      } else {
+        showToast(`Beach listing "${beach.name}" suspended.`, 'error');
+      }
     } catch (error: unknown) {
       showToast(error instanceof Error ? error.message : 'Failed to update beach status.', 'error');
     }
@@ -169,7 +173,7 @@ export default function AdminBeachesPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to approve tour request.');
 
-      showToast(`360° Virtual Tour for "${req.beach?.name || 'Beach'}" approved!`);
+      showToast(`360° Virtual Tour for "${req.beach?.name || 'Beach'}" approved!`, 'success');
       await Promise.all([fetchBeaches(), fetchTourRequests()]);
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Failed to approve tour.', 'error');
@@ -195,7 +199,7 @@ export default function AdminBeachesPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to reject tour request.');
 
-      showToast(`360° Virtual Tour request rejected.`);
+      showToast('360° Virtual Tour request rejected.', 'error');
       setRejectingRequest(null);
       setRejectReason('');
       await fetchTourRequests();
@@ -221,7 +225,7 @@ export default function AdminBeachesPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to approve coordinate request.');
 
-      showToast(`Map location coordinates for "${req.beach?.name || 'Beach'}" approved!`);
+      showToast(`Map location coordinates for "${req.beach?.name || 'Beach'}" approved!`, 'success');
       await Promise.all([fetchBeaches(), fetchCoordinateRequests()]);
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Failed to approve coordinate request.', 'error');
@@ -247,7 +251,7 @@ export default function AdminBeachesPage() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to reject coordinate request.');
 
-      showToast('Coordinate request rejected.');
+      showToast('Coordinate request rejected.', 'error');
       setRejectingCoordRequest(null);
       setCoordRejectReason('');
       await fetchCoordinateRequests();
@@ -269,6 +273,9 @@ export default function AdminBeachesPage() {
       cleanPhone = cleanPhone.replace('+63', '').trim();
     }
 
+    const coverImg = beach.cover_image || (beach as any).cover_image_url || '';
+    const profileImg = beach.profile_image || (beach as any).profile_image_url || '';
+
     setEditForm({
       id: beach.id,
       name: beach.name || '',
@@ -279,8 +286,8 @@ export default function AdminBeachesPage() {
       virtual_tour_url: beach.virtual_tour_url || '',
       contact_phone: cleanPhone,
       contact_email: beach.contact_email || '',
-      cover_image_url: beach.cover_image_url || '',
-      profile_image_url: beach.profile_image_url || '',
+      cover_image: coverImg,
+      profile_image: profileImg,
       entrance_fee: beach.entrance_fee ? String(beach.entrance_fee) : '',
       cottage_fee: beach.cottage_fee ? String(beach.cottage_fee) : '',
       status: beach.status || 'active',
@@ -314,10 +321,12 @@ export default function AdminBeachesPage() {
         virtual_tour_url: editForm.virtual_tour_url.trim() || null,
         contact_phone: editForm.contact_phone.trim() ? `+63 ${editForm.contact_phone.trim()}` : null,
         contact_email: editForm.contact_email.trim() || null,
-        cover_image_url: editForm.cover_image_url.trim() || null,
-        profile_image_url: editForm.profile_image_url.trim() || null,
-        entrance_fee: editForm.entrance_fee ? parseFloat(editForm.entrance_fee) : null,
-        cottage_fee: editForm.cottage_fee ? parseFloat(editForm.cottage_fee) : null,
+        cover_image: editForm.cover_image.trim() || null,
+        cover_image_url: editForm.cover_image.trim() || null,
+        profile_image: editForm.profile_image.trim() || null,
+        profile_image_url: editForm.profile_image.trim() || null,
+        entrance_fee: editForm.entrance_fee ? String(editForm.entrance_fee) : null,
+        cottage_fee: editForm.cottage_fee ? String(editForm.cottage_fee) : null,
       };
 
       const res = await fetch('/api/admin/beaches', {
@@ -333,7 +342,7 @@ export default function AdminBeachesPage() {
         current.map((b) => (b.id === editingBeach.id ? { ...b, ...data.beach } : b))
       );
 
-      showToast(`Information for "${editForm.name}" updated successfully.`);
+      showToast(`Information for "${editForm.name}" updated successfully.`, 'success');
       setEditingBeach(null);
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Failed to update beach.', 'error');
@@ -343,7 +352,7 @@ export default function AdminBeachesPage() {
   };
 
   // Upload helper for PNG / JPG only
-  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, targetField: 'cover_image_url' | 'profile_image_url') => {
+  const handleImageUpload = async (e: React.ChangeEvent<HTMLInputElement>, targetField: 'cover_image' | 'profile_image') => {
     const file = e.target.files?.[0];
     if (!file) return;
 
@@ -360,7 +369,7 @@ export default function AdminBeachesPage() {
     try {
       const uploadData = new FormData();
       uploadData.append('file', file);
-      uploadData.append('category', targetField === 'cover_image_url' ? 'cover' : 'profile');
+      uploadData.append('category', targetField === 'cover_image' ? 'cover' : 'profile');
 
       const res = await fetch('/api/owner/beach/images', {
         method: 'POST',
@@ -373,7 +382,7 @@ export default function AdminBeachesPage() {
       const url = data.photo_url || data.url;
       if (url) {
         setEditForm((prev) => ({ ...prev, [targetField]: url }));
-        showToast('Image uploaded successfully.');
+        showToast('Image uploaded successfully.', 'success');
       }
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Image upload failed.', 'error');
@@ -418,11 +427,11 @@ export default function AdminBeachesPage() {
                 </div>
 
                 <div className="flex items-center gap-2 flex-wrap">
-                  {req.virtual_tour_url && (
+                  {req.requested_tour_url && (
                     <button
                       type="button"
                       onClick={() => {
-                        setPreviewTourUrl(req.virtual_tour_url);
+                        setPreviewTourUrl(req.requested_tour_url);
                         setPreviewTourBeachName(req.beach?.name || 'Beach');
                         setShowPreviewModal(true);
                       }}
@@ -475,7 +484,7 @@ export default function AdminBeachesPage() {
                     {req.beach?.name || 'Beach Listing'}
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
-                    Proposed: {req.proposed_latitude.toFixed(5)}, {req.proposed_longitude.toFixed(5)}
+                    Proposed: {req.requested_latitude.toFixed(5)}, {req.requested_longitude.toFixed(5)}
                   </p>
                 </div>
 
@@ -536,6 +545,7 @@ export default function AdminBeachesPage() {
             {beaches.map((beach) => {
               const hasTour = Boolean(beach.virtual_tour_url);
               const isActive = beach.status === 'active';
+              const coverImg = beach.cover_image || (beach as any).cover_image_url;
 
               return (
                 <div
@@ -545,9 +555,9 @@ export default function AdminBeachesPage() {
                   {/* Card Image / Cover */}
                   <div>
                     <div className="relative h-44 w-full bg-slate-100 dark:bg-neutral-800 overflow-hidden">
-                      {beach.cover_image_url ? (
+                      {coverImg ? (
                         <Image
-                          src={beach.cover_image_url}
+                          src={coverImg}
                           alt={beach.name}
                           fill
                           className="object-cover"
@@ -859,7 +869,7 @@ export default function AdminBeachesPage() {
                       <span className="text-xs font-bold text-slate-500">Live Preview:</span>
                       <div className="relative h-64 w-full rounded-2xl overflow-hidden border border-slate-200 dark:border-neutral-800 bg-black">
                         <iframe
-                          src={extractTourEmbedUrl(editForm.virtual_tour_url)}
+                          src={extractTourEmbedUrl(editForm.virtual_tour_url) || ''}
                           className="w-full h-full border-0"
                           allow="accelerometer; gyroscope; magnetometer; vr"
                           title="Tour Preview"
@@ -978,9 +988,9 @@ export default function AdminBeachesPage() {
                       Cover Banner Photo (PNG or JPG)
                     </label>
                     <div className="relative h-44 w-full rounded-2xl overflow-hidden border border-slate-200 dark:border-neutral-800 bg-slate-100 dark:bg-neutral-800 flex items-center justify-center">
-                      {editForm.cover_image_url ? (
+                      {editForm.cover_image ? (
                         <Image
-                          src={editForm.cover_image_url}
+                          src={editForm.cover_image}
                           alt="Cover photo"
                           fill
                           className="object-cover"
@@ -995,7 +1005,7 @@ export default function AdminBeachesPage() {
                       <input
                         type="file"
                         accept="image/png,image/jpeg,image/jpg"
-                        onChange={(e) => handleImageUpload(e, 'cover_image_url')}
+                        onChange={(e) => handleImageUpload(e, 'cover_image')}
                         className="hidden"
                       />
                     </label>
@@ -1114,40 +1124,49 @@ export default function AdminBeachesPage() {
         <LocationPickerModal
           isOpen={true}
           onClose={() => setSelectedBeachForCoords(null)}
+          beachName={selectedBeachForCoords.name}
+          location={selectedBeachForCoords.location || 'Barangay Binongkalan'}
+          latitude={selectedBeachForCoords.latitude}
+          longitude={selectedBeachForCoords.longitude}
           onSave={async (coords) => {
             try {
+              const latNum = parseFloat(coords.latitude);
+              const lngNum = parseFloat(coords.longitude);
               const res = await fetch('/api/admin/beaches', {
                 method: 'PATCH',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                   id: selectedBeachForCoords.id,
-                  latitude: coords.lat,
-                  longitude: coords.lng,
+                  latitude: latNum,
+                  longitude: lngNum,
+                  location: coords.location,
                 }),
               });
               const data = await res.json();
               if (!res.ok) throw new Error(data.error || 'Failed to update coordinates.');
 
               setBeaches((current) =>
-                current.map((b) => (b.id === selectedBeachForCoords.id ? { ...b, ...coords } : b))
+                current.map((b) =>
+                  b.id === selectedBeachForCoords.id
+                    ? { ...b, latitude: latNum, longitude: lngNum, location: coords.location }
+                    : b
+                )
               );
               if (editingBeach?.id === selectedBeachForCoords.id) {
                 setEditForm((prev) => ({
                   ...prev,
-                  latitude: String(coords.lat),
-                  longitude: String(coords.lng),
+                  latitude: String(latNum),
+                  longitude: String(lngNum),
+                  location: coords.location,
                 }));
               }
 
-              showToast(`Pin location updated to ${coords.lat.toFixed(5)}, ${coords.lng.toFixed(5)}.`);
+              showToast(`Pin location updated to ${latNum.toFixed(5)}, ${lngNum.toFixed(5)}.`, 'success');
               setSelectedBeachForCoords(null);
             } catch (err: unknown) {
               showToast(err instanceof Error ? err.message : 'Failed to update pin.', 'error');
             }
           }}
-          initialLat={Number(selectedBeachForCoords.latitude) || 10.6348}
-          initialLng={Number(selectedBeachForCoords.longitude) || 124.0275}
-          beachName={selectedBeachForCoords.name}
         />
       )}
 
@@ -1156,13 +1175,14 @@ export default function AdminBeachesPage() {
         <LocationPickerModal
           isOpen={true}
           onClose={() => setPreviewCoordRequest(null)}
+          beachName={`Proposed for: ${previewCoordRequest.beach?.name || 'Beach'}`}
+          location={previewCoordRequest.requested_location || 'Barangay Binongkalan'}
+          latitude={previewCoordRequest.requested_latitude}
+          longitude={previewCoordRequest.requested_longitude}
           onSave={async () => {
             await handleApproveCoord(previewCoordRequest);
             setPreviewCoordRequest(null);
           }}
-          initialLat={previewCoordRequest.proposed_latitude}
-          initialLng={previewCoordRequest.proposed_longitude}
-          beachName={`Proposed for: ${previewCoordRequest.beach?.name}`}
         />
       )}
     </div>

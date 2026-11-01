@@ -17,16 +17,16 @@ export async function GET() {
   try {
     const auth = await authorizeRoles(['admin']);
     if (!auth.authorized) {
-      console.log('Not authorized:', auth.message);
+
       return NextResponse.json({ error: auth.message }, { status: auth.status });
     }
-    console.log('Authorized, fetching applications...');
+
     const { data, error } = await (auth.adminClient.from('owner_applications') as any)
       .select('*')
       .order('created_at', { ascending: false });
 
-    console.log('Applications data:', data);
-    console.log('Applications error:', error);
+
+
 
     if (error) {
       console.error('Failed to fetch applications:', error);

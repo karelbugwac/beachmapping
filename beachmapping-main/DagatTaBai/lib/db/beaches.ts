@@ -29,6 +29,8 @@ export interface BeachRecord {
   virtual_tour_url: string | null;
   contact_phone: string | null;
   contact_email: string | null;
+  facebook_url?: string | null;
+  instagram_url?: string | null;
   opening_hours: string | Record<string, string>;
   entrance_fee: string | null;
   entrance_fee_adults?: string | null;
@@ -98,6 +100,7 @@ export async function getAllBeaches(): Promise<BeachRecord[]> {
           virtual_tour_url: b.virtual_tour_url || null,
           contact_phone: b.contact_phone || null,
           contact_email: b.contact_email || null,
+          facebook_url: b.facebook_url || null,
           opening_hours: parsedOpeningHours,
           entrance_fee: b.entrance_fee,
           entrance_fee_adults: entranceFeeAdults,
@@ -217,6 +220,8 @@ export async function getBeachBySlug(slug: string): Promise<BeachRecord | null> 
         virtual_tour_url: b.virtual_tour_url || null,
         contact_phone: b.contact_phone || null,
         contact_email: b.contact_email || null,
+        facebook_url: b.facebook_url || null,
+        instagram_url: b.instagram_url || null,
         opening_hours: parsedOpeningHours,
         entrance_fee: b.entrance_fee,
         entrance_fee_adults: entranceFeeAdults,

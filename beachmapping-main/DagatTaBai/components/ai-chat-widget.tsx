@@ -184,15 +184,23 @@ export function AiChatWidget() {
       messages[messages.length - 1].sender === 'user' ||
       !messages[messages.length - 1].text.trim());
 
+  const isMap = pathname === '/map';
+
   return (
-    <div className="fixed bottom-5 right-5 z-50">
+    <div
+      className={`fixed z-50 transition-all duration-300 ${
+        isMap
+          ? 'top-20 right-3 sm:top-auto sm:bottom-5 sm:right-5'
+          : 'bottom-5 right-5'
+      }`}
+    >
       {/* Floating Trigger Button with active online beacon */}
       {!isOpen && (
         <div className="relative group">
           <button
             type="button"
             onClick={() => setIsOpen(true)}
-            className="group relative w-20 h-20 sm:w-24 sm:h-24 bg-transparent border-0 p-0 outline-none focus:outline-none shadow-none cursor-pointer transition-transform duration-300 hover:scale-105 active:scale-95 animate-float-slow select-none flex items-center justify-center"
+            className="group relative w-16 h-16 sm:w-24 sm:h-24 bg-transparent border-0 p-0 outline-none focus:outline-none shadow-none cursor-pointer transition-transform duration-300 hover:scale-105 active:scale-95 animate-float-slow select-none flex items-center justify-center"
             aria-label="Open Bai AI Guide"
           >
             <Image
@@ -200,12 +208,13 @@ export function AiChatWidget() {
               alt="Bai AI Guide - Click to chat"
               width={96}
               height={96}
+              style={{ width: 'auto', height: 'auto' }}
               className="object-contain drop-shadow-[0_8px_16px_rgba(31,63,116,0.25)] dark:drop-shadow-[0_8px_20px_rgba(0,0,0,0.5)] group-hover:drop-shadow-[0_12px_24px_rgba(31,63,116,0.35)] transition-all duration-300 pointer-events-none"
             />
             {/* Live emerald beacon indicator */}
-            <span className="absolute top-2 right-2 flex h-3.5 w-3.5">
+            <span className="absolute top-1.5 right-1.5 sm:top-2 sm:right-2 flex h-3 sm:h-3.5 w-3 sm:w-3.5">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-emerald-500 ring-2 ring-white dark:ring-black"></span>
+              <span className="relative inline-flex rounded-full h-3 sm:h-3.5 w-3 sm:w-3.5 bg-emerald-500 ring-2 ring-white dark:ring-black"></span>
             </span>
           </button>
         </div>
@@ -224,6 +233,7 @@ export function AiChatWidget() {
                   alt="Bai"
                   width={30}
                   height={30}
+                  style={{ width: 'auto', height: 'auto' }}
                   className="object-contain"
                 />
                 <span className="absolute bottom-0 right-0 w-2 h-2 bg-emerald-400 rounded-full ring-2 ring-[#1F3F74]" />
