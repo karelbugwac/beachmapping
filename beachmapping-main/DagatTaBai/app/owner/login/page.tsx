@@ -8,11 +8,8 @@ import {
   Loader2,
   Eye,
   EyeOff,
-  ArrowRight,
   CheckCircle2,
   AlertCircle,
-  Shield,
-  Edit2,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 
@@ -28,8 +25,6 @@ export default function OwnerLoginPage() {
   // Step 2 PIN state
   const [pinDigits, setPinDigits] = useState<string[]>(['', '', '', '', '', '']);
   const [showPin, setShowPin] = useState(false);
-  const [certified, setCertified] = useState(false);
-  const [certifyError, setCertifyError] = useState('');
   const [pinError, setPinError] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -84,8 +79,8 @@ export default function OwnerLoginPage() {
       return;
     }
     setStep(2);
+    setPinDigits(['', '', '', '', '', '']);
     setPinError('');
-    setCertifyError('');
   };
 
   const handleDigitChange = (index: number, value: string) => {
@@ -150,17 +145,10 @@ export default function OwnerLoginPage() {
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setPinError('');
-    setCertifyError('');
 
     if (pin.length !== 6) {
       setPinError('Please enter all 6 digits of your security PIN.');
       setToast({ type: 'error', message: 'Please enter all 6 digits of your security PIN.' });
-      return;
-    }
-
-    if (!certified) {
-      setCertifyError('You must certify that you are the authorized owner or caretaker.');
-      setToast({ type: 'error', message: 'Please check the certification box to proceed.' });
       return;
     }
 
@@ -212,7 +200,7 @@ export default function OwnerLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between items-center px-4 py-8 bg-[#f8fafc] dark:bg-black transition-colors duration-200 font-sans">
+    <div className="min-h-screen flex flex-col justify-center items-center px-4 py-8 bg-[#f8fafc] dark:bg-black transition-colors duration-200 font-sans">
       
       {/* ── Floating Message Banner (Centered, solid green/red, white text, 5s duration, NO "x") ── */}
       {toast && (
@@ -230,55 +218,37 @@ export default function OwnerLoginPage() {
         </div>
       )}
 
-      {/* Top Brand Logo */}
-      <div className="w-full flex items-center justify-center pt-4 sm:pt-6">
-        <div className="flex items-center gap-2.5">
-          <div className="relative w-9 h-9 flex-shrink-0 flex items-center justify-center">
+      <main className="w-full max-w-sm sm:max-w-md py-6">
+        <header className="flex flex-col items-center text-center mb-12">
+          <div className="relative w-16 h-16 flex items-center justify-center mb-4">
             <Image
               src="/images/logo.png"
-              alt="Dagat Ta Bai"
-              width={38}
-              height={38}
-              className="object-contain w-full h-full"
+              alt="Dagat Ta Bai logo"
+              width={64}
+              height={64}
+              className="object-contain"
               priority
             />
           </div>
-          <div>
-            <span className="font-sans font-extrabold text-xl tracking-tight text-[#1F3F74] dark:text-[#4987BA] leading-none block">
-              Dagat Ta Bai
-            </span>
-            <span className="text-[10.5px] font-semibold text-slate-500 dark:text-neutral-400 tracking-wider uppercase block mt-0.5">
-              Beach Owner Portal
-            </span>
-          </div>
-        </div>
-      </div>
-
-      {/* Central Login Card */}
-      <div className="w-full max-w-md my-auto py-6">
-        <div className="bg-white dark:bg-[#0c1424] border border-slate-200/90 dark:border-neutral-800 p-8 sm:p-10 rounded-2xl shadow-xl space-y-6">
-          
-          {/* Header Title & Subtitle */}
-          <div className="text-center space-y-1.5">
-            <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-white font-sans">
-              Beach Owner Login
-            </h1>
-            <p className="text-xs text-slate-500 dark:text-slate-400 max-w-xs mx-auto leading-relaxed">
-              {step === 1
-                ? 'Enter your registered establishment email address to begin.'
-                : 'Enter your 6-digit security PIN to access your resort dashboard.'}
-            </p>
-          </div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1F3F74] dark:text-[#4987BA]">
+            Beach Owner Portal
+          </h1>
+          <p className="text-xs text-slate-500 dark:text-neutral-400 max-w-xs mx-auto mt-1 leading-relaxed">
+            {step === 1
+              ? 'Enter your registered establishment email address to begin.'
+              : 'Enter your 6-digit PIN to access your beach management features.'}
+          </p>
+        </header>
 
           {/* ── STEP 1: Application Email ── */}
           {step === 1 && (
-            <form onSubmit={handleProceedToPin} className="space-y-5" noValidate>
+            <form onSubmit={handleProceedToPin} className="space-y-6" noValidate>
               <div className="space-y-1.5">
                 <label
                   htmlFor="owner-email"
                   className="block text-xs font-bold text-slate-700 dark:text-slate-300"
                 >
-                  Application Email <span className="text-red-500">*</span>
+                  Email <span className="text-red-500">*</span>
                 </label>
                 <div className="relative">
                   <Mail className="absolute left-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
@@ -318,7 +288,6 @@ export default function OwnerLoginPage() {
                 className="w-full py-3 bg-[#1F3F74] hover:bg-[#183460] active:scale-[0.99] text-white font-bold text-xs sm:text-sm tracking-wide rounded-full transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>Proceed</span>
-                <ArrowRight className="w-4 h-4" />
               </button>
             </form>
           )}
@@ -326,44 +295,7 @@ export default function OwnerLoginPage() {
           {/* ── STEP 2: 6-Digit PIN & Certification ── */}
           {step === 2 && (
             <form onSubmit={handleLogin} className="space-y-6" noValidate>
-              
-              {/* Email Badge with Change Option */}
-              <div className="flex items-center justify-between p-3 rounded-xl bg-slate-50 dark:bg-[#132035] border border-slate-200 dark:border-slate-800 text-xs">
-                <div className="flex items-center gap-2 overflow-hidden">
-                  <Mail className="w-3.5 h-3.5 text-[#1F3F74] dark:text-[#4987BA] flex-shrink-0" />
-                  <span className="truncate text-slate-700 dark:text-slate-200 font-medium">
-                    {email}
-                  </span>
-                </div>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setStep(1);
-                    setPinError('');
-                  }}
-                  className="inline-flex items-center gap-1 text-[11px] font-bold text-[#1F3F74] dark:text-[#4987BA] hover:underline flex-shrink-0 cursor-pointer"
-                >
-                  <Edit2 className="w-3 h-3" />
-                  <span>Change</span>
-                </button>
-              </div>
-
-              {/* 6-Digit PIN Inputs with Show/Hide Toggle */}
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
-                    6-Digit Security PIN <span className="text-red-500">*</span>
-                  </label>
-                  <button
-                    type="button"
-                    onClick={() => setShowPin(!showPin)}
-                    className="inline-flex items-center gap-1 text-[11px] font-medium text-slate-500 hover:text-[#1F3F74] dark:text-slate-400 dark:hover:text-white transition-colors cursor-pointer"
-                  >
-                    {showPin ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
-                    <span>{showPin ? 'Hide PIN' : 'Show PIN'}</span>
-                  </button>
-                </div>
-
+              <div className="space-y-3">
                 <div className="flex justify-center items-center gap-2 sm:gap-2.5">
                   {pinDigits.map((digit, i) => (
                     <input
@@ -389,32 +321,20 @@ export default function OwnerLoginPage() {
                   ))}
                 </div>
 
+                <div className="flex justify-center pt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowPin(!showPin)}
+                    className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-[#1F3F74] dark:text-neutral-400 dark:hover:text-[#4987BA] transition-colors cursor-pointer"
+                  >
+                    {showPin ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
+                    <span>{showPin ? 'Hide PIN' : 'Show PIN'}</span>
+                  </button>
+                </div>
+
                 {pinError && (
                   <p className="text-[11px] text-red-500 font-medium text-center pt-1 animate-in fade-in duration-200">
                     {pinError}
-                  </p>
-                )}
-              </div>
-
-              {/* ── Certification Checkbox ── */}
-              <div className="space-y-1 pt-1">
-                <label className="flex items-start gap-2.5 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={certified}
-                    onChange={(e) => {
-                      setCertified(e.target.checked);
-                      if (e.target.checked) setCertifyError('');
-                    }}
-                    className="w-4 h-4 rounded border-slate-300 text-[#1F3F74] focus:ring-[#1F3F74] mt-0.5 cursor-pointer accent-[#1F3F74]"
-                  />
-                  <span className="text-[11.5px] sm:text-xs text-slate-600 dark:text-slate-300 leading-snug">
-                    I certify that I am the authorized owner or caretaker of this registered establishment.
-                  </span>
-                </label>
-                {certifyError && (
-                  <p className="text-[11px] text-red-500 font-medium pl-6 pt-0.5 animate-in fade-in duration-200">
-                    {certifyError}
                   </p>
                 )}
               </div>
@@ -436,12 +356,25 @@ export default function OwnerLoginPage() {
               </button>
             </form>
           )}
-
+        <div className="mt-5 text-center">
+          {step === 2 && (
+            <button
+              type="button"
+              onClick={() => {
+                setStep(1);
+                setPinDigits(['', '', '', '', '', '']);
+                setPinError('');
+              }}
+              className="text-xs font-semibold text-[#1F3F74] dark:text-[#4987BA] hover:underline cursor-pointer"
+            >
+              Use a different email
+            </button>
+          )}
         </div>
-      </div>
+      </main>
 
       {/* Bottom Footer Copyright */}
-      <div className="text-center text-xs text-slate-400 dark:text-slate-500 pb-2">
+      <div className="text-center text-xs text-slate-400 dark:text-slate-500 pt-6">
         <p>© 2026 Dagat Ta Bai. All rights reserved.</p>
       </div>
 

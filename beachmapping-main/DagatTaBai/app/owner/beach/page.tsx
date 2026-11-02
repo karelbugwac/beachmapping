@@ -544,7 +544,7 @@ export default function ManageInformationPage() {
   }
 
   return (
-    <div className="space-y-8 max-w-5xl mx-auto pb-20">
+    <div className="space-y-5 max-w-5xl mx-auto pb-20">
       
       {/* ── Floating Message Banner (Centered, solid green/red, white text, 5s duration, NO "x") ── */}
       {toast && (
@@ -573,7 +573,7 @@ export default function ManageInformationPage() {
       </div>
 
       {/* ── Oblong Category Tab Pills ── */}
-      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-1">
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-7 gap-2 pb-1">
         {[
           { key: 'basic', label: 'Basic Info' },
           { key: 'cottages', label: 'Cottages & Rooms' },
@@ -588,8 +588,8 @@ export default function ManageInformationPage() {
             <button
               key={tab.key}
               type="button"
-              onClick={() => setActiveTab(tab.key as any)}
-              className={`px-5 py-2.5 rounded-full text-xs sm:text-sm font-bold transition-all whitespace-nowrap cursor-pointer ${
+              onClick={() => setActiveTab(tab.key as typeof activeTab)}
+              className={`w-full min-h-11 px-3 py-2 rounded-full text-xs sm:text-sm text-center leading-tight font-bold transition-all cursor-pointer ${
                 isActive
                   ? 'bg-[#1F3F74] text-white shadow-xs'
                   : 'bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-300 border border-slate-200 dark:border-neutral-800 hover:border-[#1F3F74]/50 hover:text-[#1F3F74] dark:hover:text-white'
@@ -654,8 +654,8 @@ export default function ManageInformationPage() {
               <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
                 Official Contact Phone
               </label>
-              <div className="relative flex items-center">
-                <span className="absolute left-3.5 px-2.5 py-1 rounded-full bg-slate-100 dark:bg-neutral-800 text-xs font-bold text-[#1F3F74] dark:text-[#4987BA] select-none pointer-events-none">
+              <div className="flex items-center w-full bg-white dark:bg-neutral-950 border border-slate-300 dark:border-neutral-700 rounded-full overflow-hidden focus-within:ring-2 focus-within:ring-[#1F3F74]/20 focus-within:border-[#1F3F74] transition-all">
+                <span className="px-4 py-2.5 bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-slate-300 font-bold text-xs sm:text-sm border-r border-slate-200 dark:border-neutral-700 select-none">
                   +63
                 </span>
                 <input
@@ -665,11 +665,13 @@ export default function ManageInformationPage() {
                   maxLength={10}
                   value={formData.contact_phone}
                   onChange={(e) => {
-                    const cleaned = e.target.value.replace(/\D/g, '').slice(0, 10);
+                    let cleaned = e.target.value.replace(/\D/g, '');
+                    if (cleaned.startsWith('0')) cleaned = cleaned.substring(1);
+                    cleaned = cleaned.slice(0, 10);
                     setFormData({ ...formData, contact_phone: cleaned });
                   }}
-                  placeholder="912 345 6789"
-                  className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 pl-17 pr-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus:outline-none focus:border-[#1F3F74] focus:ring-2 focus:ring-[#1F3F74]/20 transition-all"
+                  placeholder="917 123 4567"
+                  className="w-full min-w-0 px-4 py-2.5 text-xs sm:text-sm bg-transparent placeholder:italic placeholder:text-slate-400 font-normal text-slate-900 dark:text-white focus:outline-none"
                 />
               </div>
               <span className="text-[10.5px] text-slate-400 pl-3">Enter 10-digit mobile number (e.g. 9123456789)</span>

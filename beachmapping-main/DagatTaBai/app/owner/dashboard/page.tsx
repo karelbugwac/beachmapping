@@ -42,6 +42,12 @@ export default function OwnerDashboardPage() {
       year: 'numeric',
     });
   }, []);
+  const greeting = useMemo(() => {
+    const hour = new Date().getHours();
+    if (hour >= 12 && hour < 18) return 'Maayong hapon';
+    if (hour >= 18 || hour < 5) return 'Maayong gabii';
+    return 'Maayong buntag';
+  }, []);
 
   useEffect(() => {
     const loadDashboard = () =>
@@ -97,6 +103,9 @@ export default function OwnerDashboardPage() {
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
+      <p className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-[#4987BA]">
+        {greeting}
+      </p>
       
       {/* ── 1. Hero Overview Header (No Manage Listing button, no Binongkalan badge, date ONLY under name) ── */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200 dark:border-neutral-800">
@@ -135,9 +144,7 @@ export default function OwnerDashboardPage() {
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-slate-500 dark:text-neutral-400">Visitor Rating</span>
-              <div className="w-8 h-8 rounded-full bg-amber-50 dark:bg-amber-950/60 flex items-center justify-center text-amber-500">
-                <Star className="w-4 h-4 fill-amber-500" />
-              </div>
+              <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
             </div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl sm:text-3xl font-black text-[#1F3F74] dark:text-[#4987BA]">
@@ -157,9 +164,7 @@ export default function OwnerDashboardPage() {
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-slate-500 dark:text-neutral-400">Total Visits</span>
-              <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-950/60 flex items-center justify-center text-[#1F3F74] dark:text-[#4987BA]">
-                <Eye className="w-4 h-4" />
-              </div>
+              <Eye className="w-5 h-5 text-[#1F3F74] dark:text-[#4987BA]" />
             </div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl sm:text-3xl font-black text-[#1F3F74] dark:text-[#4987BA]">
@@ -181,9 +186,7 @@ export default function OwnerDashboardPage() {
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-slate-500 dark:text-neutral-400">Cottages &amp; Sheds</span>
-              <div className="w-8 h-8 rounded-full bg-emerald-50 dark:bg-emerald-950/60 flex items-center justify-center text-emerald-600">
-                <Building className="w-4 h-4" />
-              </div>
+              <Building className="w-5 h-5 text-emerald-600" />
             </div>
             <div className="flex items-baseline gap-1.5">
               <span className="text-2xl sm:text-3xl font-black text-[#1F3F74] dark:text-[#4987BA]">
@@ -205,9 +208,7 @@ export default function OwnerDashboardPage() {
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-slate-500 dark:text-neutral-400">360° Virtual Tour</span>
-              <div className="w-8 h-8 rounded-full bg-indigo-50 dark:bg-indigo-950/60 flex items-center justify-center text-indigo-600">
-                <Compass className="w-4 h-4" />
-              </div>
+              <Compass className="w-5 h-5 text-indigo-600" />
             </div>
             <div className="flex items-center gap-2">
               <span className={`w-2.5 h-2.5 rounded-full ${hasTour ? 'bg-emerald-500' : 'bg-amber-500'}`} />
