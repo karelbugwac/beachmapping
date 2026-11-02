@@ -25,7 +25,7 @@ export default function OwnerSettingsPage() {
   const { theme, setTheme } = useTheme();
 
   const [email, setEmail] = useState('');
-  const [beachName, setBeachName] = useState('Catmon Beach Resort');
+  const [beachName, setBeachName] = useState('');
   const [loading, setLoading] = useState(true);
   const [sendingReset, setSendingReset] = useState(false);
   const [resetSent, setResetSent] = useState(false);
@@ -41,16 +41,7 @@ export default function OwnerSettingsPage() {
   }, [toast]);
 
   // Caretakers State
-  const [caretakers, setCaretakers] = useState<CaretakerMember[]>([
-    {
-      id: 'ct-1',
-      name: 'Elena Rodrigo',
-      contact: 'elena.rodrigo@gmail.com',
-      role: 'Head Caretaker & Front Desk',
-      permissions: ['Manage Information', 'Operating Hours'],
-      added_at: 'Oct 28, 2026',
-    },
-  ]);
+  const [caretakers, setCaretakers] = useState<CaretakerMember[]>([]);
   const [showAddCaretaker, setShowAddCaretaker] = useState(false);
   const [newCaretaker, setNewCaretaker] = useState({
     name: '',
@@ -83,7 +74,7 @@ export default function OwnerSettingsPage() {
           setEmail(sessionData.user.email);
         }
         if (Array.isArray(beachData) && beachData.length > 0) {
-          setBeachName(beachData[0].name || 'Catmon Beach Resort');
+          setBeachName(beachData[0].name || '');
         }
       })
       .catch((error: unknown) => {

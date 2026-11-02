@@ -32,7 +32,7 @@ export function Sidebar({
   collapsed,
   onToggleCollapse,
   reviewCount = 0,
-  beachName = 'Catmon Beach Resort',
+  beachName = 'Your Beach',
   unreadNotifications = 0,
 }: SidebarProps) {
   const pathname = usePathname();

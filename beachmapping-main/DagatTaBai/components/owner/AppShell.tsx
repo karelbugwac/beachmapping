@@ -17,7 +17,7 @@ interface AppShellProps {
 
 export function AppShell({
   children,
-  beachName = 'Catmon Beach Resort',
+  beachName = 'Your Beach',
   beachSlug,
   reviewCount = 0,
   unreadNotifications = 0,

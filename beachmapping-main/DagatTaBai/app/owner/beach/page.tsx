@@ -56,51 +56,6 @@ interface ResortRuleItem {
   category: string;
 }
 
-const DEFAULT_RESORT_RULES: ResortRuleItem[] = [
-  {
-    id: 'rule-1',
-    type: 'do',
-    category: 'Safety',
-    title: 'Wear life vests when swimming in deep areas',
-    description: 'Guests and children are advised to use personal floatation devices past the reef markers.',
-  },
-  {
-    id: 'rule-2',
-    type: 'do',
-    category: 'Environment',
-    title: 'Practice CLAYGO (Clean As You Go)',
-    description: 'Deposit all food packaging, plastics, and bottles into designated garbage bins located along the shoreline.',
-  },
-  {
-    id: 'rule-3',
-    type: 'do',
-    category: 'Etiquette',
-    title: 'Observe quiet hours after 10:00 PM',
-    description: 'Keep sound systems, portable karaoke, and outdoor music low to respect cottage neighbors and local residents.',
-  },
-  {
-    id: 'rule-4',
-    type: 'dont',
-    category: 'Safety',
-    title: 'No glass bottles or breakable containers on the sand',
-    description: 'Glass shards pose severe puncture hazards to barefoot swimmers and beachgoers.',
-  },
-  {
-    id: 'rule-5',
-    type: 'dont',
-    category: 'Environment',
-    title: 'No bonfires or uncontained open fires on the shoreline',
-    description: 'Use designated communal grilling stations only to protect coastal vegetation and prevent embers.',
-  },
-  {
-    id: 'rule-6',
-    type: 'dont',
-    category: 'Environment',
-    title: 'Do not step on or collect live coral and marine life',
-    description: 'Preserve Binongkalan marine life. Take pictures only and leave corals undisturbed.',
-  },
-];
-
 const DEFAULT_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
 
 export default function ManageInformationPage() {
@@ -155,63 +110,13 @@ export default function ManageInformationPage() {
   });
 
   // Cottages State
-  const [cottages, setCottages] = useState<CottageItem[]>([
-    {
-      id: 'cot-1',
-      name: 'Open Air Bamboo Cottage',
-      price: '500',
-      capacity: '10 - 15 persons',
-      description: 'Shaded shoreline cottage made of natural bamboo with wooden picnic table and direct beach access.',
-      image_url: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=600&q=80',
-    },
-    {
-      id: 'cot-2',
-      name: 'Family Umbrella Gazebo',
-      price: '800',
-      capacity: '15 - 20 persons',
-      description: 'Spacious octagonal gazebo with electrical outlets, grilling station access, and panoramic ocean views.',
-      image_url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=600&q=80',
-    },
-  ]);
+  const [cottages, setCottages] = useState<CottageItem[]>([]);
 
   // Facilities & Equipment State
-  const [facilities, setFacilities] = useState<FacilityItem[]>([
-    {
-      id: 'fac-1',
-      title: 'Secured Visitor Parking',
-      category: 'parking',
-      price: 'Free',
-      description: 'Wide, well-lit parking area accommodating cars, motorcycles, and tourist vans with staff monitoring.',
-      image_url: 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=600&q=80',
-    },
-    {
-      id: 'fac-2',
-      title: 'Snorkeling Gear & Life Vests',
-      category: 'equipment',
-      price: '150',
-      description: 'Clean, sanitized life vests (adult & kids sizes) and underwater snorkeling masks available for daily rental.',
-      image_url: 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=600&q=80',
-    },
-    {
-      id: 'fac-3',
-      title: 'Freshwater Shower Cubicles',
-      category: 'amenity',
-      price: 'Free',
-      description: 'Multiple private shower cubicles and foot-washing taps with clean mountain spring water.',
-      image_url: 'https://images.unsplash.com/photo-1584132967334-10e028bd69f7?auto=format&fit=crop&w=600&q=80',
-    },
-  ]);
+  const [facilities, setFacilities] = useState<FacilityItem[]>([]);
 
   // Facebook-Style Posts / Feed State
-  const [resortPosts, setResortPosts] = useState<ResortPost[]>([
-    {
-      id: 'post-1',
-      caption: 'Calm waters and gentle breeze today at Binongkalan! Fresh coconuts are available at our beach stall.',
-      image_url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
-      created_at: '2 hours ago',
-      likes: 12,
-    },
-  ]);
+  const [resortPosts, setResortPosts] = useState<ResortPost[]>([]);
   const [newPostCaption, setNewPostCaption] = useState('');
   const [newPostImage, setNewPostImage] = useState<string | null>(null);
   const [uploadingPostImage, setUploadingPostImage] = useState(false);
@@ -236,7 +141,7 @@ export default function ManageInformationPage() {
   });
 
   // Do's & Don'ts Rules State
-  const [rules, setRules] = useState<ResortRuleItem[]>(DEFAULT_RESORT_RULES);
+  const [rules, setRules] = useState<ResortRuleItem[]>([]);
   const [showAddRule, setShowAddRule] = useState(false);
   const [newRule, setNewRule] = useState<{
     type: 'do' | 'dont';
@@ -311,6 +216,18 @@ export default function ManageInformationPage() {
             cottage_fee: b.cottage_fee || '',
             images: Array.isArray(b.images) ? b.images : [],
           });
+
+          if (b.rules) {
+            try {
+              const parsedRules = typeof b.rules === 'string' ? JSON.parse(b.rules) : b.rules;
+              setRules(Array.isArray(parsedRules) ? parsedRules : []);
+            } catch (error) {
+              console.error('Failed to load beach guidelines:', error);
+              setRules([]);
+            }
+          } else {
+            setRules([]);
+          }
 
           // Parse opening hours into schedule
           if (b.opening_hours) {
@@ -389,6 +306,7 @@ export default function ManageInformationPage() {
         ...formData,
         contact_phone: formData.contact_phone ? `+63 ${formData.contact_phone}` : '',
         opening_hours: formatSchedulePayload(),
+        rules: JSON.stringify(rules),
       };
 
       const res = await fetch('/api/owner/beach', {
@@ -877,13 +795,19 @@ export default function ManageInformationPage() {
                   className="rounded-2xl border border-slate-200/80 dark:border-neutral-800 overflow-hidden bg-white dark:bg-neutral-950 flex flex-col justify-between shadow-2xs"
                 >
                   <div className="relative w-full h-48 bg-slate-200 dark:bg-neutral-800">
-                    <Image
-                      src={item.image_url}
-                      alt={item.name}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 100vw, 50vw"
-                    />
+                    {item.image_url ? (
+                      <Image
+                        src={item.image_url}
+                        alt={item.name}
+                        fill
+                        className="object-cover"
+                        sizes="(max-width: 768px) 100vw, 50vw"
+                      />
+                    ) : (
+                      <div className="flex h-full items-center justify-center text-slate-400">
+                        <Camera className="h-8 w-8" />
+                      </div>
+                    )}
                     <div className="absolute top-3 right-3 bg-white/95 dark:bg-black/90 backdrop-blur-xs px-3.5 py-1 rounded-full text-xs font-bold text-[#1F3F74] dark:text-[#4987BA] shadow-xs">
                       ₱{item.price} / day
                     </div>
@@ -918,6 +842,11 @@ export default function ManageInformationPage() {
                   </div>
                 </div>
               ))}
+              {cottages.length === 0 && (
+                <p className="md:col-span-2 rounded-xl border border-dashed border-slate-200 dark:border-neutral-800 p-6 text-center text-xs text-slate-500 dark:text-neutral-400">
+                  No cottages added yet.
+                </p>
+              )}
             </div>
           </div>
         </div>
@@ -953,19 +882,27 @@ export default function ManageInformationPage() {
                 className="rounded-2xl border border-slate-200/80 dark:border-neutral-800 overflow-hidden bg-white dark:bg-neutral-950 flex flex-col justify-between shadow-2xs"
               >
                 <div className="relative w-full h-40 bg-slate-200 dark:bg-neutral-800">
-                  <Image
-                    src={fac.image_url}
-                    alt={fac.title}
-                    fill
-                    className="object-cover"
-                    sizes="(max-width: 768px) 100vw, 33vw"
-                  />
+                  {fac.image_url ? (
+                    <Image
+                      src={fac.image_url}
+                      alt={fac.title}
+                      fill
+                      className="object-cover"
+                      sizes="(max-width: 768px) 100vw, 33vw"
+                    />
+                  ) : (
+                    <div className="flex h-full items-center justify-center text-slate-400">
+                      <Camera className="h-8 w-8" />
+                    </div>
+                  )}
                   <span className="absolute top-2.5 left-2.5 bg-black/70 backdrop-blur-xs text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
                     {fac.category}
                   </span>
-                  <span className="absolute top-2.5 right-2.5 bg-white/95 dark:bg-black/90 backdrop-blur-xs text-[#1F3F74] dark:text-[#4987BA] text-xs font-bold px-2.5 py-0.5 rounded-full">
-                    {fac.price === 'Free' ? 'Free' : `₱${fac.price}`}
-                  </span>
+                  {fac.price && (
+                    <span className="absolute top-2.5 right-2.5 bg-white/95 dark:bg-black/90 backdrop-blur-xs text-[#1F3F74] dark:text-[#4987BA] text-xs font-bold px-2.5 py-0.5 rounded-full">
+                      {fac.price === 'Free' ? 'Free' : `₱${fac.price}`}
+                    </span>
+                  )}
                 </div>
 
                 <div className="p-4 space-y-2 flex-1 flex flex-col justify-between">
@@ -973,9 +910,11 @@ export default function ManageInformationPage() {
                     <h3 className="text-sm font-bold text-slate-900 dark:text-white">
                       {fac.title}
                     </h3>
-                    <p className="text-xs text-slate-600 dark:text-neutral-400 mt-1 leading-relaxed">
-                      {fac.description}
-                    </p>
+                    {fac.description && (
+                      <p className="text-xs text-slate-600 dark:text-neutral-400 mt-1 leading-relaxed">
+                        {fac.description}
+                      </p>
+                    )}
                   </div>
 
                   <div className="pt-3 border-t border-slate-200/60 dark:border-neutral-800 flex justify-end">
@@ -994,6 +933,11 @@ export default function ManageInformationPage() {
                 </div>
               </div>
             ))}
+            {facilities.length === 0 && (
+              <p className="md:col-span-3 rounded-xl border border-dashed border-slate-200 dark:border-neutral-800 p-6 text-center text-xs text-slate-500 dark:text-neutral-400">
+                No facilities added yet.
+              </p>
+            )}
           </div>
         </div>
       )}
@@ -1387,6 +1331,11 @@ export default function ManageInformationPage() {
                     )}
                   </div>
                 ))}
+                {resortPosts.length === 0 && (
+                  <p className="rounded-xl border border-dashed border-slate-200 dark:border-neutral-800 p-6 text-center text-xs text-slate-500 dark:text-neutral-400">
+                    No resort updates posted yet.
+                  </p>
+                )}
               </div>
             </div>
           )}
@@ -1728,7 +1677,7 @@ export default function ManageInformationPage() {
                   price: newCottage.price,
                   capacity: newCottage.capacity || '10 - 15 persons',
                   description: newCottage.description || 'Shoreline cottage with direct ocean access.',
-                  image_url: newCottage.image_url || 'https://images.unsplash.com/photo-1544551763-46a013bb70d5?auto=format&fit=crop&w=600&q=80',
+                  image_url: newCottage.image_url || '',
                 };
                 setCottages([...cottages, item]);
                 setShowAddCottage(false);
@@ -1870,9 +1819,9 @@ export default function ManageInformationPage() {
                   id: `fac-${Date.now()}`,
                   title: newFacility.title,
                   category: newFacility.category || 'amenity',
-                  price: newFacility.price || 'Free',
-                  description: newFacility.description || 'Available facility for resort visitors.',
-                  image_url: newFacility.image_url || 'https://images.unsplash.com/photo-1506521781263-d8422e82f27a?auto=format&fit=crop&w=600&q=80',
+                  price: newFacility.price || '',
+                  description: newFacility.description || '',
+                  image_url: newFacility.image_url || '',
                 };
                 setFacilities([...facilities, item]);
                 setShowAddFacility(false);

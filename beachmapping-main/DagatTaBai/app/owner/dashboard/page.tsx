@@ -85,7 +85,7 @@ export default function OwnerDashboardPage() {
     );
   }
 
-  const beachName = beach?.name || 'Catmon Beach Resort';
+  const beachName = beach?.name || 'Your Beach';
   const rating = reviews?.averageRating || beach?.average_rating || 0;
   const reviewCount = reviews?.totalReviews || 0;
   const hasTour = Boolean(beach?.virtual_tour_url);

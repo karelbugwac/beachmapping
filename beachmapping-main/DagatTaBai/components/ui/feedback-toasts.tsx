@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { AlertCircle, CheckCircle2 } from 'lucide-react';
 
 type ToastKind = 'success' | 'error';
 type ToastItem = { id: number; kind: ToastKind; message: string };
@@ -66,6 +67,7 @@ export function FeedbackToasts() {
                 : 'bg-red-600 shadow-red-950/25'
             }`}
           >
+            <Icon className="mr-2 h-4 w-4 shrink-0" aria-hidden="true" />
             <span className="text-center">{formattedMsg}</span>
           </div>
         );

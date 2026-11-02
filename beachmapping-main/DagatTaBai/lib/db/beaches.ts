@@ -68,7 +68,7 @@ export async function getAllBeaches(): Promise<BeachRecord[]> {
     if (!error && Array.isArray(dbBeaches)) {
       return dbBeaches.map((b: any) => {
         // Parse opening_hours if it's a JSON string
-        let parsedOpeningHours = b.opening_hours || '8:00 AM - 6:00 PM';
+        let parsedOpeningHours = b.opening_hours || '';
         if (typeof b.opening_hours === 'string' && b.opening_hours.startsWith('{')) {
           try {
             parsedOpeningHours = JSON.parse(b.opening_hours);
@@ -188,7 +188,7 @@ export async function getBeachBySlug(slug: string): Promise<BeachRecord | null> 
       const b = dbBeach as any;
 
       // Parse opening_hours if it's a JSON string
-      let parsedOpeningHours = b.opening_hours || '8:00 AM - 6:00 PM';
+      let parsedOpeningHours = b.opening_hours || '';
       if (typeof b.opening_hours === 'string' && b.opening_hours.startsWith('{')) {
         try {
           parsedOpeningHours = JSON.parse(b.opening_hours);

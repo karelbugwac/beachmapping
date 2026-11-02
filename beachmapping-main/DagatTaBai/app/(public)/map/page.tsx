@@ -351,14 +351,18 @@ export default function MapPage() {
                 <div className="relative w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-[#1F3F74] to-[#0f213d] text-white p-4 text-center">
                   <Navigation className="w-8 h-8 text-sky-300 mb-1" />
                   <span className="text-xs font-bold text-white tracking-wide">{selectedBeach.name}</span>
-                  <span className="text-[10px] text-blue-200">Binongkalan, Catmon</span>
+                  <span className="text-[10px] text-blue-200">
+                    {selectedBeach.location || 'Location not provided'}
+                  </span>
                 </div>
               )}
               {/* Floating Rating Pill Top-Right */}
-              <div className="absolute top-3 right-3 bg-black/70 backdrop-blur-md text-white px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-white/10 shadow-sm z-10 pointer-events-none">
-                <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
-                <span>{selectedBeach.average_rating ? selectedBeach.average_rating.toFixed(1) : '5.0'}</span>
-              </div>
+              {selectedBeach.average_rating > 0 && (
+                <div className="absolute top-3 right-3 bg-black/70 backdrop-blur-md text-white px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-white/10 shadow-sm z-10 pointer-events-none">
+                  <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+                  <span>{selectedBeach.average_rating.toFixed(1)}</span>
+                </div>
+              )}
             </div>
 
             <div className="p-4 pt-1 space-y-3">

@@ -6,13 +6,13 @@ import { AppShell } from '@/components/owner/AppShell';
 import type { BeachRecord } from '@/lib/db/beaches';
 
 function parseOpeningHours(hours: any): string {
-  if (!hours) return '8:00 AM – 6:00 PM';
+  if (!hours) return 'Hours not provided';
   if (typeof hours === 'string') return hours;
   if (typeof hours === 'object') {
     const list = Object.values(hours).filter((h: any) => h && h !== 'CLOSE' && h !== 'Closed');
     if (list.length > 0) return String(list[0]);
   }
-  return '8:00 AM – 6:00 PM';
+  return 'Hours not provided';
 }
 
 export default function OwnerLayout({
@@ -54,9 +54,8 @@ export default function OwnerLayout({
 
   return (
     <AppShell
-      beachName={beach?.name || 'Catmon Beach Resort'}
+      beachName={beach?.name || 'Your Beach'}
       beachSlug={beach?.slug || beach?.id}
-      isOpenNow={true}
       openingHours={parseOpeningHours(beach?.opening_hours)}
       reviewCount={reviewCount}
       unreadNotifications={0}

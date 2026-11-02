@@ -67,7 +67,7 @@ export async function POST(request: Request) {
       location: location.trim(),
       latitude: parseFloat(latitude) || 10.6348,
       longitude: parseFloat(longitude) || 124.0275,
-      cover_image: cover_image || 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1600&q=85',
+      cover_image: cover_image || null,
       profile_image: profile_image || null,
       images: Array.isArray(images) ? images : [],
       opening_hours: opening_hours || '8:00 AM - 6:00 PM',

@@ -53,32 +53,10 @@ export default function AdminBeachesPage() {
   // Comprehensive "Edit Info" Modal State
   const [editingBeach, setEditingBeach] = useState<BeachRecord | null>(null);
   const [editTab, setEditTab] = useState<'basic' | 'tour' | 'coordinates' | 'rates' | 'photos' | 'posts' | 'dos'>('basic');
-  const [resortPosts, setResortPosts] = useState<Array<{ id: string; caption: string; image_url?: string; created_at: string }>>([
-    {
-      id: 'p-1',
-      caption: 'Sunny morning tide here in Binongkalan! Crystal clear water and cool gentle breeze for all guests today.',
-      image_url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
-      created_at: '2 days ago',
-    },
-  ]);
+  const [resortPosts, setResortPosts] = useState<Array<{ id: string; caption: string; image_url?: string; created_at: string }>>([]);
   const [newPostCaption, setNewPostCaption] = useState('');
   const [newPostImage, setNewPostImage] = useState('');
-  const [resortRules, setResortRules] = useState<Array<{ id: string; type: 'do' | 'dont'; title: string; description: string; category: string }>>([
-    {
-      id: 'r-1',
-      type: 'do',
-      category: 'Safety',
-      title: 'Wear life vests when swimming in deep areas',
-      description: 'Guests and children are advised to use personal floatation devices past the reef markers.',
-    },
-    {
-      id: 'r-2',
-      type: 'dont',
-      category: 'Safety',
-      title: 'No glass bottles or breakable containers on the sand',
-      description: 'Glass shards pose severe puncture hazards to barefoot swimmers and beachgoers.',
-    },
-  ]);
+  const [resortRules, setResortRules] = useState<Array<{ id: string; type: 'do' | 'dont'; title: string; description: string; category: string }>>([]);
   const [newRuleTitle, setNewRuleTitle] = useState('');
   const [newRuleDesc, setNewRuleDesc] = useState('');
   const [newRuleType, setNewRuleType] = useState<'do' | 'dont'>('do');
