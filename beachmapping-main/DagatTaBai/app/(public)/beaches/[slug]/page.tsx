@@ -187,7 +187,7 @@ export default function BeachProfilePage({
     : [];
 
   const resortRules = parseResortRules(beach.rules);
-  const resortPosts = beach.images.filter((image) => image.category === 'posts');
+  const resortPosts = beach.posts || [];
 
   return (
     <div className="min-h-screen bg-white dark:bg-black text-slate-900 dark:text-white font-sans transition-colors duration-200">
@@ -304,7 +304,7 @@ export default function BeachProfilePage({
               </a>
             )}
 
-            {beach.facebook_url ? (
+            {beach.facebook_url && (
               <a
                 href={beach.facebook_url}
                 target="_blank"
@@ -317,17 +317,16 @@ export default function BeachProfilePage({
                 <span>Facebook Page</span>
                 <ExternalLink className="w-3 h-3" />
               </a>
-            ) : (
+            )}
+
+            {beach.instagram_url && (
               <a
-                href={`https://www.facebook.com/search/top?q=${encodeURIComponent(beach.name + ' Catmon')}`}
+                href={beach.instagram_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-[#1877F2] font-bold hover:underline"
+                className="inline-flex items-center gap-1.5 text-pink-600 font-bold hover:underline"
               >
-                <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                </svg>
-                <span>Facebook Page</span>
+                <span>Instagram</span>
                 <ExternalLink className="w-3 h-3" />
               </a>
             )}
@@ -440,6 +439,29 @@ export default function BeachProfilePage({
                   <p className="text-[11px] text-slate-500">Daily beach & swimming hours</p>
                 </div>
               </div>
+
+              {(beach.peak_days || beach.peak_hours || beach.best_visiting_time) && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                  {beach.peak_days && (
+                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 space-y-1">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Peak Visiting Days</span>
+                      <p className="text-sm font-bold text-[#1F3F74] dark:text-[#4987BA]">{beach.peak_days}</p>
+                    </div>
+                  )}
+                  {beach.peak_hours && (
+                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 space-y-1">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Peak Visiting Hours</span>
+                      <p className="text-sm font-bold text-[#1F3F74] dark:text-[#4987BA]">{beach.peak_hours}</p>
+                    </div>
+                  )}
+                  {beach.best_visiting_time && (
+                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 space-y-1">
+                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Best Time to Visit</span>
+                      <p className="text-sm font-bold text-[#1F3F74] dark:text-[#4987BA]">{beach.best_visiting_time}</p>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
 
@@ -459,7 +481,7 @@ export default function BeachProfilePage({
                 <div className="space-y-5">
                   {resortPosts.length > 0 ? resortPosts.map((post, index) => (
                     <div
-                      key={`${post.photo_url}-${index}`}
+                      key={post.id || `${post.image_url}-${index}`}
                       className="rounded-2xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/50 overflow-hidden shadow-xs space-y-3"
                     >
                       <div className="p-4 flex items-center gap-3 border-b border-slate-100 dark:border-neutral-800">
@@ -482,9 +504,9 @@ export default function BeachProfilePage({
                         </div>
                       )}
 
-                      {post.photo_url && (
+                      {post.image_url && (
                         <div className="relative w-full h-72 sm:h-96 bg-slate-900">
-                          <Image src={post.photo_url} alt="Resort update" fill className="object-cover" sizes="800px" />
+                          <Image src={post.image_url} alt="Resort update" fill className="object-cover" sizes="800px" />
                         </div>
                       )}
                     </div>
@@ -537,20 +559,41 @@ export default function BeachProfilePage({
                   </div>
                 )}
 
-                {/* Clean authentic empty state when individual cottage catalog is not yet populated */}
-                <div className="py-14 text-center rounded-2xl border border-dashed border-slate-200 dark:border-neutral-800 bg-slate-50/50 dark:bg-neutral-900/30 p-6 space-y-3">
-                  <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-neutral-800 text-[#1F3F74] dark:text-[#4987BA] flex items-center justify-center mx-auto">
-                    <Home className="w-6 h-6" />
+                {beach.cottages && beach.cottages.length > 0 ? (
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {beach.cottages.map((cottage) => (
+                      <article key={cottage.id} className="overflow-hidden rounded-2xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/50">
+                        {cottage.image_url && (
+                          <div className="relative h-48 bg-slate-100 dark:bg-neutral-900">
+                            <Image src={cottage.image_url} alt={cottage.name} fill className="object-cover" sizes="(max-width: 640px) 100vw, 50vw" />
+                          </div>
+                        )}
+                        <div className="space-y-2 p-4">
+                          <div className="flex items-start justify-between gap-3">
+                            <h3 className="font-bold text-slate-900 dark:text-white">{cottage.name}</h3>
+                            {cottage.price && <span className="shrink-0 font-bold text-[#1F3F74] dark:text-[#4987BA]">₱{cottage.price}</span>}
+                          </div>
+                          {cottage.capacity && <p className="text-xs text-slate-500 dark:text-neutral-400">{cottage.capacity}</p>}
+                          {cottage.description && <p className="text-sm text-slate-600 dark:text-neutral-300">{cottage.description}</p>}
+                        </div>
+                      </article>
+                    ))}
                   </div>
-                  <div className="space-y-1">
-                    <h3 className="text-sm font-bold text-slate-800 dark:text-neutral-200">
-                      No individual cottages listed yet
-                    </h3>
-                    <p className="text-xs text-slate-500 dark:text-neutral-400 max-w-sm mx-auto">
-                      Specific cottage models, capacities, and rates will appear here once registered by {beach.name}.
-                    </p>
+                ) : (
+                  <div className="py-14 text-center rounded-2xl border border-dashed border-slate-200 dark:border-neutral-800 bg-slate-50/50 dark:bg-neutral-900/30 p-6 space-y-3">
+                    <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-neutral-800 text-[#1F3F74] dark:text-[#4987BA] flex items-center justify-center mx-auto">
+                      <Home className="w-6 h-6" />
+                    </div>
+                    <div className="space-y-1">
+                      <h3 className="text-sm font-bold text-slate-800 dark:text-neutral-200">
+                        No individual cottages listed yet
+                      </h3>
+                      <p className="text-xs text-slate-500 dark:text-neutral-400 max-w-sm mx-auto">
+                        Specific cottage models, capacities, and rates will appear here once registered by {beach.name}.
+                      </p>
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
             )}
 
@@ -566,15 +609,27 @@ export default function BeachProfilePage({
                   </p>
                 </div>
 
-                {beach.amenities && beach.amenities.length > 0 ? (
+                {beach.facility_items && beach.facility_items.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
-                    {beach.amenities.map((amenity, i) => (
+                    {beach.facility_items.map((facility) => (
                       <div
-                        key={i}
-                        className="p-3.5 rounded-xl bg-slate-50 dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 flex items-center gap-2.5 text-xs font-semibold text-slate-800 dark:text-neutral-200"
+                        key={facility.id}
+                        className="overflow-hidden rounded-xl bg-slate-50 dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800"
                       >
-                        <ShieldCheck className="w-4 h-4 text-[#1F3F74] dark:text-[#4987BA] flex-shrink-0" />
-                        <span>{amenity}</span>
+                        {facility.image_url && (
+                          <div className="relative h-36 bg-slate-100 dark:bg-neutral-900">
+                            <Image src={facility.image_url} alt={facility.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
+                          </div>
+                        )}
+                        <div className="space-y-1.5 p-3.5">
+                          <h3 className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white">
+                            <ShieldCheck className="w-4 h-4 text-[#1F3F74] dark:text-[#4987BA] flex-shrink-0" />
+                            {facility.name}
+                          </h3>
+                          <p className="text-[11px] capitalize text-slate-500 dark:text-neutral-400">{facility.category}</p>
+                          {facility.price && <p className="text-xs font-semibold text-[#1F3F74] dark:text-[#4987BA]">{facility.price === 'Free' || facility.price.startsWith('₱') ? facility.price : `₱${facility.price}`}</p>}
+                          {facility.description && <p className="text-xs text-slate-600 dark:text-neutral-300">{facility.description}</p>}
+                        </div>
                       </div>
                     ))}
                   </div>

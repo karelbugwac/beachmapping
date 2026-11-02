@@ -19,6 +19,7 @@ interface CaretakerMember {
   role: string;
   permissions: string[];
   added_at: string;
+  status: string;
 }
 
 export default function OwnerSettingsPage() {
@@ -26,6 +27,7 @@ export default function OwnerSettingsPage() {
 
   const [email, setEmail] = useState('');
   const [beachName, setBeachName] = useState('');
+  const [beachId, setBeachId] = useState('');
   const [loading, setLoading] = useState(true);
   const [sendingReset, setSendingReset] = useState(false);
   const [resetSent, setResetSent] = useState(false);
@@ -75,6 +77,7 @@ export default function OwnerSettingsPage() {
         }
         if (Array.isArray(beachData) && beachData.length > 0) {
           setBeachName(beachData[0].name || '');
+          setBeachId(beachData[0].id || '');
         }
       })
       .catch((error: unknown) => {
@@ -84,6 +87,21 @@ export default function OwnerSettingsPage() {
         setLoading(false);
       });
   }, []);
+
+  useEffect(() => {
+    if (!beachId) return;
+    fetch(`/api/owner/caretakers?beach_id=${encodeURIComponent(beachId)}`, { cache: 'no-store' })
+      .then(async (response) => {
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Failed to load caretaker invitations.');
+        setCaretakers(Array.isArray(data.items) ? data.items : []);
+      })
+      .catch((error: unknown) => {
+        const message = error instanceof Error ? error.message : 'Failed to load caretaker invitations.';
+        console.error('Caretaker invitation load error:', message);
+        setToast({ type: 'error', message });
+      });
+  }, [beachId]);
 
   // 1. Password Reset Link Request (Powered by Supabase Auth)
   const handleRequestPasswordReset = async () => {
@@ -144,6 +162,7 @@ export default function OwnerSettingsPage() {
           role: newCaretaker.role,
           permissions: newCaretaker.permissions,
           beachName,
+          beach_id: beachId,
         }),
       });
 
@@ -152,16 +171,8 @@ export default function OwnerSettingsPage() {
         throw new Error(data.error || 'Failed to dispatch caretaker invitation.');
       }
 
-      const item: CaretakerMember = {
-        id: `ct-${Date.now()}`,
-        name: newCaretaker.name.trim(),
-        contact: newCaretaker.contact.trim(),
-        role: newCaretaker.role,
-        permissions: newCaretaker.permissions,
-        added_at: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      };
-
-      setCaretakers((prev) => [...prev, item]);
+      const item = data.item as CaretakerMember;
+      setCaretakers((prev) => [item, ...prev]);
       setShowAddCaretaker(false);
       setNewCaretaker({
         name: '',
@@ -176,7 +187,7 @@ export default function OwnerSettingsPage() {
       });
       setToast({
         type: 'success',
-        message: `Caretaker added! Invitation and security guidelines sent to ${item.contact}.`,
+        message: data.message,
       });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to add caretaker.';
@@ -187,12 +198,17 @@ export default function OwnerSettingsPage() {
     }
   };
 
-  const handleRemoveCaretaker = (id: string, name: string) => {
-    setCaretakers((prev) => prev.filter((c) => c.id !== id));
-    setToast({
-      type: 'success',
-      message: `Removed caretaker access for ${name}.`,
-    });
+  const handleRemoveCaretaker = async (id: string, name: string) => {
+    try {
+      const params = new URLSearchParams({ id, beach_id: beachId });
+      const response = await fetch(`/api/owner/caretakers?${params}`, { method: 'DELETE' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to revoke caretaker invitation.');
+      setCaretakers((prev) => prev.filter((caretaker) => caretaker.id !== id));
+      setToast({ type: 'success', message: `Revoked the invitation for ${name}.` });
+    } catch (error) {
+      setToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to revoke caretaker invitation.' });
+    }
   };
 
   // 3. Contact Admin Submission
@@ -390,10 +406,10 @@ export default function OwnerSettingsPage() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
             <h2 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
-              Authorized Caretakers &amp; Staff Access
+              Caretaker Invitations
             </h2>
             <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
-              Add authorized resort caretakers or staff who can update listings, manage cottage rates, and view visitor reviews.
+              Record caretaker invitations for your resort. This invitation list does not create portal accounts or grant access.
             </p>
           </div>
 
@@ -409,7 +425,7 @@ export default function OwnerSettingsPage() {
 
         {/* Security Rule Note */}
         <div className="p-3.5 rounded-2xl bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/40 text-[11.5px] text-amber-800 dark:text-amber-300 leading-relaxed">
-          <strong>Security Policy:</strong> Caretakers can manage day-to-day operations according to their assigned permissions. However, caretakers are strictly <u>not authorized</u> to change the master registered owner email address or reset portal security credentials.
+          <strong>Invitation status:</strong> Saving a caretaker here records an invitation only. It does not create an account or grant portal access; the assigned permissions are informational until access provisioning is implemented.
         </div>
 
         {/* Caretaker List (Frameless, clean rows with dividers) */}
@@ -430,7 +446,7 @@ export default function OwnerSettingsPage() {
                   </span>
                 </div>
                 <span className="text-xs text-slate-500 dark:text-neutral-400 font-mono">
-                  {email || 'owner@catmonbeach.ph'}
+                  {email || 'Loading owner email...'}
                 </span>
               </div>
             </div>
@@ -456,7 +472,10 @@ export default function OwnerSettingsPage() {
                     </span>
                   </div>
                   <span className="text-xs text-slate-500 dark:text-neutral-400">
-                    {c.contact} &bull; Added on {c.added_at}
+                    {c.contact} &bull; Invited on {new Date(c.added_at).toLocaleDateString()}
+                  </span>
+                  <span className="block text-[10px] font-semibold text-amber-700 dark:text-amber-400">
+                    Invitation only — portal access not granted
                   </span>
                   {c.permissions && c.permissions.length > 0 && (
                     <div className="flex flex-wrap gap-1 mt-1">
@@ -477,10 +496,10 @@ export default function OwnerSettingsPage() {
                 type="button"
                 onClick={() => handleRemoveCaretaker(c.id, c.name)}
                 className="text-xs text-rose-500 hover:text-rose-700 font-bold inline-flex items-center gap-1 cursor-pointer p-2 rounded-full hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
-                title="Revoke caretaker access"
+                title="Revoke caretaker invitation"
               >
                 <Trash2 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Revoke</span>
+                <span className="hidden sm:inline">Revoke Invite</span>
               </button>
             </div>
           ))}
@@ -740,7 +759,7 @@ export default function OwnerSettingsPage() {
                   disabled={addingCaretaker}
                   className="rounded-full px-6 py-2 bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50"
                 >
-                  {addingCaretaker ? 'Dispatching...' : 'Add & Send Invitation'}
+                  {addingCaretaker ? 'Saving invitation...' : 'Save & Send Invitation'}
                 </button>
               </div>
             </form>

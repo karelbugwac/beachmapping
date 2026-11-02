@@ -15,6 +15,31 @@ export interface BeachExternalLink {
   url: string;
 }
 
+export interface BeachCottage {
+  id: string;
+  name: string;
+  description: string;
+  price: string | null;
+  capacity: string | null;
+  image_url: string | null;
+}
+
+export interface BeachFacility {
+  id: string;
+  name: string;
+  category: string;
+  description: string;
+  price: string | null;
+  image_url: string | null;
+}
+
+export interface BeachPost {
+  id: string;
+  caption: string;
+  image_url: string | null;
+  created_at: string;
+}
+
 export interface BeachRecord {
   id: string;
   slug: string;
@@ -31,6 +56,9 @@ export interface BeachRecord {
   contact_email: string | null;
   facebook_url?: string | null;
   instagram_url?: string | null;
+  peak_days?: string | null;
+  peak_hours?: string | null;
+  best_visiting_time?: string | null;
   opening_hours: string | Record<string, string>;
   entrance_fee: string | null;
   entrance_fee_adults?: string | null;
@@ -42,6 +70,9 @@ export interface BeachRecord {
   amenities: string[];
   activities: string[];
   external_links: BeachExternalLink[];
+  cottages?: BeachCottage[];
+  facility_items?: BeachFacility[];
+  posts?: BeachPost[];
   created_at: string;
   updated_at: string;
 }
@@ -101,6 +132,10 @@ export async function getAllBeaches(): Promise<BeachRecord[]> {
           contact_phone: b.contact_phone || null,
           contact_email: b.contact_email || null,
           facebook_url: b.facebook_url || null,
+          instagram_url: b.instagram_url || null,
+          peak_days: b.peak_days || null,
+          peak_hours: b.peak_hours || null,
+          best_visiting_time: b.best_visiting_time || null,
           opening_hours: parsedOpeningHours,
           entrance_fee: b.entrance_fee,
           entrance_fee_adults: entranceFeeAdults,
@@ -222,6 +257,9 @@ export async function getBeachBySlug(slug: string): Promise<BeachRecord | null> 
         contact_email: b.contact_email || null,
         facebook_url: b.facebook_url || null,
         instagram_url: b.instagram_url || null,
+        peak_days: b.peak_days || null,
+        peak_hours: b.peak_hours || null,
+        best_visiting_time: b.best_visiting_time || null,
         opening_hours: parsedOpeningHours,
         entrance_fee: b.entrance_fee,
         entrance_fee_adults: entranceFeeAdults,

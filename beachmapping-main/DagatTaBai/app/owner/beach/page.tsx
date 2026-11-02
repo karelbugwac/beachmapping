@@ -80,8 +80,8 @@ export default function ManageInformationPage() {
     name: '',
     description: '',
     location: '',
-    latitude: '10.6348',
-    longitude: '124.0275',
+    latitude: '',
+    longitude: '',
     cover_image: '',
     profile_image: '',
     virtual_tour_url: '',
@@ -89,9 +89,9 @@ export default function ManageInformationPage() {
     contact_email: '',
     facebook_url: '',
     instagram_url: '',
-    peak_days: 'Saturdays, Sundays & Holidays',
-    peak_hours: '10:00 AM – 3:00 PM',
-    best_visiting_time: 'Morning low-tide for wide sandy shoreline',
+    peak_days: '',
+    peak_hours: '',
+    best_visiting_time: '',
     entrance_fee_adults: '',
     entrance_fee_children: '',
     cottage_fee: '',
@@ -100,13 +100,13 @@ export default function ManageInformationPage() {
 
   // Operating Hours State: day -> { isOpen: boolean, openTime: string, closeTime: string }
   const [schedule, setSchedule] = useState<Record<string, { isOpen: boolean; openTime: string; closeTime: string }>>({
-    Mon: { isOpen: true, openTime: '08:00 AM', closeTime: '06:00 PM' },
-    Tue: { isOpen: true, openTime: '08:00 AM', closeTime: '06:00 PM' },
-    Wed: { isOpen: true, openTime: '08:00 AM', closeTime: '06:00 PM' },
-    Thu: { isOpen: true, openTime: '08:00 AM', closeTime: '06:00 PM' },
-    Fri: { isOpen: true, openTime: '08:00 AM', closeTime: '06:00 PM' },
-    Sat: { isOpen: true, openTime: '08:00 AM', closeTime: '06:00 PM' },
-    Sun: { isOpen: true, openTime: '08:00 AM', closeTime: '06:00 PM' },
+    Mon: { isOpen: false, openTime: '', closeTime: '' },
+    Tue: { isOpen: false, openTime: '', closeTime: '' },
+    Wed: { isOpen: false, openTime: '', closeTime: '' },
+    Thu: { isOpen: false, openTime: '', closeTime: '' },
+    Fri: { isOpen: false, openTime: '', closeTime: '' },
+    Sat: { isOpen: false, openTime: '', closeTime: '' },
+    Sun: { isOpen: false, openTime: '', closeTime: '' },
   });
 
   // Cottages State
@@ -177,10 +177,21 @@ export default function ManageInformationPage() {
   useEffect(() => {
     fetch('/api/owner/beach', { cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : []))
-      .then((data) => {
+      .then(async (data) => {
         if (Array.isArray(data) && data.length > 0) {
           const b = data[0];
           setBeach(b);
+          const catalogResponse = await fetch(
+            `/api/owner/beach/catalog?beach_id=${encodeURIComponent(b.id)}`,
+            { cache: 'no-store' }
+          );
+          const catalogData = await catalogResponse.json();
+          if (!catalogResponse.ok) {
+            throw new Error(catalogData.error || 'Failed to load cottages, facilities, and posts.');
+          }
+          setCottages(catalogData.items?.cottage || []);
+          setFacilities(catalogData.items?.facility || []);
+          setResortPosts(catalogData.items?.post || []);
 
           let feeAdults = '';
           let feeChildren = '';
@@ -198,19 +209,19 @@ export default function ManageInformationPage() {
             id: b.id || '',
             name: b.name || '',
             description: b.description || '',
-            location: b.location || 'Barangay Binongkalan, Catmon, Cebu',
-            latitude: b.latitude ? String(b.latitude) : '10.6348',
-            longitude: b.longitude ? String(b.longitude) : '124.0275',
+            location: b.location || '',
+            latitude: b.latitude != null ? String(b.latitude) : '',
+            longitude: b.longitude != null ? String(b.longitude) : '',
             cover_image: b.cover_image || b.cover_image_url || '',
             profile_image: b.profile_image || b.profile_image_url || '',
             virtual_tour_url: b.virtual_tour_url || '',
             contact_phone: cleanPhone,
             contact_email: b.contact_email || '',
-            facebook_url: '',
-            instagram_url: '',
-            peak_days: 'Saturdays, Sundays & Holidays',
-            peak_hours: '10:00 AM – 3:00 PM',
-            best_visiting_time: 'Morning low-tide for wide sandy shoreline',
+            facebook_url: b.facebook_url || '',
+            instagram_url: b.instagram_url || '',
+            peak_days: b.peak_days || '',
+            peak_hours: b.peak_hours || '',
+            best_visiting_time: b.best_visiting_time || '',
             entrance_fee_adults: feeAdults,
             entrance_fee_children: feeChildren,
             cottage_fee: b.cottage_fee || '',
@@ -241,13 +252,13 @@ export default function ManageInformationPage() {
                 DEFAULT_DAYS.forEach((day) => {
                   const val = raw[day];
                   if (!val || val === 'Closed' || val === 'CLOSE') {
-                    nextSched[day] = { isOpen: false, openTime: '08:00 AM', closeTime: '06:00 PM' };
+                    nextSched[day] = { isOpen: false, openTime: '', closeTime: '' };
                   } else {
                     const times = String(val).split('–').map((t) => t.trim());
                     nextSched[day] = {
                       isOpen: true,
-                      openTime: times[0] || '08:00 AM',
-                      closeTime: times[1] || '06:00 PM',
+                      openTime: times[0] || '',
+                      closeTime: times[1] || '',
                     };
                   }
                 });
@@ -261,11 +272,30 @@ export default function ManageInformationPage() {
       })
       .catch((err) => {
         console.error('Failed to load beach information:', err);
+        setToast({ type: 'error', message: err instanceof Error ? err.message : 'Failed to load beach information.' });
       })
       .finally(() => {
         setLoading(false);
       });
   }, []);
+
+  const saveCatalogItem = async <T,>(type: 'cottage' | 'facility' | 'post', item: object): Promise<T> => {
+    const response = await fetch('/api/owner/beach/catalog', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ beach_id: formData.id, type, ...item }),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to save listing.');
+    return data.item as T;
+  };
+
+  const deleteCatalogItem = async (type: 'cottage' | 'facility' | 'post', id: string) => {
+    const params = new URLSearchParams({ type, id, beach_id: formData.id });
+    const response = await fetch(`/api/owner/beach/catalog?${params}`, { method: 'DELETE' });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to remove listing.');
+  };
 
   // Validation
   const validateForm = () => {
@@ -286,6 +316,8 @@ export default function ManageInformationPage() {
       const item = schedule[day];
       if (!item || !item.isOpen) {
         hours[day] = 'Closed';
+      } else if (!item.openTime || !item.closeTime) {
+        hours[day] = '';
       } else {
         hours[day] = `${item.openTime} – ${item.closeTime}`;
       }
@@ -294,10 +326,10 @@ export default function ManageInformationPage() {
   };
 
   // Save changes handler
-  const handleSave = async () => {
+  const handleSave = async (rulesToSave: ResortRuleItem[] = rules): Promise<boolean> => {
     if (!validateForm()) {
       setToast({ type: 'error', message: 'Please correct the highlighted form errors before saving.' });
-      return;
+      return false;
     }
 
     setSaving(true);
@@ -306,7 +338,7 @@ export default function ManageInformationPage() {
         ...formData,
         contact_phone: formData.contact_phone ? `+63 ${formData.contact_phone}` : '',
         opening_hours: formatSchedulePayload(),
-        rules: JSON.stringify(rules),
+        rules: JSON.stringify(rulesToSave),
       };
 
       const res = await fetch('/api/owner/beach', {
@@ -324,9 +356,11 @@ export default function ManageInformationPage() {
         type: 'success',
         message: 'Resort information updated successfully!',
       });
+      return true;
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Failed to save changes.';
       setToast({ type: 'error', message: msg });
+      return false;
     } finally {
       setSaving(false);
     }
@@ -442,18 +476,18 @@ export default function ManageInformationPage() {
       return;
     }
 
-    const post: ResortPost = {
-      id: `post-${Date.now()}`,
-      caption: newPostCaption.trim(),
-      image_url: newPostImage || undefined,
-      created_at: 'Just now',
-      likes: 0,
-    };
-
-    setResortPosts([post, ...resortPosts]);
-    setNewPostCaption('');
-    setNewPostImage(null);
-    setToast({ type: 'success', message: 'Update posted to resort feed!' });
+    try {
+      const post = await saveCatalogItem<ResortPost>('post', {
+        caption: newPostCaption.trim(),
+        image_url: newPostImage || '',
+      });
+      setResortPosts((current) => [post, ...current]);
+      setNewPostCaption('');
+      setNewPostImage(null);
+      setToast({ type: 'success', message: 'Update posted to resort feed!' });
+    } catch (error) {
+      setToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to publish update.' });
+    }
   };
 
   // Photo Delete Handler
@@ -829,9 +863,14 @@ export default function ManageInformationPage() {
                     <div className="pt-3 border-t border-slate-200/60 dark:border-neutral-800 flex justify-end">
                       <button
                         type="button"
-                        onClick={() => {
-                          setCottages(cottages.filter((c) => c.id !== item.id));
-                          setToast({ type: 'success', message: 'Cottage removed.' });
+                        onClick={async () => {
+                          try {
+                            await deleteCatalogItem('cottage', item.id);
+                            setCottages((current) => current.filter((c) => c.id !== item.id));
+                            setToast({ type: 'success', message: 'Cottage removed.' });
+                          } catch (error) {
+                            setToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to remove cottage.' });
+                          }
                         }}
                         className="text-xs text-rose-500 hover:text-rose-700 font-semibold inline-flex items-center gap-1 cursor-pointer"
                       >
@@ -920,9 +959,14 @@ export default function ManageInformationPage() {
                   <div className="pt-3 border-t border-slate-200/60 dark:border-neutral-800 flex justify-end">
                     <button
                       type="button"
-                      onClick={() => {
-                        setFacilities(facilities.filter((f) => f.id !== fac.id));
-                        setToast({ type: 'success', message: 'Facility item removed.' });
+                      onClick={async () => {
+                        try {
+                          await deleteCatalogItem('facility', fac.id);
+                          setFacilities((current) => current.filter((f) => f.id !== fac.id));
+                          setToast({ type: 'success', message: 'Facility item removed.' });
+                        } catch (error) {
+                          setToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to remove facility.' });
+                        }
                       }}
                       className="text-xs text-rose-500 hover:text-rose-700 font-semibold inline-flex items-center gap-1 cursor-pointer"
                     >
@@ -1310,9 +1354,14 @@ export default function ManageInformationPage() {
 
                       <button
                         type="button"
-                        onClick={() => {
-                          setResortPosts(resortPosts.filter((p) => p.id !== post.id));
-                          setToast({ type: 'success', message: 'Post removed from feed.' });
+                        onClick={async () => {
+                          try {
+                            await deleteCatalogItem('post', post.id);
+                            setResortPosts((current) => current.filter((p) => p.id !== post.id));
+                            setToast({ type: 'success', message: 'Post removed from feed.' });
+                          } catch (error) {
+                            setToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to remove post.' });
+                          }
                         }}
                         className="text-slate-400 hover:text-rose-600 transition-colors"
                       >
@@ -1492,9 +1541,9 @@ export default function ManageInformationPage() {
 
                     <button
                       type="button"
-                      onClick={() => {
-                        setRules(rules.filter((r) => r.id !== rule.id));
-                        setToast({ type: 'success', message: 'Guideline removed.' });
+                      onClick={async () => {
+                        const nextRules = rules.filter((r) => r.id !== rule.id);
+                        if (await handleSave(nextRules)) setRules(nextRules);
                       }}
                       className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer flex-shrink-0"
                       title="Delete guideline"
@@ -1555,9 +1604,9 @@ export default function ManageInformationPage() {
 
                     <button
                       type="button"
-                      onClick={() => {
-                        setRules(rules.filter((r) => r.id !== rule.id));
-                        setToast({ type: 'success', message: 'Restriction removed.' });
+                      onClick={async () => {
+                        const nextRules = rules.filter((r) => r.id !== rule.id);
+                        if (await handleSave(nextRules)) setRules(nextRules);
                       }}
                       className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer flex-shrink-0"
                       title="Delete restriction"
@@ -1648,7 +1697,7 @@ export default function ManageInformationPage() {
       <div className="pt-6 border-t border-slate-200 dark:border-neutral-800 flex justify-end">
         <button
           type="button"
-          onClick={handleSave}
+          onClick={() => handleSave()}
           disabled={saving}
           className="rounded-full px-8 py-3 bg-[#1F3F74] hover:bg-[#183460] active:scale-[0.99] text-white font-bold text-xs sm:text-sm tracking-wide transition-all shadow-md cursor-pointer disabled:opacity-50"
         >
@@ -1665,24 +1714,27 @@ export default function ManageInformationPage() {
             </h3>
 
             <form
-              onSubmit={(e) => {
+              onSubmit={async (e) => {
                 e.preventDefault();
                 if (!newCottage.name || !newCottage.price) {
                   setToast({ type: 'error', message: 'Cottage name and rate are required.' });
                   return;
                 }
-                const item: CottageItem = {
-                  id: `cot-${Date.now()}`,
-                  name: newCottage.name,
-                  price: newCottage.price,
-                  capacity: newCottage.capacity || '10 - 15 persons',
-                  description: newCottage.description || 'Shoreline cottage with direct ocean access.',
-                  image_url: newCottage.image_url || '',
-                };
-                setCottages([...cottages, item]);
-                setShowAddCottage(false);
-                setNewCottage({ name: '', price: '', capacity: '', description: '', image_url: '' });
-                setToast({ type: 'success', message: 'New cottage added!' });
+                try {
+                  const item = await saveCatalogItem<CottageItem>('cottage', {
+                    name: newCottage.name.trim(),
+                    price: newCottage.price,
+                    capacity: newCottage.capacity || '',
+                    description: newCottage.description || '',
+                    image_url: newCottage.image_url || '',
+                  });
+                  setCottages((current) => [...current, item]);
+                  setShowAddCottage(false);
+                  setNewCottage({ name: '', price: '', capacity: '', description: '', image_url: '' });
+                  setToast({ type: 'success', message: 'New cottage added!' });
+                } catch (error) {
+                  setToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to add cottage.' });
+                }
               }}
               className="space-y-4"
             >
@@ -1809,24 +1861,27 @@ export default function ManageInformationPage() {
             </h3>
 
             <form
-              onSubmit={(e) => {
+              onSubmit={async (e) => {
                 e.preventDefault();
                 if (!newFacility.title) {
                   setToast({ type: 'error', message: 'Facility title is required.' });
                   return;
                 }
-                const item: FacilityItem = {
-                  id: `fac-${Date.now()}`,
-                  title: newFacility.title,
-                  category: newFacility.category || 'amenity',
-                  price: newFacility.price || '',
-                  description: newFacility.description || '',
-                  image_url: newFacility.image_url || '',
-                };
-                setFacilities([...facilities, item]);
-                setShowAddFacility(false);
-                setNewFacility({ title: '', category: 'parking', price: '', description: '', image_url: '' });
-                setToast({ type: 'success', message: 'New facility or equipment added!' });
+                try {
+                  const item = await saveCatalogItem<FacilityItem>('facility', {
+                    title: newFacility.title.trim(),
+                    category: newFacility.category || 'amenity',
+                    price: newFacility.price || '',
+                    description: newFacility.description || '',
+                    image_url: newFacility.image_url || '',
+                  });
+                  setFacilities((current) => [...current, item]);
+                  setShowAddFacility(false);
+                  setNewFacility({ title: '', category: 'parking', price: '', description: '', image_url: '' });
+                  setToast({ type: 'success', message: 'New facility or equipment added!' });
+                } catch (error) {
+                  setToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to add facility.' });
+                }
               }}
               className="space-y-4"
             >
@@ -1963,7 +2018,7 @@ export default function ManageInformationPage() {
             </div>
 
             <form
-              onSubmit={(e) => {
+              onSubmit={async (e) => {
                 e.preventDefault();
                 if (!newRule.title.trim()) {
                   setToast({ type: 'error', message: 'Rule title is required.' });
@@ -1976,10 +2031,13 @@ export default function ManageInformationPage() {
                   description: newRule.description.trim(),
                   category: newRule.category || 'General',
                 };
-                setRules([...rules, item]);
-                setShowAddRule(false);
-                setNewRule({ type: 'do', title: '', description: '', category: 'Safety' });
-                setToast({ type: 'success', message: 'New resort rule added successfully!' });
+                const nextRules = [...rules, item];
+                if (await handleSave(nextRules)) {
+                  setRules(nextRules);
+                  setShowAddRule(false);
+                  setNewRule({ type: 'do', title: '', description: '', category: 'Safety' });
+                  setToast({ type: 'success', message: 'New resort rule added successfully!' });
+                }
               }}
               className="space-y-4"
             >
