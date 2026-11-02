@@ -167,7 +167,7 @@ export default function AdminLoginPage() {
       {/* ── Main Seamless Form Area (NO Box Container / Frameless Layout) ── */}
       <div className="w-full max-w-sm sm:max-w-md py-6">
         {/* Header: Dagat Ta Bai Logo + Admin Portal */}
-        <div className="flex flex-col items-center text-center mb-8">
+        <div className="flex flex-col items-center text-center mb-12">
           <Link href="/" className="inline-block transition-transform hover:scale-105 mb-4">
             <div className="relative w-16 h-16 flex items-center justify-center">
               <Image

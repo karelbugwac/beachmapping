@@ -62,6 +62,11 @@ export interface Database {
           virtual_tour_url: string | null;
           contact_phone: string | null;
           contact_email: string | null;
+          facebook_url: string | null;
+          instagram_url: string | null;
+          peak_days: string | null;
+          peak_hours: string | null;
+          best_visiting_time: string | null;
           opening_hours: string;
           entrance_fee: string | null;
           cottage_fee: string | null;
@@ -85,6 +90,11 @@ export interface Database {
           virtual_tour_url?: string | null;
           contact_phone?: string | null;
           contact_email?: string | null;
+          facebook_url?: string | null;
+          instagram_url?: string | null;
+          peak_days?: string | null;
+          peak_hours?: string | null;
+          best_visiting_time?: string | null;
           opening_hours?: string;
           entrance_fee?: string | null;
           cottage_fee?: string | null;
@@ -108,6 +118,11 @@ export interface Database {
           virtual_tour_url?: string | null;
           contact_phone?: string | null;
           contact_email?: string | null;
+          facebook_url?: string | null;
+          instagram_url?: string | null;
+          peak_days?: string | null;
+          peak_hours?: string | null;
+          best_visiting_time?: string | null;
           opening_hours?: string;
           entrance_fee?: string | null;
           cottage_fee?: string | null;

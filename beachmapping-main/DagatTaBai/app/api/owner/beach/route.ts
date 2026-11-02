@@ -119,6 +119,8 @@ export async function POST(request: Request) {
 
     const parsedLatitude = parseFloat(String(body.latitude));
     const parsedLongitude = parseFloat(String(body.longitude));
+    const isValidLatitude = Number.isFinite(parsedLatitude) && parsedLatitude >= -90 && parsedLatitude <= 90;
+    const isValidLongitude = Number.isFinite(parsedLongitude) && parsedLongitude >= -180 && parsedLongitude <= 180;
     const slug = typeof body.slug === 'string' && body.slug.trim()
       ? body.slug.trim()
       : name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -128,9 +130,18 @@ export async function POST(request: Request) {
     if (typeof body.id === 'string' && body.id) {
       // Find existing beach to preserve slug, owner_id, coordinates, and virtual_tour_url if needed
       const { data: existing } = await (adminSupabase.from('beaches') as any)
-        .select('slug, owner_id, virtual_tour_url, latitude, longitude, location')
+        .select('slug, owner_id, virtual_tour_url, latitude, longitude, location, opening_hours')
         .eq('id', body.id)
         .maybeSingle();
+
+      const latitude = isValidLatitude ? parsedLatitude : Number(existing?.latitude);
+      const longitude = isValidLongitude ? parsedLongitude : Number(existing?.longitude);
+      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+        return NextResponse.json(
+          { error: 'Valid map coordinates are required for this beach listing.' },
+          { status: 400, headers: noStoreHeaders }
+        );
+      }
 
       const beachPayload = {
         name,
@@ -139,23 +150,26 @@ export async function POST(request: Request) {
         description: body.description || '',
         // Beach owners cannot directly alter verified coordinates/location; only admin can edit directly or approve requests
         location: auth.role === 'admin' ? location : (existing?.location || location),
-        latitude: auth.role === 'admin'
-          ? (Number.isFinite(parsedLatitude) ? parsedLatitude : 10.6348)
-          : (existing?.latitude !== undefined && existing?.latitude !== null ? Number(existing.latitude) : (Number.isFinite(parsedLatitude) ? parsedLatitude : 10.6348)),
-        longitude: auth.role === 'admin'
-          ? (Number.isFinite(parsedLongitude) ? parsedLongitude : 124.0275)
-          : (existing?.longitude !== undefined && existing?.longitude !== null ? Number(existing.longitude) : (Number.isFinite(parsedLongitude) ? parsedLongitude : 124.0275)),
+        latitude: auth.role === 'admin' ? latitude : Number(existing?.latitude ?? latitude),
+        longitude: auth.role === 'admin' ? longitude : Number(existing?.longitude ?? longitude),
         cover_image_url: body.cover_image || body.cover_image_url || null,
         profile_image_url: body.profile_image || body.profile_image_url || null,
         // Beach owners cannot directly edit 360 virtual tours; only admins can modify directly
         virtual_tour_url: auth.role === 'admin' ? (body.virtual_tour_url || null) : (existing?.virtual_tour_url || null),
         images: Array.isArray(body.images) ? body.images : [],
-        opening_hours: typeof body.opening_hours === 'object' ? JSON.stringify(body.opening_hours) : (body.opening_hours || '8:00 AM - 6:00 PM'),
+        opening_hours: typeof body.opening_hours === 'object'
+          ? JSON.stringify(body.opening_hours)
+          : (body.opening_hours ?? existing?.opening_hours ?? ''),
         entrance_fee: `${body.entrance_fee_adults || ''}|${body.entrance_fee_children || ''}`,
         cottage_fee: body.cottage_fee || null,
         rules: body.rules || null,
         contact_phone: body.contact_phone || null,
         contact_email: body.contact_email || null,
+        facebook_url: body.facebook_url || null,
+        instagram_url: body.instagram_url || null,
+        peak_days: body.peak_days || null,
+        peak_hours: body.peak_hours || null,
+        best_visiting_time: body.best_visiting_time || null,
         status: 'active',
         updated_at: new Date().toISOString(),
       };
@@ -172,25 +186,36 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Beach not found or unauthorized.' }, { status: 404, headers: noStoreHeaders });
       }
     } else {
+      if (!isValidLatitude || !isValidLongitude) {
+        return NextResponse.json(
+          { error: 'Valid map coordinates are required to create a beach listing.' },
+          { status: 400, headers: noStoreHeaders }
+        );
+      }
       const beachPayload = {
         name,
         slug,
         owner_id: ownerId,
         description: body.description || '',
         location,
-        latitude: Number.isFinite(parsedLatitude) ? parsedLatitude : 10.6348,
-        longitude: Number.isFinite(parsedLongitude) ? parsedLongitude : 124.0275,
+        latitude: parsedLatitude,
+        longitude: parsedLongitude,
         cover_image_url: body.cover_image || body.cover_image_url || null,
         profile_image_url: body.profile_image || body.profile_image_url || null,
         // New beaches created by owners start without a verified virtual tour until admin approves one
         virtual_tour_url: auth.role === 'admin' ? (body.virtual_tour_url || null) : null,
         images: Array.isArray(body.images) ? body.images : [],
-        opening_hours: typeof body.opening_hours === 'object' ? JSON.stringify(body.opening_hours) : (body.opening_hours || '8:00 AM - 6:00 PM'),
+        opening_hours: typeof body.opening_hours === 'object' ? JSON.stringify(body.opening_hours) : (body.opening_hours || ''),
         entrance_fee: `${body.entrance_fee_adults || ''}|${body.entrance_fee_children || ''}`,
         cottage_fee: body.cottage_fee || null,
         rules: body.rules || null,
         contact_phone: body.contact_phone || null,
         contact_email: body.contact_email || null,
+        facebook_url: body.facebook_url || null,
+        instagram_url: body.instagram_url || null,
+        peak_days: body.peak_days || null,
+        peak_hours: body.peak_hours || null,
+        best_visiting_time: body.best_visiting_time || null,
         status: 'active',
         updated_at: new Date().toISOString(),
       };
