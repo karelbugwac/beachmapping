@@ -52,7 +52,37 @@ export default function AdminBeachesPage() {
 
   // Comprehensive "Edit Info" Modal State
   const [editingBeach, setEditingBeach] = useState<BeachRecord | null>(null);
-  const [editTab, setEditTab] = useState<'basic' | 'tour' | 'coordinates' | 'rates' | 'photos'>('basic');
+  const [editTab, setEditTab] = useState<'basic' | 'tour' | 'coordinates' | 'rates' | 'photos' | 'posts' | 'dos'>('basic');
+  const [resortPosts, setResortPosts] = useState<Array<{ id: string; caption: string; image_url?: string; created_at: string }>>([
+    {
+      id: 'p-1',
+      caption: 'Sunny morning tide here in Binongkalan! Crystal clear water and cool gentle breeze for all guests today.',
+      image_url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=800&q=80',
+      created_at: '2 days ago',
+    },
+  ]);
+  const [newPostCaption, setNewPostCaption] = useState('');
+  const [newPostImage, setNewPostImage] = useState('');
+  const [resortRules, setResortRules] = useState<Array<{ id: string; type: 'do' | 'dont'; title: string; description: string; category: string }>>([
+    {
+      id: 'r-1',
+      type: 'do',
+      category: 'Safety',
+      title: 'Wear life vests when swimming in deep areas',
+      description: 'Guests and children are advised to use personal floatation devices past the reef markers.',
+    },
+    {
+      id: 'r-2',
+      type: 'dont',
+      category: 'Safety',
+      title: 'No glass bottles or breakable containers on the sand',
+      description: 'Glass shards pose severe puncture hazards to barefoot swimmers and beachgoers.',
+    },
+  ]);
+  const [newRuleTitle, setNewRuleTitle] = useState('');
+  const [newRuleDesc, setNewRuleDesc] = useState('');
+  const [newRuleType, setNewRuleType] = useState<'do' | 'dont'>('do');
+  const [newRuleCategory, setNewRuleCategory] = useState('Safety');
   const [editForm, setEditForm] = useState({
     id: '',
     name: '',
@@ -393,7 +423,7 @@ export default function AdminBeachesPage() {
     <div className="max-w-7xl mx-auto space-y-8 font-sans">
       {/* Frameless Hero Header: Dive Blue */}
       <div className="space-y-1.5">
-        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#1F3F74] dark:text-[#4987BA]">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-[#1F3F74] dark:text-white">
           Manage Beaches &amp; 360° Tours
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 dark:text-neutral-400 max-w-2xl">
@@ -735,6 +765,8 @@ export default function AdminBeachesPage() {
                 { id: 'coordinates', label: 'Map Coordinates' },
                 { id: 'rates', label: 'Rates & Fees' },
                 { id: 'photos', label: 'Photos & Cover' },
+                { id: 'posts', label: 'Posts & Feed' },
+                { id: 'dos', label: "Do's & Don'ts" },
               ].map((tab) => (
                 <button
                   key={tab.id}
@@ -1009,6 +1041,238 @@ export default function AdminBeachesPage() {
                         className="hidden"
                       />
                     </label>
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 6: POSTS & FEED */}
+              {editTab === 'posts' && (
+                <div className="space-y-5">
+                  <div className="p-4 rounded-2xl bg-sky-50 dark:bg-sky-950/20 border border-sky-200 dark:border-sky-800">
+                    <h4 className="text-xs font-bold text-sky-900 dark:text-sky-300">
+                      Resort Posts &amp; Shoreline Announcements
+                    </h4>
+                    <p className="text-[11px] text-sky-800 dark:text-sky-400 mt-0.5">
+                      Publish official updates, photos, and announcements directly to the beach listing profile for tourists to see.
+                    </p>
+                  </div>
+
+                  {/* Create New Post Form */}
+                  <div className="p-4 rounded-2xl border border-slate-200 dark:border-neutral-800 bg-slate-50/50 dark:bg-neutral-900/40 space-y-3">
+                    <label className="block text-xs font-bold text-[#1F3F74] dark:text-[#4987BA]">
+                      Create New Post
+                    </label>
+                    <textarea
+                      rows={3}
+                      value={newPostCaption}
+                      onChange={(e) => setNewPostCaption(e.target.value)}
+                      placeholder="Write announcement caption, weather conditions, water tide status, or promo details..."
+                      className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold placeholder:italic focus:outline-none focus:ring-2 focus:ring-[#1F3F74]"
+                    />
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
+                      <input
+                        type="url"
+                        value={newPostImage}
+                        onChange={(e) => setNewPostImage(e.target.value)}
+                        placeholder="Optional photo URL (or leave blank)"
+                        className="flex-1 px-4 py-2 rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold placeholder:italic focus:outline-none"
+                      />
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!newPostCaption.trim()) {
+                            showToast('Please enter post text caption.', 'error');
+                            return;
+                          }
+                          setResortPosts((prev) => [
+                            {
+                              id: `post-${Date.now()}`,
+                              caption: newPostCaption.trim(),
+                              image_url: newPostImage.trim() || undefined,
+                              created_at: 'Just now',
+                            },
+                            ...prev,
+                          ]);
+                          setNewPostCaption('');
+                          setNewPostImage('');
+                          showToast('New post added to beach feed!', 'success');
+                        }}
+                        className="px-5 py-2 rounded-full bg-[#1F3F74] hover:bg-[#285091] text-white text-xs font-bold transition shadow-xs cursor-pointer"
+                      >
+                        Publish Post
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Published Posts Feed */}
+                  <div className="space-y-3">
+                    <h5 className="text-xs font-bold text-slate-700 dark:text-neutral-300">
+                      Existing Published Posts ({resortPosts.length})
+                    </h5>
+                    {resortPosts.map((post) => (
+                      <div
+                        key={post.id}
+                        className="p-4 rounded-2xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 space-y-2"
+                      >
+                        <div className="flex items-center justify-between text-xs">
+                          <span className="font-bold text-slate-900 dark:text-white">{editForm.name || 'Resort'}</span>
+                          <span className="text-[10px] text-slate-400">{post.created_at}</span>
+                        </div>
+                        <p className="text-xs text-slate-700 dark:text-neutral-300 leading-relaxed">
+                          {post.caption}
+                        </p>
+                        {post.image_url && (
+                          <div className="relative h-40 w-full rounded-xl overflow-hidden bg-slate-900">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={post.image_url} alt="Post" className="w-full h-full object-cover" />
+                          </div>
+                        )}
+                        <div className="pt-1 flex justify-end">
+                          <button
+                            type="button"
+                            onClick={() => {
+                              setResortPosts((prev) => prev.filter((p) => p.id !== post.id));
+                              showToast('Post removed from feed.', 'success');
+                            }}
+                            className="text-[11px] font-bold text-rose-600 hover:underline cursor-pointer"
+                          >
+                            Delete Post
+                          </button>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* TAB 7: DO'S & DON'TS */}
+              {editTab === 'dos' && (
+                <div className="space-y-5">
+                  <div className="p-4 rounded-2xl bg-amber-50 dark:bg-amber-950/20 border border-amber-200 dark:border-amber-800">
+                    <h4 className="text-xs font-bold text-amber-900 dark:text-amber-300">
+                      Beach Regulations &amp; Safety Guidelines
+                    </h4>
+                    <p className="text-[11px] text-amber-800 dark:text-amber-400 mt-0.5">
+                      Define the municipal and resort guidelines tourists and guests must follow when visiting this beach.
+                    </p>
+                  </div>
+
+                  {/* Add New Rule Form */}
+                  <div className="p-4 rounded-2xl border border-slate-200 dark:border-neutral-800 bg-slate-50/50 dark:bg-neutral-900/40 space-y-3">
+                    <label className="block text-xs font-bold text-[#1F3F74] dark:text-[#4987BA]">
+                      Add New Rule / Guideline
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-500 mb-1">Type</label>
+                        <select
+                          value={newRuleType}
+                          onChange={(e) => setNewRuleType(e.target.value as any)}
+                          className="w-full px-3 py-2 text-xs rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-black font-bold focus:outline-none"
+                        >
+                          <option value="do">DO (Encouraged / Required)</option>
+                          <option value="dont">DON&apos;T (Prohibited / Restricted)</option>
+                        </select>
+                      </div>
+                      <div>
+                        <label className="block text-[11px] font-semibold text-slate-500 mb-1">Category</label>
+                        <select
+                          value={newRuleCategory}
+                          onChange={(e) => setNewRuleCategory(e.target.value)}
+                          className="w-full px-3 py-2 text-xs rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-black font-bold focus:outline-none"
+                        >
+                          <option value="Safety">Safety &amp; Swimming</option>
+                          <option value="Environment">Environment &amp; CLAYGO</option>
+                          <option value="Etiquette">Etiquette &amp; Noise</option>
+                        </select>
+                      </div>
+                    </div>
+                    <input
+                      type="text"
+                      value={newRuleTitle}
+                      onChange={(e) => setNewRuleTitle(e.target.value)}
+                      placeholder="Rule title (e.g. Wear life vests in deep water)"
+                      className="w-full px-4 py-2.5 rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold placeholder:italic focus:outline-none"
+                    />
+                    <textarea
+                      rows={2}
+                      value={newRuleDesc}
+                      onChange={(e) => setNewRuleDesc(e.target.value)}
+                      placeholder="Explanation / guidance text..."
+                      className="w-full px-4 py-2.5 rounded-2xl border border-slate-300 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold placeholder:italic focus:outline-none"
+                    />
+                    <div className="flex justify-end">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          if (!newRuleTitle.trim()) {
+                            showToast('Please enter a rule title.', 'error');
+                            return;
+                          }
+                          setResortRules((prev) => [
+                            ...prev,
+                            {
+                              id: `rule-${Date.now()}`,
+                              type: newRuleType,
+                              category: newRuleCategory,
+                              title: newRuleTitle.trim(),
+                              description: newRuleDesc.trim(),
+                            },
+                          ]);
+                          setNewRuleTitle('');
+                          setNewRuleDesc('');
+                          showToast('Guideline added to beach rules!', 'success');
+                        }}
+                        className="px-5 py-2 rounded-full bg-[#1F3F74] hover:bg-[#285091] text-white text-xs font-bold transition shadow-xs cursor-pointer"
+                      >
+                        Add Guideline
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* List of Rules */}
+                  <div className="space-y-2">
+                    <h5 className="text-xs font-bold text-slate-700 dark:text-neutral-300">
+                      Configured Guidelines ({resortRules.length})
+                    </h5>
+                    {resortRules.map((rule) => (
+                      <div
+                        key={rule.id}
+                        className="p-3.5 rounded-2xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 flex items-start justify-between gap-3"
+                      >
+                        <div className="space-y-1">
+                          <div className="flex items-center gap-2">
+                            <span
+                              className={`px-2 py-0.5 rounded-full text-[10px] font-bold uppercase ${
+                                rule.type === 'do'
+                                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
+                                  : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                              }`}
+                            >
+                              {rule.type.toUpperCase()}
+                            </span>
+                            <span className="text-[10px] font-semibold text-slate-400">{rule.category}</span>
+                            <h6 className="text-xs font-bold text-slate-900 dark:text-white">{rule.title}</h6>
+                          </div>
+                          {rule.description && (
+                            <p className="text-[11px] text-slate-500 leading-relaxed pl-1">
+                              {rule.description}
+                            </p>
+                          )}
+                        </div>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setResortRules((prev) => prev.filter((r) => r.id !== rule.id));
+                            showToast('Guideline removed.', 'success');
+                          }}
+                          className="text-slate-400 hover:text-rose-600 transition p-1 cursor-pointer"
+                          title="Remove rule"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                    ))}
                   </div>
                 </div>
               )}

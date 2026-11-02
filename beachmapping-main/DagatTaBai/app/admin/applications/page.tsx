@@ -4,11 +4,11 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
   FileText,
-  CheckCircle2,
-  XCircle,
-  Clock,
   Eye,
   Loader2,
+  Search,
+  Filter,
+  ChevronDown,
 } from 'lucide-react';
 import { showToast } from '@/components/ui/feedback-toasts';
 
@@ -26,6 +26,7 @@ export default function AdminApplicationsPage() {
   const [applications, setApplications] = useState<ApplicationItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
+  const [searchQuery, setSearchQuery] = useState('');
 
   const fetchApplications = async () => {
     try {
@@ -53,43 +54,64 @@ export default function AdminApplicationsPage() {
   }, []);
 
   const filteredApplications = applications.filter((app) => {
-    if (statusFilter === 'all') return true;
-    return app.status === statusFilter;
+    const matchesStatus = statusFilter === 'all' || app.status === statusFilter;
+    const searchLower = searchQuery.toLowerCase();
+    const matchesSearch =
+      searchQuery === '' ||
+      app.applicant_full_name.toLowerCase().includes(searchLower) ||
+      app.applicant_email.toLowerCase().includes(searchLower) ||
+      app.beach_name.toLowerCase().includes(searchLower) ||
+      app.business_name.toLowerCase().includes(searchLower);
+    return matchesStatus && matchesSearch;
   });
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 font-sans">
-      {/* Frameless Header in Dive Blue */}
+      {/* Frameless Header in Dive Blue (White in dark mode) */}
       <div className="space-y-1.5">
-        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#1F3F74] dark:text-[#4987BA]">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-[#1F3F74] dark:text-white">
           Beach Owner Applications
         </h1>
-        <p className="text-xs sm:text-sm text-slate-500 dark:text-neutral-400 max-w-2xl">
+        <p className="text-xs sm:text-sm text-slate-500 dark:text-neutral-400 max-w-2xl leading-relaxed">
           Review submitted legal business permits and proof of ownership. Approving automatically generates and dispatches secure 6-digit PIN credentials to the proprietor.
         </p>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex items-center gap-2 border-b border-slate-200 dark:border-neutral-800 pb-3 text-xs overflow-x-auto">
-        {(['all', 'pending', 'approved', 'rejected'] as const).map((tab) => {
-          const count = applications.filter((a) => tab === 'all' || a.status === tab).length;
-          const isActive = statusFilter === tab;
+      {/* Search Bar and Filter Dropdown */}
+      <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
+        {/* Search Bar (Oblong, clean) */}
+        <div className="relative flex-1">
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
+          <input
+            type="text"
+            placeholder="Search by applicant name, email, or beach/resort name..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full pl-10 pr-4 py-2.5 rounded-full border border-slate-200 dark:border-neutral-800 bg-white dark:bg-black text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#1F3F74] dark:focus:ring-sky-500 focus:border-transparent placeholder:italic placeholder:text-slate-400 shadow-2xs"
+          />
+        </div>
 
-          return (
-            <button
-              key={tab}
-              type="button"
-              onClick={() => setStatusFilter(tab)}
-              className={`px-4 py-2 rounded-full font-bold capitalize transition-all cursor-pointer ${
-                isActive
-                  ? 'bg-[#1F3F74] text-white shadow-xs dark:bg-[#4987BA]'
-                  : 'text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-900 hover:text-[#1F3F74] dark:hover:text-white'
-              }`}
-            >
-              {tab} ({count})
-            </button>
-          );
-        })}
+        {/* Filter Dropdown (Replaces old tabs next to search bar) */}
+        <div className="relative flex-shrink-0 sm:w-56">
+          <Filter className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value as any)}
+            className="w-full appearance-none pl-9 pr-9 py-2.5 rounded-full border border-slate-200 dark:border-neutral-800 bg-white dark:bg-black text-slate-900 dark:text-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#1F3F74] dark:focus:ring-sky-500 cursor-pointer shadow-2xs"
+          >
+            <option value="all">All Applications ({applications.length})</option>
+            <option value="pending">
+              Pending Review ({applications.filter((a) => a.status === 'pending').length})
+            </option>
+            <option value="approved">
+              Approved ({applications.filter((a) => a.status === 'approved').length})
+            </option>
+            <option value="rejected">
+              Rejected ({applications.filter((a) => a.status === 'rejected').length})
+            </option>
+          </select>
+          <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+        </div>
       </div>
 
       {/* Main List Table / Cards */}
@@ -147,20 +169,17 @@ export default function AdminApplicationsPage() {
                     </td>
                     <td className="py-4 px-6">
                       {app.status === 'pending' && (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400">
-                          <Clock className="w-3.5 h-3.5" />
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-yellow-500 text-white shadow-2xs">
                           Pending Review
                         </span>
                       )}
                       {app.status === 'approved' && (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
-                          <CheckCircle2 className="w-3.5 h-3.5" />
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-emerald-600 text-white shadow-2xs">
                           Approved
                         </span>
                       )}
                       {app.status === 'rejected' && (
-                        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-rose-50 text-rose-700 dark:bg-rose-950/40 dark:text-rose-400">
-                          <XCircle className="w-3.5 h-3.5" />
+                        <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-bold bg-red-600 text-white shadow-2xs">
                           Rejected
                         </span>
                       )}
@@ -168,7 +187,7 @@ export default function AdminApplicationsPage() {
                     <td className="py-4 px-6 text-right">
                       <Link
                         href={`/admin/applications/${app.id}`}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#1F3F74]/10 hover:bg-[#1F3F74] text-[#1F3F74] hover:text-white dark:bg-[#4987BA]/20 dark:hover:bg-[#4987BA] dark:text-[#4987BA] dark:hover:text-white rounded-full font-bold text-xs transition-all shadow-2xs"
+                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#1F3F74] hover:bg-[#183460] text-white dark:bg-sky-600 dark:hover:bg-sky-500 rounded-full font-bold text-xs transition-all shadow-xs"
                       >
                         <Eye className="w-3.5 h-3.5" />
                         <span>Review</span>

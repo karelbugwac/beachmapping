@@ -10,6 +10,7 @@ import {
   Users,
   Compass,
   ArrowRight,
+  ShieldCheck,
 } from 'lucide-react';
 import { AnalyticsBarChart, type AnalyticsPoint } from '@/components/ui/analytics-bar-chart';
 import { showToast } from '@/components/ui/feedback-toasts';
@@ -86,100 +87,89 @@ export default function AdminDashboardPage() {
     <div className="max-w-7xl mx-auto space-y-8 font-sans">
       {/* Frameless Hero Header: Pure Dive Blue with no containers */}
       <div className="space-y-1.5">
-        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-[#1F3F74]/10 dark:bg-[#4987BA]/15 text-[#1F3F74] dark:text-[#4987BA] text-xs font-bold uppercase tracking-wider">
-          <span>Barangay Binongkalan</span>
-        </div>
-        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#1F3F74] dark:text-[#4987BA]">
-          Barangay Admin Overview
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-[#1F3F74] dark:text-white">
+          Admin Overview
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 dark:text-neutral-400 max-w-2xl leading-relaxed">
-          Oversee resort applications, verified beach listings, 360° virtual tours, and citizen accounts across Barangay Binongkalan.
+          Manage resort records, beach listings, virtual tours, and community accounts in one place.
         </p>
       </div>
 
-      {/* KPI Cards Grid */}
+      {/* KPI Cards Grid: Yellow, Sky Blue, and Dive Blue */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-        {/* Pending Applications */}
+        {/* 1. Pending Applications (Yellow) */}
         <Link
           href="/admin/applications"
-          className="p-5 rounded-3xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-xs hover:border-[#1F3F74] dark:hover:border-[#4987BA] transition-all group"
+          className="p-5 rounded-3xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-xs hover:border-yellow-500 transition-all group"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 dark:text-neutral-400">
               Pending Applications
             </span>
-            <div className="w-9 h-9 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-600 flex items-center justify-center">
-              <Clock className="w-4 h-4" />
-            </div>
+            <Clock className="w-5 h-5 text-yellow-500" strokeWidth={2.5} />
           </div>
-          <div className="mt-4 text-3xl font-black text-amber-600 leading-none">
+          <div className="mt-4 text-3xl font-black text-yellow-500 dark:text-yellow-400 leading-none">
             {stats.loading ? '...' : stats.pendingApplications}
           </div>
-          <span className="mt-3 block text-xs font-semibold text-slate-400 group-hover:text-[#1F3F74] dark:group-hover:text-[#4987BA] transition-colors">
+          <span className="mt-3 block text-xs font-semibold text-slate-400 group-hover:text-yellow-600 dark:group-hover:text-yellow-400 transition-colors">
             Permit review required →
           </span>
         </Link>
 
-        {/* Active Beach Listings */}
+        {/* 2. Active Beaches (Sky Blue) */}
         <Link
           href="/admin/beaches"
-          className="p-5 rounded-3xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-xs hover:border-[#1F3F74] dark:hover:border-[#4987BA] transition-all group"
+          className="p-5 rounded-3xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-xs hover:border-sky-500 transition-all group"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 dark:text-neutral-400">
-              Active Beach Listings
+              Active Beaches
             </span>
-            <div className="w-9 h-9 rounded-full bg-sky-50 dark:bg-sky-950/40 text-sky-600 flex items-center justify-center">
-              <Palmtree className="w-4 h-4" />
-            </div>
+            <Palmtree className="w-5 h-5 text-sky-500" strokeWidth={2.5} />
           </div>
-          <div className="mt-4 text-3xl font-black text-[#1F3F74] dark:text-[#4987BA] leading-none">
+          <div className="mt-4 text-3xl font-black text-sky-500 dark:text-sky-400 leading-none">
             {stats.loading ? '...' : stats.activeBeaches}
           </div>
-          <span className="mt-3 block text-xs font-semibold text-slate-400 group-hover:text-[#1F3F74] dark:group-hover:text-[#4987BA] transition-colors">
+          <span className="mt-3 block text-xs font-semibold text-slate-400 group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors">
             Live coastal listings →
           </span>
         </Link>
 
-        {/* Registered Users */}
+        {/* 3. 360 Capture Requests (Sky Blue / Dive) */}
         <Link
-          href="/admin/users"
-          className="p-5 rounded-3xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-xs hover:border-[#1F3F74] dark:hover:border-[#4987BA] transition-all group"
+          href="/admin/beaches"
+          className="p-5 rounded-3xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-xs hover:border-sky-400 transition-all group"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 dark:text-neutral-400">
-              Registered Accounts
+              360 Capture Requests
             </span>
-            <div className="w-9 h-9 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 flex items-center justify-center">
-              <Users className="w-4 h-4" />
-            </div>
+            <Compass className="w-5 h-5 text-sky-400" strokeWidth={2.5} />
           </div>
-          <div className="mt-4 text-3xl font-black text-indigo-600 leading-none">
-            {stats.loading ? '...' : stats.totalUsers}
+          <div className="mt-4 text-3xl font-black text-sky-500 dark:text-sky-300 leading-none">
+            {stats.loading ? '...' : stats.pendingTours}
           </div>
-          <span className="mt-3 block text-xs font-semibold text-slate-400 group-hover:text-[#1F3F74] dark:group-hover:text-[#4987BA] transition-colors">
-            Manage citizens &amp; owners →
+          <span className="mt-3 block text-xs font-semibold text-slate-400 group-hover:text-sky-500 transition-colors">
+            Tour scanning queue →
           </span>
         </Link>
 
-        {/* 360 Tours & Coordinates */}
+        {/* 4. Review Moderation (Dive Blue) */}
         <Link
-          href="/admin/beaches"
-          className="p-5 rounded-3xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-xs hover:border-[#1F3F74] dark:hover:border-[#4987BA] transition-all group"
+          href="/admin/users"
+          className="p-5 rounded-3xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-xs hover:border-[#1F3F74] transition-all group"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 dark:text-neutral-400">
-              Pending 360 / Coordinates
+              Review Moderation
             </span>
-            <div className="w-9 h-9 rounded-full bg-emerald-50 dark:bg-emerald-950/40 text-emerald-600 flex items-center justify-center">
-              <Compass className="w-4 h-4" />
-            </div>
+            <ShieldCheck className="w-5 h-5 text-[#1F3F74] dark:text-[#38BDF8]" strokeWidth={2.5} />
           </div>
-          <div className="mt-4 text-3xl font-black text-emerald-600 leading-none">
-            {stats.loading ? '...' : stats.pendingTours + stats.pendingCoords}
+          <div className="mt-4 text-3xl font-black text-[#1F3F74] dark:text-white leading-none">
+            {stats.loading ? '...' : stats.totalUsers}
           </div>
-          <span className="mt-3 block text-xs font-semibold text-slate-400 group-hover:text-[#1F3F74] dark:group-hover:text-[#4987BA] transition-colors">
-            Admin approvals pending →
+          <span className="mt-3 block text-xs font-semibold text-slate-400 group-hover:text-[#1F3F74] dark:group-hover:text-[#38BDF8] transition-colors">
+            Moderate community reviews →
           </span>
         </Link>
       </div>
@@ -197,65 +187,62 @@ export default function AdminDashboardPage() {
 
       {/* Primary Action Modules */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* Owner Applications (Yellow) */}
         <Link
           href="/admin/applications"
-          className="p-6 rounded-3xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-xs hover:border-[#1F3F74] dark:hover:border-[#4987BA] hover:shadow-md transition-all group flex flex-col justify-between"
+          className="p-6 rounded-3xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-xs hover:border-yellow-500 hover:shadow-md transition-all group flex flex-col justify-between"
         >
           <div className="space-y-3">
-            <div className="w-10 h-10 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-600 flex items-center justify-center">
-              <FileCheck className="w-5 h-5" />
-            </div>
-            <h2 className="font-bold text-base text-[#1F3F74] dark:text-[#4987BA]">
+            <FileCheck className="w-6 h-6 text-yellow-500" strokeWidth={2.5} />
+            <h2 className="font-bold text-base text-[#1F3F74] dark:text-white">
               Owner Applications
             </h2>
             <p className="text-xs text-slate-500 dark:text-neutral-400 leading-relaxed">
-              Review submitted legal permits and proof of ownership. Approving automatically generates and dispatches credentials to the proprietor.
+              Review submitted legal permits and proof of ownership. Approving automatically generates and dispatches credentials to the proprietor. Ensure all documents are valid before approval.
             </p>
           </div>
-          <div className="mt-6 flex items-center gap-1.5 text-xs font-bold text-[#1F3F74] dark:text-[#4987BA] group-hover:translate-x-1 transition-transform">
+          <div className="mt-6 flex items-center gap-1.5 text-xs font-bold text-yellow-600 dark:text-yellow-400 group-hover:translate-x-1 transition-transform">
             <span>Open Applications</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </div>
         </Link>
 
+        {/* Manage Beaches & 360 Tours (Sky Blue) */}
         <Link
           href="/admin/beaches"
-          className="p-6 rounded-3xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-xs hover:border-[#1F3F74] dark:hover:border-[#4987BA] hover:shadow-md transition-all group flex flex-col justify-between"
+          className="p-6 rounded-3xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-xs hover:border-sky-500 hover:shadow-md transition-all group flex flex-col justify-between"
         >
           <div className="space-y-3">
-            <div className="w-10 h-10 rounded-full bg-sky-50 dark:bg-sky-950/40 text-sky-600 flex items-center justify-center">
-              <Palmtree className="w-5 h-5" />
-            </div>
-            <h2 className="font-bold text-base text-[#1F3F74] dark:text-[#4987BA]">
+            <Palmtree className="w-6 h-6 text-sky-500" strokeWidth={2.5} />
+            <h2 className="font-bold text-base text-[#1F3F74] dark:text-white">
               Manage Beaches &amp; 360° Tours
             </h2>
             <p className="text-xs text-slate-500 dark:text-neutral-400 leading-relaxed">
-              Admin-exclusive virtual tour embedding, coordinates positioning, and listing management with dedicated Edit Info modals for each beach.
+              Admin-exclusive virtual tour embedding, coordinates positioning, and listing management with dedicated Edit Info modals for each beach. Control all beach-related content and ensure accuracy.
             </p>
           </div>
-          <div className="mt-6 flex items-center gap-1.5 text-xs font-bold text-[#1F3F74] dark:text-[#4987BA] group-hover:translate-x-1 transition-transform">
+          <div className="mt-6 flex items-center gap-1.5 text-xs font-bold text-sky-600 dark:text-sky-400 group-hover:translate-x-1 transition-transform">
             <span>Manage Beaches</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </div>
         </Link>
 
+        {/* User Management & Review Moderation (Dive Blue) */}
         <Link
           href="/admin/users"
-          className="p-6 rounded-3xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-xs hover:border-[#1F3F74] dark:hover:border-[#4987BA] hover:shadow-md transition-all group flex flex-col justify-between"
+          className="p-6 rounded-3xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-xs hover:border-[#1F3F74] hover:shadow-md transition-all group flex flex-col justify-between"
         >
           <div className="space-y-3">
-            <div className="w-10 h-10 rounded-full bg-indigo-50 dark:bg-indigo-950/40 text-indigo-600 flex items-center justify-center">
-              <Users className="w-5 h-5" />
-            </div>
-            <h2 className="font-bold text-base text-[#1F3F74] dark:text-[#4987BA]">
-              User Management
+            <ShieldCheck className="w-6 h-6 text-[#1F3F74] dark:text-[#38BDF8]" strokeWidth={2.5} />
+            <h2 className="font-bold text-base text-[#1F3F74] dark:text-white">
+              User &amp; Review Management
             </h2>
             <p className="text-xs text-slate-500 dark:text-neutral-400 leading-relaxed">
-              Oversee registered tourists, citizens, and resort proprietors. Manage account roles, activation status, and community security.
+              Oversee registered tourists, citizens, and resort proprietors. Moderate community reviews, handle removal requests, and maintain a safe and organized user ecosystem.
             </p>
           </div>
-          <div className="mt-6 flex items-center gap-1.5 text-xs font-bold text-[#1F3F74] dark:text-[#4987BA] group-hover:translate-x-1 transition-transform">
-            <span>Manage Users</span>
+          <div className="mt-6 flex items-center gap-1.5 text-xs font-bold text-[#1F3F74] dark:text-[#38BDF8] group-hover:translate-x-1 transition-transform">
+            <span>Manage Users &amp; Reviews</span>
             <ArrowRight className="w-3.5 h-3.5" />
           </div>
         </Link>

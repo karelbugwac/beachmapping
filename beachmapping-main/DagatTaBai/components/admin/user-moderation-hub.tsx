@@ -9,6 +9,7 @@ import {
   AlertTriangle,
   Search,
   Filter,
+  ChevronDown,
   Shield,
   ShieldAlert,
   ShieldCheck,
@@ -133,6 +134,7 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
   const [newPin, setNewPin] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
+  const [actionMenuOpenId, setActionMenuOpenId] = useState<string | null>(null);
 
   // Edit form state
   const [editFormData, setEditFormData] = useState({
@@ -293,12 +295,12 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
         current.map((u) =>
           u.id === editingUser.id
             ? {
-                ...u,
-                name: editFormData.name.trim(),
-                email: editFormData.email.trim(),
-                role: editFormData.role,
-                location: editFormData.location.trim() || null,
-              }
+              ...u,
+              name: editFormData.name.trim(),
+              email: editFormData.email.trim(),
+              role: editFormData.role,
+              location: editFormData.location.trim() || null,
+            }
             : u
         )
       );
@@ -308,12 +310,12 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
         setSelectedUser((prev) =>
           prev
             ? {
-                ...prev,
-                name: editFormData.name.trim(),
-                email: editFormData.email.trim(),
-                role: editFormData.role,
-                location: editFormData.location.trim() || null,
-              }
+              ...prev,
+              name: editFormData.name.trim(),
+              email: editFormData.email.trim(),
+              role: editFormData.role,
+              location: editFormData.location.trim() || null,
+            }
             : null
         );
       }
@@ -366,11 +368,11 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
         current.map((u) =>
           u.id === statusModalUser.id
             ? {
-                ...u,
-                status: newStatus,
-                status_reason: newReason,
-                status_updated_at: new Date().toISOString(),
-              }
+              ...u,
+              status: newStatus,
+              status_reason: newReason,
+              status_updated_at: new Date().toISOString(),
+            }
             : u
         )
       );
@@ -379,11 +381,11 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
         setSelectedUser((prev) =>
           prev
             ? {
-                ...prev,
-                status: newStatus,
-                status_reason: newReason,
-                status_updated_at: new Date().toISOString(),
-              }
+              ...prev,
+              status: newStatus,
+              status_reason: newReason,
+              status_updated_at: new Date().toISOString(),
+            }
             : null
         );
       }
@@ -507,10 +509,10 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
         setSelectedUser((prev) =>
           prev
             ? {
-                ...prev,
-                reviews_count: Math.max(0, prev.reviews_count - 1),
-                recent_reviews: prev.recent_reviews?.filter((r) => r.id !== review.id),
-              }
+              ...prev,
+              reviews_count: Math.max(0, prev.reviews_count - 1),
+              recent_reviews: prev.recent_reviews?.filter((r) => r.id !== review.id),
+            }
             : null
         );
       }
@@ -573,7 +575,7 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
             <span className="hidden">Back to Admin Dashboard</span>
           </Link>
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-[#1F3F74] dark:text-[#4987BA]">
+            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-[#1F3F74] dark:text-white">
               User &amp; Review Management Hub
             </h1>
             <button
@@ -600,7 +602,7 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
             </span>
           </div>
           <div className="px-3 py-1.5 rounded-xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 shadow-xs flex items-center gap-2">
-            <MessageSquare className="w-4 h-4 text-purple-600" />
+            <MessageSquare className="w-4 h-4 text-[#1F3F74] dark:text-[#38BDF8]" />
             <span className="text-xs font-bold text-slate-700 dark:text-slate-200">
               {stats.reviewsCount} Reviews
             </span>
@@ -621,11 +623,10 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
         <button
           type="button"
           onClick={() => handleTabChange('users')}
-          className={`flex items-center gap-2 py-3 px-4 text-sm font-semibold border-b-2 transition-all whitespace-nowrap ${
-            activeTab === 'users'
+          className={`flex items-center gap-2 py-3 px-4 text-sm font-semibold border-b-2 transition-all whitespace-nowrap ${activeTab === 'users'
               ? 'border-sky-600 text-sky-600 dark:border-sky-400 dark:text-sky-400'
               : 'border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-          }`}
+            }`}
         >
           <Users className="w-4 h-4" />
           <span>User Accounts</span>
@@ -637,11 +638,10 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
         <button
           type="button"
           onClick={() => handleTabChange('reviews')}
-          className={`flex items-center gap-2 py-3 px-4 text-sm font-semibold border-b-2 transition-all whitespace-nowrap ${
-            activeTab === 'reviews'
+          className={`flex items-center gap-2 py-3 px-4 text-sm font-semibold border-b-2 transition-all whitespace-nowrap ${activeTab === 'reviews'
               ? 'border-sky-600 text-sky-600 dark:border-sky-400 dark:text-sky-400'
               : 'border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-          }`}
+            }`}
         >
           <MessageSquare className="w-4 h-4" />
           <span>Review Moderation</span>
@@ -653,11 +653,10 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
         <button
           type="button"
           onClick={() => handleTabChange('reports')}
-          className={`flex items-center gap-2 py-3 px-4 text-sm font-semibold border-b-2 transition-all whitespace-nowrap ${
-            activeTab === 'reports'
+          className={`flex items-center gap-2 py-3 px-4 text-sm font-semibold border-b-2 transition-all whitespace-nowrap ${activeTab === 'reports'
               ? 'border-amber-600 text-amber-600 dark:border-amber-400 dark:text-amber-400'
               : 'border-transparent text-slate-500 hover:text-slate-900 dark:text-slate-400 dark:hover:text-white'
-          }`}
+            }`}
         >
           <AlertTriangle className="w-4 h-4" />
           <span>Reported Reviews</span>
@@ -730,7 +729,8 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
           </div>
 
           {/* Search & Filters Bar */}
-          <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          {/* Frameless Flat Search & Filters Bar (No box/card container) */}
+          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 py-1">
             <div className="relative flex-1">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
@@ -738,7 +738,7 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
                 placeholder="Search by name, email, municipality or user ID..."
                 value={userSearch}
                 onChange={(e) => setUserSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                className="w-full pl-9 pr-4 py-2.5 text-xs rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-neutral-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1F3F74]"
               />
             </div>
 
@@ -751,7 +751,7 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value as any)}
                 aria-label="Filter users by role"
-                className="px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                className="px-3 py-2 text-xs rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-neutral-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1F3F74] cursor-pointer"
               >
                 <option value="all">All Roles</option>
                 <option value="user">Regular Tourists (User)</option>
@@ -767,7 +767,7 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as any)}
                 aria-label="Filter users by account status"
-                className="px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                className="px-3 py-2 text-xs rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-neutral-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1F3F74] cursor-pointer"
               >
                 <option value="all">All Statuses</option>
                 <option value="active">Active</option>
@@ -837,15 +837,14 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
                           <td className="py-3.5 px-4">
                             <div className="flex items-center gap-3">
                               <div
-                                className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs uppercase flex-shrink-0 ${
-                                  u.role === 'admin'
-                                    ? 'bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800'
+                                className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs uppercase flex-shrink-0 ${u.role === 'admin'
+                                    ? 'bg-[#1F3F74]/15 dark:bg-[#1F3F74]/40 text-[#1F3F74] dark:text-[#38BDF8] border border-[#1F3F74]/30'
                                     : u.role === 'beach_owner'
-                                    ? 'bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800'
-                                    : u.role === 'beach_manager'
-                                    ? 'bg-teal-100 dark:bg-teal-950 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800'
-                                    : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-                                }`}
+                                      ? 'bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800'
+                                      : u.role === 'beach_manager'
+                                        ? 'bg-teal-100 dark:bg-teal-950 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800'
+                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                                  }`}
                               >
                                 {u.name ? u.name.charAt(0) : 'U'}
                               </div>
@@ -876,15 +875,14 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
                           {/* Role Badge */}
                           <td className="py-3.5 px-4">
                             <span
-                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${
-                                u.role === 'admin'
-                                  ? 'bg-purple-50 text-purple-700 border border-purple-200 dark:bg-purple-950/60 dark:text-purple-300 dark:border-purple-800'
+                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${u.role === 'admin'
+                                  ? 'bg-[#1F3F74]/10 text-[#1F3F74] border border-[#1F3F74]/30 dark:bg-[#1F3F74]/40 dark:text-[#38BDF8] dark:border-[#1F3F74]/50'
                                   : u.role === 'beach_owner'
-                                  ? 'bg-sky-50 text-sky-700 border border-sky-200 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-800'
-                                  : u.role === 'beach_manager'
-                                  ? 'bg-teal-50 text-teal-700 border border-teal-200 dark:bg-teal-950/60 dark:text-teal-300 dark:border-teal-800'
-                                  : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
-                              }`}
+                                    ? 'bg-sky-50 text-sky-700 border border-sky-200 dark:bg-sky-950/60 dark:text-sky-300 dark:border-sky-800'
+                                    : u.role === 'beach_manager'
+                                      ? 'bg-teal-50 text-teal-700 border border-teal-200 dark:bg-teal-950/60 dark:text-teal-300 dark:border-teal-800'
+                                      : 'bg-slate-100 text-slate-700 dark:bg-slate-800 dark:text-slate-300'
+                                }`}
                             >
                               {u.role === 'admin' && <Shield className="w-3 h-3" />}
                               {u.role === 'beach_owner' && <Palmtree className="w-3 h-3" />}
@@ -896,13 +894,12 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
                           {/* Status Badge */}
                           <td className="py-3.5 px-4">
                             <span
-                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${
-                                u.status === 'active'
+                              className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-bold uppercase tracking-wider ${u.status === 'active'
                                   ? 'bg-emerald-50 text-emerald-700 border border-emerald-200 dark:bg-emerald-950/60 dark:text-emerald-300 dark:border-emerald-800'
                                   : u.status === 'deactivated'
-                                  ? 'bg-slate-100 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
-                                  : 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800'
-                              }`}
+                                    ? 'bg-slate-100 text-slate-700 border border-slate-300 dark:bg-slate-800 dark:text-slate-400 dark:border-slate-700'
+                                    : 'bg-rose-50 text-rose-700 border border-rose-200 dark:bg-rose-950/60 dark:text-rose-300 dark:border-rose-800'
+                                }`}
                             >
                               {u.status === 'active' && <CheckCircle2 className="w-3 h-3" />}
                               {u.status === 'deactivated' && <Clock className="w-3 h-3" />}
@@ -976,11 +973,10 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
                                 <button
                                   type="button"
                                   onClick={() => openStatusModal(u)}
-                                  className={`p-1.5 rounded-md transition-colors ${
-                                    u.status === 'active'
+                                  className={`p-1.5 rounded-md transition-colors ${u.status === 'active'
                                       ? 'text-slate-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30'
                                       : 'text-emerald-600 hover:text-emerald-700 hover:bg-emerald-50 dark:hover:bg-emerald-950/30'
-                                  }`}
+                                    }`}
                                   title="Change Account Status (Activate / Deactivate / Suspend)"
                                 >
                                   {u.status === 'active' ? (
@@ -1052,7 +1048,8 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
           )}
 
           {/* Search & Review Filters */}
-          <div className="bg-white dark:bg-slate-900 p-4 rounded-xl border border-slate-200 dark:border-slate-800 shadow-xs flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3">
+          {/* Frameless Flat Search & Filters Bar (No box/card container) */}
+          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 py-1">
             <div className="relative flex-1">
               <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
               <input
@@ -1060,7 +1057,7 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
                 placeholder="Search reviews by comment text, reviewer, or beach name..."
                 value={reviewSearch}
                 onChange={(e) => setReviewSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                className="w-full pl-9 pr-4 py-2.5 text-xs rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-neutral-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1F3F74]"
               />
             </div>
 
@@ -1072,7 +1069,7 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
                 value={ratingFilter}
                 onChange={(e) => setRatingFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
                 aria-label="Filter reviews by rating"
-                className="px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                className="px-3 py-2 text-xs rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-neutral-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1F3F74] cursor-pointer"
               >
                 <option value="all">All Stars</option>
                 <option value="5">5 Stars</option>
@@ -1089,7 +1086,7 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
                 value={reviewTypeFilter}
                 onChange={(e) => setReviewTypeFilter(e.target.value as any)}
                 aria-label="Filter reviews by review type"
-                className="px-2.5 py-1.5 text-xs rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                className="px-3 py-2 text-xs rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-neutral-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1F3F74] cursor-pointer"
               >
                 <option value="all">All Submissions</option>
                 <option value="beach">Beach Resort Reviews</option>
@@ -1161,7 +1158,7 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
                             {r.review_type === 'beach' ? (
                               <Palmtree className="w-3.5 h-3.5 text-sky-600" />
                             ) : (
-                              <MessageSquare className="w-3.5 h-3.5 text-purple-600" />
+                              <MessageSquare className="w-3.5 h-3.5 text-[#1F3F74] dark:text-[#38BDF8]" />
                             )}
                             {r.beach_name}
                           </span>
@@ -1309,13 +1306,12 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
             <div className="flex items-start justify-between">
               <div className="flex items-center gap-4">
                 <div
-                  className={`w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold uppercase flex-shrink-0 ${
-                    selectedUser.role === 'admin'
-                      ? 'bg-purple-100 dark:bg-purple-950 text-purple-700 dark:text-purple-300'
+                  className={`w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold uppercase flex-shrink-0 ${selectedUser.role === 'admin'
+                      ? 'bg-[#1F3F74]/15 dark:bg-[#1F3F74]/40 text-[#1F3F74] dark:text-[#38BDF8]'
                       : selectedUser.role === 'beach_owner'
-                      ? 'bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300'
-                      : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-                  }`}
+                        ? 'bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300'
+                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
+                    }`}
                 >
                   {selectedUser.name ? selectedUser.name.charAt(0) : 'U'}
                 </div>
@@ -1352,13 +1348,12 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
                 Role: {selectedUser.role.replace('_', ' ')}
               </span>
               <span
-                className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                  selectedUser.status === 'active'
+                className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${selectedUser.status === 'active'
                     ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
                     : selectedUser.status === 'deactivated'
-                    ? 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300'
-                    : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
-                }`}
+                      ? 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300'
+                      : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+                  }`}
               >
                 Status: {selectedUser.status}
               </span>
@@ -1509,11 +1504,10 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
                     setSelectedUser(null);
                     openStatusModal(target);
                   }}
-                  className={`px-3.5 py-2 text-xs font-semibold rounded-lg transition-colors inline-flex items-center gap-1.5 ${
-                    selectedUser.status === 'active'
+                  className={`px-3.5 py-2 text-xs font-semibold rounded-lg transition-colors inline-flex items-center gap-1.5 ${selectedUser.status === 'active'
                       ? 'bg-rose-50 text-rose-700 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300'
                       : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300'
-                  }`}
+                    }`}
                 >
                   <ShieldAlert className="w-3.5 h-3.5" />
                   <span>Change Status</span>
@@ -1691,11 +1685,10 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
               <div className="grid grid-cols-1 gap-2.5">
                 {/* Active */}
                 <label
-                  className={`p-3 rounded-xl border flex items-start gap-3 cursor-pointer transition-colors ${
-                    targetStatus === 'active'
+                  className={`p-3 rounded-xl border flex items-start gap-3 cursor-pointer transition-colors ${targetStatus === 'active'
                       ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/30'
                       : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
-                  }`}
+                    }`}
                 >
                   <input
                     type="radio"
@@ -1718,11 +1711,10 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
 
                 {/* Deactivate */}
                 <label
-                  className={`p-3 rounded-xl border flex items-start gap-3 cursor-pointer transition-colors ${
-                    targetStatus === 'deactivated'
+                  className={`p-3 rounded-xl border flex items-start gap-3 cursor-pointer transition-colors ${targetStatus === 'deactivated'
                       ? 'border-slate-500 bg-slate-100 dark:bg-slate-800'
                       : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
-                  }`}
+                    }`}
                 >
                   <input
                     type="radio"
@@ -1745,11 +1737,10 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
 
                 {/* Suspend */}
                 <label
-                  className={`p-3 rounded-xl border flex items-start gap-3 cursor-pointer transition-colors ${
-                    targetStatus === 'suspended'
+                  className={`p-3 rounded-xl border flex items-start gap-3 cursor-pointer transition-colors ${targetStatus === 'suspended'
                       ? 'border-rose-500 bg-rose-50/60 dark:bg-rose-950/30'
                       : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
-                  }`}
+                    }`}
                 >
                   <input
                     type="radio"

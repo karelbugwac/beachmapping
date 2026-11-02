@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { showToast } from '@/components/ui/feedback-toasts';
 import {
-  ArrowLeft,
+  ChevronLeft,
+  Camera,
   FileText,
   CheckCircle2,
   XCircle,
@@ -18,6 +19,9 @@ import {
   Phone,
   X,
   Eye,
+  ZoomIn,
+  ZoomOut,
+  RotateCcw,
 } from 'lucide-react';
 
 interface ApplicationData {
@@ -34,6 +38,8 @@ interface ApplicationData {
   proof_of_ownership_path?: string;
   proof_of_ownership_url?: string | null;
   ownership_proof_path?: string;
+  live_selfie_path?: string;
+  live_selfie_url?: string | null;
   status: 'pending' | 'approved' | 'rejected';
   rejection_reason?: string;
   created_at: string;
@@ -56,6 +62,7 @@ export default function AdminApplicationDetailPage({
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [previewDocument, setPreviewDocument] = useState<{ url: string; title: string } | null>(null);
+  const [zoomLevel, setZoomLevel] = useState(1);
 
   const openDocument = (path?: string, label = 'document') => {
     if (!path) {
@@ -65,7 +72,7 @@ export default function AdminApplicationDetailPage({
 
     const normalized = path.trim();
     const isRemote = /^https?:\/\//i.test(normalized);
-    const isLocalPath = /^\/?(uploads|files|storage|permits|titles|public)\//i.test(normalized);
+    const isLocalPath = /^\/?(uploads|files|storage|permits|titles|public|images)\//i.test(normalized);
 
     if (isRemote || isLocalPath) {
       setPreviewDocument({ url: normalized, title: label });
@@ -194,7 +201,7 @@ export default function AdminApplicationDetailPage({
           href="/admin/applications"
           className="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 text-white rounded-md text-xs font-semibold"
         >
-  
+
           <span>Back to Applications</span>
         </Link>
       </div>
@@ -207,14 +214,14 @@ export default function AdminApplicationDetailPage({
         href="/admin/applications"
         className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-800 dark:text-white dark:hover:text-gray-300 transition-colors"
       >
-
-        <span>Back to Applications List</span>
+        <ChevronLeft className="w-4 h-4" />
+        <span>Back to Applications</span>
       </Link>
 
       <div className="bg-white dark:bg-black p-6 sm:p-8 rounded-xl border border-slate-200 dark:border-black shadow-sm space-y-6">
         <div className="flex flex-wrap items-center justify-between gap-4 border-b border-slate-100 dark:border-gray-800 pb-4">
           <div>
-            <h1 className="text-xl font-bold text-[#1F3F74] dark:text-[#4987BA]">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1F3F74] dark:text-white">
               Review Application: {application.beach_name}
             </h1>
             <p className="text-xs text-slate-500 dark:text-gray-300">
@@ -223,13 +230,12 @@ export default function AdminApplicationDetailPage({
           </div>
           <div>
             <span
-              className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${
-                status === 'approved'
-                  ? 'bg-emerald-100 text-emerald-800'
+              className={`px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${status === 'approved'
+                  ? 'bg-emerald-600 text-white font-bold'
                   : status === 'rejected'
-                  ? 'bg-red-100 text-red-800'
-                  : 'bg-amber-100 text-amber-800'
-              }`}
+                    ? 'bg-red-600 text-white font-bold'
+                    : 'bg-yellow-500 text-white font-bold'
+                }`}
             >
               Status: {status}
             </span>
@@ -237,22 +243,14 @@ export default function AdminApplicationDetailPage({
         </div>
 
         {actionSuccess && (
-          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800 flex items-start gap-2.5 dark:bg-emerald-900/30 dark:border-emerald-800 dark:text-emerald-300">
-            <CheckCircle2 className="w-5 h-5 flex-shrink-0 mt-0.5 text-emerald-600" />
-            <div>
-              <p className="font-bold">Workflow Executed Successfully</p>
-              <p className="mt-0.5 leading-relaxed">{actionSuccess}</p>
-            </div>
+          <div className="p-4 bg-emerald-50 border border-emerald-200 rounded-lg text-xs text-emerald-800 text-center dark:bg-emerald-900/30 dark:border-emerald-800 dark:text-emerald-300">
+            <p className="font-bold">{actionSuccess}</p>
           </div>
         )}
 
         {actionError && (
-          <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-xs text-red-800 flex items-start gap-2.5 dark:bg-red-900/30 dark:border-red-800 dark:text-red-300">
-            <AlertCircle className="w-5 h-5 flex-shrink-0 mt-0.5 text-red-600" />
-            <div>
-              <p className="font-bold">Action Failed</p>
-              <p className="mt-0.5 leading-relaxed">{actionError}</p>
-            </div>
+          <div className="p-4 bg-red-50 border border-red-200 rounded-lg text-xs text-red-800 text-center dark:bg-red-900/30 dark:border-red-800 dark:text-red-300">
+            <p className="font-bold">{actionError}</p>
           </div>
         )}
 
@@ -295,7 +293,7 @@ export default function AdminApplicationDetailPage({
             </div>
           )}
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="p-4 bg-white border border-slate-200 rounded-lg flex items-center justify-between gap-2 shadow-xs dark:bg-black dark:border-black">
               <div className="flex items-center gap-2.5 min-w-0">
                 <div className="w-10 h-10 rounded-lg bg-sky-50 text-sky-700 flex items-center justify-center flex-shrink-0">
@@ -337,6 +335,27 @@ export default function AdminApplicationDetailPage({
                 <Eye className="w-4 h-4" />
               </button>
             </div>
+
+            <div className="p-4 bg-white border border-slate-200 rounded-lg flex items-center justify-between gap-2 shadow-xs dark:bg-black dark:border-black">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <div className="w-10 h-10 rounded-lg bg-yellow-50 text-yellow-600 flex items-center justify-center flex-shrink-0 dark:bg-yellow-950/40 dark:text-yellow-400">
+                  <Camera className="w-5 h-5" />
+                </div>
+                <div className="min-w-0">
+                  <h3 className="text-sm font-bold text-slate-900 truncate dark:text-white">Live Selfie / ID Photo</h3>
+                  <p className="text-[11px] text-slate-500">Proprietor identity check</p>
+                </div>
+              </div>
+              <button
+                type="button"
+                onClick={() => openDocument(application.live_selfie_url || application.live_selfie_path || '/images/logo.png', 'proprietor selfie verification')}
+                className="p-2 text-yellow-700 bg-yellow-50 hover:bg-yellow-100 rounded-md transition-colors dark:bg-yellow-900/30 dark:text-yellow-400 dark:hover:bg-yellow-900/50 cursor-pointer"
+                title="Preview proprietor selfie"
+                aria-label="Preview Proprietor Live Selfie Document"
+              >
+                <Eye className="w-4 h-4" />
+              </button>
+            </div>
           </div>
         </div>
 
@@ -363,10 +382,9 @@ export default function AdminApplicationDetailPage({
                 type="button"
                 disabled={submitting}
                 onClick={handleReject}
-                className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-5 py-2.5 border border-red-200 bg-red-50 hover:bg-red-100 text-red-700 font-semibold text-xs rounded-md transition-colors dark:border-red-800 dark:bg-red-900/30 dark:text-red-400 dark:hover:bg-red-900/50"
+                className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-2.5 bg-red-600 hover:bg-red-700 text-white font-bold text-xs rounded-full transition-colors shadow-sm cursor-pointer"
               >
-                <XCircle className="w-4 h-4" />
-                <span>Reject Application</span>
+                <span>Reject</span>
               </button>
             )}
 
@@ -374,18 +392,15 @@ export default function AdminApplicationDetailPage({
               type="button"
               disabled={submitting}
               onClick={handleApprove}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-1.5 px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-semibold text-xs rounded-md transition-colors shadow-sm"
+              className="w-full sm:w-auto inline-flex items-center justify-center px-8 py-2.5 bg-emerald-600 hover:bg-emerald-700 disabled:opacity-50 text-white font-semibold text-xs rounded-full transition-colors shadow-sm"
             >
               {submitting ? (
                 <>
                   <Loader2 className="w-4 h-4 animate-spin" />
-                  <span>Generating and emailing PIN...</span>
+                  <span>Processing...</span>
                 </>
               ) : (
-                <>
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>{status === 'approved' ? 'Regenerate & Email PIN' : 'Approve & Dispatch 6-Digit PIN'}</span>
-                </>
+                <span>Approve</span>
               )}
             </button>
           </div>
@@ -394,27 +409,59 @@ export default function AdminApplicationDetailPage({
 
       {/* Document Preview Modal */}
       {previewDocument && (
-        <div className="fixed inset-0 bg-black/70 z-50 flex items-center justify-center p-4 dark:bg-black/90">
-          <div className="bg-white rounded-lg shadow-2xl w-full max-w-5xl h-[90vh] flex flex-col dark:bg-black dark:border dark:border-gray-800">
-            {/* Fixed Header */}
-            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-white flex-shrink-0 dark:border-black dark:bg-black">
-              <h3 className="text-base font-semibold text-slate-900 dark:text-white">Business Permit</h3>
-              <button
-                type="button"
-                onClick={() => setPreviewDocument(null)}
-                className="p-2 text-slate-400 hover:text-slate-600 rounded-md transition-colors dark:text-gray-400 dark:hover:text-white"
-                aria-label="Close preview"
-              >
-                <X className="w-5 h-5" />
-              </button>
+        <div className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4 dark:bg-black/95">
+          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-6xl h-[90vh] flex flex-col dark:bg-gray-900 dark:border dark:border-gray-700">
+            {/* Fixed Header with Zoom Controls */}
+            <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-white flex-shrink-0 dark:border-gray-700 dark:bg-gray-900">
+              <h3 className="text-base font-semibold text-slate-900 dark:text-white">{previewDocument.title}</h3>
+              <div className="flex items-center gap-2">
+                {/* Zoom Controls */}
+                <div className="flex items-center gap-1 bg-slate-100 dark:bg-gray-800 rounded-lg p-1">
+                  <button
+                    type="button"
+                    onClick={() => setZoomLevel(Math.max(0.5, zoomLevel - 0.25))}
+                    className="p-1.5 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-md transition-colors"
+                    title="Zoom out"
+                  >
+                    <ZoomOut className="w-4 h-4" />
+                  </button>
+                  <span className="text-xs font-medium text-slate-700 dark:text-slate-300 w-12 text-center">
+                    {Math.round(zoomLevel * 100)}%
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setZoomLevel(Math.min(3, zoomLevel + 0.25))}
+                    className="p-1.5 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-md transition-colors"
+                    title="Zoom in"
+                  >
+                    <ZoomIn className="w-4 h-4" />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setZoomLevel(1)}
+                    className="p-1.5 text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white rounded-md transition-colors"
+                    title="Reset zoom"
+                  >
+                    <RotateCcw className="w-4 h-4" />
+                  </button>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setPreviewDocument(null)}
+                  className="p-2 text-slate-400 hover:text-slate-600 rounded-md transition-colors dark:text-gray-400 dark:hover:text-white"
+                  aria-label="Close preview"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
             </div>
             {/* Scrollable Document Area */}
-            <div className="flex-1 overflow-auto p-8 bg-slate-100 dark:bg-gray-900">
+            <div className="flex-1 overflow-auto p-8 bg-slate-100 dark:bg-gray-800">
               <div className="flex justify-center">
                 {previewDocument.url.toLowerCase().endsWith('.pdf') ? (
                   <iframe
                     src={previewDocument.url}
-                    className="border-0 bg-white shadow-lg dark:bg-black dark:border dark:border-gray-800"
+                    className="border-0 bg-white shadow-lg dark:bg-gray-900 dark:border dark:border-gray-700"
                     style={{ width: '100%', maxWidth: '800px', minHeight: '1000px' }}
                     title={`Preview ${previewDocument.title}`}
                   />
@@ -422,7 +469,8 @@ export default function AdminApplicationDetailPage({
                   <img
                     src={previewDocument.url}
                     alt={previewDocument.title}
-                    className="max-w-full object-contain bg-white shadow-lg dark:bg-black dark:border dark:border-gray-800"
+                    className="max-w-full object-contain bg-white shadow-lg dark:bg-gray-900 dark:border dark:border-gray-700 transition-transform duration-200"
+                    style={{ transform: `scale(${zoomLevel})` }}
                   />
                 )}
               </div>
