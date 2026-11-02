@@ -35,9 +35,12 @@ export function AiChatWidget() {
   ]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const historyLoadedRef = useRef(false);
 
+  // Lazy-load history only when the chat widget is actually opened
   useEffect(() => {
-    if (isPortal) return;
+    if (isPortal || !isOpen || historyLoadedRef.current) return;
+    historyLoadedRef.current = true;
     fetch('/api/assistant/history', { cache: 'no-store' })
       .then(async (response) => {
         const data = await response.json();
@@ -52,8 +55,10 @@ export function AiChatWidget() {
           })));
         }
       })
-      .catch(() => undefined);
-  }, [isPortal]);
+      .catch(() => {
+        historyLoadedRef.current = false;
+      });
+  }, [isPortal, isOpen]);
 
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });

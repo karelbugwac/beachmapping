@@ -26,6 +26,8 @@ export async function fetchStormglassTides(
       headers: {
         Authorization: apiKey,
       },
+      next: { revalidate: 3600 },
+      signal: AbortSignal.timeout(2500),
     });
 
     if (!response.ok) {

@@ -1,19 +1,16 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import {
   FileCheck,
   Palmtree,
   Clock,
-  CheckCircle2,
-  Users,
   Compass,
   ArrowRight,
   ShieldCheck,
 } from 'lucide-react';
 import { AnalyticsBarChart, type AnalyticsPoint } from '@/components/ui/analytics-bar-chart';
-import { showToast } from '@/components/ui/feedback-toasts';
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState({
@@ -27,8 +24,11 @@ export default function AdminDashboardPage() {
     loading: true,
   });
   const [visitorPoints, setVisitorPoints] = useState<AnalyticsPoint[] | null>(null);
+  const isFetchingRef = useRef(false);
 
   const loadStats = async () => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
     try {
       const [appRes, beachRes, analyticsRes, tourRes, coordRes, userRes] = await Promise.all([
         fetch('/api/applications', { cache: 'no-store' }),
@@ -36,7 +36,7 @@ export default function AdminDashboardPage() {
         fetch('/api/admin/analytics/visitors', { cache: 'no-store' }),
         fetch('/api/admin/beaches/tour-requests', { cache: 'no-store' }),
         fetch('/api/admin/beaches/coordinate-requests', { cache: 'no-store' }),
-        fetch('/api/admin/users', { cache: 'no-store' }),
+        fetch('/api/admin/users?summary=true', { cache: 'no-store' }),
       ]);
 
       const appData = appRes.ok ? await appRes.json() : null;
@@ -73,13 +73,19 @@ export default function AdminDashboardPage() {
     } catch (err) {
       console.error('Failed to load admin dashboard stats:', err);
       setStats((prev) => ({ ...prev, loading: false }));
+    } finally {
+      isFetchingRef.current = false;
     }
   };
 
   useEffect(() => {
     void loadStats();
-    // Automatic background refresh every 30 seconds
-    const interval = setInterval(loadStats, 30000);
+    // Automatic background refresh every 60 seconds when tab is visible
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        void loadStats();
+      }
+    }, 60000);
     return () => clearInterval(interval);
   }, []);
 

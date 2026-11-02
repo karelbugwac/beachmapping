@@ -12,7 +12,6 @@ import {
   CloudSun,
   AlertTriangle,
   Lightbulb,
-  CheckCircle2,
   AlertCircle,
   Calendar,
   Moon,
@@ -171,11 +170,12 @@ function getDynamicFourDayForecast(baseDate: Date) {
 
 export default function WeatherPage() {
   const [beaches, setBeaches] = useState<BeachRecord[]>([]);
+  const [beachesLoaded, setBeachesLoaded] = useState(false);
   const [selectedBeachId, setSelectedBeachId] = useState<string>('');
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [tideExtremes, setTideExtremes] = useState<TideExtreme[]>([]);
   const [currentTide, setCurrentTide] = useState<CurrentTideState | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [, setLoading] = useState(true);
   const [dataError, setDataError] = useState<string | null>(null);
   const [now, setNow] = useState<Date>(new Date());
 
@@ -193,19 +193,21 @@ export default function WeatherPage() {
         if (Array.isArray(data) && data.length > 0) {
           setBeaches(data);
           setSelectedBeachId((prev) => prev || data[0].id);
-        } else {
-          setLoading(false);
         }
       })
       .catch((err) => {
         console.error('Failed to load beaches for weather:', err);
-        setLoading(false);
+      })
+      .finally(() => {
+        setBeachesLoaded(true);
       });
   }, []);
 
   const selectedBeach = beaches.find((b) => b.id === selectedBeachId) || beaches[0] || null;
 
   useEffect(() => {
+    if (!beachesLoaded) return;
+
     const lat = selectedBeach?.latitude ?? 10.6865;
     const lon = selectedBeach?.longitude ?? 124.0152;
 
@@ -241,7 +243,7 @@ export default function WeatherPage() {
     };
 
     void loadConditions();
-  }, [selectedBeach]);
+  }, [beachesLoaded, selectedBeach]);
 
   const formatDate = (date: Date) => {
     return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });

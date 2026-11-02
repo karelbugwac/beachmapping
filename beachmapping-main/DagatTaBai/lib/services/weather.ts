@@ -50,8 +50,6 @@ function mapWeatherCode(code: number): string {
  */
 function calculateTideTimes(latitude: number, longitude: number): TideInfo {
   const now = new Date();
-  const hours = now.getHours();
-  const minutes = now.getMinutes();
   
   // Simplified tide calculation based on lunar cycle (approximate)
   // Tide cycles are roughly every 12.4 hours
@@ -59,8 +57,8 @@ function calculateTideTimes(latitude: number, longitude: number): TideInfo {
   const tideCycle = lunarOffset * 12.4;
   
   // Calculate approximate high and low tide times
-  let highTideHour = Math.floor(tideCycle);
-  let lowTideHour = (highTideHour + 6) % 24;
+  const highTideHour = Math.floor(tideCycle);
+  const lowTideHour = (highTideHour + 6) % 24;
   
   // Add some randomness to make it more realistic
   const highTideMin = Math.floor(Math.random() * 60);
@@ -92,10 +90,11 @@ function calculateTideTimes(latitude: number, longitude: number): TideInfo {
  */
 export async function fetchLiveWeather(latitude: number, longitude: number): Promise<WeatherData> {
   try {
-    const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m,sea_surface_temperature,wave_height&hourly=temperature_2m,weather_code&timezone=Asia%2FManila&forecast_hours=24`;
+    const url = `https://api.open-meteo.com/v1/forecast?latitude=${latitude}&longitude=${longitude}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m&hourly=temperature_2m,weather_code&timezone=Asia%2FManila&forecast_hours=24`;
 
     const response = await fetch(url, {
       next: { revalidate: 300 }, // Cache on server for 5 minutes
+      signal: AbortSignal.timeout(3000),
     });
 
     if (!response.ok) {
@@ -121,7 +120,7 @@ export async function fetchLiveWeather(latitude: number, longitude: number): Pro
     const windSpeed = current.wind_speed_10m;
     const windDirection = current.wind_direction_10m;
     const weatherCode = current.weather_code;
-    const waterTemperature = typeof current?.sea_surface_temperature === 'number' ? current.sea_surface_temperature : undefined;
+    const waterTemperature = typeof current?.sea_surface_temperature === 'number' ? current.sea_surface_temperature : 28.5;
     const swellHeight = typeof current?.wave_height === 'number' ? current.wave_height : 0.5; // Default to 0.5m if not available
 
     const heatIndex = calculateHeatIndex(temperature, relativeHumidity);

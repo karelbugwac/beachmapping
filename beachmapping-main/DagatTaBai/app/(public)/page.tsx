@@ -72,39 +72,48 @@ export default function HomePage() {
 
   useEffect(() => {
     const panoIframeName = 'tour-embeded';
+    let rafId: number | null = null;
+
     const handleDeviceMotion = (e: DeviceMotionEvent) => {
-      const iframe = document.getElementById(panoIframeName) as HTMLIFrameElement | null;
-      if (iframe && iframe.contentWindow) {
-        iframe.contentWindow.postMessage(
-          {
-            type: 'devicemotion',
-            deviceMotionEvent: {
-              acceleration: {
-                x: e.acceleration?.x ?? null,
-                y: e.acceleration?.y ?? null,
-                z: e.acceleration?.z ?? null,
+      if (rafId !== null) return;
+      rafId = window.requestAnimationFrame(() => {
+        rafId = null;
+        const iframe = document.getElementById(panoIframeName) as HTMLIFrameElement | null;
+        if (iframe && iframe.contentWindow) {
+          iframe.contentWindow.postMessage(
+            {
+              type: 'devicemotion',
+              deviceMotionEvent: {
+                acceleration: {
+                  x: e.acceleration?.x ?? null,
+                  y: e.acceleration?.y ?? null,
+                  z: e.acceleration?.z ?? null,
+                },
+                accelerationIncludingGravity: {
+                  x: e.accelerationIncludingGravity?.x ?? null,
+                  y: e.accelerationIncludingGravity?.y ?? null,
+                  z: e.accelerationIncludingGravity?.z ?? null,
+                },
+                rotationRate: {
+                  alpha: e.rotationRate?.alpha ?? null,
+                  beta: e.rotationRate?.beta ?? null,
+                  gamma: e.rotationRate?.gamma ?? null,
+                },
+                interval: e.interval,
+                timeStamp: e.timeStamp,
               },
-              accelerationIncludingGravity: {
-                x: e.accelerationIncludingGravity?.x ?? null,
-                y: e.accelerationIncludingGravity?.y ?? null,
-                z: e.accelerationIncludingGravity?.z ?? null,
-              },
-              rotationRate: {
-                alpha: e.rotationRate?.alpha ?? null,
-                beta: e.rotationRate?.beta ?? null,
-                gamma: e.rotationRate?.gamma ?? null,
-              },
-              interval: e.interval,
-              timeStamp: e.timeStamp,
             },
-          },
-          '*'
-        );
-      }
+            '*'
+          );
+        }
+      });
     };
 
-    window.addEventListener('devicemotion', handleDeviceMotion);
-    return () => window.removeEventListener('devicemotion', handleDeviceMotion);
+    window.addEventListener('devicemotion', handleDeviceMotion, { passive: true });
+    return () => {
+      if (rafId !== null) window.cancelAnimationFrame(rafId);
+      window.removeEventListener('devicemotion', handleDeviceMotion);
+    };
   }, []);
 
   return (

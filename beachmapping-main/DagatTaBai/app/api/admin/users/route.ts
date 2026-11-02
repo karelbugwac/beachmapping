@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authorizeRoles } from '@/lib/supabase/authorization';
 import { hashPin } from '@/lib/services/pin';
 
-export async function GET() {
+export async function GET(request: NextRequest) {
   try {
     const auth = await authorizeRoles(['admin']);
     if (!auth.authorized) {
@@ -10,6 +10,20 @@ export async function GET() {
     }
 
     const adminClient = auth.adminClient;
+    const isSummaryOnly = request.nextUrl.searchParams.get('summary') === 'true';
+
+    if (isSummaryOnly) {
+      const { data: authUsersData, error: authUsersError } = await adminClient.auth.admin.listUsers({
+        page: 1,
+        perPage: 1000,
+      });
+      if (authUsersError) throw authUsersError;
+      const total = authUsersData?.users?.length || 0;
+      return NextResponse.json(
+        { users: [], stats: { total }, currentAdminId: auth.user.id },
+        { headers: { 'Cache-Control': 'no-store, max-age=0' } }
+      );
+    }
 
     // Fetch auth users, profiles, beaches, and reviews in parallel
     const [

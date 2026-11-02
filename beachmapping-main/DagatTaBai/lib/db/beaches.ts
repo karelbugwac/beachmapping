@@ -52,7 +52,24 @@ export interface BeachRecord {
  */
 const VERIFIED_CATMON_BEACHES: BeachRecord[] = [];
 
+const BEACH_CACHE_TTL_MS = 15_000; // 15 seconds in-memory cache with instant invalidation on mutations
+let allBeachesCache: { data: BeachRecord[]; expiresAt: number } | null = null;
+const slugBeachCache = new Map<string, { data: BeachRecord | null; expiresAt: number }>();
+
+/**
+ * Immediately clears the in-memory beaches cache when a beach is created, updated, or deleted.
+ */
+export function invalidateBeachesCache() {
+  allBeachesCache = null;
+  slugBeachCache.clear();
+}
+
 export async function getAllBeaches(): Promise<BeachRecord[]> {
+  const now = Date.now();
+  if (allBeachesCache && allBeachesCache.expiresAt > now) {
+    return allBeachesCache.data;
+  }
+
   try {
     const supabase = await createServerSupabaseClient();
     const { data: dbBeaches, error } = await supabase
@@ -66,7 +83,7 @@ export async function getAllBeaches(): Promise<BeachRecord[]> {
       .eq('status', 'active');
 
     if (!error && Array.isArray(dbBeaches)) {
-      return dbBeaches.map((b: any) => {
+      const mapped: BeachRecord[] = dbBeaches.map((b: any) => {
         // Parse opening_hours if it's a JSON string
         let parsedOpeningHours = b.opening_hours || '';
         if (typeof b.opening_hours === 'string' && b.opening_hours.startsWith('{')) {
@@ -116,6 +133,12 @@ export async function getAllBeaches(): Promise<BeachRecord[]> {
           updated_at: b.updated_at,
         };
       });
+
+      allBeachesCache = {
+        data: mapped,
+        expiresAt: Date.now() + BEACH_CACHE_TTL_MS,
+      };
+      return mapped;
     }
   } catch (err) {
     // Database connection or table initialization fallback
@@ -126,6 +149,23 @@ export async function getAllBeaches(): Promise<BeachRecord[]> {
 
 export async function getBeachBySlug(slug: string): Promise<BeachRecord | null> {
   const normalized = decodeURIComponent(slug).toLowerCase().trim();
+  const now = Date.now();
+
+  const cachedSlug = slugBeachCache.get(normalized);
+  if (cachedSlug && cachedSlug.expiresAt > now) {
+    return cachedSlug.data;
+  }
+
+  // Also check if it's already in the warm allBeachesCache
+  if (allBeachesCache && allBeachesCache.expiresAt > now) {
+    const match = allBeachesCache.data.find(
+      (b) => b.slug.toLowerCase() === normalized || b.id.toLowerCase() === normalized
+    );
+    if (match) {
+      slugBeachCache.set(normalized, { data: match, expiresAt: allBeachesCache.expiresAt });
+      return match;
+    }
+  }
 
   try {
     const supabase = await createServerSupabaseClient();
@@ -206,7 +246,7 @@ export async function getBeachBySlug(slug: string): Promise<BeachRecord | null> 
         entranceFeeChildren = children;
       }
 
-      return {
+      const record: BeachRecord = {
         id: b.id,
         slug: b.slug || b.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
         name: b.name,
@@ -236,6 +276,12 @@ export async function getBeachBySlug(slug: string): Promise<BeachRecord | null> 
         created_at: b.created_at,
         updated_at: b.updated_at,
       };
+
+      slugBeachCache.set(normalized, {
+        data: record,
+        expiresAt: Date.now() + BEACH_CACHE_TTL_MS,
+      });
+      return record;
     }
   } catch (err) {
     // Database connection or table initialization fallback

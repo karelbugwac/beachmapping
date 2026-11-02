@@ -124,12 +124,14 @@ export default function AdminBeachesPage() {
     void fetchTourRequests();
     void fetchCoordinateRequests();
 
-    // Background auto-refresh every 30 seconds
+    // Background auto-refresh every 60 seconds when tab is visible
     const interval = setInterval(() => {
-      void fetchBeaches();
-      void fetchTourRequests();
-      void fetchCoordinateRequests();
-    }, 30000);
+      if (document.visibilityState === 'visible') {
+        void fetchBeaches();
+        void fetchTourRequests();
+        void fetchCoordinateRequests();
+      }
+    }, 60000);
 
     return () => clearInterval(interval);
   }, []);

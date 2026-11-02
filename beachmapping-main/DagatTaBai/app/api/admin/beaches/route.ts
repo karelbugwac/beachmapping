@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient } from '@/lib/supabase/server';
 import { authorizeRoles } from '@/lib/supabase/authorization';
+import { invalidateBeachesCache } from '@/lib/db/beaches';
 
 export async function GET() {
   try {
@@ -105,6 +105,8 @@ export async function PATCH(request: NextRequest) {
       .maybeSingle();
     if (error) throw error;
     if (!data) return NextResponse.json({ error: 'Beach listing not found.' }, { status: 404 });
+
+    invalidateBeachesCache();
     return NextResponse.json({ success: true, beach: data });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to update beach listing.';
@@ -122,6 +124,8 @@ export async function DELETE(request: NextRequest) {
     }
     const { error } = await (auth.adminClient.from('beaches') as any).delete().eq('id', id);
     if (error) throw error;
+
+    invalidateBeachesCache();
     return NextResponse.json({ success: true, message: 'Beach listing deleted successfully.' });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to delete beach listing.';

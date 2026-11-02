@@ -41,10 +41,11 @@ export function Navbar() {
     { label: 'Contact', href: '/contact' },
   ];
 
-  // Fetch session user on mount and route changes, with listener
+  // Fetch session user once on mount (or when leaving dedicated portal), and listen for auth/profile updates
   useEffect(() => {
     if (isDedicatedPortal) return;
     let isMounted = true;
+    let authSubscription: { unsubscribe: () => void } | null = null;
 
     const checkSession = async () => {
       try {
@@ -84,7 +85,22 @@ export function Navbar() {
       if (isMounted) setUser(null);
     };
 
-    checkSession();
+    void checkSession();
+
+    import('@/lib/supabase/client')
+      .then(({ createClient }) => {
+        if (!isMounted) return;
+        const supabase = createClient();
+        const { data } = supabase.auth.onAuthStateChange((event) => {
+          if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
+            void checkSession();
+          } else if (event === 'SIGNED_OUT') {
+            if (isMounted) setUser(null);
+          }
+        });
+        authSubscription = data.subscription;
+      })
+      .catch(() => {});
 
     const handleUserUpdate = (e: any) => {
       if (e.detail && isMounted) {
@@ -103,9 +119,10 @@ export function Navbar() {
 
     return () => {
       isMounted = false;
+      authSubscription?.unsubscribe();
       window.removeEventListener('dtb_user_updated', handleUserUpdate);
     };
-  }, [pathname, isDedicatedPortal]);
+  }, [isDedicatedPortal]);
 
   const handleSignOut = async () => {
     try {

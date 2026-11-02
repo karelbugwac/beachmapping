@@ -142,7 +142,7 @@ export function MapView({
     const totalPoints = routeCoordinates.length;
 
     // Smooth movement pacing: completes whole route in ~4 to 6 seconds
-    const intervalMs = Math.max(30, Math.min(120, Math.floor(4500 / totalPoints)));
+    const intervalMs = Math.max(45, Math.min(120, Math.floor(4500 / totalPoints)));
 
     const interval = setInterval(() => {
       currentIndex += 1;
@@ -170,6 +170,68 @@ export function MapView({
     return beaches;
   }, [beaches, routeActive, selectedBeachId]);
 
+  // Memoize User GPS marker icon
+  const userLocationIcon = useMemo(() => {
+    if (!L) return null;
+    return L.divIcon({
+      className: 'user-loc-marker',
+      html: `<div style="background-color: #1F3F74; width: 20px; height: 20px; border: 3px solid #ffffff; border-radius: 50%; box-shadow: 0 0 14px rgba(31,63,116,0.9);"></div>`,
+      iconSize: [20, 20],
+      iconAnchor: [10, 10],
+    });
+  }, [L]);
+
+  // Memoize Moving Vehicle / Pedestrian Marker icon
+  const movingTravelerIcon = useMemo(() => {
+    if (!L) return null;
+    const vehicleSvg =
+      travelMode === 'motorcycle'
+        ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/></svg>`
+        : travelMode === 'walking'
+        ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.5v2"/><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.5v2"/></svg>`
+        : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>`;
+
+    return L.divIcon({
+      className: 'moving-traveler-marker',
+      html: `
+        <div style="
+          width: 36px;
+          height: 36px;
+          background: #1F3F74;
+          border: 2.5px solid #ffffff;
+          border-radius: 50%;
+          box-shadow: 0 4px 14px rgba(31,63,116,0.6);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          transition: transform 0.08s linear;
+        ">
+          ${vehicleSvg}
+        </div>
+      `,
+      iconSize: [36, 36],
+      iconAnchor: [18, 18],
+    });
+  }, [L, travelMode]);
+
+  // Memoize beach pin icons so route animation ticks don't recreate DOM icons
+  const beachMarkersData = useMemo(() => {
+    if (!L) return [];
+    return visibleBeaches.map((beach, index) => {
+      const isSelected = selectedBeachId === beach.id;
+      const pinColor = getBeachPinColorByIndex(index);
+      const iconHtml = createTeardropPinSvg(pinColor, isSelected);
+      const customIcon = L.divIcon({
+        className: 'beach-pin-marker',
+        html: iconHtml,
+        iconSize: isSelected ? [42, 54] : [36, 46],
+        iconAnchor: isSelected ? [21, 54] : [18, 46],
+      });
+      const labelDirection: 'right' | 'left' = index % 2 === 0 ? 'right' : 'left';
+      return { beach, pinColor, customIcon, labelDirection };
+    });
+  }, [L, visibleBeaches, selectedBeachId]);
+
   if (!isClient || !L) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-slate-100 dark:bg-black text-slate-500">
@@ -180,44 +242,6 @@ export function MapView({
       </div>
     );
   }
-
-  // User detected GPS marker icon
-  const userLocationIcon = L.divIcon({
-    className: 'user-loc-marker',
-    html: `<div style="background-color: #1F3F74; width: 20px; height: 20px; border: 3px solid #ffffff; border-radius: 50%; box-shadow: 0 0 14px rgba(31,63,116,0.9);"></div>`,
-    iconSize: [20, 20],
-    iconAnchor: [10, 10],
-  });
-
-  // Moving Vehicle / Pedestrian Marker traveling along the route
-  const vehicleSvg =
-    travelMode === 'motorcycle'
-      ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><circle cx="18.5" cy="17.5" r="3.5"/><circle cx="5.5" cy="17.5" r="3.5"/><circle cx="15" cy="5" r="1"/><path d="M12 17.5V14l-3-3 4-3 2 3h2"/></svg>`
-      : travelMode === 'walking'
-      ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16v-2.38C4 11.5 2.97 10.5 3 8c.03-2.72 1.49-6 4.5-6C9.37 2 10 3.8 10 5.5c0 3.11-2 5.66-2 8.5v2"/><path d="M20 20v-2.38c0-2.12 1.03-3.12 1-5.62-.03-2.72-1.49-6-4.5-6C14.63 6 14 7.8 14 9.5c0 3.11 2 5.66 2 8.5v2"/></svg>`
-      : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#FFFFFF" stroke-width="2.3" stroke-linecap="round" stroke-linejoin="round"><path d="M19 17h2c.6 0 1-.4 1-1v-3c0-.9-.7-1.7-1.5-1.9C18.7 10.6 16 10 16 10s-1.3-1.4-2.2-2.3c-.5-.4-1.1-.7-1.8-.7H5c-.6 0-1.1.4-1.4.9l-1.4 2.9A3.7 3.7 0 0 0 2 12v4c0 .6.4 1 1 1h2"/><circle cx="7" cy="17" r="2"/><path d="M9 17h6"/><circle cx="17" cy="17" r="2"/></svg>`;
-
-  const movingTravelerIcon = L.divIcon({
-    className: 'moving-traveler-marker',
-    html: `
-      <div style="
-        width: 36px;
-        height: 36px;
-        background: #1F3F74;
-        border: 2.5px solid #ffffff;
-        border-radius: 50%;
-        box-shadow: 0 4px 14px rgba(31,63,116,0.6);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        transition: transform 0.08s linear;
-      ">
-        ${vehicleSvg}
-      </div>
-    `,
-    iconSize: [36, 36],
-    iconAnchor: [18, 18],
-  });
 
   return (
     <div className="relative w-full h-full overflow-hidden">
@@ -269,6 +293,7 @@ export function MapView({
         {routeActive &&
           routeCoordinates &&
           routeCoordinates.length > 0 &&
+          movingTravelerIcon &&
           travelIndex < routeCoordinates.length && (
             <Marker
               position={routeCoordinates[travelIndex]}
@@ -278,7 +303,7 @@ export function MapView({
           )}
 
         {/* User GPS location marker */}
-        {userLocation && (
+        {userLocation && userLocationIcon && (
           <Marker
             position={[userLocation.lat, userLocation.lng]}
             icon={userLocationIcon}
@@ -290,49 +315,34 @@ export function MapView({
         )}
 
         {/* Strictly Alternating Beach Pin Markers with matching text color */}
-        {visibleBeaches.map((beach, index) => {
-          const isSelected = selectedBeachId === beach.id;
-          const pinColor = getBeachPinColorByIndex(index);
-          const iconHtml = createTeardropPinSvg(pinColor, isSelected);
-
-          const customIcon = L.divIcon({
-            className: 'beach-pin-marker',
-            html: iconHtml,
-            iconSize: isSelected ? [42, 54] : [36, 46],
-            iconAnchor: isSelected ? [21, 54] : [18, 46],
-          });
-
-          const labelDirection = index % 2 === 0 ? 'right' : 'left';
-
-          return (
-            <Marker
-              key={beach.id}
-              position={[beach.latitude, beach.longitude]}
-              icon={customIcon}
-              eventHandlers={{
-                click: () => onSelectBeach?.(beach),
-              }}
+        {beachMarkersData.map(({ beach, pinColor, customIcon, labelDirection }) => (
+          <Marker
+            key={beach.id}
+            position={[beach.latitude, beach.longitude]}
+            icon={customIcon}
+            eventHandlers={{
+              click: () => onSelectBeach?.(beach),
+            }}
+          >
+            <Tooltip
+              permanent
+              direction={labelDirection}
+              offset={labelDirection === 'right' ? [14, -22] : [-14, -22]}
+              className="beach-map-label"
             >
-              <Tooltip
-                permanent
-                direction={labelDirection}
-                offset={labelDirection === 'right' ? [14, -22] : [-14, -22]}
-                className="beach-map-label"
+              <span
+                style={{
+                  color: pinColor,
+                  fontWeight: 800,
+                  fontSize: '12px',
+                  letterSpacing: '-0.01em',
+                }}
               >
-                <span
-                  style={{
-                    color: pinColor,
-                    fontWeight: 800,
-                    fontSize: '12px',
-                    letterSpacing: '-0.01em',
-                  }}
-                >
-                  {beach.name}
-                </span>
-              </Tooltip>
-            </Marker>
-          );
-        })}
+                {beach.name}
+              </span>
+            </Tooltip>
+          </Marker>
+        ))}
       </MapContainer>
     </div>
   );

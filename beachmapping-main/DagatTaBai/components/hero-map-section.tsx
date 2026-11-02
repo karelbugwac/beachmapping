@@ -1,50 +1,19 @@
 'use client';
 
-import React, { useEffect, useState, useRef } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import {
   Map,
 } from 'lucide-react';
 
 export function HeroMapSection() {
-  const router = useRouter();
-  const [user, setUser] = useState<{ id: string } | null>(null);
-  const [currentVideo, setCurrentVideo] = useState(0);
-  const videoRef = useRef<HTMLVideoElement>(null);
-
-  const videos = ['/beach1.mp4', '/beach5.mp4'];
-
-  useEffect(() => {
-    fetch('/api/auth/session')
-      .then((res) => res.json())
-      .then((data) => setUser(data.user || null))
-      .catch(() => setUser(null));
-  }, []);
-
-  // Alternate between videos
-  useEffect(() => {
-    const videoElement = videoRef.current;
-    if (!videoElement) return;
-
-    const handleVideoEnd = () => {
-      setCurrentVideo((prev) => (prev + 1) % videos.length);
-    };
-
-    videoElement.addEventListener('ended', handleVideoEnd);
-    return () => {
-      videoElement.removeEventListener('ended', handleVideoEnd);
-    };
-  }, []);
-
   return (
     <section className="relative w-full h-[80vh] sm:h-[85vh] lg:h-[90vh] min-h-[500px] overflow-hidden text-slate-900 dark:text-white transition-colors duration-200">
       {/* Video Background */}
       <div className="absolute inset-0 z-0">
         <video
-          ref={videoRef}
-          key={currentVideo}
-          src={videos[currentVideo]}
+          src="/beach1.mp4"
+          preload="metadata"
           autoPlay
           muted
           loop

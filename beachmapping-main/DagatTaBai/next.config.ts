@@ -5,6 +5,9 @@ const nextConfig: NextConfig = {
   reactStrictMode: true,
   outputFileTracingRoot: path.join(__dirname, "./"),
   devIndicators: false, // Disables the floating Next.js ("N") dev indicator badge
+  experimental: {
+    optimizePackageImports: ["lucide-react", "@supabase/supabase-js"],
+  },
   images: {
     remotePatterns: [
       {

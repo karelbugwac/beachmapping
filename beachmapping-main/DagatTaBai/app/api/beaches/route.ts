@@ -1,18 +1,10 @@
 import { NextResponse } from 'next/server';
-import { getAllBeaches } from '@/lib/db/beaches';
+import { getAllBeaches, invalidateBeachesCache } from '@/lib/db/beaches';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 export async function GET() {
   try {
     const beaches = await getAllBeaches();
-    console.log('API /api/beaches - Returning beaches:', beaches.map(b => ({
-      id: b.id,
-      name: b.name,
-      opening_hours: b.opening_hours,
-      entrance_fee: b.entrance_fee,
-      entrance_fee_adults: b.entrance_fee_adults,
-      entrance_fee_children: b.entrance_fee_children,
-    })));
     return NextResponse.json(beaches, {
       headers: {
         'Cache-Control': 'no-cache, no-store, must-revalidate',
@@ -94,6 +86,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
+    invalidateBeachesCache();
     return NextResponse.json({ success: true, beach: data }, { status: 201 });
   } catch (err: any) {
     console.error('Failed to create beach:', err);

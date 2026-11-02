@@ -1,4 +1,5 @@
 import { createAdminClient } from '@/lib/supabase/server';
+import { invalidateBeachesCache } from '@/lib/db/beaches';
 
 export interface CoordinateRequestData {
   id?: string;
@@ -42,14 +43,21 @@ interface GeneralInfoJson {
   [key: string]: any;
 }
 
+let dedicatedTableExists: boolean | null = null;
+
 /**
- * Checks if optional dedicated table `beach_coordinate_requests` exists.
+ * Checks if optional dedicated table `beach_coordinate_requests` exists (cached in memory).
  */
 async function hasDedicatedTable(adminSupabase: any): Promise<boolean> {
+  if (dedicatedTableExists !== null) {
+    return dedicatedTableExists;
+  }
   try {
     const { error } = await adminSupabase.from('beach_coordinate_requests').select('id').limit(1);
-    return !error;
+    dedicatedTableExists = !error;
+    return dedicatedTableExists;
   } catch {
+    dedicatedTableExists = false;
     return false;
   }
 }
@@ -105,18 +113,46 @@ export async function getCoordinateRequestForBeach(beachId: string): Promise<Coo
 export async function getAllCoordinateRequests(): Promise<CoordinateRequestWithBeach[]> {
   const adminSupabase = createAdminClient();
 
-  // Fetch all beaches
-  const { data: beachesData, error: beachError } = await (adminSupabase.from('beaches') as any)
-    .select('id, name, slug, location, latitude, longitude, owner_id, cover_image_url')
-    .order('name', { ascending: true });
+  const fetchRequestsSource = async () => {
+    if (await hasDedicatedTable(adminSupabase)) {
+      const { data, error } = await (adminSupabase.from('beach_coordinate_requests') as any)
+        .select('*')
+        .order('created_at', { ascending: false });
+      if (!error && Array.isArray(data)) {
+        return { source: 'dedicated' as const, rows: data };
+      }
+    }
+    const { data: generalInfos, error: infoError } = await (adminSupabase.from('beach_general_information') as any)
+      .select('beach_id, general_information, updated_at');
+    return {
+      source: 'fallback' as const,
+      rows: !infoError && Array.isArray(generalInfos) ? generalInfos : [],
+    };
+  };
 
-  if (beachError || !Array.isArray(beachesData)) return [];
+  // Run beaches query and coordinate requests query in parallel
+  const [beachesResult, requestsResult] = await Promise.all([
+    (adminSupabase.from('beaches') as any)
+      .select('id, name, slug, location, latitude, longitude, owner_id, cover_image_url')
+      .order('name', { ascending: true }),
+    fetchRequestsSource(),
+  ]);
+
+  const beachesData = beachesResult.data;
+  if (beachesResult.error || !Array.isArray(beachesData)) return [];
 
   const beachMap = new Map<string, any>();
   beachesData.forEach((b: any) => beachMap.set(b.id, b));
 
-  // Fetch owner profiles
-  const ownerIds = beachesData.map((b: any) => b.owner_id).filter(Boolean);
+  // Fetch owner profiles only if there are actual requests to enrich
+  const hasRequests =
+    requestsResult.source === 'dedicated'
+      ? requestsResult.rows.length > 0
+      : requestsResult.rows.some((info: any) => Boolean(parseGeneralInfo(info.general_information).coordinate_request));
+
+  const ownerIds = hasRequests
+    ? Array.from(new Set(beachesData.map((b: any) => b.owner_id).filter(Boolean)))
+    : [];
   const ownerMap = new Map<string, any>();
   if (ownerIds.length > 0) {
     const { data: profiles } = await (adminSupabase.from('profiles') as any)
@@ -127,63 +163,49 @@ export async function getAllCoordinateRequests(): Promise<CoordinateRequestWithB
     }
   }
 
-  const results: CoordinateRequestWithBeach[] = [];
-
-  // Dedicated table first
-  if (await hasDedicatedTable(adminSupabase)) {
-    const { data, error } = await (adminSupabase.from('beach_coordinate_requests') as any)
-      .select('*')
-      .order('created_at', { ascending: false });
-
-    if (!error && Array.isArray(data)) {
-      return data.map((req: any) => {
-        const beach = beachMap.get(req.beach_id) || null;
-        const owner = req.owner_id ? ownerMap.get(req.owner_id) : (beach?.owner_id ? ownerMap.get(beach.owner_id) : null);
-        return {
-          ...req,
-          beach: beach ? {
-            id: beach.id,
-            name: beach.name,
-            slug: beach.slug,
-            location: beach.location,
-            latitude: Number(beach.latitude),
-            longitude: Number(beach.longitude),
-            owner_id: beach.owner_id,
-            cover_image: beach.cover_image_url,
-          } : null,
-          owner: owner || null,
-        };
-      });
-    }
+  if (requestsResult.source === 'dedicated') {
+    return requestsResult.rows.map((req: any) => {
+      const beach = beachMap.get(req.beach_id) || null;
+      const owner = req.owner_id ? ownerMap.get(req.owner_id) : (beach?.owner_id ? ownerMap.get(beach.owner_id) : null);
+      return {
+        ...req,
+        beach: beach ? {
+          id: beach.id,
+          name: beach.name,
+          slug: beach.slug,
+          location: beach.location,
+          latitude: Number(beach.latitude),
+          longitude: Number(beach.longitude),
+          owner_id: beach.owner_id,
+          cover_image: beach.cover_image_url,
+        } : null,
+        owner: owner || null,
+      };
+    });
   }
 
-  // Fallback: Read from beach_general_information
-  const { data: generalInfos, error: infoError } = await (adminSupabase.from('beach_general_information') as any)
-    .select('beach_id, general_information, updated_at');
-
-  if (!infoError && Array.isArray(generalInfos)) {
-    for (const info of generalInfos) {
-      const parsed = parseGeneralInfo(info.general_information);
-      if (parsed.coordinate_request) {
-        const req = parsed.coordinate_request as CoordinateRequestData;
-        const beach = beachMap.get(info.beach_id) || null;
-        const owner = beach?.owner_id ? ownerMap.get(beach.owner_id) : null;
-        results.push({
-          ...req,
-          beach_id: info.beach_id,
-          beach: beach ? {
-            id: beach.id,
-            name: beach.name,
-            slug: beach.slug,
-            location: beach.location,
-            latitude: Number(beach.latitude),
-            longitude: Number(beach.longitude),
-            owner_id: beach.owner_id,
-            cover_image: beach.cover_image_url,
-          } : null,
-          owner: owner || null,
-        });
-      }
+  const results: CoordinateRequestWithBeach[] = [];
+  for (const info of requestsResult.rows) {
+    const parsed = parseGeneralInfo(info.general_information);
+    if (parsed.coordinate_request) {
+      const req = parsed.coordinate_request as CoordinateRequestData;
+      const beach = beachMap.get(info.beach_id) || null;
+      const owner = beach?.owner_id ? ownerMap.get(beach.owner_id) : null;
+      results.push({
+        ...req,
+        beach_id: info.beach_id,
+        beach: beach ? {
+          id: beach.id,
+          name: beach.name,
+          slug: beach.slug,
+          location: beach.location,
+          latitude: Number(beach.latitude),
+          longitude: Number(beach.longitude),
+          owner_id: beach.owner_id,
+          cover_image: beach.cover_image_url,
+        } : null,
+        owner: owner || null,
+      });
     }
   }
 
@@ -366,6 +388,8 @@ export async function approveCoordinateRequest(params: {
     throw beachError;
   }
 
+  invalidateBeachesCache();
+
   // 3. Update status in dedicated table or beach_general_information
   if (await hasDedicatedTable(adminSupabase)) {
     await (adminSupabase.from('beach_coordinate_requests') as any)
@@ -524,6 +548,8 @@ export async function adminSetBeachCoordinates(params: {
   if (beachError) {
     throw beachError;
   }
+
+  invalidateBeachesCache();
 
   // Resolve any pending request for this beach
   try {

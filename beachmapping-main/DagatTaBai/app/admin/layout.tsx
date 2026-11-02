@@ -3,7 +3,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   FileCheck,
@@ -11,10 +11,7 @@ import {
   Settings,
   LogOut,
   Menu,
-  X,
   Users,
-  ShieldCheck,
-  Radio,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { showToast } from '@/components/ui/feedback-toasts';
@@ -25,21 +22,29 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   const pathname = usePathname();
-  const router = useRouter();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [pendingCount, setPendingCount] = useState<number>(0);
   const [pendingTourCount, setPendingTourCount] = useState<number>(0);
   const [pendingCoordCount, setPendingCoordCount] = useState<number>(0);
-  const [previousPendingCount, setPreviousPendingCount] = useState<number>(0);
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean | null>(null);
+  // Server middleware (proxy.ts) already guards /admin/* routes, so render immediately
+  // while verifying session/email in the background in parallel with child page fetches.
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
   const [userEmail, setUserEmail] = useState<string>('');
   const isInitialLoadRef = useRef(true);
+  const previousPendingCountRef = useRef(0);
+  const authVerifiedRef = useRef(false);
   const shouldRenderLogin = pathname === '/admin/login';
 
-  // Check authentication on client side
+  // Check authentication once on client side (do not re-query DB on every internal admin page click)
   useEffect(() => {
     if (shouldRenderLogin) {
+      authVerifiedRef.current = false;
+      setIsAuthenticated(true);
+      return;
+    }
+
+    if (authVerifiedRef.current) {
       setIsAuthenticated(true);
       return;
     }
@@ -59,12 +64,18 @@ export default function AdminLayout({
         setUserEmail(email);
         const isWhitelisted = ['official.dagattabai@gmail.com', 'admin@dagattabai.ph'].includes(email);
 
+        if (isWhitelisted || session.user.user_metadata?.role === 'admin') {
+          authVerifiedRef.current = true;
+          setIsAuthenticated(true);
+          return;
+        }
+
         const { data: profile } = await (supabase.from('profiles') as any)
           .select('role')
           .eq('id', session.user.id)
           .maybeSingle();
 
-        const isAdmin = isWhitelisted || profile?.role === 'admin';
+        const isAdmin = profile?.role === 'admin';
 
         if (!isAdmin) {
           console.warn('Non-admin user attempted to access admin console. Redirecting to login.');
@@ -74,6 +85,7 @@ export default function AdminLayout({
           return;
         }
 
+        authVerifiedRef.current = true;
         setIsAuthenticated(true);
       } catch (error) {
         console.error('Auth verification error:', error);
@@ -83,9 +95,9 @@ export default function AdminLayout({
     };
 
     void checkAuth();
-  }, [pathname, shouldRenderLogin]);
+  }, [shouldRenderLogin]);
 
-  // Periodic automatic counts for sidebar badges
+  // Periodic automatic counts for sidebar badges (without re-triggering on state change)
   useEffect(() => {
     if (shouldRenderLogin || !isAuthenticated) return;
 
@@ -98,11 +110,14 @@ export default function AdminLayout({
             setPendingCount(count);
 
             if (!isInitialLoadRef.current) {
-              if (count > previousPendingCount) {
-                showToast(`New application received! ${count - previousPendingCount} new pending application(s).`, 'success');
+              if (count > previousPendingCountRef.current) {
+                showToast(
+                  `New application received! ${count - previousPendingCountRef.current} new pending application(s).`,
+                  'success'
+                );
               }
             }
-            setPreviousPendingCount(count);
+            previousPendingCountRef.current = count;
             isInitialLoadRef.current = false;
           }
         })
@@ -128,9 +143,13 @@ export default function AdminLayout({
     };
 
     fetchCounts();
-    const interval = setInterval(fetchCounts, 30000);
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        fetchCounts();
+      }
+    }, 60000);
     return () => clearInterval(interval);
-  }, [shouldRenderLogin, isAuthenticated, previousPendingCount]);
+  }, [shouldRenderLogin, isAuthenticated]);
 
   const handleLogout = async () => {
     try {
@@ -139,6 +158,7 @@ export default function AdminLayout({
     } catch {
       // Ignore
     } finally {
+      authVerifiedRef.current = false;
       showToast('Signed out successfully.', 'success');
       window.location.replace('/admin/login');
     }
@@ -149,8 +169,8 @@ export default function AdminLayout({
     return <>{children}</>;
   }
 
-  // Waiting for authentication
-  if (isAuthenticated === null) {
+  // Redirecting unauthenticated user
+  if (!isAuthenticated) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-black text-[#1F3F74] dark:text-[#4987BA]">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-current" />

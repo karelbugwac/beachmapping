@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { authorizeRoles } from '@/lib/supabase/authorization';
+import { invalidateBeachesCache } from '@/lib/db/beaches';
 
 const noStoreHeaders = { 'Cache-Control': 'no-store, max-age=0' };
 
@@ -200,6 +201,8 @@ export async function POST(request: Request) {
     }
 
     if (result.error) throw result.error;
+
+    invalidateBeachesCache();
 
     return NextResponse.json(
       { success: true, beach: toOwnerBeach(result.data) },

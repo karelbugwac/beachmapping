@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import {
   Star,
@@ -32,6 +32,7 @@ export default function OwnerDashboardPage() {
   const [reviews, setReviews] = useState<ReviewAnalytics | null>(null);
   const [visitorPoints, setVisitorPoints] = useState<AnalyticsPoint[] | null>(null);
   const [loading, setLoading] = useState(true);
+  const isFetchingRef = useRef(false);
 
   // Compute clean date only (e.g. "Sunday, November 1, 2026")
   const formattedDate = useMemo(() => {
@@ -44,33 +45,52 @@ export default function OwnerDashboardPage() {
   }, []);
 
   useEffect(() => {
-    const loadDashboard = () =>
-      Promise.all([
-        fetch('/api/owner/beach', { cache: 'no-store' }).then((res) => (res.ok ? res.json() : [])),
-        fetch('/api/owner/reviews', { cache: 'no-store' }).then((res) => (res.ok ? res.json() : null)),
-        fetch('/api/owner/analytics', { cache: 'no-store' }).then((res) => (res.ok ? res.json() : null)),
-      ])
-        .then(([beaches, reviewData, visitorData]) => {
+    const loadDashboard = () => {
+      if (isFetchingRef.current) return;
+      isFetchingRef.current = true;
+
+      const beachPromise = fetch('/api/owner/beach', { cache: 'no-store' })
+        .then((res) => (res.ok ? res.json() : []))
+        .then((beaches) => {
           if (Array.isArray(beaches) && beaches.length > 0) {
             setBeach(beaches[0]);
           }
-          if (reviewData && typeof reviewData.totalReviews === 'number') {
-            setReviews(reviewData);
-          }
-          if (Array.isArray(visitorData?.points)) {
-            setVisitorPoints(visitorData.points);
-          }
         })
-        .catch((err) => {
-          console.error('Failed to load dashboard data:', err);
-        })
+        .catch(() => {})
         .finally(() => {
           setLoading(false);
         });
 
-    void loadDashboard();
-    // Automatic refresh every 30s
-    const interval = window.setInterval(loadDashboard, 30000);
+      const reviewsPromise = fetch('/api/owner/reviews', { cache: 'no-store' })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((reviewData) => {
+          if (reviewData && typeof reviewData.totalReviews === 'number') {
+            setReviews(reviewData);
+          }
+        })
+        .catch(() => {});
+
+      const analyticsPromise = fetch('/api/owner/analytics', { cache: 'no-store' })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((visitorData) => {
+          if (Array.isArray(visitorData?.points)) {
+            setVisitorPoints(visitorData.points);
+          }
+        })
+        .catch(() => {});
+
+      Promise.allSettled([beachPromise, reviewsPromise, analyticsPromise]).finally(() => {
+        isFetchingRef.current = false;
+      });
+    };
+
+    loadDashboard();
+    // Automatic refresh every 60s only when tab is visible
+    const interval = window.setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        loadDashboard();
+      }
+    }, 60000);
     return () => window.clearInterval(interval);
   }, []);
 

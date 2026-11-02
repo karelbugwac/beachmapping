@@ -10,7 +10,6 @@ import {
   Filter,
   ChevronDown,
 } from 'lucide-react';
-import { showToast } from '@/components/ui/feedback-toasts';
 
 interface ApplicationItem {
   id: string;
@@ -48,8 +47,12 @@ export default function AdminApplicationsPage() {
 
   useEffect(() => {
     void fetchApplications();
-    // Automatic 30-second background polling
-    const interval = setInterval(fetchApplications, 30000);
+    // Automatic 60-second background polling when tab is visible
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        void fetchApplications();
+      }
+    }, 60000);
     return () => clearInterval(interval);
   }, []);
 
