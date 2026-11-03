@@ -31,13 +31,18 @@ interface LocationPickerModalProps {
   submitButtonText?: string;
 }
 
-// Preset locations along Catmon coast for quick reference
-const CATMON_PRESETS = [
-  { name: 'Binongkalan Center', lat: '10.634800', lng: '124.027500' },
-  { name: 'North Shoreline (LiteBay)', lat: '10.642500', lng: '124.030200' },
-  { name: 'Hinagdan Point', lat: '10.638800', lng: '124.029200' },
-  { name: 'Majestique Cove', lat: '10.646800', lng: '124.031500' },
-];
+const BINONGKALAN_CENTER = { latitude: 10.6341356, longitude: 124.0278661 };
+
+interface OSMPlace {
+  id: string;
+  name: string;
+  category: string;
+  latitude: number;
+  longitude: number;
+  osmUrl: string;
+}
+
+type PlacesStatus = 'loading' | 'loaded' | 'unavailable';
 
 export function LocationPickerModal({
   isOpen,
@@ -52,26 +57,42 @@ export function LocationPickerModal({
   submitButtonText,
 }: LocationPickerModalProps) {
   const [tempLocation, setTempLocation] = useState(location || '');
-  const [tempLat, setTempLat] = useState(String(latitude || '10.634800'));
-  const [tempLng, setTempLng] = useState(String(longitude || '124.027500'));
+  const [tempLat, setTempLat] = useState(
+    Number.isFinite(Number.parseFloat(String(latitude)))
+      ? String(latitude)
+      : String(BINONGKALAN_CENTER.latitude)
+  );
+  const [tempLng, setTempLng] = useState(
+    Number.isFinite(Number.parseFloat(String(longitude)))
+      ? String(longitude)
+      : String(BINONGKALAN_CENTER.longitude)
+  );
   const [requesterNote, setRequesterNote] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const [isLocating, setIsLocating] = useState(false);
   const [isGeocoding, setIsGeocoding] = useState(false);
   const [mapLoaded, setMapLoaded] = useState(false);
+  const [pinConfirmed, setPinConfirmed] = useState(false);
+  const [nearbyPlaces, setNearbyPlaces] = useState<OSMPlace[]>([]);
+  const [placesStatus, setPlacesStatus] = useState<PlacesStatus>('loading');
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const leafletMapRef = useRef<any>(null);
   const leafletMarkerRef = useRef<any>(null);
   const LRef = useRef<any>(null);
+  const placesLayerRef = useRef<any>(null);
 
   // Sync state whenever modal opens or props change
   useEffect(() => {
     if (isOpen) {
+      const parsedLat = Number.parseFloat(String(latitude));
+      const parsedLng = Number.parseFloat(String(longitude));
+      const hasCoordinates = Number.isFinite(parsedLat) && Number.isFinite(parsedLng);
       setTempLocation(location || '');
-      setTempLat(String(latitude || '10.634800'));
-      setTempLng(String(longitude || '124.027500'));
+      setTempLat(hasCoordinates ? String(latitude) : String(BINONGKALAN_CENTER.latitude));
+      setTempLng(hasCoordinates ? String(longitude) : String(BINONGKALAN_CENTER.longitude));
       setRequesterNote('');
+      setPinConfirmed(hasCoordinates);
     }
   }, [isOpen, location, latitude, longitude]);
 
@@ -88,14 +109,19 @@ export function LocationPickerModal({
     }
 
     let isSubscribed = true;
+    const placesController = new AbortController();
 
     import('leaflet').then((leafletModule) => {
       if (!isSubscribed) return;
       const L = leafletModule.default;
       LRef.current = L;
 
-      const initialLat = parseFloat(tempLat) || 10.6348;
-      const initialLng = parseFloat(tempLng) || 124.0275;
+      const propLatitude = Number.parseFloat(String(latitude));
+      const propLongitude = Number.parseFloat(String(longitude));
+      const hasSavedCoordinates =
+        Number.isFinite(propLatitude) && Number.isFinite(propLongitude);
+      const initialLat = hasSavedCoordinates ? propLatitude : BINONGKALAN_CENTER.latitude;
+      const initialLng = hasSavedCoordinates ? propLongitude : BINONGKALAN_CENTER.longitude;
 
       if (!mapContainerRef.current) return;
 
@@ -126,13 +152,14 @@ export function LocationPickerModal({
 
       const map = L.map(mapContainerRef.current, {
         center: [initialLat, initialLng],
-        zoom: 16,
+        zoom: hasSavedCoordinates ? 16 : 15,
         zoomControl: true,
       });
 
-      L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      L.tileLayer('https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png', {
         maxZoom: 19,
-        attribution: '&copy; OpenStreetMap contributors',
+        attribution:
+          '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors, tiles style by <a href="https://www.hotosm.org/">Humanitarian OpenStreetMap Team</a>',
       }).addTo(map);
 
       // Add draggable marker
@@ -140,6 +167,8 @@ export function LocationPickerModal({
         draggable: true,
         icon: pinIcon,
       }).addTo(map);
+      const placesLayer = L.layerGroup().addTo(map);
+      placesLayerRef.current = placesLayer;
 
       marker.bindPopup(`<b>${beachName || 'Your Beach'}</b><br/>Drag pin or click map to move`).openPopup();
 
@@ -148,6 +177,7 @@ export function LocationPickerModal({
         const pos = e.target.getLatLng();
         setTempLat(pos.lat.toFixed(6));
         setTempLng(pos.lng.toFixed(6));
+        setPinConfirmed(true);
       });
 
       // On Click anywhere on map
@@ -155,11 +185,62 @@ export function LocationPickerModal({
         marker.setLatLng(e.latlng);
         setTempLat(e.latlng.lat.toFixed(6));
         setTempLng(e.latlng.lng.toFixed(6));
+        setPinConfirmed(true);
       });
 
       leafletMapRef.current = map;
       leafletMarkerRef.current = marker;
       setMapLoaded(true);
+      setPlacesStatus('loading');
+      setNearbyPlaces([]);
+
+      fetch('/api/maps/binongkalan-pois', { signal: placesController.signal })
+        .then(async (response) => {
+          const data = await response.json();
+          if (!response.ok) {
+            throw new Error(data.error || 'Failed to load nearby OpenStreetMap places.');
+          }
+          return data as { places: OSMPlace[]; available: boolean };
+        })
+        .then(({ places, available }) => {
+          if (!isSubscribed) return;
+          setNearbyPlaces(places);
+          setPlacesStatus(available ? 'loaded' : 'unavailable');
+
+          places.forEach((place) => {
+            const placeMarker = L.circleMarker([place.latitude, place.longitude], {
+              radius: 5,
+              color: '#ffffff',
+              weight: 1.5,
+              fillColor: place.category === 'Beach' ? '#0891b2' : '#f97316',
+              fillOpacity: 0.95,
+              bubblingMouseEvents: false,
+            }).addTo(placesLayer);
+            placeMarker.bindTooltip(place.name, {
+              permanent: true,
+              direction: 'top',
+              offset: [0, -4],
+              className: 'osm-place-label',
+            });
+
+            const popup = document.createElement('div');
+            const title = document.createElement('strong');
+            title.textContent = place.name;
+            const category = document.createElement('div');
+            category.textContent = place.category;
+            const link = document.createElement('a');
+            link.href = place.osmUrl;
+            link.target = '_blank';
+            link.rel = 'noopener noreferrer';
+            link.textContent = 'View OpenStreetMap record';
+            popup.append(title, category, link);
+            placeMarker.bindPopup(popup);
+          });
+        })
+        .catch(() => {
+          if (!isSubscribed || placesController.signal.aborted) return;
+          setPlacesStatus('unavailable');
+        });
 
       // Invalidate size to guarantee tiles render inside modal
       setTimeout(() => {
@@ -171,21 +252,23 @@ export function LocationPickerModal({
 
     return () => {
       isSubscribed = false;
+      placesController.abort();
       if (leafletMapRef.current) {
         leafletMapRef.current.remove();
         leafletMapRef.current = null;
         leafletMarkerRef.current = null;
+        placesLayerRef.current = null;
       }
     };
-  }, [isOpen, beachName]);
+  }, [isOpen, beachName, latitude, longitude]);
 
   // Update map pin when inputs change manually
-  const updateMapMarker = (latStr: string, lngStr: string) => {
+  const updateMapMarker = (latStr: string, lngStr: string, zoom?: number) => {
     const lat = parseFloat(latStr);
     const lng = parseFloat(lngStr);
     if (!isNaN(lat) && !isNaN(lng) && leafletMapRef.current && leafletMarkerRef.current) {
       leafletMarkerRef.current.setLatLng([lat, lng]);
-      leafletMapRef.current.setView([lat, lng], leafletMapRef.current.getZoom(), {
+      leafletMapRef.current.setView([lat, lng], zoom ?? leafletMapRef.current.getZoom(), {
         animate: true,
       });
     }
@@ -205,6 +288,7 @@ export function LocationPickerModal({
         setTempLat(lat);
         setTempLng(lng);
         updateMapMarker(lat, lng);
+        setPinConfirmed(true);
         setIsLocating(false);
         showToast('🎯 GPS coordinates detected and pin placed!');
       },
@@ -224,35 +308,36 @@ export function LocationPickerModal({
     }
     setIsGeocoding(true);
     try {
-      const q = encodeURIComponent(`${tempLocation.trim()}, Catmon, Cebu, Philippines`);
-      const res = await fetch(`https://nominatim.openstreetmap.org/search?format=json&q=${q}&limit=1`);
-      const data = await res.json();
-      if (data && data.length > 0) {
-        const lat = parseFloat(data[0].lat).toFixed(6);
-        const lng = parseFloat(data[0].lon).toFixed(6);
-        setTempLat(lat);
-        setTempLng(lng);
-        updateMapMarker(lat, lng);
-        showToast('📍 Found coordinates from address!');
-      } else {
-        // Fallback search with raw text
-        const res2 = await fetch(
-          `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(tempLocation.trim())}&limit=1`
-        );
-        const data2 = await res2.json();
-        if (data2 && data2.length > 0) {
-          const lat = parseFloat(data2[0].lat).toFixed(6);
-          const lng = parseFloat(data2[0].lon).toFixed(6);
-          setTempLat(lat);
-          setTempLng(lng);
-          updateMapMarker(lat, lng);
-          showToast('📍 Found coordinates from address!');
-        } else {
-          showToast('Address not found on OpenStreetMap. You can click on the map directly.', 'error');
-        }
+      const response = await fetch(`/api/maps/geocode?q=${encodeURIComponent(tempLocation.trim())}`);
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error || 'OpenStreetMap address search failed.');
       }
-    } catch {
-      showToast('Error looking up address. You can click on the map to set pin.', 'error');
+
+      const result = data.results?.[0] as
+        | { latitude: number; longitude: number; label: string }
+        | undefined;
+      if (!result || !Number.isFinite(result.latitude) || !Number.isFinite(result.longitude)) {
+        showToast(
+          'No matching mapped place was found in Catmon. Search for Binongkalan, Catmon, or click the map to place your exact pin.',
+          'error'
+        );
+        return;
+      }
+
+      const lat = result.latitude.toFixed(6);
+      const lng = result.longitude.toFixed(6);
+      setTempLat(lat);
+      setTempLng(lng);
+      updateMapMarker(lat, lng, 17);
+      showToast('Approximate map match found. Move the pin to your exact beach entrance before saving.');
+    } catch (error: unknown) {
+      showToast(
+        error instanceof Error
+          ? error.message
+          : 'OpenStreetMap search failed. You can still place the pin directly on the map.',
+        'error'
+      );
     } finally {
       setIsGeocoding(false);
     }
@@ -273,6 +358,10 @@ export function LocationPickerModal({
     }
     if (!tempLocation.trim()) {
       showToast('Please enter a location address.', 'error');
+      return;
+    }
+    if (!pinConfirmed) {
+      showToast('Move the pin to your actual beach or resort entrance before saving.', 'error');
       return;
     }
 
@@ -360,7 +449,7 @@ export function LocationPickerModal({
                 Interactive Pin Picker Map
               </span>
               <span className="text-[11px] text-gray-500 dark:text-gray-400">
-                Click map or drag marker to set coordinates
+                Click map or drag the blue marker to your actual beach
               </span>
             </div>
             <div className="relative w-full h-72 sm:h-80 rounded-xl overflow-hidden border-2 border-blue-500/30 dark:border-blue-500/20 shadow-inner bg-gray-100 dark:bg-gray-800">
@@ -372,6 +461,32 @@ export function LocationPickerModal({
                 </div>
               )}
             </div>
+            <p className="text-[11px] text-gray-500 dark:text-gray-400">
+              {pinConfirmed
+                ? 'The blue pin shows the current coordinates. Check that it marks your actual beach or resort entrance; nearby labels are real OpenStreetMap records.'
+                : 'Map opens at the verified Binongkalan village center. Move the blue pin to your actual beach or resort entrance; nearby labels are real OpenStreetMap records.'}
+            </p>
+            <p className="text-[11px] text-gray-500 dark:text-gray-400" aria-live="polite">
+              {placesStatus === 'loading' && 'Loading nearby mapped beaches, resorts, and landmarks...'}
+              {placesStatus === 'loaded' && nearbyPlaces.length > 0 &&
+                `${nearbyPlaces.length} named OpenStreetMap places shown within about 8 km.`}
+              {placesStatus === 'loaded' && nearbyPlaces.length === 0 &&
+                'No named beach, resort, or landmark records were found nearby in OpenStreetMap. Roads and coastline remain visible on the map.'}
+              {placesStatus === 'unavailable' &&
+                'Nearby place labels are temporarily unavailable. The map and pin picker still work normally.'}
+            </p>
+            {placesStatus === 'loaded' && nearbyPlaces.length > 0 && (
+              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-gray-500 dark:text-gray-400">
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-cyan-600" />
+                  Beaches
+                </span>
+                <span className="inline-flex items-center gap-1.5">
+                  <span className="h-2 w-2 rounded-full bg-orange-500" />
+                  Resorts and landmarks
+                </span>
+              </div>
+            )}
           </div>
 
           {/* Coordinates Inputs & Quick Actions */}
@@ -388,6 +503,10 @@ export function LocationPickerModal({
                   value={tempLat}
                   onChange={(e) => {
                     setTempLat(e.target.value);
+                    setPinConfirmed(
+                      Number.isFinite(Number.parseFloat(e.target.value)) &&
+                        Number.isFinite(Number.parseFloat(tempLng))
+                    );
                     updateMapMarker(e.target.value, tempLng);
                   }}
                   placeholder="e.g. 10.634800"
@@ -411,6 +530,10 @@ export function LocationPickerModal({
                   value={tempLng}
                   onChange={(e) => {
                     setTempLng(e.target.value);
+                    setPinConfirmed(
+                      Number.isFinite(Number.parseFloat(tempLat)) &&
+                        Number.isFinite(Number.parseFloat(e.target.value))
+                    );
                     updateMapMarker(tempLat, e.target.value);
                   }}
                   placeholder="e.g. 124.027500"
@@ -477,22 +600,9 @@ export function LocationPickerModal({
                 <span>🎯 Use My Current GPS Location</span>
               </button>
 
-              {/* Presets */}
-              {CATMON_PRESETS.map((preset) => (
-                <button
-                  key={preset.name}
-                  type="button"
-                  onClick={() => {
-                    setTempLat(preset.lat);
-                    setTempLng(preset.lng);
-                    updateMapMarker(preset.lat, preset.lng);
-                    showToast(`📍 Set coordinates to ${preset.name}`);
-                  }}
-                  className="px-2.5 py-1.5 bg-white dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600 rounded-lg text-xs transition-colors"
-                >
-                  {preset.name}
-                </button>
-              ))}
+              <span className="text-[11px] text-gray-500 dark:text-gray-400 self-center">
+                Use the map, address lookup, or GPS for the exact beach location.
+              </span>
             </div>
           </div>
 

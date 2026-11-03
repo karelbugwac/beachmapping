@@ -20,6 +20,7 @@ function getDisplayName(user: AuthUser): string {
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
 
   const pathname = usePathname();
   const router = useRouter();
@@ -53,6 +54,7 @@ export function Navbar() {
         const data = await res.json();
         if (data.user && isMounted) {
           setUser(data.user);
+          setAuthLoading(false);
           return;
         }
       } catch {}
@@ -73,16 +75,19 @@ export function Navbar() {
             email: sbUser.email || '',
             role: (sbUser.user_metadata?.role as any) || 'user',
             profile_image_url:
+              sbUser.user_metadata?.profile_image_url ||
               sbUser.user_metadata?.avatar_url ||
               sbUser.user_metadata?.picture ||
               null,
             created_at: sbUser.created_at,
           });
+          setAuthLoading(false);
           return;
         }
       } catch {}
 
       if (isMounted) setUser(null);
+      if (isMounted) setAuthLoading(false);
     };
 
     void checkSession();
@@ -95,7 +100,10 @@ export function Navbar() {
           if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
             void checkSession();
           } else if (event === 'SIGNED_OUT') {
-            if (isMounted) setUser(null);
+            if (isMounted) {
+              setUser(null);
+              setAuthLoading(false);
+            }
           }
         });
         authSubscription = data.subscription;
@@ -205,16 +213,19 @@ export function Navbar() {
                   aria-label="Account Settings"
                   className="relative group p-0.5 rounded-full ring-2 ring-[#1F3F74]/20 dark:ring-[#4987BA]/30 hover:ring-[#1F3F74] dark:hover:ring-[#4987BA] transition-all cursor-pointer flex-shrink-0"
                 >
-                  <div className="w-8 h-8 rounded-full bg-[#1F3F74] dark:bg-[#4987BA] text-white flex items-center justify-center font-bold text-xs overflow-hidden shadow-xs">
-                    {user.profile_image_url ? (
+                  <div className="relative w-8 h-8 rounded-full bg-[#1F3F74] dark:bg-[#4987BA] text-white flex items-center justify-center font-bold text-xs overflow-hidden shadow-xs">
+                    <span>{getDisplayName(user).charAt(0).toUpperCase()}</span>
+                    {user.profile_image_url && (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
+                        key={user.profile_image_url}
                         src={user.profile_image_url}
-                        alt={getDisplayName(user)}
-                        className="w-full h-full object-cover"
+                        alt=""
+                        onError={(event) => {
+                          event.currentTarget.style.display = 'none';
+                        }}
+                        className="absolute inset-0 w-full h-full object-cover"
                       />
-                    ) : (
-                      getDisplayName(user).charAt(0).toUpperCase()
                     )}
                   </div>
                 </Link>
@@ -230,7 +241,7 @@ export function Navbar() {
                   <LogOut className="w-4 h-4" />
                 </button>
               </div>
-            ) : (
+            ) : !authLoading ? (
               /* Public / Unauthenticated: Sign Up button */
               <Link
                 href="/register"
@@ -238,6 +249,8 @@ export function Navbar() {
               >
                 Sign Up
               </Link>
+            ) : (
+              <div className="h-9 w-24" aria-hidden="true" />
             )}
           </div>
 
@@ -246,18 +259,21 @@ export function Navbar() {
             {user && (
               <Link
                 href="/profile"
-                className="w-7 h-7 rounded-full bg-[#1F3F74] dark:bg-[#4987BA] text-white flex items-center justify-center font-bold text-xs overflow-hidden shadow-xs"
+                className="relative w-7 h-7 rounded-full bg-[#1F3F74] dark:bg-[#4987BA] text-white flex items-center justify-center font-bold text-xs overflow-hidden shadow-xs"
                 title="Account Settings"
               >
-                {user.profile_image_url ? (
+                <span>{getDisplayName(user).charAt(0).toUpperCase()}</span>
+                {user.profile_image_url && (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
+                    key={user.profile_image_url}
                     src={user.profile_image_url}
-                    alt={getDisplayName(user)}
-                    className="w-full h-full object-cover"
+                    alt=""
+                    onError={(event) => {
+                      event.currentTarget.style.display = 'none';
+                    }}
+                    className="absolute inset-0 w-full h-full object-cover"
                   />
-                ) : (
-                  getDisplayName(user).charAt(0).toUpperCase()
                 )}
               </Link>
             )}
@@ -323,7 +339,7 @@ export function Navbar() {
                   <span>Log Out</span>
                 </button>
               </div>
-            ) : (
+            ) : !authLoading ? (
               <Link
                 href="/register"
                 onClick={() => setMobileMenuOpen(false)}
@@ -331,7 +347,7 @@ export function Navbar() {
               >
                 Sign Up
               </Link>
-            )}
+            ) : null}
           </div>
         </div>
       )}
