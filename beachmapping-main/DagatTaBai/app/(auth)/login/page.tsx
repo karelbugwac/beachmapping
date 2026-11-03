@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, Suspense } from 'react';
+import React, { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
@@ -16,12 +16,20 @@ import { showToast } from '@/components/ui/feedback-toasts';
 function UserLoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const emailConfirmed = searchParams.get('confirmed') === '1';
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [touched, setTouched] = useState({ email: false, password: false });
+
+  useEffect(() => {
+    if (emailConfirmed) {
+      showToast('Email confirmed. You can now sign in.');
+      router.replace('/login', { scroll: false });
+    }
+  }, [emailConfirmed, router]);
 
   // ── Validation ──────────────────────────────────────────────
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);

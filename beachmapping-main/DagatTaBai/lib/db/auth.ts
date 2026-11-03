@@ -111,10 +111,16 @@ export async function registerLocalUser(
 
   try {
     const supabase = await createServerSupabaseClient();
+    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
+    const emailRedirectTo = new URL('/auth/callback', siteUrl);
+    emailRedirectTo.searchParams.set('next', '/login?confirmed=1');
     const { data, error } = await supabase.auth.signUp({
       email: cleanEmail,
       password,
-      options: { data: { full_name: cleanName, role: 'user' } },
+      options: {
+        data: { full_name: cleanName, role: 'user' },
+        emailRedirectTo: emailRedirectTo.toString(),
+      },
     });
     if (error) return { error: error.message };
     if (!data.user) return { error: 'Supabase did not create the account.' };
