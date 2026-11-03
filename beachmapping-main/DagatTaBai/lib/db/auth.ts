@@ -77,24 +77,26 @@ export async function updateSessionUser(updates: {
 
   try {
     const supabase = await createServerSupabaseClient();
-    const { error: authError } = await supabase.auth.updateUser({
-      data: {
-        ...(updates.full_name !== undefined ? { full_name: updates.full_name } : {}),
-        ...(updates.profile_image_url !== undefined ? { profile_image_url: updates.profile_image_url } : {}),
-      },
-    });
-    if (authError) return null;
-
-    try {
-      await (supabase.from('profiles') as any)
-        .update({ ...updates, updated_at: new Date().toISOString() })
-        .eq('id', current.id);
-    } catch {
-      // Ignore if profiles row update isn't allowed by RLS
+    const { data: profile, error: profileError } = await (supabase.from('profiles') as any)
+      .update({ ...updates, updated_at: new Date().toISOString() })
+      .eq('id', current.id)
+      .select('id, full_name, email, role, profile_image_url, created_at')
+      .maybeSingle();
+    if (profileError || !profile) {
+      console.error('Profile database update failed:', profileError);
+      return null;
     }
 
-    return { ...current, ...updates };
-  } catch {
+    return {
+      ...current,
+      full_name: profile.full_name,
+      email: profile.email || current.email,
+      role: profile.role,
+      profile_image_url: profile.profile_image_url,
+      created_at: profile.created_at,
+    };
+  } catch (error: unknown) {
+    console.error('Profile update failed:', error);
     return null;
   }
 }

@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Image from 'next/image';
 import {
   HeartHandshake,
   Search,
@@ -36,7 +37,7 @@ const teamMembers: TeamMember[] = [
     id: 3,
     name: 'Team Member 3',
     role: 'Full-Stack Developer',
-    image: '',
+    image: '/member3.png',
   },
   {
     id: 4,
@@ -48,13 +49,13 @@ const teamMembers: TeamMember[] = [
     id: 5,
     name: 'Team Member 5',
     role: 'Marine Data Engineer',
-    image: '',
+    image: '/member5.jpg',
   },
   {
     id: 6,
     name: 'Team Member 6',
     role: 'Frontend Engineer',
-    image: '',
+    image: '/member6.jpg',
   },
   {
     id: 7,
@@ -66,13 +67,13 @@ const teamMembers: TeamMember[] = [
     id: 8,
     name: 'Team Member 8',
     role: 'Community & Field Researcher',
-    image: '',
+    image: '/member8.jpg',
   },
   {
     id: 9,
     name: 'Team Member 9',
     role: 'Content & Media Strategist',
-    image: '',
+    image: '/member9.jpg',
   },
 ];
 
@@ -252,9 +253,9 @@ export default function AboutPage() {
               className="w-full flex flex-col items-center justify-center opacity-45 hover:opacity-90 scale-85 hover:scale-95 transition-all duration-300 cursor-pointer text-center group px-1 sm:px-2 max-w-[150px] sm:max-w-[180px]"
               title={prevMember.name}
             >
-              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-2 border-white/60 bg-white/10 backdrop-blur-xs flex items-center justify-center shadow-lg transition-transform group-hover:border-white flex-shrink-0">
+              <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-2 border-white/60 bg-white/10 backdrop-blur-xs flex items-center justify-center shadow-lg transition-transform group-hover:border-white flex-shrink-0">
                 {prevMember.image ? (
-                  <img src={prevMember.image} alt={prevMember.name} className="w-full h-full object-cover" />
+                  <Image src={prevMember.image} alt={prevMember.name} fill sizes="96px" className="object-cover" />
                 ) : (
                   <User className="w-10 h-10 sm:w-12 sm:h-12 stroke-[1.6] text-white/80" />
                 )}
@@ -271,7 +272,7 @@ export default function AboutPage() {
             <div className="flex flex-col items-center scale-100 transition-all duration-300 text-center px-2 sm:px-6 flex-shrink-0">
               <div className="relative w-28 h-28 sm:w-36 sm:h-36 rounded-full overflow-hidden border-4 border-white shadow-2xl ring-4 ring-white/30 bg-white/20 backdrop-blur-md flex items-center justify-center transition-all duration-300 flex-shrink-0">
                 {currentMember.image ? (
-                  <img src={currentMember.image} alt={currentMember.name} className="w-full h-full object-cover" />
+                  <Image src={currentMember.image} alt={currentMember.name} fill sizes="144px" className="object-cover" />
                 ) : (
                   <User className="w-14 h-14 sm:w-16 sm:h-16 stroke-[1.6] text-white" />
                 )}
@@ -294,9 +295,9 @@ export default function AboutPage() {
               className="w-full flex flex-col items-center justify-center opacity-45 hover:opacity-90 scale-85 hover:scale-95 transition-all duration-300 cursor-pointer text-center group px-1 sm:px-2 max-w-[150px] sm:max-w-[180px]"
               title={nextMember.name}
             >
-              <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-2 border-white/60 bg-white/10 backdrop-blur-xs flex items-center justify-center shadow-lg transition-transform group-hover:border-white flex-shrink-0">
+              <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-2 border-white/60 bg-white/10 backdrop-blur-xs flex items-center justify-center shadow-lg transition-transform group-hover:border-white flex-shrink-0">
                 {nextMember.image ? (
-                  <img src={nextMember.image} alt={nextMember.name} className="w-full h-full object-cover" />
+                  <Image src={nextMember.image} alt={nextMember.name} fill sizes="96px" className="object-cover" />
                 ) : (
                   <User className="w-10 h-10 sm:w-12 sm:h-12 stroke-[1.6] text-white/80" />
                 )}

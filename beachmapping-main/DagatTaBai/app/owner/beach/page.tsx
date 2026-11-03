@@ -12,6 +12,7 @@ import {
   Upload,
   Camera,
   Compass,
+  MapPin,
   ChevronDown,
   Clock,
   Sparkles,
@@ -20,6 +21,7 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import type { BeachRecord, BeachPhoto } from '@/lib/db/beaches';
+import { LocationPickerModal } from '@/components/map/location-picker-modal';
 import { VirtualTourModal } from '@/components/virtual-tour-modal';
 
 interface CottageItem {
@@ -57,12 +59,14 @@ interface ResortRuleItem {
 }
 
 const DEFAULT_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+const MAX_IMAGE_SIZE_BYTES = 20 * 1024 * 1024;
 
 export default function ManageInformationPage() {
   const [activeTab, setActiveTab] = useState<'basic' | 'cottages' | 'facilities' | 'hours' | 'photos' | 'dos' | 'tour'>('basic');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [, setBeach] = useState<BeachRecord | null>(null);
+  const [showLocationPicker, setShowLocationPicker] = useState(false);
 
   // Floating Toast State (Centered, green for success, red for error, 5s duration, NO "x")
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -159,6 +163,14 @@ export default function ManageInformationPage() {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [uploadingProfile, setUploadingProfile] = useState(false);
   const [uploadingCover, setUploadingCover] = useState(false);
+  const [galleryFile, setGalleryFile] = useState<File | null>(null);
+  const [galleryPreview, setGalleryPreview] = useState('');
+  const [isGalleryDragActive, setIsGalleryDragActive] = useState(false);
+
+  useEffect(() => {
+    if (!galleryPreview) return;
+    return () => URL.revokeObjectURL(galleryPreview);
+  }, [galleryPreview]);
 
   // 360 Virtual Tour Recapture Modal State
   const [showRecaptureModal, setShowRecaptureModal] = useState(false);
@@ -302,6 +314,15 @@ export default function ManageInformationPage() {
     const errs: Record<string, string> = {};
     if (!formData.name.trim()) errs.name = 'Resort establishment name is required.';
     if (!formData.location.trim()) errs.location = 'Resort location address is required.';
+    const latitude = Number.parseFloat(formData.latitude);
+    const longitude = Number.parseFloat(formData.longitude);
+    if (
+      !formData.id &&
+      (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 ||
+        !Number.isFinite(longitude) || longitude < -180 || longitude > 180)
+    ) {
+      errs.coordinates = 'Choose your resort location on the map before creating the listing.';
+    }
     if (formData.contact_email && !formData.contact_email.includes('@')) {
       errs.contact_email = 'Valid email address must include "@".';
     }
@@ -371,8 +392,8 @@ export default function ManageInformationPage() {
     if (!['image/png', 'image/jpeg', 'image/jpg'].includes(file.type.toLowerCase())) {
       throw new Error('Please upload an image in PNG or JPG format only.');
     }
-    if (file.size > 5 * 1024 * 1024) {
-      throw new Error('Image file size must be less than 5MB.');
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      throw new Error('Image file size must be 20 MB or less.');
     }
 
     const uploadData = new FormData();
@@ -392,14 +413,29 @@ export default function ManageInformationPage() {
     return data.url;
   };
 
-  // Photo Upload Handler (Gallery)
-  const handlePhotoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
+  const handleGalleryFileSelection = (file?: File) => {
     if (!file) return;
+
+    if (!['image/png', 'image/jpeg', 'image/jpg'].includes(file.type.toLowerCase())) {
+      setToast({ type: 'error', message: 'Please upload an image in PNG or JPG format only.' });
+      return;
+    }
+    if (file.size > MAX_IMAGE_SIZE_BYTES) {
+      setToast({ type: 'error', message: 'Image file size must be 20 MB or less.' });
+      return;
+    }
+
+    setGalleryFile(file);
+    setGalleryPreview(URL.createObjectURL(file));
+  };
+
+  // Upload the selected gallery image after its preview is confirmed.
+  const handlePhotoUpload = async () => {
+    if (!galleryFile) return;
 
     setUploadingImage(true);
     try {
-      const newImageUrl = await uploadImageFile(file);
+      const newImageUrl = await uploadImageFile(galleryFile);
       const nextImages: BeachPhoto[] = [
         ...formData.images.map((img) =>
           typeof img === 'string'
@@ -413,20 +449,21 @@ export default function ManageInformationPage() {
         ),
         {
           category: 'gallery',
-          caption: file.name.replace(/\.[^/.]+$/, ''),
+          caption: galleryFile.name.replace(/\.[^/.]+$/, ''),
           photo_url: newImageUrl,
           created_at: new Date().toISOString(),
         },
       ];
 
       setFormData((prev) => ({ ...prev, images: nextImages }));
+      setGalleryFile(null);
+      setGalleryPreview('');
       setToast({ type: 'success', message: 'Photo uploaded and added to resort gallery!' });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Photo upload failed.';
       setToast({ type: 'error', message: msg });
     } finally {
       setUploadingImage(false);
-      e.target.value = '';
     }
   };
 
@@ -573,7 +610,7 @@ export default function ManageInformationPage() {
       </div>
 
       {/* ── Oblong Category Tab Pills ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-7 gap-2 pb-1">
+      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-7 gap-1.5 pb-1">
         {[
           { key: 'basic', label: 'Basic Info' },
           { key: 'cottages', label: 'Cottages & Rooms' },
@@ -589,7 +626,7 @@ export default function ManageInformationPage() {
               key={tab.key}
               type="button"
               onClick={() => setActiveTab(tab.key as typeof activeTab)}
-              className={`w-full min-h-11 px-3 py-2 rounded-full text-xs sm:text-sm text-center leading-tight font-bold transition-all cursor-pointer ${
+              className={`w-full min-h-9 px-2 py-1.5 rounded-full text-[11px] sm:text-xs text-center leading-tight font-bold transition-all cursor-pointer ${
                 isActive
                   ? 'bg-[#1F3F74] text-white shadow-xs'
                   : 'bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-300 border border-slate-200 dark:border-neutral-800 hover:border-[#1F3F74]/50 hover:text-[#1F3F74] dark:hover:text-white'
@@ -746,6 +783,57 @@ export default function ManageInformationPage() {
               />
               {errors.location && (
                 <p className="text-[11px] text-red-500 font-medium pl-3">{errors.location}</p>
+              )}
+            </div>
+
+            <div className="space-y-3 sm:col-span-2 rounded-2xl border border-slate-200 dark:border-neutral-800 bg-slate-50/70 dark:bg-neutral-900/60 p-4">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div>
+                  <h3 className="text-xs font-bold text-slate-800 dark:text-white">Beach Map Coordinates</h3>
+                  <p className="mt-1 text-[11px] text-slate-500 dark:text-neutral-400">
+                    Set the pin on the map so visitors can find your beach.
+                    {formData.id && ' Coordinate changes require admin approval.'}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setShowLocationPicker(true)}
+                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[#1F3F74] px-4 py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#183460]"
+                >
+                  <MapPin className="h-3.5 w-3.5" />
+                  {formData.id ? 'Request Map Pin Change' : 'Choose on Map'}
+                </button>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div className="space-y-1">
+                  <label htmlFor="beach-latitude" className="block text-[11px] font-semibold text-slate-600 dark:text-neutral-300">
+                    Latitude
+                  </label>
+                  <input
+                    id="beach-latitude"
+                    type="text"
+                    value={formData.latitude}
+                    readOnly
+                    placeholder="Not set"
+                    className="w-full rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 px-3 py-2.5 text-xs font-mono text-slate-700 dark:text-neutral-200 placeholder:font-sans placeholder:text-slate-400"
+                  />
+                </div>
+                <div className="space-y-1">
+                  <label htmlFor="beach-longitude" className="block text-[11px] font-semibold text-slate-600 dark:text-neutral-300">
+                    Longitude
+                  </label>
+                  <input
+                    id="beach-longitude"
+                    type="text"
+                    value={formData.longitude}
+                    readOnly
+                    placeholder="Not set"
+                    className="w-full rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-950 px-3 py-2.5 text-xs font-mono text-slate-700 dark:text-neutral-200 placeholder:font-sans placeholder:text-slate-400"
+                  />
+                </div>
+              </div>
+              {errors.coordinates && (
+                <p className="text-[11px] font-medium text-red-500">{errors.coordinates}</p>
               )}
             </div>
           </div>
@@ -1182,7 +1270,7 @@ export default function ManageInformationPage() {
                       Resort Cover Banner (Landscape)
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-neutral-400">
-                      High-resolution landscape photo shown at the top of your public beach profile. PNG or JPG only.
+                      High-resolution landscape photo shown at the top of your public beach profile. PNG or JPG, up to 20 MB.
                     </p>
                   </div>
 
@@ -1224,7 +1312,7 @@ export default function ManageInformationPage() {
                       Resort Profile Logo (Square)
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-neutral-400">
-                      Square avatar or logo badge shown next to reviews and search pins. PNG or JPG only.
+                      Square avatar or logo badge shown next to reviews and search pins. PNG or JPG, up to 20 MB.
                     </p>
                   </div>
 
@@ -1299,7 +1387,7 @@ export default function ManageInformationPage() {
                 <div className="flex items-center justify-between pt-1">
                   <label className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200 dark:border-neutral-800 text-xs font-semibold text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 cursor-pointer">
                     {uploadingPostImage ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5 text-[#1F3F74] dark:text-[#4987BA]" />}
-                    <span>Attach Photo (PNG/JPG)</span>
+                    <span>Attach Photo (PNG/JPG, max 20 MB)</span>
                     <input
                       type="file"
                       accept="image/png, image/jpeg, image/jpg"
@@ -1400,30 +1488,97 @@ export default function ManageInformationPage() {
                     Shoreline Photo Gallery
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-neutral-400">
-                    High-resolution photos showcasing beaches, sea conditions, and facilities. PNG or JPG only.
+                    Add photos of your shoreline, sea conditions, or facilities. PNG or JPG, up to 20 MB.
                   </p>
                 </div>
+              </div>
 
-                <label className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-bold shadow-xs cursor-pointer transition-all">
-                  {uploadingImage ? (
-                    <>
-                      <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                      <span>Uploading...</span>
-                    </>
-                  ) : (
-                    <>
-                      <Upload className="w-3.5 h-3.5" />
-                      <span>Upload Photo</span>
-                    </>
-                  )}
-                  <input
-                    type="file"
-                    accept="image/png, image/jpeg, image/jpg"
-                    onChange={handlePhotoUpload}
-                    disabled={uploadingImage}
-                    className="hidden"
-                  />
-                </label>
+              <div
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  setIsGalleryDragActive(true);
+                }}
+                onDragLeave={(event) => {
+                  if (!(event.relatedTarget instanceof Node) || !event.currentTarget.contains(event.relatedTarget)) {
+                    setIsGalleryDragActive(false);
+                  }
+                }}
+                onDrop={(event) => {
+                  event.preventDefault();
+                  setIsGalleryDragActive(false);
+                  handleGalleryFileSelection(event.dataTransfer.files[0]);
+                }}
+                className={`rounded-2xl border-2 border-dashed p-4 sm:p-5 transition-colors ${
+                  isGalleryDragActive
+                    ? 'border-[#1F3F74] bg-blue-50 dark:bg-blue-950/30'
+                    : 'border-slate-300 dark:border-neutral-700 bg-slate-50/70 dark:bg-neutral-900/60'
+                }`}
+              >
+                {galleryPreview && galleryFile ? (
+                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
+                    <div className="relative w-full sm:w-40 h-32 shrink-0 overflow-hidden rounded-xl bg-slate-200 dark:bg-neutral-800">
+                      <Image
+                        src={galleryPreview}
+                        alt="Selected gallery photo preview"
+                        fill
+                        unoptimized
+                        className="object-cover"
+                      />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{galleryFile.name}</p>
+                      <p className="mt-1 text-xs text-slate-500 dark:text-neutral-400">
+                        {(galleryFile.size / (1024 * 1024)).toFixed(2)} MB · Preview ready
+                      </p>
+                      <div className="mt-4 flex flex-wrap gap-2">
+                        <button
+                          type="button"
+                          onClick={handlePhotoUpload}
+                          disabled={uploadingImage}
+                          className="inline-flex items-center gap-2 rounded-full bg-[#1F3F74] px-5 py-2 text-xs font-bold text-white transition-colors hover:bg-[#183460] disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {uploadingImage ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+                          {uploadingImage ? 'Uploading...' : 'Upload photo'}
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setGalleryFile(null);
+                            setGalleryPreview('');
+                          }}
+                          disabled={uploadingImage}
+                          className="rounded-full border border-slate-300 px-5 py-2 text-xs font-semibold text-slate-600 hover:bg-white dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800 disabled:opacity-60"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    </div>
+                  </div>
+                ) : (
+                  <label
+                    htmlFor="gallery-photo-upload"
+                    className="flex cursor-pointer flex-col items-center justify-center gap-2 py-5 text-center"
+                  >
+                    <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#1F3F74] shadow-sm dark:bg-neutral-800 dark:text-[#4987BA]">
+                      <Upload className="h-5 w-5" />
+                    </span>
+                    <span className="text-sm font-bold text-slate-800 dark:text-white">
+                      Drop an image here or <span className="text-[#1F3F74] underline dark:text-[#4987BA]">browse files</span>
+                    </span>
+                    <span className="text-xs text-slate-500 dark:text-neutral-400">PNG or JPG · Maximum file size: 20 MB</span>
+                    <input
+                      id="gallery-photo-upload"
+                      type="file"
+                      accept="image/png, image/jpeg, image/jpg"
+                      onChange={(event) => {
+                        handleGalleryFileSelection(event.target.files?.[0]);
+                        event.target.value = '';
+                      }}
+                      disabled={uploadingImage}
+                      className="hidden"
+                    />
+                  </label>
+                )}
               </div>
 
               {formData.images.length > 0 ? (
@@ -1463,7 +1618,7 @@ export default function ManageInformationPage() {
                     No gallery photos added yet
                   </p>
                   <p className="text-[11px] text-slate-400">
-                    Click &quot;Upload Photo&quot; to showcase your resort shoreline. PNG or JPG only.
+                    Choose an image above to showcase your resort shoreline. PNG or JPG, up to 20 MB.
                   </p>
                 </div>
               )}
@@ -1789,7 +1944,7 @@ export default function ManageInformationPage() {
               {/* PNG/JPG File Upload Input */}
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
-                  Upload Cottage Photo (PNG or JPG only)
+                  Upload Cottage Photo (PNG or JPG, max 20 MB)
                 </label>
                 <div className="flex items-center gap-3">
                   <label className="px-4 py-2 rounded-full border border-slate-300 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-950 text-xs font-semibold text-slate-700 dark:text-neutral-300 hover:bg-slate-100 cursor-pointer inline-flex items-center gap-1.5">
@@ -1813,10 +1968,12 @@ export default function ManageInformationPage() {
                     />
                   </label>
                   {newCottage.image_url && (
-                    <span className="text-xs text-emerald-600 font-bold flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Photo Attached</span>
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <div className="relative h-12 w-16 overflow-hidden rounded-lg border border-slate-200 dark:border-neutral-700">
+                        <Image src={newCottage.image_url} alt="Cottage photo preview" fill className="object-cover" />
+                      </div>
+                      <span className="text-xs font-bold text-emerald-600">Preview ready</span>
+                    </div>
                   )}
                 </div>
               </div>
@@ -1941,7 +2098,7 @@ export default function ManageInformationPage() {
               {/* PNG/JPG File Upload Input */}
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
-                  Upload Photo (PNG or JPG only)
+                  Upload Photo (PNG or JPG, max 20 MB)
                 </label>
                 <div className="flex items-center gap-3">
                   <label className="px-4 py-2 rounded-full border border-slate-300 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-950 text-xs font-semibold text-slate-700 dark:text-neutral-300 hover:bg-slate-100 cursor-pointer inline-flex items-center gap-1.5">
@@ -1965,10 +2122,12 @@ export default function ManageInformationPage() {
                     />
                   </label>
                   {newFacility.image_url && (
-                    <span className="text-xs text-emerald-600 font-bold flex items-center gap-1">
-                      <CheckCircle2 className="w-3.5 h-3.5" />
-                      <span>Photo Attached</span>
-                    </span>
+                    <div className="flex items-center gap-2">
+                      <div className="relative h-12 w-16 overflow-hidden rounded-lg border border-slate-200 dark:border-neutral-700">
+                        <Image src={newFacility.image_url} alt="Facility photo preview" fill className="object-cover" />
+                      </div>
+                      <span className="text-xs font-bold text-emerald-600">Preview ready</span>
+                    </div>
                   )}
                 </div>
               </div>
@@ -2224,6 +2383,50 @@ export default function ManageInformationPage() {
           beachName={formData.name || 'Resort 360° Virtual Tour'}
         />
       )}
+
+      <LocationPickerModal
+        isOpen={showLocationPicker}
+        onClose={() => setShowLocationPicker(false)}
+        beachName={formData.name}
+        location={formData.location || 'Barangay Binongkalan, Catmon, Cebu'}
+        latitude={formData.latitude}
+        longitude={formData.longitude}
+        requireApprovalNotice={Boolean(formData.id)}
+        onSave={async (coordinates) => {
+          if (formData.id) {
+            const response = await fetch('/api/owner/beach/coordinate-request', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                beach_id: formData.id,
+                requested_latitude: Number(coordinates.latitude),
+                requested_longitude: Number(coordinates.longitude),
+                requested_location: coordinates.location,
+                requester_note: coordinates.note,
+              }),
+            });
+            const data = await response.json();
+            if (!response.ok) {
+              throw new Error(data.error || 'Failed to submit map location request.');
+            }
+            setToast({ type: 'success', message: data.message || 'Map location request sent for admin approval.' });
+            return;
+          }
+
+          setFormData((current) => ({
+            ...current,
+            location: coordinates.location,
+            latitude: coordinates.latitude,
+            longitude: coordinates.longitude,
+          }));
+          setErrors((current) => {
+            const next = { ...current };
+            delete next.coordinates;
+            delete next.location;
+            return next;
+          });
+        }}
+      />
 
     </div>
   );

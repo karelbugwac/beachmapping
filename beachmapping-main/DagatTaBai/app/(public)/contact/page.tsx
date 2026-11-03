@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import {
-  Send,
   Check,
   AlertCircle,
 } from 'lucide-react';
@@ -12,6 +11,7 @@ import { ScrollReveal } from '@/components/ui/scroll-reveal';
 export default function ContactPage() {
   const [submitted, setSubmitted] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
+  const [sending, setSending] = useState(false);
 
   const [formData, setFormData] = useState({
     name: '',
@@ -57,15 +57,44 @@ export default function ContactPage() {
     return Object.keys(errors).length === 0;
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (sending) return;
     if (!validate()) {
       setErrorMessage('Please fill out the necessary fields before submitting.');
       return;
     }
 
     setErrorMessage('');
-    setSubmitted(true);
+    setSending(true);
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(formData),
+      });
+      const result: unknown = await response.json();
+      if (!response.ok) {
+        const error =
+          result &&
+          typeof result === 'object' &&
+          'error' in result &&
+          typeof result.error === 'string'
+            ? result.error
+            : 'Could not send your message right now. Please try again later.';
+        throw new Error(error);
+      }
+
+      setSubmitted(true);
+    } catch (error: unknown) {
+      setErrorMessage(
+        error instanceof Error
+          ? error.message
+          : 'Could not send your message right now. Please try again later.'
+      );
+    } finally {
+      setSending(false);
+    }
   };
 
   return (
@@ -240,9 +269,10 @@ export default function ContactPage() {
             <div className="pt-2">
               <button
                 type="submit"
-                className="w-full inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-[#1F3F74] hover:bg-[#285091] text-white font-bold text-xs sm:text-sm shadow-md transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+                disabled={sending}
+                className="w-full inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-[#1F3F74] hover:bg-[#285091] disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-xs sm:text-sm shadow-md transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
               >
-                Send Message
+                {sending ? 'Sending...' : 'Send Message'}
               </button>
             </div>
 

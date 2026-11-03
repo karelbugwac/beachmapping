@@ -135,6 +135,7 @@ export default function ProfilePage() {
             email: sbUser.email || '',
             role: (sbUser.user_metadata?.role as any) || 'user',
             picture:
+              sbUser.user_metadata?.profile_image_url ||
               sbUser.user_metadata?.avatar_url ||
               sbUser.user_metadata?.picture ||
               null,
@@ -158,6 +159,7 @@ export default function ProfilePage() {
             email: sbData.user.email || '',
             role: (sbData.user.user_metadata?.role as any) || 'user',
             picture:
+              sbData.user.user_metadata?.profile_image_url ||
               sbData.user.user_metadata?.avatar_url ||
               sbData.user.user_metadata?.picture ||
               null,
@@ -242,44 +244,36 @@ export default function ProfilePage() {
     setAvatarUploading(true);
 
     try {
-      const reader = new FileReader();
-      reader.onload = async (ev) => {
-        const base64Data = ev.target?.result as string;
-        setUser((prev) => (prev ? { ...prev, picture: base64Data } : null));
+      const base64Data = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (typeof reader.result === 'string') resolve(reader.result);
+          else reject(new Error('Could not read the selected image.'));
+        };
+        reader.onerror = () => reject(reader.error || new Error('Could not read the selected image.'));
+        reader.readAsDataURL(file);
+      });
 
-        // Sync client Supabase session
-        try {
-          const { createClient } = await import('@/lib/supabase/client');
-          const supabase = createClient();
-          await supabase.auth.updateUser({
-            data: { profile_image_url: base64Data },
-          });
-        } catch {}
+      const res = await fetch('/api/auth/profile', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ profile_image_url: base64Data }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(data?.error || `Could not save your photo (HTTP ${res.status}).`);
+      }
+      if (!data?.user) throw new Error('The server did not confirm the photo update.');
 
-        // Dispatch instant event to Navbar & other UI components
-        if (typeof window !== 'undefined') {
-          window.dispatchEvent(
-            new CustomEvent('dtb_user_updated', {
-              detail: { profile_image_url: base64Data },
-            })
-          );
-        }
-
-        const res = await fetch('/api/auth/profile', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ profile_image_url: base64Data }),
-        });
-
-        const data = await res.json();
-        if (!res.ok) throw new Error(data.error || 'Failed to save avatar image');
-
-        router.refresh();
-        showToast('Profile picture updated successfully!', 'success');
-      };
-      reader.readAsDataURL(file);
-    } catch (err: any) {
-      showToast(err.message || 'Failed to upload photo', 'error');
+      setUser((prev) => (prev ? { ...prev, picture: data.user.profile_image_url } : null));
+      window.dispatchEvent(
+        new CustomEvent('dtb_user_updated', {
+          detail: { profile_image_url: data.user.profile_image_url },
+        })
+      );
+      showToast('Profile picture updated successfully!', 'success');
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Failed to upload photo', 'error');
     } finally {
       setAvatarUploading(false);
       if (fileInputRef.current) fileInputRef.current.value = '';
@@ -289,35 +283,26 @@ export default function ProfilePage() {
   const handleRemoveAvatar = async () => {
     setAvatarUploading(true);
     try {
-      setUser((prev) => (prev ? { ...prev, picture: null } : null));
-
-      try {
-        const { createClient } = await import('@/lib/supabase/client');
-        const supabase = createClient();
-        await supabase.auth.updateUser({
-          data: { profile_image_url: null },
-        });
-      } catch {}
-
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(
-          new CustomEvent('dtb_user_updated', {
-            detail: { profile_image_url: null },
-          })
-        );
-      }
-
       const res = await fetch('/api/auth/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ profile_image_url: null }),
       });
-      if (!res.ok) throw new Error('Failed to remove photo');
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(data?.error || `Could not remove your photo (HTTP ${res.status}).`);
+      }
+      if (!data?.user) throw new Error('The server did not confirm the photo removal.');
 
-      router.refresh();
+      setUser((prev) => (prev ? { ...prev, picture: null } : null));
+      window.dispatchEvent(
+        new CustomEvent('dtb_user_updated', {
+          detail: { profile_image_url: null },
+        })
+      );
       showToast('Profile photo removed.', 'success');
-    } catch (err: any) {
-      showToast(err.message || 'Failed to remove picture', 'error');
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Failed to remove picture', 'error');
     } finally {
       setAvatarUploading(false);
     }
@@ -335,36 +320,26 @@ export default function ProfilePage() {
 
     try {
       const trimmedName = name.trim();
-      setUser((prev) => (prev ? { ...prev, name: trimmedName } : null));
-
-      try {
-        const { createClient } = await import('@/lib/supabase/client');
-        const supabase = createClient();
-        await supabase.auth.updateUser({
-          data: { full_name: trimmedName, location: userLocation },
-        });
-      } catch {}
-
-      if (typeof window !== 'undefined') {
-        window.dispatchEvent(
-          new CustomEvent('dtb_user_updated', {
-            detail: { full_name: trimmedName },
-          })
-        );
-      }
-
       const res = await fetch('/api/auth/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ full_name: trimmedName }),
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Failed to update profile');
+      const data = await res.json().catch(() => null);
+      if (!res.ok) {
+        throw new Error(data?.error || `Could not save your profile (HTTP ${res.status}).`);
+      }
+      if (!data?.user?.full_name) throw new Error('The server did not confirm the profile update.');
 
-      router.refresh();
+      setUser((prev) => (prev ? { ...prev, name: data.user.full_name } : null));
+      window.dispatchEvent(
+        new CustomEvent('dtb_user_updated', {
+          detail: { full_name: data.user.full_name },
+        })
+      );
       showToast('Profile details updated successfully!', 'success');
-    } catch (err: any) {
-      showToast(err.message || 'Failed to update profile.', 'error');
+    } catch (err: unknown) {
+      showToast(err instanceof Error ? err.message : 'Failed to update profile.', 'error');
     } finally {
       setIsSavingProfile(false);
     }
@@ -423,9 +398,13 @@ export default function ProfilePage() {
 
   if (loading) {
     return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center gap-3 text-slate-500 dark:text-slate-400">
+      <div
+        role="status"
+        aria-label="Loading profile"
+        className="min-h-[70vh] flex items-center justify-center text-slate-500 dark:text-slate-400"
+      >
         <Loader2 className="w-8 h-8 animate-spin text-[#1F3F74] dark:text-[#4987BA]" />
-        <p className="text-xs font-medium">Loading Google-style profile...</p>
+        <span className="sr-only">Loading profile...</span>
       </div>
     );
   }
@@ -449,16 +428,19 @@ export default function ProfilePage() {
       <div className="text-center space-y-3 pt-4">
         {/* Large Profile Picture with Camera Action */}
         <div className="relative inline-block group">
-          <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden bg-slate-100 dark:bg-neutral-900 border-4 border-white dark:border-neutral-900 shadow-md flex items-center justify-center text-4xl font-extrabold text-[#1F3F74] dark:text-[#4987BA] mx-auto">
-            {user.picture ? (
+          <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden bg-slate-100 dark:bg-neutral-900 border-4 border-white dark:border-neutral-900 shadow-md flex items-center justify-center text-4xl font-extrabold text-[#1F3F74] dark:text-[#4987BA] mx-auto">
+            <span>{user.name.charAt(0).toUpperCase()}</span>
+            {user.picture && (
               // eslint-disable-next-line @next/next/no-img-element
               <img
+                key={user.picture}
                 src={user.picture}
-                alt={user.name}
-                className="w-full h-full object-cover"
+                alt=""
+                onError={(event) => {
+                  event.currentTarget.style.display = 'none';
+                }}
+                className="absolute inset-0 w-full h-full object-cover"
               />
-            ) : (
-              user.name.charAt(0).toUpperCase()
             )}
           </div>
 

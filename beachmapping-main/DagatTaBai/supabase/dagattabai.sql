@@ -18,7 +18,7 @@ VALUES (
     'beach-media',
     'beach-media',
     true,
-    10485760,
+    20971520,
     ARRAY['image/jpeg', 'image/png', 'image/webp']
 )
 ON CONFLICT (id) DO UPDATE SET
