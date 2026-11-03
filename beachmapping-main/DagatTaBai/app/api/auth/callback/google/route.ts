@@ -5,7 +5,7 @@ import { createAdminClient, createServerSupabaseClient } from '@/lib/supabase/se
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin;
+  const siteUrl = request.nextUrl.origin;
 
   if (!code) {
     return NextResponse.redirect(`${siteUrl}/login?error=no_auth_code`);

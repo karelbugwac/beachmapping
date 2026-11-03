@@ -41,16 +41,6 @@ function UserLoginForm() {
 
     setLoading(true);
     try {
-      // 1. Establish client-side Supabase session immediately
-      try {
-        const { createClient } = await import('@/lib/supabase/client');
-        const supabase = createClient();
-        await supabase.auth.signInWithPassword({ email, password });
-      } catch (clientAuthErr) {
-        console.warn('Client-side session sync notice:', clientAuthErr);
-      }
-
-      // 2. Establish server cookie session
       const res = await fetch('/api/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

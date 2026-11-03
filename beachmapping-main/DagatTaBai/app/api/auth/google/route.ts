@@ -3,7 +3,7 @@ import { cookies } from 'next/headers';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
 export async function GET(request: NextRequest) {
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || request.nextUrl.origin;
+  const siteUrl = request.nextUrl.origin;
 
   try {
     // Purge any stale verifiers or leftover OAuth cookies before starting new flow
