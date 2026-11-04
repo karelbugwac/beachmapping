@@ -10,6 +10,7 @@ import { CookieConsent } from '@/components/cookie-consent';
 import { FeedbackToasts } from '@/components/ui/feedback-toasts';
 import { VisitorTracker } from '@/components/visitor-tracker';
 import { PageLoader } from '@/components/page-loader';
+import { LoginDeviceTracker } from '@/components/login-device-tracker';
 import { Suspense } from 'react';
 
 const inter = Inter({
@@ -56,6 +57,7 @@ export default function RootLayout({
           <FeedbackToasts />
           <VisitorTracker />
           <Navbar />
+          <LoginDeviceTracker />
           <main className="flex-1">{children}</main>
           <Footer />
           <AiChatWidget />

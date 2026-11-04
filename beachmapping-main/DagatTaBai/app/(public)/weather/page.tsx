@@ -7,16 +7,15 @@ import {
   Droplets,
   Sun,
   SunMedium,
-  Umbrella,
   CloudRain,
   CloudSun,
   AlertTriangle,
   Lightbulb,
-  AlertCircle,
   Calendar,
   Moon,
   ChevronDown,
   Activity,
+  Cloud,
 } from 'lucide-react';
 import type { WeatherData } from '@/lib/services/weather';
 import type { CurrentTideState, TideExtreme } from '@/lib/services/tide-interpolation';
@@ -32,140 +31,138 @@ function StarSparkle({ className }: { className?: string }) {
   );
 }
 
-// Custom Sunscreen / Lotion Bottle Icon (Clean vector design with SPF badge)
-function LotionBottleIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <path d="M10 2h4v3h-4z" />
-      <path d="M8 5h8a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z" />
-      <circle cx="12" cy="13" r="2.5" />
-      <path d="M12 9.5v.5M12 16v.5M8.5 13H9M15 13h.5" />
-    </svg>
-  );
-}
-
 // Helper to convert wind direction degrees to compass direction
 function getWindDirection(degrees: number): string {
-  const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WSW', 'NW', 'NNW'];
+  const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
   const index = Math.round(degrees / 22.5) % 16;
   return directions[index];
 }
 
-// Generate smart reminders based on weather conditions and time of day
 function generateReminders(weather: WeatherData | null, currentTide: CurrentTideState | null) {
   const reminders: { icon: React.ComponentType<{ className?: string }>; text: string; type: 'info' | 'warning' | 'alert' }[] = [];
-
   if (!weather) return reminders;
 
-  const hour = new Date().getHours();
-  const isMorning = hour >= 6 && hour < 12;
-  const isAfternoon = hour >= 12 && hour < 18;
-  const isNight = hour >= 18 || hour < 6;
-
-  // Time-specific tips
-  if (isMorning) {
-    reminders.push({
-      icon: Sun,
-      text: 'Pleasant morning conditions - ideal for coastal walks and photography.',
-      type: 'info',
-    });
-    reminders.push({
-      icon: Droplets,
-      text: 'Keep hydrated throughout your morning beach excursion.',
-      type: 'info',
-    });
-  } else if (isNight) {
-    reminders.push({
-      icon: Moon,
-      text: 'Cool evening offshore breeze - consider bringing a light overshirt.',
-      type: 'info',
-    });
-    reminders.push({
-      icon: AlertCircle,
-      text: 'Stay within illuminated cottage areas for safe shoreline walking at night.',
-      type: 'warning',
-    });
-  } else if (isAfternoon) {
-    reminders.push({
-      icon: LotionBottleIcon,
-      text: 'Peak daylight UV exposure - seek cottage shade and re-apply SPF 30+ sunscreen lotion.',
-      type: 'warning',
-    });
-  }
-
-  // Rain/Drizzle reminders
-  if (weather.weatherCode >= 51 && weather.weatherCode <= 67) {
-    reminders.push({
-      icon: Umbrella,
-      text: 'Passing light showers expected along Catmon - keep waterproof pouches ready for gadgets.',
-      type: 'warning',
-    });
-  }
-
-  // Thunderstorm alert
   if (weather.weatherCode >= 95) {
     reminders.push({
       icon: AlertTriangle,
-      text: 'Thunderstorm advisory - avoid open water swimming and seek solid cottage shelter.',
+      text: 'Thunderstorm conditions are reported. Avoid entering the water and seek proper shelter.',
       type: 'alert',
     });
+  } else if ((weather.weatherCode >= 61 && weather.weatherCode <= 67) || (weather.weatherCode >= 80 && weather.weatherCode <= 82)) {
+    reminders.push({
+      icon: CloudRain,
+      text: `Rain is reported (${weather.conditionLabel}). Recheck conditions before heading out on the water.`,
+      type: 'warning',
+    });
   }
 
-  // Low tide coastal exploring reminder (Sandbar removed)
-  if (currentTide && currentTide.currentHeight < 0.7) {
+  if (weather.uvIndex !== null && weather.uvIndex >= 6) {
+    reminders.push({
+      icon: Sun,
+      text: `The current UV index is ${weather.uvIndex.toFixed(0)}. Seek shade and use sun protection outdoors.`,
+      type: 'warning',
+    });
+  }
+
+  if (weather.windSpeed >= 30) {
     reminders.push({
       icon: Waves,
-      text: 'Low tide window active - shallow shoreline reveals safe reefs for coastal exploring.',
+      text: `Wind is ${weather.windSpeed.toFixed(0)} km/h. Take care around exposed shorelines and small boats.`,
+      type: 'warning',
+    });
+  }
+
+  if (weather.waveHeight !== null && weather.waveHeight >= 1.5) {
+    reminders.push({
+      icon: Waves,
+      text: `Forecast wave height is ${weather.waveHeight.toFixed(1)} m. Check local sea conditions before swimming or boating.`,
+      type: 'warning',
+    });
+  }
+
+  if (currentTide && currentTide.currentHeight <= 0.3) {
+    reminders.push({
+      icon: Waves,
+      text: `The tide is low at ${currentTide.currentHeight.toFixed(2)} m. Use care on exposed and slippery shoreline areas.`,
       type: 'info',
     });
   }
 
-  // Default fallback
-  if (reminders.length < 3) {
+  const missingMarineReadings = [
+    weather.waveHeight === null ? 'wave' : null,
+    weather.swellHeight === null ? 'swell' : null,
+    currentTide === null ? 'tide' : null,
+  ].filter(Boolean);
+  if (missingMarineReadings.length > 0) {
     reminders.push({
-      icon: Waves,
-      text: 'Coastal waters and shoreline conditions are favorable for visiting Binongkalan.',
-      type: 'info',
+      icon: AlertTriangle,
+      text: `${missingMarineReadings.join(', ')} readings are unavailable. Confirm sea conditions with local staff.`,
+      type: 'warning',
     });
   }
 
+  if (reminders.length === 0) {
+    reminders.push({
+      icon: Activity,
+      text: 'No weather alerts were triggered by the readings that are currently available.',
+      type: 'info',
+    });
+  }
   return reminders;
 }
 
-// Real-time 4-day forecast generator dynamically anchored to the current calendar date
-function getDynamicFourDayForecast(baseDate: Date) {
-  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const forecastTemplates = [
-    { condition: 'Partly Cloudy', high: 31, low: 26, rain: 20, icon: CloudSun },
-    { condition: 'Mostly Sunny', high: 32, low: 26, rain: 10, icon: Sun },
-    { condition: 'Passing Showers', high: 30, low: 25, rain: 35, icon: CloudRain },
-    { condition: 'Clear Sky', high: 31, low: 26, rain: 15, icon: Sun },
-  ];
+function getForecastIcon(weatherCode: number) {
+  if (weatherCode >= 95 || (weatherCode >= 61 && weatherCode <= 82)) return CloudRain;
+  if (weatherCode >= 45 && weatherCode <= 48 || weatherCode === 3) return Cloud;
+  if (weatherCode === 1 || weatherCode === 2) return CloudSun;
+  return Sun;
+}
 
-  return [1, 2, 3, 4].map((offset, index) => {
-    const targetDate = new Date(baseDate);
-    targetDate.setDate(targetDate.getDate() + offset);
-    const dayLabel = offset === 1 ? 'Tomorrow' : dayNames[targetDate.getDay()];
-    const template = forecastTemplates[index % forecastTemplates.length];
+function getActivityAssessments(weather: WeatherData | null, tide: CurrentTideState | null) {
+  if (!weather) return [];
 
+  const storm = weather.weatherCode >= 95;
+  const rain = (weather.weatherCode >= 61 && weather.weatherCode <= 82);
+  const roughWaves = weather.waveHeight !== null && weather.waveHeight >= 1.5;
+  const strongWind = weather.windSpeed >= 30;
+  const lowTide = tide !== null && tide.currentHeight <= 0.3;
+  const highTide = tide !== null && tide.currentHeight >= 1.8;
+  const reasons = {
+    storm: storm ? 'thunderstorm' : null,
+    rain: rain ? 'rain' : null,
+    waves: roughWaves ? `waves ${weather.waveHeight?.toFixed(1)} m` : null,
+    swell: weather.swellHeight !== null && weather.swellHeight >= 1.2
+      ? `swell ${weather.swellHeight.toFixed(1)} m`
+      : null,
+    wind: strongWind ? `wind ${weather.windSpeed.toFixed(0)} km/h` : null,
+    tide: lowTide ? 'very low tide' : highTide ? 'high tide' : null,
+  };
+  const makeAssessment = (activity: string, signals: (string | null)[]) => {
+    const activeSignals = signals.filter((signal): signal is string => Boolean(signal));
+    const caution = activeSignals.length > 0;
+    const limitedData = weather.waveHeight === null || weather.swellHeight === null || tide === null;
     return {
-      day: dayLabel,
-      dateLabel: targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      condition: template.condition,
-      high: template.high,
-      low: template.low,
-      rain: template.rain,
-      icon: template.icon,
+      activity,
+      status: caution ? 'Check locally' : limitedData ? 'Limited data' : 'No alert reported',
+      statusStyle: caution
+        ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
+        : limitedData
+          ? 'bg-slate-200 text-slate-700 dark:bg-neutral-800 dark:text-slate-300'
+          : 'bg-blue-100 text-[#1F3F74] dark:bg-blue-950/60 dark:text-blue-300',
+      note: caution
+        ? `Current readings: ${activeSignals.join(', ')}. Confirm conditions with local staff.`
+        : limitedData
+          ? 'Some wave or tide readings are unavailable. Confirm conditions locally.'
+          : 'No related weather alert in the current feed; conditions can still change.',
     };
-  });
+  };
+
+  return [
+    makeAssessment('Swimming', [reasons.storm, reasons.rain, reasons.waves, strongWind ? reasons.wind : null, lowTide ? reasons.tide : null]),
+    makeAssessment('Snorkeling', [reasons.storm, reasons.rain, reasons.waves, reasons.swell]),
+    makeAssessment('Shoreline walking', [reasons.storm, reasons.wind, reasons.tide]),
+    makeAssessment('Kayaking & boating', [reasons.storm, reasons.wind, reasons.waves, reasons.swell]),
+  ];
 }
 
 export default function WeatherPage() {
@@ -175,13 +172,8 @@ export default function WeatherPage() {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [tideExtremes, setTideExtremes] = useState<TideExtreme[]>([]);
   const [currentTide, setCurrentTide] = useState<CurrentTideState | null>(null);
-  const [, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [dataError, setDataError] = useState<string | null>(null);
-  const [now, setNow] = useState<Date>(new Date());
-
-  useEffect(() => {
-    setNow(new Date());
-  }, []);
 
   useEffect(() => {
     fetch('/api/beaches')
@@ -197,6 +189,7 @@ export default function WeatherPage() {
       })
       .catch((err) => {
         console.error('Failed to load beaches for weather:', err);
+        setDataError(err instanceof Error ? err.message : 'Could not load beach locations.');
       })
       .finally(() => {
         setBeachesLoaded(true);
@@ -210,15 +203,16 @@ export default function WeatherPage() {
 
     const lat = selectedBeach?.latitude ?? 10.6865;
     const lon = selectedBeach?.longitude ?? 124.0152;
-
-    setLoading(true);
-    setDataError(null);
+    let active = true;
 
     const loadConditions = async () => {
       const [weatherResult, tideResult] = await Promise.allSettled([
         fetch(`/api/weather?lat=${lat}&lon=${lon}`, { cache: 'no-store' })
           .then(async (response) => {
-            if (!response.ok) throw new Error('Weather data is unavailable.');
+            if (!response.ok) {
+              const result = await response.json().catch(() => null);
+              throw new Error(result?.error || 'Weather data is unavailable.');
+            }
             return response.json() as Promise<WeatherData>;
           }),
         fetch(`/api/tides?lat=${lat}&lon=${lon}`, { cache: 'no-store' })
@@ -228,8 +222,13 @@ export default function WeatherPage() {
           }),
       ]);
 
+      if (!active) return;
+
       if (weatherResult.status === 'fulfilled') setWeather(weatherResult.value);
-      else setWeather(null);
+      else {
+        setWeather(null);
+        setDataError(weatherResult.reason instanceof Error ? weatherResult.reason.message : 'Weather data is unavailable.');
+      }
 
       if (tideResult.status === 'fulfilled') {
         setTideExtremes(Array.isArray(tideResult.value.extremes) ? tideResult.value.extremes : []);
@@ -237,12 +236,18 @@ export default function WeatherPage() {
       } else {
         setTideExtremes([]);
         setCurrentTide(null);
+        if (weatherResult.status === 'fulfilled') {
+          setDataError(tideResult.reason instanceof Error ? tideResult.reason.message : 'Tide data is unavailable.');
+        }
       }
 
       setLoading(false);
     };
 
     void loadConditions();
+    return () => {
+      active = false;
+    };
   }, [beachesLoaded, selectedBeach]);
 
   const formatDate = (date: Date) => {
@@ -253,15 +258,36 @@ export default function WeatherPage() {
     return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
   };
 
-  const currentHour = now.getHours();
-  const timeOfDayLabel =
-    currentHour >= 6 && currentHour < 12
+  const currentHour = new Date().getHours();
+  const now = new Date();
+  const timeOfDayLabel = !weather
+    ? 'Current Coastal Weather'
+    : currentHour >= 6 && currentHour < 12
       ? 'Morning Coastal Weather'
       : currentHour >= 12 && currentHour < 18
       ? 'Afternoon Coastal Weather'
       : 'Evening Coastal Weather';
 
-  const fourDayForecast = getDynamicFourDayForecast(now);
+  const activityAssessments = getActivityAssessments(weather, currentTide);
+
+  if (loading) {
+    return (
+      <div className="min-h-[calc(100vh-4rem)] bg-slate-50 px-4 py-8 dark:bg-black sm:px-6 lg:px-8" aria-busy="true" aria-label="Loading coastal conditions">
+        <div className="mx-auto max-w-7xl space-y-6">
+          <div className="h-14 w-72 animate-pulse rounded-xl bg-slate-200 dark:bg-neutral-800" />
+          <div className="h-56 animate-pulse rounded-2xl bg-[#1f3f74]/15 dark:bg-[#1f3f74]/30" />
+          <div className="grid gap-5 lg:grid-cols-2">
+            <div className="h-72 animate-pulse rounded-2xl bg-slate-200 dark:bg-neutral-800" />
+            <div className="h-72 animate-pulse rounded-2xl bg-slate-200 dark:bg-neutral-800" />
+          </div>
+          <div className="grid gap-5 lg:grid-cols-2">
+            <div className="h-72 animate-pulse rounded-2xl bg-slate-200 dark:bg-neutral-800" />
+            <div className="h-72 animate-pulse rounded-2xl bg-slate-200 dark:bg-neutral-800" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-zinc-100 transition-colors duration-200">
@@ -273,12 +299,14 @@ export default function WeatherPage() {
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
           <div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1F3F74] dark:text-white tracking-tight leading-tight">
-              Barangay Binongkalan
+              {selectedBeach?.name || 'Barangay Binongkalan'}
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1.5 mt-0.5">
-              <span>Catmon, Cebu</span>
+              <span>{selectedBeach?.location || 'Catmon, Cebu'}</span>
               <span className="text-slate-300 dark:text-neutral-700">•</span>
-              <span className="text-slate-400 dark:text-neutral-500 font-mono text-xs">10.6865° N, 124.0152° E</span>
+              <span className="text-slate-400 dark:text-neutral-500 font-mono text-xs">
+                {(selectedBeach?.latitude ?? 10.6865).toFixed(4)}° N, {(selectedBeach?.longitude ?? 124.0152).toFixed(4)}° E
+              </span>
             </p>
           </div>
 
@@ -287,7 +315,11 @@ export default function WeatherPage() {
               <div className="relative">
                 <select
                   value={selectedBeachId}
-                  onChange={(e) => setSelectedBeachId(e.target.value)}
+                  onChange={(e) => {
+                    setLoading(true);
+                    setDataError(null);
+                    setSelectedBeachId(e.target.value);
+                  }}
                   className="appearance-none bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-full text-xs font-semibold text-slate-800 dark:text-neutral-200 pl-3.5 pr-8 py-2 focus:outline-none focus:ring-1 focus:ring-[#1F3F74] cursor-pointer shadow-xs"
                 >
                   <option value="">Binongkalan Coast (General)</option>
@@ -356,7 +388,7 @@ export default function WeatherPage() {
                   {weather ? `${weather.temperature.toFixed(1)}°C` : '--'}
                 </div>
                 <div className="text-xs sm:text-sm text-blue-100/90 font-medium">
-                  {weather?.conditionLabel || 'Clear Sky'} · RealFeel {weather?.heatIndex ? `${weather.heatIndex.heatIndexCelsius.toFixed(1)}°C` : weather ? `${weather.temperature.toFixed(1)}°C` : '--'}
+                  {weather?.conditionLabel || 'Current conditions unavailable'} · RealFeel {weather?.heatIndex ? `${weather.heatIndex.heatIndexCelsius.toFixed(1)}°C` : weather ? `${weather.temperature.toFixed(1)}°C` : '--'}
                 </div>
               </div>
             </div>
@@ -371,9 +403,9 @@ export default function WeatherPage() {
                   <span>Sea Temp</span>
                 </div>
                 <div className="text-base sm:text-lg font-bold text-white mt-1">
-                  {weather?.waterTemperature ? `${weather.waterTemperature.toFixed(1)}°C` : '27.7°C'}
+                  {weather?.waterTemperature != null ? `${weather.waterTemperature.toFixed(1)}°C` : 'Unavailable'}
                 </div>
-                <div className="text-[10px] text-blue-200/70">Shoreline water</div>
+                <div className="text-[10px] text-blue-200/70">Marine forecast</div>
               </div>
 
               {/* Wind Speed & Direction */}
@@ -383,21 +415,21 @@ export default function WeatherPage() {
                   <span>Wind</span>
                 </div>
                 <div className="text-base sm:text-lg font-bold text-white mt-1">
-                  {weather ? `${weather.windSpeed.toFixed(0)} km/h ${getWindDirection(weather.windDirection)}` : '2 km/h NNE'}
+                  {weather ? `${weather.windSpeed.toFixed(0)} km/h ${getWindDirection(weather.windDirection)}` : 'Unavailable'}
                 </div>
-                <div className="text-[10px] text-blue-200/70">Gentle breeze</div>
+                <div className="text-[10px] text-blue-200/70">Current conditions</div>
               </div>
 
               {/* Wave Swell */}
               <div className="bg-white/10 hover:bg-white/15 backdrop-blur-md rounded-xl p-3 border border-white/10 transition-colors">
                 <div className="flex items-center gap-1.5 text-blue-200 text-xs">
                   <Waves className="w-3.5 h-3.5" />
-                  <span>Wave Swell</span>
+                  <span>Swell</span>
                 </div>
                 <div className="text-base sm:text-lg font-bold text-white mt-1">
-                  {weather?.swellHeight ? `${weather.swellHeight.toFixed(1)} m` : '0.4 m'}
+                  {weather?.swellHeight != null ? `${weather.swellHeight.toFixed(1)} m` : 'Unavailable'}
                 </div>
-                <div className="text-[10px] text-blue-200/70">Calm waters</div>
+                <div className="text-[10px] text-blue-200/70">Forecast swell height</div>
               </div>
 
               {/* UV Index */}
@@ -407,9 +439,11 @@ export default function WeatherPage() {
                   <span>UV Index</span>
                 </div>
                 <div className="text-base sm:text-lg font-bold text-white mt-1">
-                  Moderate (5)
+                  {weather?.uvIndex != null ? weather.uvIndex.toFixed(1) : 'Unavailable'}
                 </div>
-                <div className="text-[10px] text-blue-200/70">SPF 30+ advised</div>
+                <div className="text-[10px] text-blue-200/70">
+                  {weather?.uvIndex == null ? 'Current UV unavailable' : weather.uvIndex >= 6 ? 'High exposure' : 'Current UV'}
+                </div>
               </div>
 
             </div>
@@ -435,32 +469,22 @@ export default function WeatherPage() {
                 </h3>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Live assessment guided by current tides and wave telemetry.
+                Advisory signals are calculated from the latest weather, wave, and tide readings.
               </p>
             </div>
 
-            {/* 6 Clean Activity Rows without Sandbar */}
             <div className="space-y-2">
-              {[
-                { activity: 'Swimming', status: 'Favorable', color: 'emerald', note: 'Calm shoreline waters and gentle currents.' },
-                { activity: 'Snorkeling', status: 'Favorable', color: 'emerald', note: 'Clear underwater reef visibility.' },
-                { activity: 'Shoreline Walking', status: 'Favorable', color: 'emerald', note: 'Pleasant shoreline walking along Binongkalan.' },
-                { activity: 'Diving', status: 'Caution', color: 'amber', note: 'Check mid-day channel currents before deep dive.' },
-                { activity: 'Kayaking & Boating', status: 'Favorable', color: 'emerald', note: 'Safe light offshore breeze.' },
-                { activity: 'Beachfront Dining', status: 'Favorable', color: 'emerald', note: 'Cottages sheltered from strong wind.' },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center justify-between p-2 sm:p-2.5 rounded-xl bg-slate-50 dark:bg-neutral-900/60 border border-slate-100 dark:border-neutral-800/80">
+              {activityAssessments.length === 0 ? (
+                <p className="rounded-xl bg-slate-50 p-4 text-xs leading-5 text-slate-500 dark:bg-neutral-900/60 dark:text-slate-400">
+                  Activity guidance is unavailable until current weather data loads.
+                </p>
+              ) : activityAssessments.map((item) => (
+                <div key={item.activity} className="flex items-center justify-between p-2 sm:p-2.5 rounded-xl bg-slate-50 dark:bg-neutral-900/60 border border-slate-100 dark:border-neutral-800/80">
                   <div className="min-w-0 pr-2">
                     <div className="text-xs font-bold text-slate-900 dark:text-white">{item.activity}</div>
-                    <div className="text-[10px] text-slate-400 truncate">{item.note}</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400">{item.note}</div>
                   </div>
-                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${
-                    item.color === 'emerald'
-                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
-                      : item.color === 'amber'
-                      ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
-                      : 'bg-blue-100 text-[#1F3F74] dark:bg-blue-950/60 dark:text-blue-300'
-                  }`}>
+                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${item.statusStyle}`}>
                     {item.status}
                   </span>
                 </div>
@@ -483,33 +507,46 @@ export default function WeatherPage() {
                 </h3>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Live upcoming forecast trends for beach visits in Catmon.
+                Forecast values from Open-Meteo for this beach location.
               </p>
             </div>
 
-            <div className="space-y-2">
-              {fourDayForecast.map((day, i) => (
-                <div key={i} className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-slate-50 dark:bg-neutral-900/60 border border-slate-100 dark:border-neutral-800/80">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <day.icon className="w-4 h-4 text-[#1F3F74] dark:text-[#4987BA] flex-shrink-0" />
-                    <div>
-                      <div className="text-xs font-bold text-slate-900 dark:text-white">
-                        {day.day} <span className="text-[10px] font-normal text-slate-400">({day.dateLabel})</span>
+            <div className="space-y-2.5">
+              {weather?.dailyForecast.length ? weather.dailyForecast.map((day) => {
+                const ForecastIcon = getForecastIcon(day.weatherCode);
+                const date = new Date(`${day.date}T12:00:00`);
+                return (
+                  <div key={day.date} className="flex items-center gap-4 rounded-xl border border-slate-100 bg-slate-50 p-3 dark:border-neutral-800 dark:bg-neutral-900/60">
+                    <div className="w-20 shrink-0">
+                      <div className="text-xs font-semibold text-slate-900 dark:text-white">
+                        {date.toLocaleDateString(undefined, { weekday: 'short' })}
                       </div>
-                      <div className="text-[10px] text-slate-400">{day.condition}</div>
+                      <div className="text-[10px] text-slate-500 dark:text-slate-400">
+                        {date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                      </div>
+                    </div>
+                    <ForecastIcon className="h-7 w-7 shrink-0 text-[#1F3F74] dark:text-[#8db8e4]" />
+                    <div className="min-w-0 flex-1">
+                      <div className="text-xs font-medium text-slate-800 dark:text-slate-200">{day.conditionLabel}</div>
+                      <div className="mt-1 flex flex-wrap gap-x-3 text-[10px] text-slate-500 dark:text-slate-400">
+                        <span className="inline-flex items-center gap-1">
+                          <Droplets className="h-3 w-3 text-sky-600" />
+                          {day.precipitationProbability == null ? 'Rain —' : `${day.precipitationProbability}%`}
+                        </span>
+                        <span>UV {day.uvIndexMax == null ? '—' : day.uvIndexMax.toFixed(0)}</span>
+                      </div>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <span className="text-sm font-bold text-slate-900 dark:text-white">{day.high.toFixed(0)}°</span>
+                      <span className="ml-1.5 text-xs text-slate-500 dark:text-slate-400">{day.low.toFixed(0)}°</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 flex-shrink-0">
-                    <div className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      {day.low}°C – {day.high}°C
-                    </div>
-                    <div className="flex items-center gap-1 text-[11px] text-slate-500 font-medium w-12 justify-end">
-                      <Droplets className="w-3 h-3 text-sky-500" />
-                      <span>{day.rain}%</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              }) : (
+                <p className="rounded-xl bg-slate-50 p-4 text-xs text-slate-500 dark:bg-neutral-900/60 dark:text-slate-400">
+                  The four-day forecast is unavailable from the weather service right now.
+                </p>
+              )}
             </div>
           </div>
 
@@ -523,12 +560,12 @@ export default function WeatherPage() {
                 </h3>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Helpful advisories for your safety and comfort in Binongkalan.
+                Advisories are based on current weather and coastal readings.
               </p>
             </div>
 
             <div className="space-y-2">
-              {generateReminders(weather, currentTide).map((reminder, i) => (
+              {(weather ? generateReminders(weather, currentTide) : []).map((reminder, i) => (
                 <div
                   key={i}
                   className={`flex items-start gap-2.5 p-2.5 rounded-xl border ${
@@ -553,6 +590,11 @@ export default function WeatherPage() {
                   </p>
                 </div>
               ))}
+              {!weather && (
+                <p className="rounded-xl bg-slate-50 p-4 text-xs text-slate-500 dark:bg-neutral-900/60 dark:text-slate-400">
+                  Coastal reminders are unavailable until live weather data loads.
+                </p>
+              )}
             </div>
           </div>
 

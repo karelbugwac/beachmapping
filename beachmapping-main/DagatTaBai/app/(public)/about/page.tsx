@@ -15,64 +15,53 @@ import { ScrollReveal } from '@/components/ui/scroll-reveal';
 interface TeamMember {
   id: number;
   name: string;
-  role: string;
   image?: string;
 }
 
-// 9 Team Members with complete roles
 const teamMembers: TeamMember[] = [
   {
     id: 1,
     name: 'Team Member 1',
-    role: 'Project Lead',
     image: '',
   },
   {
     id: 2,
     name: 'Team Member 2',
-    role: 'Lead UI/UX Designer',
     image: '',
   },
   {
     id: 3,
     name: 'Team Member 3',
-    role: 'Full-Stack Developer',
     image: '/member3.png',
   },
   {
     id: 4,
     name: 'Team Member 4',
-    role: 'GIS & Mapping Specialist',
     image: '',
   },
   {
     id: 5,
     name: 'Team Member 5',
-    role: 'Marine Data Engineer',
     image: '/member5.jpg',
   },
   {
     id: 6,
     name: 'Team Member 6',
-    role: 'Frontend Engineer',
     image: '/member6.jpg',
   },
   {
     id: 7,
     name: 'Team Member 7',
-    role: 'QA & Testing Specialist',
     image: '',
   },
   {
     id: 8,
     name: 'Team Member 8',
-    role: 'Community & Field Researcher',
     image: '/member8.jpg',
   },
   {
     id: 9,
     name: 'Team Member 9',
-    role: 'Content & Media Strategist',
     image: '/member9.jpg',
   },
 ];
@@ -263,9 +252,6 @@ export default function AboutPage() {
               <span className="mt-2.5 text-xs text-white/80 font-medium block truncate max-w-full">
                 {prevMember.name}
               </span>
-              <span className="text-[10px] text-white/60 block mt-0.5 line-clamp-1 max-w-full">
-                {prevMember.role}
-              </span>
             </div>
 
             {/* 2. CENTER ACTIVE PROFILE (Prominent, Glowing Ring, Centered, Name & Position Underneath) */}
@@ -278,13 +264,9 @@ export default function AboutPage() {
                 )}
               </div>
 
-              {/* Name & Position Directly Underneath */}
-              <div className="text-center mt-3 sm:mt-4 space-y-1">
+              <div className="text-center mt-3 sm:mt-4">
                 <span className="block text-base sm:text-lg font-bold text-white tracking-wide">
                   {currentMember.name}
-                </span>
-                <span className="block text-xs sm:text-sm text-sky-200 font-medium">
-                  {currentMember.role}
                 </span>
               </div>
             </div>
@@ -304,9 +286,6 @@ export default function AboutPage() {
               </div>
               <span className="mt-2.5 text-xs text-white/80 font-medium block truncate max-w-full">
                 {nextMember.name}
-              </span>
-              <span className="text-[10px] text-white/60 block mt-0.5 line-clamp-1 max-w-full">
-                {nextMember.role}
               </span>
             </div>
 

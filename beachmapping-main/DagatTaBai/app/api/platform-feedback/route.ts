@@ -1,19 +1,30 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createAdminClient, createServerSupabaseClient } from '@/lib/supabase/server';
 import { getCurrentSession } from '@/lib/db/auth';
+
+interface PlatformReviewRow {
+  id: string;
+  rating: number;
+  comment: string;
+  created_at: string;
+  profiles: { full_name: string | null; profile_image_url: string | null; role: string | null } | null;
+}
 
 export async function GET() {
   try {
-    const supabase = await createServerSupabaseClient();
+    const supabase = createAdminClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('platform_reviews') as any)
-      .select('id, rating, comment, created_at, profiles:user_id(full_name)')
+      .select('id, rating, comment, created_at, profiles:profiles!platform_reviews_user_id_fkey(full_name, profile_image_url, role)')
       .order('created_at', { ascending: false })
       .limit(100);
     if (error) throw error;
 
-    return NextResponse.json((data || []).map((review: any) => ({
+    return NextResponse.json((data || []).map((review: PlatformReviewRow) => ({
       id: review.id,
       user_name: review.profiles?.full_name || 'Dagat Ta Bai user',
+      profile_image_url: review.profiles?.profile_image_url || null,
+      user_role: review.profiles?.role || 'user',
       rating: Number(review.rating),
       comment: review.comment,
       created_at: review.created_at,
@@ -40,6 +51,7 @@ export async function POST(request: Request) {
     }
 
     const supabase = await createServerSupabaseClient();
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data, error } = await (supabase.from('platform_reviews') as any)
       .insert({ user_id: user.id, rating, comment })
       .select('id, rating, comment, created_at')

@@ -13,9 +13,12 @@ export default function TideCard({ extremes }: TideCardProps) {
   const clipId = useId().replace(/:/g, '');
 
   useEffect(() => {
-    setNow(new Date());
-    const interval = setInterval(() => setNow(new Date()), 60000);
-    return () => clearInterval(interval);
+    const initialTimer = window.setTimeout(() => setNow(new Date()), 0);
+    const interval = window.setInterval(() => setNow(new Date()), 60000);
+    return () => {
+      window.clearTimeout(initialTimer);
+      window.clearInterval(interval);
+    };
   }, []);
 
   if (!now) {
@@ -30,7 +33,7 @@ export default function TideCard({ extremes }: TideCardProps) {
         <h3 className="font-bold text-sm text-[#1F3F74] dark:text-white uppercase tracking-wider">
           Tide Status
         </h3>
-        <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">Loading tide records for Catmon coast...</p>
+        <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">Tide readings are currently unavailable.</p>
       </div>
     );
   }
@@ -77,8 +80,8 @@ export default function TideCard({ extremes }: TideCardProps) {
   const isRising = nextTide?.type === 'high';
   const tideLabel = isRising ? 'Rising Tide (Gataob)' : 'Receding Tide (Gahunas)';
   const tideAdvice = isRising
-    ? 'Water is deepening towards high tide. Ideal for swimming.'
-    : 'Water is shallowing towards low tide. Great for shoreline walking.';
+    ? 'Tide is rising. Check local shoreline conditions before entering the water.'
+    : 'Tide is falling. Use care around exposed shoreline and changing currents.';
 
   // Sample tide every 10 minutes from 00:00 to 24:00 Manila time
   const samples: { time: Date; height: number }[] = [];
@@ -111,7 +114,6 @@ export default function TideCard({ extremes }: TideCardProps) {
   const areaPath = `${linePath} L${W} ${H} L 0 ${H} Z`;
 
   const nowMinutes = manilaNow.getHours() * 60 + manilaNow.getMinutes();
-  const nowX = x(nowMinutes);
   const nowY = y(currentTide?.currentHeight ?? 0);
 
   return (
