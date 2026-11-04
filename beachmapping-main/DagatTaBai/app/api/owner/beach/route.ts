@@ -6,6 +6,9 @@ import { invalidateBeachesCache } from '@/lib/db/beaches';
 const noStoreHeaders = { 'Cache-Control': 'no-store, max-age=0' };
 
 function toOwnerBeach(row: any) {
+  const feeParts = typeof row.entrance_fee === 'string' ? row.entrance_fee.split('|') : [];
+  const adultFee = row.general_information_fee ?? (feeParts[0] ?? null);
+  const childFee = row.child_entrance_fee_value ?? (feeParts[1] ?? null);
   return {
     ...row,
     cover_image: row.cover_image_url || null,
@@ -40,7 +43,10 @@ function toOwnerBeach(row: any) {
         Sun: ''
       };
     })(),
-    entrance_fee: row.entrance_fee || null,
+    entrance_fee: adultFee == null && childFee == null ? null : `${adultFee ?? ''}|${childFee ?? ''}`,
+    entrance_fee_adults: adultFee == null ? '' : String(adultFee),
+    entrance_fee_children: childFee == null ? '' : String(childFee),
+    entrance_fee_senior: row.senior_entrance_fee_value == null ? '' : String(row.senior_entrance_fee_value),
     cottage_fee: row.cottage_fee || null,
     rules: row.rules || null,
     average_rating: Number(row.average_rating || 0),
@@ -48,6 +54,22 @@ function toOwnerBeach(row: any) {
     activities: [],
     external_links: [],
   };
+}
+
+async function toOwnerBeachWithFees(adminSupabase: ReturnType<typeof createAdminClient>, row: any) {
+  const { data: generalInformation, error } = await (adminSupabase
+    .from('beach_general_information') as any)
+    .select('entrance_fee, child_entrance_fee, senior_entrance_fee')
+    .eq('beach_id', row.id)
+    .maybeSingle();
+  if (error) throw error;
+
+  return toOwnerBeach({
+    ...row,
+    general_information_fee: generalInformation?.entrance_fee ?? null,
+    child_entrance_fee_value: generalInformation?.child_entrance_fee ?? null,
+    senior_entrance_fee_value: generalInformation?.senior_entrance_fee ?? null,
+  });
 }
 
 export async function GET(request: Request) {
@@ -76,7 +98,10 @@ export async function GET(request: Request) {
       }
       const { data, error } = await query.maybeSingle();
       if (error) throw error;
-      return NextResponse.json(data ? [toOwnerBeach(data)] : [], { headers: noStoreHeaders });
+      return NextResponse.json(
+        data ? [await toOwnerBeachWithFees(adminSupabase, data)] : [],
+        { headers: noStoreHeaders }
+      );
     }
 
     // Otherwise, fetch all beaches belonging to this owner (or all beaches if admin)
@@ -89,7 +114,9 @@ export async function GET(request: Request) {
     if (error) throw error;
 
     return NextResponse.json(
-      Array.isArray(data) ? data.map(toOwnerBeach) : [],
+      Array.isArray(data)
+        ? await Promise.all(data.map((row: any) => toOwnerBeachWithFees(adminSupabase, row)))
+        : [],
       { headers: noStoreHeaders }
     );
   } catch (error: unknown) {
@@ -117,10 +144,38 @@ export async function POST(request: Request) {
       );
     }
 
-    const parsedLatitude = parseFloat(String(body.latitude));
-    const parsedLongitude = parseFloat(String(body.longitude));
+    const rawLatitude = body.latitude == null ? '' : String(body.latitude).trim();
+    const rawLongitude = body.longitude == null ? '' : String(body.longitude).trim();
+    const hasCoordinateInput = rawLatitude !== '' || rawLongitude !== '';
+    const parsedLatitude = rawLatitude ? Number.parseFloat(rawLatitude) : Number.NaN;
+    const parsedLongitude = rawLongitude ? Number.parseFloat(rawLongitude) : Number.NaN;
     const isValidLatitude = Number.isFinite(parsedLatitude) && parsedLatitude >= -90 && parsedLatitude <= 90;
     const isValidLongitude = Number.isFinite(parsedLongitude) && parsedLongitude >= -180 && parsedLongitude <= 180;
+    const hasValidCoordinatePair = isValidLatitude && isValidLongitude;
+    if (hasCoordinateInput && !hasValidCoordinatePair) {
+      return NextResponse.json(
+        { error: 'Enter both valid map coordinates or leave both empty until a pin is set.' },
+        { status: 400, headers: noStoreHeaders }
+      );
+    }
+    const parseOptionalFee = (value: unknown) => {
+      if (value === null || value === undefined || String(value).trim() === '') return null;
+      const fee = Number(value);
+      if (!Number.isFinite(fee) || fee < 0) return Number.NaN;
+      return fee;
+    };
+    const adultFee = parseOptionalFee(body.entrance_fee_adults);
+    const childFee = parseOptionalFee(body.entrance_fee_children);
+    if (Number.isNaN(adultFee) || Number.isNaN(childFee)) {
+      return NextResponse.json(
+        { error: 'Entrance fees must be empty or a non-negative number.' },
+        { status: 400, headers: noStoreHeaders }
+      );
+    }
+    const formatFeeString = (adult: number | null, child: number | null) => {
+      if (adult == null && child == null) return null;
+      return `${adult ?? ''}|${child ?? ''}`;
+    };
     const slug = typeof body.slug === 'string' && body.slug.trim()
       ? body.slug.trim()
       : name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
@@ -129,29 +184,33 @@ export async function POST(request: Request) {
     let result;
     if (typeof body.id === 'string' && body.id) {
       // Find existing beach to preserve slug, owner_id, coordinates, and virtual_tour_url if needed
-      const { data: existing } = await (adminSupabase.from('beaches') as any)
+      const { data: existing, error: existingError } = await (adminSupabase.from('beaches') as any)
         .select('slug, owner_id, virtual_tour_url, latitude, longitude, location, opening_hours')
         .eq('id', body.id)
         .maybeSingle();
-
-      const latitude = isValidLatitude ? parsedLatitude : Number(existing?.latitude);
-      const longitude = isValidLongitude ? parsedLongitude : Number(existing?.longitude);
-      if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
-        return NextResponse.json(
-          { error: 'Valid map coordinates are required for this beach listing.' },
-          { status: 400, headers: noStoreHeaders }
-        );
+      if (existingError) throw existingError;
+      if (!existing) {
+        return NextResponse.json({ error: 'Beach listing not found.' }, { status: 404, headers: noStoreHeaders });
       }
+
+      const existingLatitude = existing.latitude == null ? null : Number(existing.latitude);
+      const existingLongitude = existing.longitude == null ? null : Number(existing.longitude);
+      const latitude = auth.role === 'admin' && hasValidCoordinatePair
+        ? parsedLatitude
+        : existingLatitude;
+      const longitude = auth.role === 'admin' && hasValidCoordinatePair
+        ? parsedLongitude
+        : existingLongitude;
 
       const beachPayload = {
         name,
         slug: existing?.slug || slug,
         owner_id: existing?.owner_id || ownerId,
         description: body.description || '',
-        // Beach owners cannot directly alter verified coordinates/location; only admin can edit directly or approve requests
-        location: auth.role === 'admin' ? location : (existing?.location || location),
-        latitude: auth.role === 'admin' ? latitude : Number(existing?.latitude ?? latitude),
-        longitude: auth.role === 'admin' ? longitude : Number(existing?.longitude ?? longitude),
+        // Owners may edit the address, but only admins can directly change approved pin coordinates.
+        location,
+        latitude,
+        longitude,
         cover_image_url: body.cover_image || body.cover_image_url || null,
         profile_image_url: body.profile_image || body.profile_image_url || null,
         // Beach owners cannot directly edit 360 virtual tours; only admins can modify directly
@@ -160,7 +219,7 @@ export async function POST(request: Request) {
         opening_hours: typeof body.opening_hours === 'object'
           ? JSON.stringify(body.opening_hours)
           : (body.opening_hours ?? existing?.opening_hours ?? ''),
-        entrance_fee: `${body.entrance_fee_adults || ''}|${body.entrance_fee_children || ''}`,
+        entrance_fee: formatFeeString(adultFee, childFee),
         cottage_fee: body.cottage_fee || null,
         rules: body.rules || null,
         contact_phone: body.contact_phone || null,
@@ -186,27 +245,21 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Beach not found or unauthorized.' }, { status: 404, headers: noStoreHeaders });
       }
     } else {
-      if (!isValidLatitude || !isValidLongitude) {
-        return NextResponse.json(
-          { error: 'Valid map coordinates are required to create a beach listing.' },
-          { status: 400, headers: noStoreHeaders }
-        );
-      }
       const beachPayload = {
         name,
         slug,
         owner_id: ownerId,
         description: body.description || '',
         location,
-        latitude: parsedLatitude,
-        longitude: parsedLongitude,
+        latitude: hasValidCoordinatePair ? parsedLatitude : null,
+        longitude: hasValidCoordinatePair ? parsedLongitude : null,
         cover_image_url: body.cover_image || body.cover_image_url || null,
         profile_image_url: body.profile_image || body.profile_image_url || null,
         // New beaches created by owners start without a verified virtual tour until admin approves one
         virtual_tour_url: auth.role === 'admin' ? (body.virtual_tour_url || null) : null,
         images: Array.isArray(body.images) ? body.images : [],
         opening_hours: typeof body.opening_hours === 'object' ? JSON.stringify(body.opening_hours) : (body.opening_hours || ''),
-        entrance_fee: `${body.entrance_fee_adults || ''}|${body.entrance_fee_children || ''}`,
+        entrance_fee: formatFeeString(adultFee, childFee),
         cottage_fee: body.cottage_fee || null,
         rules: body.rules || null,
         contact_phone: body.contact_phone || null,
@@ -227,10 +280,42 @@ export async function POST(request: Request) {
 
     if (result.error) throw result.error;
 
+    const savedBeach = result.data;
+    const { data: existingGeneralInformation, error: generalInformationReadError } =
+      await (adminSupabase.from('beach_general_information') as any)
+        .select('general_information, entrance_fee_notes, senior_entrance_fee')
+        .eq('beach_id', savedBeach.id)
+        .maybeSingle();
+    if (generalInformationReadError) throw generalInformationReadError;
+
+    const { error: generalInformationSaveError } = await (adminSupabase
+      .from('beach_general_information') as any)
+      .upsert(
+        {
+          beach_id: savedBeach.id,
+          entrance_fee: adultFee,
+          child_entrance_fee: childFee,
+          senior_entrance_fee: childFee,
+          general_information: existingGeneralInformation?.general_information ?? null,
+          entrance_fee_notes: existingGeneralInformation?.entrance_fee_notes ?? null,
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'beach_id' }
+      );
+    if (generalInformationSaveError) throw generalInformationSaveError;
+
     invalidateBeachesCache();
 
     return NextResponse.json(
-      { success: true, beach: toOwnerBeach(result.data) },
+      {
+        success: true,
+        beach: await toOwnerBeachWithFees(adminSupabase, {
+          ...savedBeach,
+          entrance_fee: adultFee == null && childFee == null
+            ? null
+            : `${adultFee ?? ''}|${childFee ?? ''}`,
+        }),
+      },
       { headers: noStoreHeaders }
     );
   } catch (error: unknown) {

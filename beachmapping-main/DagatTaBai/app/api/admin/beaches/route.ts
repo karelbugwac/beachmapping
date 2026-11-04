@@ -66,16 +66,16 @@ export async function PATCH(request: NextRequest) {
 
     if (latitude !== undefined) {
       const parsedLat = parseFloat(String(latitude));
-      if (!Number.isFinite(parsedLat)) {
-        return NextResponse.json({ error: 'Latitude must be a valid number.' }, { status: 400 });
+      if (!Number.isFinite(parsedLat) || parsedLat < -90 || parsedLat > 90) {
+        return NextResponse.json({ error: 'Latitude must be between -90 and 90.' }, { status: 400 });
       }
       updates.latitude = parsedLat;
     }
 
     if (longitude !== undefined) {
       const parsedLng = parseFloat(String(longitude));
-      if (!Number.isFinite(parsedLng)) {
-        return NextResponse.json({ error: 'Longitude must be a valid number.' }, { status: 400 });
+      if (!Number.isFinite(parsedLng) || parsedLng < -180 || parsedLng > 180) {
+        return NextResponse.json({ error: 'Longitude must be between -180 and 180.' }, { status: 400 });
       }
       updates.longitude = parsedLng;
     }

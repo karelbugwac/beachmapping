@@ -3,6 +3,7 @@
 import React, { useEffect, useState, useMemo, useRef } from 'react';
 import dynamic from 'next/dynamic';
 import type { BeachRecord } from '@/lib/db/beaches';
+import { getValidBeachCoordinates } from '@/lib/utils/beach-coordinates';
 
 const MapContainer = dynamic(
   () => import('react-leaflet').then((mod) => mod.MapContainer),
@@ -130,6 +131,11 @@ export function MapView({
     });
   }, []);
 
+  useEffect(() => {
+    if (!isClient || !L || !mapRef.current) return;
+    mapRef.current.setView(center, zoom, { animate: true });
+  }, [center, zoom, isClient, L]);
+
   // Animate the traveling vehicle / walker along the route coordinates
   useEffect(() => {
     if (!routeActive || !routeCoordinates || routeCoordinates.length < 2) {
@@ -164,10 +170,21 @@ export function MapView({
 
   // When route mode is active, display ONLY the selected destination beach
   const visibleBeaches = useMemo(() => {
-    if (routeActive && selectedBeachId) {
-      return beaches.filter((b) => b.id === selectedBeachId);
-    }
-    return beaches;
+    const candidates = routeActive && selectedBeachId
+      ? beaches.filter((beach) => beach.id === selectedBeachId)
+      : beaches;
+    const seenIds = new Set<string>();
+    const seenSlugs = new Set<string>();
+
+    return candidates.filter((beach) => {
+      if (beach.latitude === null || beach.longitude === null) return false;
+      if (!getValidBeachCoordinates(beach.latitude, beach.longitude)) return false;
+      const slug = beach.slug.toLowerCase();
+      if (seenIds.has(beach.id) || (slug && seenSlugs.has(slug))) return false;
+      seenIds.add(beach.id);
+      if (slug) seenSlugs.add(slug);
+      return true;
+    });
   }, [beaches, routeActive, selectedBeachId]);
 
   // Memoize User GPS marker icon
@@ -220,6 +237,8 @@ export function MapView({
     return visibleBeaches.map((beach, index) => {
       const isSelected = selectedBeachId === beach.id;
       const pinColor = getBeachPinColorByIndex(index);
+      const coordinates = getValidBeachCoordinates(beach.latitude, beach.longitude);
+      if (!coordinates) return null;
       const iconHtml = createTeardropPinSvg(pinColor, isSelected);
       const customIcon = L.divIcon({
         className: 'beach-pin-marker',
@@ -228,7 +247,13 @@ export function MapView({
         iconAnchor: isSelected ? [21, 54] : [18, 46],
       });
       const labelDirection: 'right' | 'left' = index % 2 === 0 ? 'right' : 'left';
-      return { beach, pinColor, customIcon, labelDirection };
+      return {
+        beach,
+        pinColor,
+        customIcon,
+        labelDirection,
+        position: [coordinates.latitude, coordinates.longitude] as [number, number],
+      };
     });
   }, [L, visibleBeaches, selectedBeachId]);
 
@@ -315,30 +340,30 @@ export function MapView({
         )}
 
         {/* Strictly Alternating Beach Pin Markers with matching text color */}
-        {beachMarkersData.map(({ beach, pinColor, customIcon, labelDirection }) => (
+        {beachMarkersData.map((markerData) => markerData && (
           <Marker
-            key={beach.id}
-            position={[beach.latitude, beach.longitude]}
-            icon={customIcon}
+            key={markerData.beach.id}
+            position={markerData.position}
+            icon={markerData.customIcon}
             eventHandlers={{
-              click: () => onSelectBeach?.(beach),
+              click: () => onSelectBeach?.(markerData.beach),
             }}
           >
             <Tooltip
               permanent
-              direction={labelDirection}
-              offset={labelDirection === 'right' ? [14, -22] : [-14, -22]}
+              direction={markerData.labelDirection}
+              offset={markerData.labelDirection === 'right' ? [14, -22] : [-14, -22]}
               className="beach-map-label"
             >
               <span
                 style={{
-                  color: pinColor,
+                  color: markerData.pinColor,
                   fontWeight: 800,
                   fontSize: '12px',
                   letterSpacing: '-0.01em',
                 }}
               >
-                {beach.name}
+                {markerData.beach.name}
               </span>
             </Tooltip>
           </Marker>

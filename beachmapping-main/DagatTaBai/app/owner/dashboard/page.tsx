@@ -10,9 +10,11 @@ import {
   ExternalLink,
   Eye,
   Building,
+  MapPin,
 } from 'lucide-react';
 import type { BeachRecord } from '@/lib/db/beaches';
 import { AnalyticsBarChart, type AnalyticsPoint } from '@/components/ui/analytics-bar-chart';
+import { getValidBeachCoordinates } from '@/lib/utils/beach-coordinates';
 
 interface ReviewAnalytics {
   totalReviews: number;
@@ -115,6 +117,7 @@ export default function OwnerDashboardPage() {
   const rating = reviews?.averageRating || beach?.average_rating || 0;
   const reviewCount = reviews?.totalReviews || 0;
   const hasTour = Boolean(beach?.virtual_tour_url);
+  const hasMapPin = Boolean(getValidBeachCoordinates(beach?.latitude, beach?.longitude));
 
   // Total visits calculation
   const totalVisits = visitorPoints
@@ -152,6 +155,26 @@ export default function OwnerDashboardPage() {
           </div>
         )}
       </div>
+
+      {beach && !hasMapPin && (
+        <div className="flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
+            <div>
+              <p className="text-sm font-bold">Your beach is not on the map yet</p>
+              <p className="mt-1 text-xs">
+                The listing can be saved without a pin. Set one to appear on the public map; first-time pins for saved listings are reviewed by an admin.
+              </p>
+            </div>
+          </div>
+          <Link
+            href="/owner/beach"
+            className="inline-flex shrink-0 items-center justify-center rounded-full bg-[#1F3F74] px-4 py-2 text-xs font-bold text-white hover:bg-[#183460]"
+          >
+            Set Map Pin
+          </Link>
+        </div>
+      )}
 
       {/* ── 2. Real Metrics KPI Grid (EXACTLY 4 SQUARES) ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

@@ -18,11 +18,14 @@ import {
   Footprints,
   Coins,
   Clock,
+  MapPin,
 } from 'lucide-react';
-import { MapView, getBeachPinColor } from '@/components/map/map-view';
+import { MapView } from '@/components/map/map-view';
 import type { BeachRecord } from '@/lib/db/beaches';
 import type { RouteResult } from '@/lib/db/routing';
 import { SeaRoute } from '@/components/ui/coastal-icons';
+import { getValidBeachCoordinates } from '@/lib/utils/beach-coordinates';
+import { matchesBeachSearch } from '@/lib/utils/beach-search';
 
 function parseEntranceFee(entranceFee: string | null, adults: string | null | undefined, children: string | null | undefined): string {
   if (adults && children) {
@@ -57,6 +60,10 @@ export default function MapPage() {
   const [locating, setLocating] = useState(false);
   const [locationError, setLocationError] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
+  const [locationFilter, setLocationFilter] = useState<'all' | 'mapped' | 'missing'>('all');
+  const [beachLoadError, setBeachLoadError] = useState<string | null>(null);
+  const [beachReloadTrigger, setBeachReloadTrigger] = useState(0);
+  const [searchMapCenter, setSearchMapCenter] = useState<[number, number] | null>(null);
   const [travelMode, setTravelMode] = useState<'car' | 'motorcycle' | 'walking'>('car');
 
   // Route calculation states
@@ -65,23 +72,83 @@ export default function MapPage() {
   const [routingLoading, setRoutingLoading] = useState(false);
   const [watchId, setWatchId] = useState<number | null>(null);
 
-  // 1. Fetch certified beaches
+  // Refresh from the database so owner edits appear without redeploying or reloading the map.
   useEffect(() => {
-    fetch('/api/beaches')
-      .then((res) => res.json())
-      .then((data: BeachRecord[]) => {
-        if (Array.isArray(data)) {
-          setBeaches(data);
-          if (selectedSlugFromUrl) {
-            const found = data.find((b) => b.slug === selectedSlugFromUrl || b.id === selectedSlugFromUrl);
-            if (found) setSelectedBeach(found);
-          }
+    let active = true;
+    const refreshBeaches = async () => {
+      try {
+        const response = await fetch('/api/beaches', { cache: 'no-store' });
+        const data = await response.json();
+        if (!response.ok || !Array.isArray(data)) {
+          throw new Error(data?.error || 'Unable to load beach listings.');
         }
-      })
-      .catch((err) => {
-        console.error('Error fetching beaches:', err);
-      });
-  }, [selectedSlugFromUrl]);
+        if (!active) return;
+
+        const latestBeaches = data as BeachRecord[];
+        setBeaches(latestBeaches);
+        setBeachLoadError(null);
+        setSelectedBeach((current) => {
+          if (current) {
+            return latestBeaches.find((beach) => beach.id === current.id) || null;
+          }
+          if (selectedSlugFromUrl) {
+            return latestBeaches.find(
+              (beach) => beach.slug === selectedSlugFromUrl || beach.id === selectedSlugFromUrl
+            ) || null;
+          }
+          return null;
+        });
+      } catch (error: unknown) {
+        if (!active) return;
+        const message = error instanceof Error ? error.message : 'Unable to load beach listings.';
+        console.error('Error fetching beaches:', error);
+        setBeachLoadError(message);
+      }
+    };
+
+    void refreshBeaches();
+    const intervalId = window.setInterval(() => void refreshBeaches(), 30_000);
+    window.addEventListener('focus', refreshBeaches);
+    return () => {
+      active = false;
+      window.clearInterval(intervalId);
+      window.removeEventListener('focus', refreshBeaches);
+    };
+  }, [selectedSlugFromUrl, beachReloadTrigger]);
+
+  useEffect(() => {
+    if (!/\b(binongkalan|catmon)\b/i.test(searchQuery)) {
+      return;
+    }
+
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(async () => {
+      try {
+        const response = await fetch(
+          `/api/maps/geocode?q=${encodeURIComponent(searchQuery.trim())}`,
+          { signal: controller.signal }
+        );
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Unable to locate the searched area.');
+        const result = data.results?.[0];
+        if (
+          result &&
+          Number.isFinite(result.latitude) &&
+          Number.isFinite(result.longitude)
+        ) {
+          setSearchMapCenter([result.latitude, result.longitude]);
+        }
+      } catch (error: unknown) {
+        if (controller.signal.aborted) return;
+        console.error('Unable to center the map on the searched area:', error);
+      }
+    }, 750);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+      controller.abort();
+    };
+  }, [searchQuery]);
 
   // 2. Geolocation with Real-time GPS Watching
   const handleLocateMe = (onSuccess?: (loc: { lat: number; lng: number }) => void) => {
@@ -144,6 +211,12 @@ export default function MapPage() {
     originLoc: { lat: number; lng: number },
     destBeach: BeachRecord
   ) => {
+    const coordinates = getValidBeachCoordinates(destBeach.latitude, destBeach.longitude);
+    if (!coordinates) {
+      setLocationError('This beach does not have verified map coordinates yet.');
+      return;
+    }
+
     setRoutingLoading(true);
     setLocationError(null);
 
@@ -153,10 +226,7 @@ export default function MapPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           origin: originLoc,
-          destination: {
-            lat: destBeach.latitude,
-            lng: destBeach.longitude,
-          },
+          destination: { lat: coordinates.latitude, lng: coordinates.longitude },
           travelMode,
         }),
       });
@@ -179,6 +249,10 @@ export default function MapPage() {
   // Explicit User Action: Calculate Route
   const handleCalculateRoute = () => {
     if (!selectedBeach) return;
+    if (!getValidBeachCoordinates(selectedBeach.latitude, selectedBeach.longitude)) {
+      setLocationError('This beach does not have verified map coordinates yet.');
+      return;
+    }
 
     if (userLocation) {
       executeRouteCalculation(userLocation, selectedBeach);
@@ -195,14 +269,32 @@ export default function MapPage() {
     setRouteData(null);
   };
 
-  // Filter beaches by search query
+  // Search all active listings, including those that cannot yet be pinned.
   const filteredBeaches = useMemo(() => {
-    if (!searchQuery.trim()) return beaches;
-    const q = searchQuery.toLowerCase();
+    const q = searchQuery.trim().toLowerCase();
     return beaches.filter(
-      (b) => b.name.toLowerCase().includes(q) || b.location.toLowerCase().includes(q)
+      (beach) => {
+        const hasCoordinates = Boolean(
+          getValidBeachCoordinates(beach.latitude, beach.longitude)
+        );
+        if (locationFilter === 'mapped' && !hasCoordinates) return false;
+        if (locationFilter === 'missing' && hasCoordinates) return false;
+        if (!q) return true;
+        return matchesBeachSearch(beach, q);
+      }
     );
-  }, [beaches, searchQuery]);
+  }, [beaches, searchQuery, locationFilter]);
+
+  const selectedBeachImages = useMemo(() => {
+    if (!selectedBeach) return [];
+    return Array.from(new Set([
+      selectedBeach.cover_image,
+      ...selectedBeach.images.map((image) => image.photo_url),
+    ].filter((image): image is string => Boolean(image))));
+  }, [selectedBeach]);
+  const selectedBeachCoordinates = selectedBeach
+    ? getValidBeachCoordinates(selectedBeach.latitude, selectedBeach.longitude)
+    : null;
 
   return (
     <div className="relative w-full h-[calc(100vh-64px)] sm:h-[calc(100vh-72px)] overflow-hidden flex flex-col bg-slate-100 dark:bg-black">
@@ -215,7 +307,11 @@ export default function MapPage() {
             <input
               type="text"
               value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              onChange={(e) => {
+                setSelectedBeach(null);
+                setSearchMapCenter(null);
+                setSearchQuery(e.target.value);
+              }}
               placeholder="Search beaches or resorts..."
               className="w-full bg-transparent text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 placeholder:italic focus:outline-none"
             />
@@ -243,9 +339,71 @@ export default function MapPage() {
             <span className="hidden sm:inline">{userLocation ? 'GPS Located' : 'Locate Me'}</span>
           </button>
         </div>
+        {(searchQuery.trim() || locationFilter !== 'all') && (
+          <div className="max-w-2xl mx-auto mt-2 max-h-[45vh] overflow-y-auto rounded-xl border border-slate-200 bg-white/95 p-2 shadow-xl backdrop-blur-md dark:border-neutral-800 dark:bg-neutral-900/95 pointer-events-auto">
+            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 bg-white/95 px-2 py-1.5 text-[11px] text-slate-600 dark:bg-neutral-900/95 dark:text-neutral-300">
+              <span>{filteredBeaches.length} matching beach listings</span>
+              <label className="flex items-center gap-2">
+                <span>Map filter</span>
+                <select
+                  value={locationFilter}
+                  onChange={(event) => setLocationFilter(event.target.value as typeof locationFilter)}
+                  className="rounded-md border border-slate-300 bg-white px-2 py-1 text-slate-800 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+                >
+                  <option value="all">All listings</option>
+                  <option value="mapped">With map location</option>
+                  <option value="missing">Needs map location</option>
+                </select>
+              </label>
+            </div>
+            {filteredBeaches.length > 0 ? (
+              filteredBeaches.map((beach) => {
+                const hasCoordinates = Boolean(
+                  getValidBeachCoordinates(beach.latitude, beach.longitude)
+                );
+                return (
+                  <button
+                    key={beach.id}
+                    type="button"
+                    onClick={() => setSelectedBeach(beach)}
+                    className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-neutral-800"
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate text-xs font-bold text-slate-900 dark:text-white">
+                        {beach.name}
+                      </span>
+                      <span className="block truncate text-[11px] text-slate-500 dark:text-neutral-400">
+                        {beach.location || 'Address not provided'}
+                      </span>
+                    </span>
+                    <span className={`shrink-0 text-[10px] font-semibold ${hasCoordinates ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'}`}>
+                      {hasCoordinates ? 'Mapped' : 'Map location missing'}
+                    </span>
+                  </button>
+                );
+              })
+            ) : (
+              <p className="px-3 py-4 text-center text-xs text-slate-500 dark:text-neutral-400">
+                No listings match this search and filter.
+              </p>
+            )}
+          </div>
+        )}
       </div>
 
       {/* Geolocation Notice if Error (Oblong) */}
+      {beachLoadError && (
+        <div className="absolute top-20 left-1/2 z-30 flex w-[90%] max-w-md -translate-x-1/2 items-center justify-between gap-3 rounded-xl bg-red-700 px-4 py-3 text-xs font-medium text-white shadow-lg pointer-events-auto">
+          <span>Beach listings could not be loaded: {beachLoadError}</span>
+          <button
+            type="button"
+            onClick={() => setBeachReloadTrigger((value) => value + 1)}
+            className="shrink-0 underline"
+          >
+            Retry
+          </button>
+        </div>
+      )}
       {locationError && (
         <div className="absolute top-18 sm:top-20 left-1/2 -translate-x-1/2 z-30 max-w-md w-[90%] bg-red-600 text-white text-xs font-medium px-5 py-2.5 rounded-full shadow-lg flex items-center justify-between gap-3 pointer-events-auto">
           <div className="flex items-center gap-2">
@@ -309,14 +467,16 @@ export default function MapPage() {
           routeActive={routeActive}
           routeCoordinates={routeData?.coordinates || null}
           travelMode={travelMode}
-          center={selectedBeach ? [selectedBeach.latitude, selectedBeach.longitude] : [10.6348, 124.0275]}
-          zoom={selectedBeach ? 16 : 15}
+          center={selectedBeachCoordinates
+            ? [selectedBeachCoordinates.latitude, selectedBeachCoordinates.longitude]
+            : searchMapCenter || [10.6348, 124.0275]}
+          zoom={selectedBeachCoordinates ? 16 : 15}
         />
       </div>
 
       {/* 4. REDESIGNED FLOATING BEACH CARD (Flat Corners Container, Minimalist Layout, 360 Virtual Tour Preview) */}
       {selectedBeach && !routeActive && (
-        <div className="absolute bottom-4 left-3 right-3 sm:left-6 sm:right-auto sm:w-[380px] z-30 pointer-events-auto">
+        <div className="absolute bottom-4 left-3 right-3 sm:left-6 sm:right-auto sm:w-[380px] z-30 pointer-events-auto max-h-[70vh] overflow-y-auto">
           {/* Outer Container: Strictly flat / non-rounded corners (rounded-none) as requested */}
           <div className="bg-white/98 dark:bg-[#0c1424]/98 backdrop-blur-md rounded-none overflow-hidden shadow-2xl border border-slate-300 dark:border-neutral-800 space-y-3">
             {/* 360 Virtual Tour / Cover Image Preview Banner */}
@@ -379,6 +539,46 @@ export default function MapPage() {
                 >
                   <X className="w-4 h-4" />
                 </button>
+              </div>
+
+              <div className="space-y-2 text-xs">
+                <p className="flex items-start gap-2 text-slate-600 dark:text-neutral-300">
+                  <MapPin className="mt-0.5 h-3.5 w-3.5 shrink-0 text-[#1F3F74] dark:text-[#4987BA]" />
+                  <span>{selectedBeach.location || 'Address not provided'}</span>
+                </p>
+                {selectedBeach.description && (
+                  <p className="line-clamp-3 leading-relaxed text-slate-700 dark:text-neutral-300">
+                    {selectedBeach.description}
+                  </p>
+                )}
+                {!selectedBeachCoordinates && (
+                  <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-[11px] text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
+                    No verified map coordinates are available for this listing, so it is not shown as a marker.
+                    <Link href="/owner/beach" className="ml-1 font-bold underline">
+                      Owners can update its map location.
+                    </Link>
+                  </div>
+                )}
+                {selectedBeachImages.length > 1 && (
+                  <div className="flex gap-2 overflow-x-auto pb-1" aria-label="Beach photos">
+                    {selectedBeachImages.map((image, index) => (
+                      <div key={`${image}-${index}`} className="relative h-16 w-20 shrink-0 overflow-hidden rounded-md">
+                        <Image
+                          src={image}
+                          alt={`${selectedBeach.name} photo ${index + 1}`}
+                          fill
+                          className="object-cover"
+                          sizes="80px"
+                        />
+                      </div>
+                    ))}
+                  </div>
+                )}
+                {(selectedBeach.activities.length > 0 || selectedBeach.amenities.length > 0) && (
+                  <p className="text-[11px] text-slate-500 dark:text-neutral-400">
+                    {[...selectedBeach.activities, ...selectedBeach.amenities].join(' · ')}
+                  </p>
+                )}
               </div>
 
               {/* Clean Details Info Grid (Organized, Modern Typography, No Clunky Blobs) */}
@@ -464,7 +664,7 @@ export default function MapPage() {
                 <button
                   type="button"
                   onClick={handleCalculateRoute}
-                  disabled={routingLoading}
+                  disabled={routingLoading || !selectedBeachCoordinates}
                   className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-4 bg-[#1F3F74] hover:bg-[#285091] dark:bg-[#1F3F74] dark:hover:bg-[#285091] disabled:opacity-50 text-white text-xs font-bold rounded-full transition-colors shadow-sm cursor-pointer"
                 >
                   {routingLoading ? (

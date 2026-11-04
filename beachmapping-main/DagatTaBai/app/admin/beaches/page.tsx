@@ -291,8 +291,8 @@ export default function AdminBeachesPage() {
       name: beach.name || '',
       description: beach.description || '',
       location: beach.location || '',
-      latitude: beach.latitude ? String(beach.latitude) : '10.6348',
-      longitude: beach.longitude ? String(beach.longitude) : '124.0275',
+      latitude: beach.latitude == null ? '' : String(beach.latitude),
+      longitude: beach.longitude == null ? '' : String(beach.longitude),
       virtual_tour_url: beach.virtual_tour_url || '',
       contact_phone: cleanPhone,
       contact_email: beach.contact_email || '',
@@ -319,6 +319,24 @@ export default function AdminBeachesPage() {
       return;
     }
 
+    const hasLatitude = editForm.latitude.trim() !== '';
+    const hasLongitude = editForm.longitude.trim() !== '';
+    const parsedLatitude = Number.parseFloat(editForm.latitude);
+    const parsedLongitude = Number.parseFloat(editForm.longitude);
+    if (
+      hasLatitude !== hasLongitude ||
+      (hasLatitude &&
+        (!Number.isFinite(parsedLatitude) ||
+          parsedLatitude < -90 ||
+          parsedLatitude > 90 ||
+          !Number.isFinite(parsedLongitude) ||
+          parsedLongitude < -180 ||
+          parsedLongitude > 180))
+    ) {
+      showToast('Enter both valid coordinates or leave both blank until the location is verified.', 'error');
+      return;
+    }
+
     setIsSavingEdit(true);
     try {
       const payload: Record<string, any> = {
@@ -326,8 +344,6 @@ export default function AdminBeachesPage() {
         name: editForm.name.trim(),
         description: editForm.description.trim(),
         location: editForm.location.trim(),
-        latitude: parseFloat(editForm.latitude) || 10.6348,
-        longitude: parseFloat(editForm.longitude) || 124.0275,
         virtual_tour_url: editForm.virtual_tour_url.trim() || null,
         contact_phone: editForm.contact_phone.trim() ? `+63 ${editForm.contact_phone.trim()}` : null,
         contact_email: editForm.contact_email.trim() || null,
@@ -338,6 +354,10 @@ export default function AdminBeachesPage() {
         entrance_fee: editForm.entrance_fee ? String(editForm.entrance_fee) : null,
         cottage_fee: editForm.cottage_fee ? String(editForm.cottage_fee) : null,
       };
+      if (hasLatitude && hasLongitude) {
+        payload.latitude = parsedLatitude;
+        payload.longitude = parsedLongitude;
+      }
 
       const res = await fetch('/api/admin/beaches', {
         method: 'PATCH',
@@ -934,8 +954,12 @@ export default function AdminBeachesPage() {
                     onClick={() => {
                       setSelectedBeachForCoords({
                         ...editingBeach,
-                        latitude: parseFloat(editForm.latitude) || 10.6348,
-                        longitude: parseFloat(editForm.longitude) || 124.0275,
+                        latitude: Number.isFinite(Number.parseFloat(editForm.latitude))
+                          ? Number.parseFloat(editForm.latitude)
+                          : null,
+                        longitude: Number.isFinite(Number.parseFloat(editForm.longitude))
+                          ? Number.parseFloat(editForm.longitude)
+                          : null,
                       });
                     }}
                     className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-xs font-bold text-[#1F3F74] dark:text-[#4987BA] transition-colors cursor-pointer"

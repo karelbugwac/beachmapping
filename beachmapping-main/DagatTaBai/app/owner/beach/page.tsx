@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Image from 'next/image';
 import {
   CheckCircle2,
@@ -19,10 +19,13 @@ import {
   Share2,
   XCircle,
   AlertTriangle,
+  Pencil,
 } from 'lucide-react';
 import type { BeachRecord, BeachPhoto } from '@/lib/db/beaches';
 import { LocationPickerModal } from '@/components/map/location-picker-modal';
 import { VirtualTourModal } from '@/components/virtual-tour-modal';
+import { getValidBeachCoordinates } from '@/lib/utils/beach-coordinates';
+import { MAX_BEACH_IMAGE_SIZE_BYTES, uploadBeachImage } from '@/lib/utils/beach-image-upload';
 
 interface CottageItem {
   id: string;
@@ -58,8 +61,34 @@ interface ResortRuleItem {
   category: string;
 }
 
+interface ModalStatus {
+  type: 'success' | 'error';
+  message: string;
+}
+
+function ModalStatusBanner({ status }: { status: ModalStatus | null }) {
+  if (!status) return null;
+
+  const isSuccess = status.type === 'success';
+  const Icon = isSuccess ? CheckCircle2 : AlertCircle;
+
+  return (
+    <div
+      role={isSuccess ? 'status' : 'alert'}
+      className={`flex items-start gap-2 rounded-xl border px-3 py-2.5 text-xs font-medium ${
+        isSuccess
+          ? 'border-emerald-200 bg-emerald-50 text-emerald-800 dark:border-emerald-800 dark:bg-emerald-950/40 dark:text-emerald-200'
+          : 'border-rose-200 bg-rose-50 text-rose-800 dark:border-rose-800 dark:bg-rose-950/40 dark:text-rose-200'
+      }`}
+    >
+      <Icon aria-hidden="true" className="mt-0.5 h-4 w-4 shrink-0" />
+      <span>{status.message}</span>
+    </div>
+  );
+}
+
 const DEFAULT_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const MAX_IMAGE_SIZE_BYTES = 20 * 1024 * 1024;
+const MAX_IMAGE_SIZE_BYTES = MAX_BEACH_IMAGE_SIZE_BYTES;
 
 export default function ManageInformationPage() {
   const [activeTab, setActiveTab] = useState<'basic' | 'cottages' | 'facilities' | 'hours' | 'photos' | 'dos' | 'tour'>('basic');
@@ -127,6 +156,21 @@ export default function ManageInformationPage() {
 
   // Modals for adding cottage / facility
   const [showAddCottage, setShowAddCottage] = useState(false);
+  const [editingCottageId, setEditingCottageId] = useState<string | null>(null);
+  const [originalCottageImage, setOriginalCottageImage] = useState('');
+  const [cottagePreviewFailed, setCottagePreviewFailed] = useState(false);
+  const [failedCottageImages, setFailedCottageImages] = useState<Set<string>>(new Set());
+  const [uploadingCottageImage, setUploadingCottageImage] = useState(false);
+  const [createdCottageDuringUpload, setCreatedCottageDuringUpload] = useState(false);
+  const cottagePreviewUrlRef = useRef<string | null>(null);
+  const [savingCottage, setSavingCottage] = useState(false);
+  const [cottageModalStatus, setCottageModalStatus] = useState<ModalStatus | null>(null);
+  const [cottageFieldErrors, setCottageFieldErrors] = useState<{ name?: string; price?: string }>({});
+  const [cottageUploadProgress, setCottageUploadProgress] = useState(0);
+  const [cottageUploadState, setCottageUploadState] = useState<'idle' | 'uploading' | 'success' | 'error' | 'fading'>('idle');
+  const cottageStatusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cottageProgressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const cottageProgressHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [newCottage, setNewCottage] = useState<Partial<CottageItem>>({
     name: '',
     price: '',
@@ -184,6 +228,13 @@ export default function ManageInformationPage() {
 
   // Validation Errors
   const [errors, setErrors] = useState<Record<string, string>>({});
+  const hasMapPin = Boolean(getValidBeachCoordinates(formData.latitude, formData.longitude));
+  const locationParts = formData.location.split(',').map((part) => part.trim()).filter(Boolean);
+  const hasLocationAddressWarning = Boolean(
+    formData.location.trim() &&
+    (formData.location.trim().toLowerCase() === formData.name.trim().toLowerCase() ||
+      locationParts.length < 3)
+  );
 
   // Load existing beach data
   useEffect(() => {
@@ -207,11 +258,13 @@ export default function ManageInformationPage() {
 
           let feeAdults = '';
           let feeChildren = '';
-          if (b.entrance_fee) {
+          if (b.entrance_fee != null) {
             const parts = String(b.entrance_fee).split('|');
             feeAdults = (parts[0] || '').replace(/[^\d.]/g, '');
             feeChildren = (parts[1] || '').replace(/[^\d.]/g, '');
           }
+          if (b.entrance_fee_adults != null) feeAdults = String(b.entrance_fee_adults);
+          if (b.entrance_fee_children != null) feeChildren = String(b.entrance_fee_children);
 
           // Strip +63 or non-digits for phone
           let cleanPhone = b.contact_phone || '';
@@ -314,15 +367,6 @@ export default function ManageInformationPage() {
     const errs: Record<string, string> = {};
     if (!formData.name.trim()) errs.name = 'Resort establishment name is required.';
     if (!formData.location.trim()) errs.location = 'Resort location address is required.';
-    const latitude = Number.parseFloat(formData.latitude);
-    const longitude = Number.parseFloat(formData.longitude);
-    if (
-      !formData.id &&
-      (!Number.isFinite(latitude) || latitude < -90 || latitude > 90 ||
-        !Number.isFinite(longitude) || longitude < -180 || longitude > 180)
-    ) {
-      errs.coordinates = 'Choose your resort location on the map before creating the listing.';
-    }
     if (formData.contact_email && !formData.contact_email.includes('@')) {
       errs.contact_email = 'Valid email address must include "@".';
     }
@@ -373,6 +417,22 @@ export default function ManageInformationPage() {
         throw new Error(data.error || 'Failed to update resort information.');
       }
 
+      if (data.beach) {
+        setBeach(data.beach);
+        setFormData((current) => ({
+          ...current,
+          id: data.beach.id || current.id,
+          latitude: data.beach.latitude == null ? '' : String(data.beach.latitude),
+          longitude: data.beach.longitude == null ? '' : String(data.beach.longitude),
+          entrance_fee_adults: data.beach.entrance_fee_adults == null
+            ? ''
+            : String(data.beach.entrance_fee_adults),
+          entrance_fee_children: data.beach.entrance_fee_children == null
+            ? ''
+            : String(data.beach.entrance_fee_children),
+        }));
+      }
+
       setToast({
         type: 'success',
         message: 'Resort information updated successfully!',
@@ -393,24 +453,59 @@ export default function ManageInformationPage() {
       throw new Error('Please upload an image in PNG or JPG format only.');
     }
     if (file.size > MAX_IMAGE_SIZE_BYTES) {
-      throw new Error('Image file size must be 20 MB or less.');
+      throw new Error('Image file size must be 20 GB or less.');
     }
 
-    const uploadData = new FormData();
-    uploadData.append('file', file);
-    uploadData.append('category', 'gallery');
+    return uploadBeachImage(file, formData.id);
+  };
 
-    const res = await fetch('/api/owner/beach/images', {
-      method: 'POST',
-      body: uploadData,
+  const uploadCottageImage = async (file: File): Promise<string> => {
+    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    if (!allowedTypes.includes(file.type)) {
+      throw new Error('Cottage images must be JPG, PNG, or WebP.');
+    }
+    if (file.size < 1 || file.size > MAX_IMAGE_SIZE_BYTES) {
+      throw new Error('Cottage images must be no larger than 20 GB.');
+    }
+    if (!formData.id) {
+      throw new Error('Save your resort listing before uploading cottage photos.');
+    }
+
+    return uploadBeachImage(file, formData.id, 'cottages');
+  };
+
+  const removeCottageImage = async (url: string) => {
+    if (!formData.id || !url) return;
+    const params = new URLSearchParams({ beach_id: formData.id, url });
+    const response = await fetch(`/api/owner/beach/cottages/images?${params}`, {
+      method: 'DELETE',
     });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.error || 'Failed to remove cottage image.');
+  };
 
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data.error || 'Photo upload failed.');
+  const resetCottageEditor = () => {
+    if (cottageStatusTimerRef.current) clearTimeout(cottageStatusTimerRef.current);
+    if (cottageProgressTimerRef.current) clearInterval(cottageProgressTimerRef.current);
+    if (cottageProgressHideTimerRef.current) clearTimeout(cottageProgressHideTimerRef.current);
+    cottageStatusTimerRef.current = null;
+    cottageProgressTimerRef.current = null;
+    cottageProgressHideTimerRef.current = null;
+    if (cottagePreviewUrlRef.current) {
+      URL.revokeObjectURL(cottagePreviewUrlRef.current);
+      cottagePreviewUrlRef.current = null;
     }
-
-    return data.url;
+    setShowAddCottage(false);
+    setEditingCottageId(null);
+    setCreatedCottageDuringUpload(false);
+    setOriginalCottageImage('');
+    setCottagePreviewFailed(false);
+    setSavingCottage(false);
+    setCottageModalStatus(null);
+    setCottageFieldErrors({});
+    setCottageUploadProgress(0);
+    setCottageUploadState('idle');
+    setNewCottage({ name: '', price: '', capacity: '', description: '', image_url: '' });
   };
 
   const handleGalleryFileSelection = (file?: File) => {
@@ -421,7 +516,7 @@ export default function ManageInformationPage() {
       return;
     }
     if (file.size > MAX_IMAGE_SIZE_BYTES) {
-      setToast({ type: 'error', message: 'Image file size must be 20 MB or less.' });
+      setToast({ type: 'error', message: 'Image file size must be 20 GB or less.' });
       return;
     }
 
@@ -772,15 +867,24 @@ export default function ManageInformationPage() {
               </label>
               <input
                 type="text"
+                required
                 value={formData.location}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
-                placeholder="e.g. Sitio Panangatan, Barangay Binongkalan, Catmon, Cebu"
+                placeholder="e.g. Binongkalan, Catmon, Cebu"
                 className={`w-full rounded-full border bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus:outline-none transition-all ${
                   errors.location
                     ? 'border-red-500 ring-1 ring-red-500/20'
                     : 'border-slate-300 dark:border-neutral-700 focus:border-[#1F3F74] focus:ring-2 focus:ring-[#1F3F74]/20'
                 }`}
               />
+              <p className="pl-3 text-[11px] text-slate-500 dark:text-neutral-400">
+                Include barangay, municipality, and province so tourists and map search can find your beach.
+              </p>
+              {hasLocationAddressWarning && (
+                <p className="pl-3 text-[11px] font-medium text-amber-700 dark:text-amber-400">
+                  For better search results, use a location with barangay, municipality, and province separated by commas.
+                </p>
+              )}
               {errors.location && (
                 <p className="text-[11px] text-red-500 font-medium pl-3">{errors.location}</p>
               )}
@@ -792,7 +896,7 @@ export default function ManageInformationPage() {
                   <h3 className="text-xs font-bold text-slate-800 dark:text-white">Beach Map Coordinates</h3>
                   <p className="mt-1 text-[11px] text-slate-500 dark:text-neutral-400">
                     Set the pin on the map so visitors can find your beach.
-                    {formData.id && ' Coordinate changes require admin approval.'}
+                    {formData.id && hasMapPin && ' Coordinate changes require admin approval.'}
                   </p>
                 </div>
                 <button
@@ -801,9 +905,21 @@ export default function ManageInformationPage() {
                   className="inline-flex items-center justify-center gap-2 rounded-full bg-[#1F3F74] px-4 py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#183460]"
                 >
                   <MapPin className="h-3.5 w-3.5" />
-                  {formData.id ? 'Request Map Pin Change' : 'Choose on Map'}
+                  {!hasMapPin ? 'Set Map Pin' : formData.id ? 'Request Map Pin Change' : 'Choose on Map'}
                 </button>
               </div>
+              {!hasMapPin && (
+                <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-medium text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
+                  Your beach will not appear on the map until you set a pin.
+                  {formData.id && ' Your first pin will be sent to an admin for approval.'}
+                </p>
+              )}
+              {hasMapPin && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
+                  <CheckCircle2 className="h-3 w-3" />
+                  Pin verified
+                </span>
+              )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
                   <label htmlFor="beach-latitude" className="block text-[11px] font-semibold text-slate-600 dark:text-neutral-300">
@@ -832,9 +948,6 @@ export default function ManageInformationPage() {
                   />
                 </div>
               </div>
-              {errors.coordinates && (
-                <p className="text-[11px] font-medium text-red-500">{errors.coordinates}</p>
-              )}
             </div>
           </div>
         </div>
@@ -903,7 +1016,17 @@ export default function ManageInformationPage() {
 
               <button
                 type="button"
-                onClick={() => setShowAddCottage(true)}
+                onClick={() => {
+                  setEditingCottageId(null);
+                  setOriginalCottageImage('');
+                  setCottagePreviewFailed(false);
+                  setCottageModalStatus(null);
+                  setCottageFieldErrors({});
+                  setCottageUploadProgress(0);
+                  setCottageUploadState('idle');
+                  setNewCottage({ name: '', price: '', capacity: '', description: '', image_url: '' });
+                  setShowAddCottage(true);
+                }}
                 className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-bold shadow-xs cursor-pointer transition-all"
               >
                 <Plus className="w-3.5 h-3.5" />
@@ -919,13 +1042,14 @@ export default function ManageInformationPage() {
                   className="rounded-2xl border border-slate-200/80 dark:border-neutral-800 overflow-hidden bg-white dark:bg-neutral-950 flex flex-col justify-between shadow-2xs"
                 >
                   <div className="relative w-full h-48 bg-slate-200 dark:bg-neutral-800">
-                    {item.image_url ? (
+                    {item.image_url && !failedCottageImages.has(item.id) ? (
                       <Image
                         src={item.image_url}
                         alt={item.name}
                         fill
                         className="object-cover"
                         sizes="(max-width: 768px) 100vw, 50vw"
+                        onError={() => setFailedCottageImages((current) => new Set(current).add(item.id))}
                       />
                     ) : (
                       <div className="flex h-full items-center justify-center text-slate-400">
@@ -950,7 +1074,31 @@ export default function ManageInformationPage() {
                       </p>
                     </div>
 
-                    <div className="pt-3 border-t border-slate-200/60 dark:border-neutral-800 flex justify-end">
+                    <div className="pt-3 border-t border-slate-200/60 dark:border-neutral-800 flex justify-end gap-4">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingCottageId(item.id);
+                          setOriginalCottageImage(item.image_url || '');
+                          setCottagePreviewFailed(false);
+                          setCottageModalStatus(null);
+                          setCottageFieldErrors({});
+                          setCottageUploadProgress(0);
+                          setCottageUploadState('idle');
+                          setNewCottage({
+                            name: item.name,
+                            price: item.price,
+                            capacity: item.capacity,
+                            description: item.description,
+                            image_url: item.image_url || '',
+                          });
+                          setShowAddCottage(true);
+                        }}
+                        className="text-xs text-[#1F3F74] dark:text-[#4987BA] font-semibold inline-flex items-center gap-1 cursor-pointer"
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                        <span>Edit</span>
+                      </button>
                       <button
                         type="button"
                         onClick={async () => {
@@ -1270,7 +1418,7 @@ export default function ManageInformationPage() {
                       Resort Cover Banner (Landscape)
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-neutral-400">
-                      High-resolution landscape photo shown at the top of your public beach profile. PNG or JPG, up to 20 MB.
+                      High-resolution landscape photo shown at the top of your public beach profile. PNG or JPG, up to 20 GB.
                     </p>
                   </div>
 
@@ -1312,7 +1460,7 @@ export default function ManageInformationPage() {
                       Resort Profile Logo (Square)
                     </h3>
                     <p className="text-xs text-slate-500 dark:text-neutral-400">
-                      Square avatar or logo badge shown next to reviews and search pins. PNG or JPG, up to 20 MB.
+                      Square avatar or logo badge shown next to reviews and search pins. PNG or JPG, up to 20 GB.
                     </p>
                   </div>
 
@@ -1387,7 +1535,7 @@ export default function ManageInformationPage() {
                 <div className="flex items-center justify-between pt-1">
                   <label className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200 dark:border-neutral-800 text-xs font-semibold text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 cursor-pointer">
                     {uploadingPostImage ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5 text-[#1F3F74] dark:text-[#4987BA]" />}
-                    <span>Attach Photo (PNG/JPG, max 20 MB)</span>
+                    <span>Attach Photo (PNG/JPG, max 20 GB)</span>
                     <input
                       type="file"
                       accept="image/png, image/jpeg, image/jpg"
@@ -1488,7 +1636,7 @@ export default function ManageInformationPage() {
                     Shoreline Photo Gallery
                   </h3>
                   <p className="text-xs text-slate-500 dark:text-neutral-400">
-                    Add photos of your shoreline, sea conditions, or facilities. PNG or JPG, up to 20 MB.
+                    Add photos of your shoreline, sea conditions, or facilities. PNG or JPG, up to 20 GB.
                   </p>
                 </div>
               </div>
@@ -1565,7 +1713,7 @@ export default function ManageInformationPage() {
                     <span className="text-sm font-bold text-slate-800 dark:text-white">
                       Drop an image here or <span className="text-[#1F3F74] underline dark:text-[#4987BA]">browse files</span>
                     </span>
-                    <span className="text-xs text-slate-500 dark:text-neutral-400">PNG or JPG · Maximum file size: 20 MB</span>
+                    <span className="text-xs text-slate-500 dark:text-neutral-400">PNG or JPG · Maximum file size: 20 GB</span>
                     <input
                       id="gallery-photo-upload"
                       type="file"
@@ -1618,7 +1766,7 @@ export default function ManageInformationPage() {
                     No gallery photos added yet
                   </p>
                   <p className="text-[11px] text-slate-400">
-                    Choose an image above to showcase your resort shoreline. PNG or JPG, up to 20 MB.
+                    Choose an image above to showcase your resort shoreline. PNG or JPG, up to 20 GB.
                   </p>
                 </div>
               )}
@@ -1865,48 +2013,85 @@ export default function ManageInformationPage() {
       {/* ── MODAL: ADD COTTAGE (PNG/JPG Upload Only, Built-in ₱) ── */}
       {showAddCottage && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-6 sm:p-8 max-w-lg w-full space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+          <div className="max-h-[90vh] w-full max-w-lg space-y-5 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200 dark:border-neutral-800 dark:bg-neutral-900 sm:p-8">
             <h3 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
-              Add New Resort Cottage
+              {editingCottageId ? 'Edit Resort Cottage' : 'Add New Resort Cottage'}
             </h3>
 
             <form
               onSubmit={async (e) => {
                 e.preventDefault();
-                if (!newCottage.name || !newCottage.price) {
-                  setToast({ type: 'error', message: 'Cottage name and rate are required.' });
+                const cottageName = (newCottage.name || '').trim();
+                const errors = {
+                  ...(!cottageName ? { name: 'Cottage name is required.' } : {}),
+                  ...(newCottage.price === '' ? { price: 'Daily rate is required.' } : {}),
+                };
+                if (Object.keys(errors).length > 0) {
+                  setCottageFieldErrors(errors);
+                  setCottageModalStatus({
+                    type: 'error',
+                    message: 'Cottage name and daily rate are required.',
+                  });
                   return;
                 }
+                setCottageFieldErrors({});
+                setCottageModalStatus(null);
+                setSavingCottage(true);
                 try {
                   const item = await saveCatalogItem<CottageItem>('cottage', {
-                    name: newCottage.name.trim(),
+                    ...(editingCottageId ? { id: editingCottageId } : {}),
+                    name: cottageName,
                     price: newCottage.price,
                     capacity: newCottage.capacity || '',
                     description: newCottage.description || '',
                     image_url: newCottage.image_url || '',
                   });
-                  setCottages((current) => [...current, item]);
-                  setShowAddCottage(false);
-                  setNewCottage({ name: '', price: '', capacity: '', description: '', image_url: '' });
-                  setToast({ type: 'success', message: 'New cottage added!' });
+                  setCottages((current) => editingCottageId
+                    ? current.map((cottage) => cottage.id === item.id ? item : cottage)
+                    : [...current, item]);
+                  setCottageModalStatus({
+                    type: 'success',
+                    message: editingCottageId ? 'Cottage updated successfully.' : 'Cottage added successfully.',
+                  });
+                  cottageStatusTimerRef.current = setTimeout(() => {
+                    resetCottageEditor();
+                  }, 1200);
                 } catch (error) {
-                  setToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to add cottage.' });
+                  setCottageModalStatus({
+                    type: 'error',
+                    message: error instanceof Error ? error.message : 'Failed to save cottage.',
+                  });
+                  setSavingCottage(false);
                 }
               }}
               className="space-y-4"
             >
+              <ModalStatusBanner status={cottageModalStatus} />
+
               <div className="space-y-1">
                 <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
                   Cottage Name / Type *
                 </label>
                 <input
                   type="text"
-                  required
                   value={newCottage.name}
-                  onChange={(e) => setNewCottage({ ...newCottage, name: e.target.value })}
+                  onChange={(e) => {
+                    setNewCottage({ ...newCottage, name: e.target.value });
+                    setCottageFieldErrors((current) => ({ ...current, name: undefined }));
+                    if (cottageModalStatus?.type === 'error') setCottageModalStatus(null);
+                  }}
                   placeholder="e.g. Seafront Mahogany Cottage"
-                  className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs text-slate-900 dark:text-white placeholder:italic focus:outline-none focus:border-[#1F3F74]"
+                  aria-invalid={Boolean(cottageFieldErrors.name)}
+                  aria-describedby={cottageFieldErrors.name ? 'cottage-name-error' : undefined}
+                  className={`w-full rounded-full border bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs text-slate-900 dark:text-white placeholder:italic focus:outline-none focus:border-[#1F3F74] ${
+                    cottageFieldErrors.name ? 'border-rose-500' : 'border-slate-300 dark:border-neutral-700'
+                  }`}
                 />
+                {cottageFieldErrors.name && (
+                  <p id="cottage-name-error" className="text-xs text-rose-600 dark:text-rose-400">
+                    {cottageFieldErrors.name}
+                  </p>
+                )}
               </div>
 
               <div className="grid grid-cols-2 gap-3">
@@ -1918,13 +2103,25 @@ export default function ManageInformationPage() {
                     <span className="absolute left-3.5 text-xs font-bold text-[#1F3F74] dark:text-[#4987BA]">₱</span>
                     <input
                       type="number"
-                      required
                       value={newCottage.price}
-                      onChange={(e) => setNewCottage({ ...newCottage, price: e.target.value })}
+                      onChange={(e) => {
+                        setNewCottage({ ...newCottage, price: e.target.value });
+                        setCottageFieldErrors((current) => ({ ...current, price: undefined }));
+                        if (cottageModalStatus?.type === 'error') setCottageModalStatus(null);
+                      }}
                       placeholder="700"
-                      className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 pl-8 pr-4 text-xs text-slate-900 dark:text-white placeholder:italic focus:outline-none focus:border-[#1F3F74]"
+                      aria-invalid={Boolean(cottageFieldErrors.price)}
+                      aria-describedby={cottageFieldErrors.price ? 'cottage-rate-error' : undefined}
+                      className={`w-full rounded-full border bg-white dark:bg-neutral-950 py-2.5 pl-8 pr-4 text-xs text-slate-900 dark:text-white placeholder:italic focus:outline-none focus:border-[#1F3F74] ${
+                        cottageFieldErrors.price ? 'border-rose-500' : 'border-slate-300 dark:border-neutral-700'
+                      }`}
                     />
                   </div>
+                  {cottageFieldErrors.price && (
+                    <p id="cottage-rate-error" className="text-xs text-rose-600 dark:text-rose-400">
+                      {cottageFieldErrors.price}
+                    </p>
+                  )}
                 </div>
 
                 <div className="space-y-1">
@@ -1941,27 +2138,142 @@ export default function ManageInformationPage() {
                 </div>
               </div>
 
-              {/* PNG/JPG File Upload Input */}
+              {/* Persistent cottage image upload */}
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
-                  Upload Cottage Photo (PNG or JPG, max 20 MB)
+                  Cottage Photo (JPG, PNG, or WebP; automatically optimized to 1600px and 5 MB max)
                 </label>
                 <div className="flex items-center gap-3">
                   <label className="px-4 py-2 rounded-full border border-slate-300 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-950 text-xs font-semibold text-slate-700 dark:text-neutral-300 hover:bg-slate-100 cursor-pointer inline-flex items-center gap-1.5">
                     <Upload className="w-3.5 h-3.5" />
-                    <span>Choose PNG/JPG File</span>
+                    <span>{newCottage.image_url ? 'Replace Photo' : 'Choose Photo'}</span>
                     <input
                       type="file"
-                      accept="image/png, image/jpeg, image/jpg"
+                      accept="image/jpeg, image/png, image/webp"
+                      disabled={uploadingCottageImage}
                       onChange={async (e) => {
+                        const fileInput = e.currentTarget;
                         const file = e.target.files?.[0];
                         if (!file) return;
+                        if (cottageProgressTimerRef.current) clearInterval(cottageProgressTimerRef.current);
+                        if (cottageProgressHideTimerRef.current) clearTimeout(cottageProgressHideTimerRef.current);
+                        cottageProgressTimerRef.current = null;
+                        cottageProgressHideTimerRef.current = null;
+                        setCottageUploadProgress(0);
+                        setCottageUploadState('idle');
+                        setCottageModalStatus(null);
+                        setCottageFieldErrors({});
+                        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+                          setCottageModalStatus({ type: 'error', message: 'Choose a JPG, PNG, or WebP image.' });
+                          fileInput.value = '';
+                          return;
+                        }
+                        if (file.size < 1 || file.size > MAX_IMAGE_SIZE_BYTES) {
+                          setCottageModalStatus({ type: 'error', message: 'Choose an image smaller than 20 GB.' });
+                          fileInput.value = '';
+                          return;
+                        }
+                        const nameIsMissing = !(newCottage.name || '').trim();
+                        const rateIsMissing = newCottage.price === '';
+                        if (nameIsMissing || rateIsMissing) {
+                          const errors = {
+                            ...(nameIsMissing ? { name: 'Cottage name is required.' } : {}),
+                            ...(rateIsMissing ? { price: 'Daily rate is required.' } : {}),
+                          };
+                          setCottageFieldErrors(errors);
+                          setCottageModalStatus({
+                            type: 'error',
+                            message: 'Enter the cottage name and daily rate first so the photo can be saved automatically.',
+                          });
+                          fileInput.value = '';
+                          return;
+                        }
+                        const previousImage = newCottage.image_url || originalCottageImage;
+                        const previewUrl = URL.createObjectURL(file);
+                        if (cottagePreviewUrlRef.current) {
+                          URL.revokeObjectURL(cottagePreviewUrlRef.current);
+                        }
+                        cottagePreviewUrlRef.current = previewUrl;
+                        setCottagePreviewFailed(false);
+                        setNewCottage((current) => ({ ...current, image_url: previewUrl }));
+                        setUploadingCottageImage(true);
+                        setCottageUploadState('uploading');
+                        cottageProgressTimerRef.current = setInterval(() => {
+                          setCottageUploadProgress((current) => Math.min(90, current + 4));
+                        }, 200);
+                        setFailedCottageImages((current) => {
+                          if (!editingCottageId || !current.has(editingCottageId)) return current;
+                          const next = new Set(current);
+                          next.delete(editingCottageId);
+                          return next;
+                        });
                         try {
-                          const url = await uploadImageFile(file);
-                          setNewCottage({ ...newCottage, image_url: url });
-                          setToast({ type: 'success', message: 'Cottage photo uploaded!' });
+                          const url = await uploadCottageImage(file);
+                          const image = new window.Image();
+                          image.src = url;
+                          await image.decode();
+
+                          if (editingCottageId) {
+                            const savedCottage = await saveCatalogItem<CottageItem>('cottage', {
+                              id: editingCottageId,
+                              name: (newCottage.name || '').trim(),
+                              price: newCottage.price || '',
+                              capacity: newCottage.capacity || '',
+                              description: newCottage.description || '',
+                              image_url: url,
+                            });
+                            setCottages((current) =>
+                              current.map((cottage) => cottage.id === savedCottage.id ? savedCottage : cottage)
+                            );
+                          } else {
+                            const savedCottage = await saveCatalogItem<CottageItem>('cottage', {
+                              name: (newCottage.name || '').trim(),
+                              price: newCottage.price || '',
+                              capacity: newCottage.capacity || '',
+                              description: newCottage.description || '',
+                              image_url: url,
+                            });
+                            setCottages((current) => [...current, savedCottage]);
+                            setEditingCottageId(savedCottage.id);
+                            setOriginalCottageImage(url);
+                            setCreatedCottageDuringUpload(true);
+                          }
+                          if (cottagePreviewUrlRef.current === previewUrl) {
+                            URL.revokeObjectURL(previewUrl);
+                            cottagePreviewUrlRef.current = null;
+                          }
+                          if (cottageProgressTimerRef.current) {
+                            clearInterval(cottageProgressTimerRef.current);
+                            cottageProgressTimerRef.current = null;
+                          }
+                          setNewCottage((current) => ({ ...current, image_url: url }));
+                          setCottageUploadProgress(100);
+                          setCottageUploadState('success');
+                          setCottageModalStatus(null);
+                          cottageProgressHideTimerRef.current = setTimeout(() => {
+                            setCottageUploadState('fading');
+                            cottageProgressHideTimerRef.current = setTimeout(() => {
+                              setCottageUploadProgress(0);
+                              setCottageUploadState('idle');
+                              cottageProgressHideTimerRef.current = null;
+                            }, 200);
+                          }, 800);
                         } catch (err: unknown) {
-                          setToast({ type: 'error', message: err instanceof Error ? err.message : 'Upload failed' });
+                          if (cottageProgressTimerRef.current) {
+                            clearInterval(cottageProgressTimerRef.current);
+                            cottageProgressTimerRef.current = null;
+                          }
+                          if (cottagePreviewUrlRef.current === previewUrl) {
+                            URL.revokeObjectURL(previewUrl);
+                            cottagePreviewUrlRef.current = null;
+                          }
+                          setNewCottage((current) => ({ ...current, image_url: previousImage }));
+                          setCottageUploadState('error');
+                          setCottageUploadProgress((current) => Math.max(current, 8));
+                          setCottageModalStatus({ type: 'error', message: err instanceof Error ? err.message : 'Upload failed' });
+                        } finally {
+                          setUploadingCottageImage(false);
+                          fileInput.value = '';
                         }
                       }}
                       className="hidden"
@@ -1969,13 +2281,51 @@ export default function ManageInformationPage() {
                   </label>
                   {newCottage.image_url && (
                     <div className="flex items-center gap-2">
-                      <div className="relative h-12 w-16 overflow-hidden rounded-lg border border-slate-200 dark:border-neutral-700">
-                        <Image src={newCottage.image_url} alt="Cottage photo preview" fill className="object-cover" />
+                      <div className="relative flex h-12 w-16 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-100 dark:border-neutral-700 dark:bg-neutral-800">
+                        {!cottagePreviewFailed ? (
+                          <Image
+                            src={newCottage.image_url}
+                            alt="Cottage photo preview"
+                            fill
+                            unoptimized
+                            className="object-cover"
+                            onError={() => setCottagePreviewFailed(true)}
+                          />
+                        ) : (
+                          <Camera className="h-5 w-5 text-slate-400" />
+                        )}
                       </div>
-                      <span className="text-xs font-bold text-emerald-600">Preview ready</span>
+                      <span className="text-xs font-bold text-emerald-600">
+                        {cottagePreviewFailed
+                          ? 'Image could not be loaded'
+                          : cottageUploadState === 'uploading'
+                            ? 'Uploading photo...'
+                            : 'Saved photo'}
+                      </span>
                     </div>
                   )}
                 </div>
+                {cottageUploadState !== 'idle' && (
+                  <div
+                    className={`h-1.5 w-full overflow-hidden rounded-full bg-slate-200 transition-opacity duration-200 dark:bg-neutral-700 ${
+                      cottageUploadState === 'fading' ? 'opacity-0' : 'opacity-100'
+                    }`}
+                    role="progressbar"
+                    aria-label="Cottage photo upload progress"
+                    aria-valuenow={cottageUploadProgress}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                  >
+                    <div
+                      className={`h-full rounded-full transition-[width] duration-200 ease-out ${
+                        cottageUploadState === 'error'
+                          ? 'bg-rose-500'
+                          : 'bg-[#1F3F74] dark:bg-[#4987BA]'
+                      }`}
+                      style={{ width: `${cottageUploadProgress}%` }}
+                    />
+                  </div>
+                )}
               </div>
 
               <div className="space-y-1">
@@ -1994,16 +2344,54 @@ export default function ManageInformationPage() {
               <div className="flex justify-end gap-2 pt-3">
                 <button
                   type="button"
-                  onClick={() => setShowAddCottage(false)}
+                  onClick={async () => {
+                    if (cottageProgressTimerRef.current) clearInterval(cottageProgressTimerRef.current);
+                    if (cottageProgressHideTimerRef.current) clearTimeout(cottageProgressHideTimerRef.current);
+                    cottageProgressTimerRef.current = null;
+                    cottageProgressHideTimerRef.current = null;
+                    setCottageUploadProgress(0);
+                    setCottageUploadState('idle');
+                    if (createdCottageDuringUpload && editingCottageId) {
+                      try {
+                        await deleteCatalogItem('cottage', editingCottageId);
+                        setCottages((current) => current.filter((cottage) => cottage.id !== editingCottageId));
+                      } catch (error) {
+                        setCottageModalStatus({
+                          type: 'error',
+                          message: error instanceof Error ? error.message : 'Failed to remove the new cottage.',
+                        });
+                        return;
+                      }
+                    }
+                    if (newCottage.image_url && newCottage.image_url !== originalCottageImage) {
+                      try {
+                        await removeCottageImage(newCottage.image_url);
+                      } catch (error) {
+                        setCottageModalStatus({
+                          type: 'error',
+                          message: error instanceof Error ? error.message : 'Failed to remove the unsaved cottage image.',
+                        });
+                        return;
+                      }
+                    }
+                    resetCottageEditor();
+                  }}
+                  disabled={savingCottage || uploadingCottageImage}
                   className="rounded-full px-5 py-2 text-xs font-bold text-slate-600 dark:text-neutral-400 hover:bg-slate-100 dark:hover:bg-neutral-800 cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-full px-6 py-2 bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-bold shadow-xs cursor-pointer"
+                  disabled={savingCottage || uploadingCottageImage}
+                  className="rounded-full px-6 py-2 bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50"
                 >
-                  Add Cottage
+                  {savingCottage ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      <Loader2 aria-hidden="true" className="h-3.5 w-3.5 animate-spin" />
+                      {editingCottageId ? 'Saving...' : 'Adding...'}
+                    </span>
+                  ) : editingCottageId ? 'Save Cottage' : 'Add Cottage'}
                 </button>
               </div>
             </form>
@@ -2098,7 +2486,7 @@ export default function ManageInformationPage() {
               {/* PNG/JPG File Upload Input */}
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
-                  Upload Photo (PNG or JPG, max 20 MB)
+                  Upload Photo (PNG or JPG, max 20 GB)
                 </label>
                 <div className="flex items-center gap-3">
                   <label className="px-4 py-2 rounded-full border border-slate-300 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-950 text-xs font-semibold text-slate-700 dark:text-neutral-300 hover:bg-slate-100 cursor-pointer inline-flex items-center gap-1.5">
@@ -2392,6 +2780,7 @@ export default function ManageInformationPage() {
         latitude={formData.latitude}
         longitude={formData.longitude}
         requireApprovalNotice={Boolean(formData.id)}
+        submitButtonText={formData.id ? 'Request Pin Approval' : 'Set Map Pin'}
         onSave={async (coordinates) => {
           if (formData.id) {
             const response = await fetch('/api/owner/beach/coordinate-request', {

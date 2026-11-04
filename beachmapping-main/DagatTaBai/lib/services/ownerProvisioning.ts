@@ -2,6 +2,7 @@ import crypto from 'crypto';
 import nodemailer from 'nodemailer';
 import { createAdminClient } from '../supabase/server';
 import { hashPin } from './pin';
+import { getValidBeachCoordinates } from '../utils/beach-coordinates';
 
 export interface ProvisionResult {
   userId: string;
@@ -107,14 +108,15 @@ export async function provisionBeachOwner(
       if (!existingBeach && application) {
         const beachName = application.beach_name || application.business_name || name;
         const baseSlug = beachName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
+        const coordinates = getValidBeachCoordinates(application.latitude, application.longitude);
         const { error: beachError } = await (adminSupabase.from('beaches') as any).insert({
           owner_id: userId,
           name: beachName,
           slug: `${baseSlug}-${userId.slice(0, 8)}`,
           description: application.beach_description || '',
           location: application.beach_location || 'Catmon, Cebu',
-          latitude: Number(application.latitude) || 10.6348,
-          longitude: Number(application.longitude) || 124.0275,
+          latitude: coordinates?.latitude ?? null,
+          longitude: coordinates?.longitude ?? null,
           contact_phone: application.contact_phone || null,
           contact_email: application.applicant_email || email,
           cover_image_url: application.cover_image_path || null,

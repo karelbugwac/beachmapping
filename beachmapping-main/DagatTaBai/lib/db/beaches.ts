@@ -1,4 +1,5 @@
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { getValidBeachCoordinates } from '@/lib/utils/beach-coordinates';
 
 export interface BeachPhoto {
   category: string;
@@ -46,8 +47,8 @@ export interface BeachRecord {
   name: string;
   description: string;
   location: string;
-  latitude: number;
-  longitude: number;
+  latitude: number | null;
+  longitude: number | null;
   cover_image: string | null;
   profile_image?: string | null;
   images: BeachPhoto[];
@@ -77,15 +78,39 @@ export interface BeachRecord {
   updated_at: string;
 }
 
-/**
- * Empty verified beaches repository.
- * User requested to delete all existing mock beaches so they can input real data via the Beach Owner portal.
- */
-const VERIFIED_CATMON_BEACHES: BeachRecord[] = [];
-
 const BEACH_CACHE_TTL_MS = 15_000; // 15 seconds in-memory cache with instant invalidation on mutations
 let allBeachesCache: { data: BeachRecord[]; expiresAt: number } | null = null;
 const slugBeachCache = new Map<string, { data: BeachRecord | null; expiresAt: number }>();
+
+function getBeachIdentityKey(beach: BeachRecord): string | null {
+  const coordinates = getValidBeachCoordinates(beach.latitude, beach.longitude);
+  if (!coordinates) return null;
+
+  const normalizedName = beach.name
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .toLowerCase()
+    .replace(/\b(beach|resort)\b/g, ' ')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
+  return normalizedName
+    ? `${normalizedName}:${coordinates.latitude.toFixed(6)}:${coordinates.longitude.toFixed(6)}`
+    : null;
+}
+
+function beachRecordCompleteness(beach: BeachRecord): number {
+  return (
+    Number(Boolean(beach.location.toLowerCase().includes('binongkalan'))) * 4 +
+    Number(Boolean(beach.cover_image)) * 3 +
+    Number(Boolean(beach.profile_image)) * 2 +
+    Number(Boolean(beach.description)) +
+    Number(Boolean(beach.contact_phone || beach.contact_email)) +
+    beach.images.length +
+    beach.amenities.length +
+    beach.activities.length
+  );
+}
 
 /**
  * Immediately clears the in-memory beaches cache when a beach is created, updated, or deleted.
@@ -101,9 +126,13 @@ export async function getAllBeaches(): Promise<BeachRecord[]> {
     return allBeachesCache.data;
   }
 
-  try {
-    const supabase = await createServerSupabaseClient();
-    const { data: dbBeaches, error } = await supabase
+  const supabase = await createServerSupabaseClient();
+  const pageSize = 500;
+  const dbBeaches: any[] = [];
+  let offset = 0;
+
+  while (true) {
+    const { data, error } = await supabase
       .from('beaches')
       .select(`
         *,
@@ -111,10 +140,29 @@ export async function getAllBeaches(): Promise<BeachRecord[]> {
         beach_facilities ( name ),
         beach_external_links ( label, url )
       `)
-      .eq('status', 'active');
+      .eq('status', 'active')
+      .order('id', { ascending: true })
+      .range(offset, offset + pageSize - 1);
 
-    if (!error && Array.isArray(dbBeaches)) {
-      const mapped: BeachRecord[] = dbBeaches.map((b: any) => {
+    if (error) throw error;
+    if (!data) break;
+    dbBeaches.push(...data);
+    if (data.length < pageSize) break;
+    offset += data.length;
+  }
+
+  const seenIds = new Set<string>();
+  const seenSlugs = new Set<string>();
+  const mapped: BeachRecord[] = dbBeaches
+    .filter((beach) => {
+      const id = String(beach.id || '');
+      const slug = String(beach.slug || '').toLowerCase();
+      if (!id || seenIds.has(id) || (slug && seenSlugs.has(slug))) return false;
+      seenIds.add(id);
+      if (slug) seenSlugs.add(slug);
+      return true;
+    })
+    .map((b: any) => {
         // Parse opening_hours if it's a JSON string
         let parsedOpeningHours = b.opening_hours || '';
         if (typeof b.opening_hours === 'string' && b.opening_hours.startsWith('{')) {
@@ -134,14 +182,15 @@ export async function getAllBeaches(): Promise<BeachRecord[]> {
           entranceFeeChildren = children;
         }
 
+        const coordinates = getValidBeachCoordinates(b.latitude, b.longitude);
         return {
           id: b.id,
           slug: b.slug || b.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
           name: b.name,
           description: b.description,
           location: b.location,
-          latitude: Number(b.latitude),
-          longitude: Number(b.longitude),
+          latitude: coordinates?.latitude ?? null,
+          longitude: coordinates?.longitude ?? null,
           cover_image: b.cover_image_url || b.cover_image || null,
           profile_image: b.profile_image_url || b.profile_image || null,
           images: Array.isArray(b.images) ? b.images : [],
@@ -169,17 +218,27 @@ export async function getAllBeaches(): Promise<BeachRecord[]> {
         };
       });
 
-      allBeachesCache = {
-        data: mapped,
-        expiresAt: Date.now() + BEACH_CACHE_TTL_MS,
-      };
-      return mapped;
+  const uniqueBeaches: BeachRecord[] = [];
+  const beachIndexesByIdentity = new Map<string, number>();
+  for (const beach of mapped) {
+    const identityKey = getBeachIdentityKey(beach);
+    const existingIndex = identityKey ? beachIndexesByIdentity.get(identityKey) : undefined;
+    if (identityKey && existingIndex !== undefined) {
+      if (beachRecordCompleteness(beach) > beachRecordCompleteness(uniqueBeaches[existingIndex])) {
+        uniqueBeaches[existingIndex] = beach;
+      }
+      continue;
     }
-  } catch (err) {
-    // Database connection or table initialization fallback
+
+    if (identityKey) beachIndexesByIdentity.set(identityKey, uniqueBeaches.length);
+    uniqueBeaches.push(beach);
   }
 
-  return VERIFIED_CATMON_BEACHES;
+  allBeachesCache = {
+    data: uniqueBeaches,
+    expiresAt: Date.now() + BEACH_CACHE_TTL_MS,
+  };
+  return uniqueBeaches;
 }
 
 export async function getBeachBySlug(slug: string): Promise<BeachRecord | null> {
@@ -281,14 +340,15 @@ export async function getBeachBySlug(slug: string): Promise<BeachRecord | null> 
         entranceFeeChildren = children;
       }
 
+      const coordinates = getValidBeachCoordinates(b.latitude, b.longitude);
       const record: BeachRecord = {
         id: b.id,
         slug: b.slug || b.name.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, ''),
         name: b.name,
         description: b.description,
         location: b.location,
-        latitude: Number(b.latitude),
-        longitude: Number(b.longitude),
+        latitude: coordinates?.latitude ?? null,
+        longitude: coordinates?.longitude ?? null,
         cover_image: b.cover_image_url || b.cover_image || null,
         profile_image: b.profile_image_url || b.profile_image || null,
         images: Array.isArray(b.images) ? b.images : [],

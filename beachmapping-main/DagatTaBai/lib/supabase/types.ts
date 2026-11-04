@@ -55,8 +55,8 @@ export interface Database {
           name: string;
           description: string;
           location: string;
-          latitude: number;
-          longitude: number;
+          latitude: number | null;
+          longitude: number | null;
           cover_image: string | null;
           images: { category: string; caption: string; photo_url: string }[] | null;
           virtual_tour_url: string | null;
@@ -83,8 +83,8 @@ export interface Database {
           name: string;
           description: string;
           location: string;
-          latitude: number;
-          longitude: number;
+          latitude: number | null;
+          longitude: number | null;
           cover_image?: string | null;
           images?: { category: string; caption: string; photo_url: string }[] | null;
           virtual_tour_url?: string | null;
@@ -111,8 +111,8 @@ export interface Database {
           name?: string;
           description?: string;
           location?: string;
-          latitude?: number;
-          longitude?: number;
+          latitude?: number | null;
+          longitude?: number | null;
           cover_image?: string | null;
           images?: { category: string; caption: string; photo_url: string }[] | null;
           virtual_tour_url?: string | null;

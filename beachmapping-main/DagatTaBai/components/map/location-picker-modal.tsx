@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
   MapPin,
   Crosshair,
@@ -17,14 +17,16 @@ import {
 } from 'lucide-react';
 import Link from 'next/link';
 import { showToast } from '@/components/ui/feedback-toasts';
+import { getValidBeachCoordinates } from '@/lib/utils/beach-coordinates';
+import { matchesBeachSearch } from '@/lib/utils/beach-search';
 
 interface LocationPickerModalProps {
   isOpen: boolean;
   onClose: () => void;
   beachName: string;
   location: string;
-  latitude: string | number;
-  longitude: string | number;
+  latitude: string | number | null;
+  longitude: string | number | null;
   publicMapSlug?: string;
   onSave: (data: { location: string; latitude: string; longitude: string; note?: string }) => Promise<void>;
   requireApprovalNotice?: boolean;
@@ -44,6 +46,15 @@ interface OSMPlace {
 
 type PlacesStatus = 'loading' | 'loaded' | 'unavailable';
 
+interface DatabaseBeachListing {
+  id: string;
+  name: string;
+  slug: string;
+  location: string;
+  latitude: number | null;
+  longitude: number | null;
+}
+
 export function LocationPickerModal({
   isOpen,
   onClose,
@@ -58,14 +69,10 @@ export function LocationPickerModal({
 }: LocationPickerModalProps) {
   const [tempLocation, setTempLocation] = useState(location || '');
   const [tempLat, setTempLat] = useState(
-    Number.isFinite(Number.parseFloat(String(latitude)))
-      ? String(latitude)
-      : String(BINONGKALAN_CENTER.latitude)
+    getValidBeachCoordinates(latitude, longitude)?.latitude.toString() || ''
   );
   const [tempLng, setTempLng] = useState(
-    Number.isFinite(Number.parseFloat(String(longitude)))
-      ? String(longitude)
-      : String(BINONGKALAN_CENTER.longitude)
+    getValidBeachCoordinates(latitude, longitude)?.longitude.toString() || ''
   );
   const [requesterNote, setRequesterNote] = useState('');
   const [isSaving, setIsSaving] = useState(false);
@@ -75,22 +82,88 @@ export function LocationPickerModal({
   const [pinConfirmed, setPinConfirmed] = useState(false);
   const [nearbyPlaces, setNearbyPlaces] = useState<OSMPlace[]>([]);
   const [placesStatus, setPlacesStatus] = useState<PlacesStatus>('loading');
+  const [databaseBeaches, setDatabaseBeaches] = useState<DatabaseBeachListing[]>([]);
+  const [databaseBeachesError, setDatabaseBeachesError] = useState<string | null>(null);
 
   const mapContainerRef = useRef<HTMLDivElement>(null);
   const leafletMapRef = useRef<any>(null);
   const leafletMarkerRef = useRef<any>(null);
   const LRef = useRef<any>(null);
   const placesLayerRef = useRef<any>(null);
+  const databaseBeachesLayerRef = useRef<any>(null);
+  const matchingDatabaseBeaches = useMemo(
+    () => databaseBeaches.filter((beach) => matchesBeachSearch(beach, tempLocation)),
+    [databaseBeaches, tempLocation]
+  );
+
+  useEffect(() => {
+    if (!isOpen) return;
+    let active = true;
+
+    const loadDatabaseBeaches = async () => {
+      try {
+        const response = await fetch('/api/beaches', { cache: 'no-store' });
+        const data = await response.json();
+        if (!response.ok || !Array.isArray(data)) {
+          throw new Error(data?.error || 'Failed to load database beach listings.');
+        }
+        if (active) {
+          setDatabaseBeaches(data);
+          setDatabaseBeachesError(null);
+        }
+      } catch (error: unknown) {
+        if (!active) return;
+        const message = error instanceof Error ? error.message : 'Failed to load database beach listings.';
+        console.error('Unable to load database beaches in the location picker:', error);
+        setDatabaseBeachesError(message);
+      }
+    };
+
+    void loadDatabaseBeaches();
+    return () => {
+      active = false;
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    const map = leafletMapRef.current;
+    const L = LRef.current;
+    if (!isOpen || !mapLoaded || !map || !L) return;
+
+    const layer = L.layerGroup().addTo(map);
+    databaseBeachesLayerRef.current = layer;
+    databaseBeaches.forEach((beach) => {
+      const coordinates = getValidBeachCoordinates(beach.latitude, beach.longitude);
+      if (!coordinates) return;
+
+      const marker = L.circleMarker([coordinates.latitude, coordinates.longitude], {
+        radius: 8,
+        color: '#ffffff',
+        weight: 2,
+        fillColor: '#1f3f74',
+        fillOpacity: 1,
+      }).addTo(layer);
+      marker.bindTooltip(beach.name);
+      marker.on('click', () => {
+        map.setView([coordinates.latitude, coordinates.longitude], 17, { animate: true });
+      });
+    });
+
+    return () => {
+      layer.remove();
+      if (databaseBeachesLayerRef.current === layer) {
+        databaseBeachesLayerRef.current = null;
+      }
+    };
+  }, [isOpen, mapLoaded, databaseBeaches]);
 
   // Sync state whenever modal opens or props change
   useEffect(() => {
     if (isOpen) {
-      const parsedLat = Number.parseFloat(String(latitude));
-      const parsedLng = Number.parseFloat(String(longitude));
-      const hasCoordinates = Number.isFinite(parsedLat) && Number.isFinite(parsedLng);
+      const hasCoordinates = Boolean(getValidBeachCoordinates(latitude, longitude));
       setTempLocation(location || '');
-      setTempLat(hasCoordinates ? String(latitude) : String(BINONGKALAN_CENTER.latitude));
-      setTempLng(hasCoordinates ? String(longitude) : String(BINONGKALAN_CENTER.longitude));
+      setTempLat(hasCoordinates ? String(latitude) : '');
+      setTempLng(hasCoordinates ? String(longitude) : '');
       setRequesterNote('');
       setPinConfirmed(hasCoordinates);
     }
@@ -116,12 +189,10 @@ export function LocationPickerModal({
       const L = leafletModule.default;
       LRef.current = L;
 
-      const propLatitude = Number.parseFloat(String(latitude));
-      const propLongitude = Number.parseFloat(String(longitude));
-      const hasSavedCoordinates =
-        Number.isFinite(propLatitude) && Number.isFinite(propLongitude);
-      const initialLat = hasSavedCoordinates ? propLatitude : BINONGKALAN_CENTER.latitude;
-      const initialLng = hasSavedCoordinates ? propLongitude : BINONGKALAN_CENTER.longitude;
+      const savedCoordinates = getValidBeachCoordinates(latitude, longitude);
+      const hasSavedCoordinates = Boolean(savedCoordinates);
+      const initialLat = savedCoordinates?.latitude ?? BINONGKALAN_CENTER.latitude;
+      const initialLng = savedCoordinates?.longitude ?? BINONGKALAN_CENTER.longitude;
 
       if (!mapContainerRef.current) return;
 
@@ -264,13 +335,16 @@ export function LocationPickerModal({
 
   // Update map pin when inputs change manually
   const updateMapMarker = (latStr: string, lngStr: string, zoom?: number) => {
-    const lat = parseFloat(latStr);
-    const lng = parseFloat(lngStr);
-    if (!isNaN(lat) && !isNaN(lng) && leafletMapRef.current && leafletMarkerRef.current) {
-      leafletMarkerRef.current.setLatLng([lat, lng]);
-      leafletMapRef.current.setView([lat, lng], zoom ?? leafletMapRef.current.getZoom(), {
+    const coordinates = getValidBeachCoordinates(latStr, lngStr);
+    if (coordinates && leafletMapRef.current && leafletMarkerRef.current) {
+      leafletMarkerRef.current.setLatLng([coordinates.latitude, coordinates.longitude]);
+      leafletMapRef.current.setView(
+        [coordinates.latitude, coordinates.longitude],
+        zoom ?? leafletMapRef.current.getZoom(),
+        {
         animate: true,
-      });
+        }
+      );
     }
   };
 
@@ -315,9 +389,31 @@ export function LocationPickerModal({
       }
 
       const result = data.results?.[0] as
-        | { latitude: number; longitude: number; label: string }
+        | { latitude: number; longitude: number; label: string; precision?: 'area' | 'place' }
         | undefined;
       if (!result || !Number.isFinite(result.latitude) || !Number.isFinite(result.longitude)) {
+        const firstBeachWithCoordinates = matchingDatabaseBeaches.find((beach) =>
+          getValidBeachCoordinates(beach.latitude, beach.longitude)
+        );
+        const coordinates = firstBeachWithCoordinates
+          ? getValidBeachCoordinates(firstBeachWithCoordinates.latitude, firstBeachWithCoordinates.longitude)
+          : null;
+        if (coordinates) {
+          leafletMapRef.current?.setView([coordinates.latitude, coordinates.longitude], 16, {
+            animate: true,
+          });
+          showToast(
+            `Found ${matchingDatabaseBeaches.length} matching database beach listing(s). Their verified markers are shown separately.`
+          );
+          return;
+        }
+        if (matchingDatabaseBeaches.length > 0) {
+          showToast(
+            `Found ${matchingDatabaseBeaches.length} matching database listing(s), but none have verified coordinates yet.`,
+            'error'
+          );
+          return;
+        }
         showToast(
           'No matching mapped place was found in Catmon. Search for Binongkalan, Catmon, or click the map to place your exact pin.',
           'error'
@@ -325,12 +421,25 @@ export function LocationPickerModal({
         return;
       }
 
-      const lat = result.latitude.toFixed(6);
-      const lng = result.longitude.toFixed(6);
-      setTempLat(lat);
-      setTempLng(lng);
-      updateMapMarker(lat, lng, 17);
-      showToast('Approximate map match found. Move the pin to your exact beach entrance before saving.');
+      if (result.precision === 'area') {
+        const lat = result.latitude.toFixed(6);
+        const lng = result.longitude.toFixed(6);
+        setTempLat(lat);
+        setTempLng(lng);
+        updateMapMarker(lat, lng, 15);
+        setPinConfirmed(false);
+        showToast(
+          `Located ${result.label}. Matching Dagat Ta Bai listings are shown separately; choose your exact resort entrance before saving.`
+        );
+      } else {
+        const lat = result.latitude.toFixed(6);
+        const lng = result.longitude.toFixed(6);
+        setTempLat(lat);
+        setTempLng(lng);
+        updateMapMarker(lat, lng, 17);
+        setPinConfirmed(false);
+        showToast('Address found. Verify the exact beach entrance before saving.');
+      }
     } catch (error: unknown) {
       showToast(
         error instanceof Error
@@ -487,6 +596,12 @@ export function LocationPickerModal({
                 </span>
               </div>
             )}
+            {databaseBeaches.length > 0 && (
+              <p className="inline-flex items-center gap-1.5 text-[11px] text-gray-600 dark:text-gray-300">
+                <span className="h-2 w-2 rounded-full bg-[#1f3f74]" />
+                {databaseBeaches.length} active Dagat Ta Bai database listing(s) are marked on this map.
+              </p>
+            )}
           </div>
 
           {/* Coordinates Inputs & Quick Actions */}
@@ -503,10 +618,7 @@ export function LocationPickerModal({
                   value={tempLat}
                   onChange={(e) => {
                     setTempLat(e.target.value);
-                    setPinConfirmed(
-                      Number.isFinite(Number.parseFloat(e.target.value)) &&
-                        Number.isFinite(Number.parseFloat(tempLng))
-                    );
+                    setPinConfirmed(Boolean(getValidBeachCoordinates(e.target.value, tempLng)));
                     updateMapMarker(e.target.value, tempLng);
                   }}
                   placeholder="e.g. 10.634800"
@@ -516,6 +628,46 @@ export function LocationPickerModal({
                   LAT
                 </span>
               </div>
+              {tempLocation.trim() && (
+                <div className="mt-2 max-h-36 overflow-y-auto rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
+                  <p className="sticky top-0 bg-gray-50 px-3 py-2 text-[11px] font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
+                    {databaseBeachesError
+                      ? `Database listings unavailable: ${databaseBeachesError}`
+                      : `${matchingDatabaseBeaches.length} matching database beach listing(s)`}
+                  </p>
+                  {matchingDatabaseBeaches.map((beach) => {
+                    const coordinates = getValidBeachCoordinates(beach.latitude, beach.longitude);
+                    return (
+                      <button
+                        key={beach.id}
+                        type="button"
+                        disabled={!coordinates}
+                        onClick={() => {
+                          if (!coordinates) return;
+                          leafletMapRef.current?.setView(
+                            [coordinates.latitude, coordinates.longitude],
+                            17,
+                            { animate: true }
+                          );
+                        }}
+                        className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left hover:bg-gray-50 disabled:cursor-default dark:hover:bg-gray-700"
+                      >
+                        <span>
+                          <span className="block text-xs font-semibold text-gray-800 dark:text-gray-100">
+                            {beach.name}
+                          </span>
+                          <span className="block text-[10px] text-gray-500 dark:text-gray-400">
+                            {beach.location || 'Address not provided'}
+                          </span>
+                        </span>
+                        <span className={`shrink-0 text-[10px] font-semibold ${coordinates ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'}`}>
+                          {coordinates ? 'Verified marker' : 'Coordinates missing'}
+                        </span>
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
 
             {/* Longitude input */}
@@ -530,10 +682,7 @@ export function LocationPickerModal({
                   value={tempLng}
                   onChange={(e) => {
                     setTempLng(e.target.value);
-                    setPinConfirmed(
-                      Number.isFinite(Number.parseFloat(tempLat)) &&
-                        Number.isFinite(Number.parseFloat(e.target.value))
-                    );
+                    setPinConfirmed(Boolean(getValidBeachCoordinates(tempLat, e.target.value)));
                     updateMapMarker(tempLat, e.target.value);
                   }}
                   placeholder="e.g. 124.027500"
@@ -627,7 +776,7 @@ export function LocationPickerModal({
           <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
             <span>Coordinates:</span>
             <span className="font-mono font-bold text-gray-800 dark:text-gray-200">
-              {tempLat}, {tempLng}
+              {tempLat && tempLng ? `${tempLat}, ${tempLng}` : 'No pin selected'}
             </span>
             {publicMapSlug && (
               <Link
@@ -654,7 +803,7 @@ export function LocationPickerModal({
             <button
               type="button"
               onClick={handleSave}
-              disabled={isSaving}
+              disabled={isSaving || !pinConfirmed}
               className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors shadow-md flex items-center gap-1.5 disabled:opacity-50"
             >
               {isSaving ? (

@@ -1,6 +1,7 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { getAllBeaches } from '@/lib/db/beaches';
 import { haversineDistanceKm } from '@/lib/utils/distance';
+import { getValidBeachCoordinates } from '@/lib/utils/beach-coordinates';
 
 export async function askGeminiAssistant(
   userQuery: string,
@@ -23,14 +24,15 @@ export async function askGeminiAssistant(
     }
 
     const databaseContext = beaches.map((beach) => {
-      const distance = userLocation
-        ? `\nDistance from the shared location (straight-line): ${haversineDistanceKm(userLocation.lat, userLocation.lng, beach.latitude, beach.longitude)} km`
+      const coordinates = getValidBeachCoordinates(beach.latitude, beach.longitude);
+      const distance = userLocation && coordinates
+        ? `\nDistance from the shared location (straight-line): ${haversineDistanceKm(userLocation.lat, userLocation.lng, coordinates.latitude, coordinates.longitude)} km`
         : '';
       return [
         `Name: ${beach.name}`,
         `Public page: /beaches/${beach.slug}`,
         `Location: ${beach.location}`,
-        `Coordinates: ${beach.latitude}, ${beach.longitude}${distance}`,
+        `Coordinates: ${coordinates ? `${coordinates.latitude}, ${coordinates.longitude}` : 'Not provided'}${distance}`,
         `Rating: ${beach.average_rating} / 5`,
         `Opening hours: ${typeof beach.opening_hours === 'object' && beach.opening_hours ? JSON.stringify(beach.opening_hours) : (beach.opening_hours || 'Not listed')}`,
         `Entrance fee: ${beach.entrance_fee || 'Not listed'}`,
@@ -96,14 +98,15 @@ export async function askGeminiAssistantStream(
     }
 
     const databaseContext = beaches.map((beach) => {
-      const distance = userLocation
-        ? `\nDistance from the shared location (straight-line): ${haversineDistanceKm(userLocation.lat, userLocation.lng, beach.latitude, beach.longitude)} km`
+      const coordinates = getValidBeachCoordinates(beach.latitude, beach.longitude);
+      const distance = userLocation && coordinates
+        ? `\nDistance from the shared location (straight-line): ${haversineDistanceKm(userLocation.lat, userLocation.lng, coordinates.latitude, coordinates.longitude)} km`
         : '';
       return [
         `Name: ${beach.name}`,
         `Public page: /beaches/${beach.slug}`,
         `Location: ${beach.location}`,
-        `Coordinates: ${beach.latitude}, ${beach.longitude}${distance}`,
+        `Coordinates: ${coordinates ? `${coordinates.latitude}, ${coordinates.longitude}` : 'Not provided'}${distance}`,
         `Rating: ${beach.average_rating} / 5`,
         `Opening hours: ${typeof beach.opening_hours === 'object' && beach.opening_hours ? JSON.stringify(beach.opening_hours) : (beach.opening_hours || 'Not listed')}`,
         `Entrance fee: ${beach.entrance_fee || 'Not listed'}`,

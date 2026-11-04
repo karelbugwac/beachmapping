@@ -18,7 +18,7 @@ VALUES (
     'beach-media',
     'beach-media',
     true,
-    20971520,
+    21474836480,
     ARRAY['image/jpeg', 'image/png', 'image/webp']
 )
 ON CONFLICT (id) DO UPDATE SET
@@ -99,9 +99,9 @@ CREATE TABLE public.beaches (
 
     location TEXT NOT NULL,
 
-    latitude NUMERIC(10, 8) NOT NULL,
+    latitude NUMERIC(10, 8),
 
-    longitude NUMERIC(11, 8) NOT NULL,
+    longitude NUMERIC(11, 8),
 
     contact_phone TEXT,
 
@@ -824,6 +824,26 @@ AS $$
             AND public.beaches.owner_id = auth.uid()
         );
 $$;
+
+
+DROP POLICY IF EXISTS "Beach owners upload beach media" ON storage.objects;
+CREATE POLICY "Beach owners upload beach media"
+ON storage.objects
+FOR INSERT
+TO authenticated
+WITH CHECK (
+    bucket_id = 'beach-media'
+    AND (
+        (storage.foldername(name))[1] = auth.uid()::text
+        OR public.is_admin()
+    )
+    AND CASE
+        WHEN (storage.foldername(name))[2] = 'general' THEN true
+        WHEN (storage.foldername(name))[2] ~* '^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$'
+            THEN public.owns_beach(((storage.foldername(name))[2])::uuid)
+        ELSE false
+    END
+);
 
 
 CREATE OR REPLACE FUNCTION public.recalculate_beach_rating()

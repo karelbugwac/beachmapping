@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getAllBeaches, invalidateBeachesCache } from '@/lib/db/beaches';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { getValidBeachCoordinates } from '@/lib/utils/beach-coordinates';
 
 export async function GET() {
   try {
@@ -51,14 +52,22 @@ export async function POST(request: Request) {
     const { data: userData } = await supabase.auth.getUser();
     const owner_id = userData?.user?.id || null;
 
+    const coordinates = getValidBeachCoordinates(latitude, longitude);
+    if (!coordinates) {
+      return NextResponse.json(
+        { error: 'Valid latitude and longitude are required. Select the verified beach location on the map.' },
+        { status: 400 }
+      );
+    }
+
     const beachPayload: any = {
       name: name.trim(),
       slug,
       owner_id: owner_id,
       description: description || '',
       location: location.trim(),
-      latitude: parseFloat(latitude) || 10.6348,
-      longitude: parseFloat(longitude) || 124.0275,
+      latitude: coordinates.latitude,
+      longitude: coordinates.longitude,
       cover_image: cover_image || null,
       profile_image: profile_image || null,
       images: Array.isArray(images) ? images : [],

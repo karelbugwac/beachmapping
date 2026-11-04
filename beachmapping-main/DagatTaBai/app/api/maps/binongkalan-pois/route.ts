@@ -53,6 +53,7 @@ export async function GET() {
     }
 
     const payload = (await response.json()) as { elements?: OverpassElement[] };
+    const seenPlaces = new Set<string>();
     const places = (payload.elements || [])
       .flatMap((element) => {
         const name = element.tags?.name?.trim();
@@ -64,6 +65,9 @@ export async function GET() {
         if (!name || !point || !Number.isFinite(point.lat) || !Number.isFinite(point.lon)) {
           return [];
         }
+        const id = `${element.type}/${element.id}`;
+        if (seenPlaces.has(id)) return [];
+        seenPlaces.add(id);
 
         const category =
           element.tags?.natural === 'beach' || element.tags?.leisure === 'beach_resort'
@@ -76,15 +80,14 @@ export async function GET() {
                 : 'Landmark';
 
         return [{
-          id: `${element.type}/${element.id}`,
+          id,
           name,
           category,
           latitude: point.lat,
           longitude: point.lon,
           osmUrl: `https://www.openstreetmap.org/${element.type}/${element.id}`,
         }];
-      })
-      .slice(0, 200);
+      });
 
     return NextResponse.json(
       { places, available: true, attribution: '© OpenStreetMap contributors' },

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { fetchStormglassTides } from '@/lib/services/tides';
 import type { Beach } from '@/lib/supabase/types';
+import { getValidBeachCoordinates } from '@/lib/utils/beach-coordinates';
 
 /**
  * Scheduled Cron Job to fetch and cache tide extremes for active beaches.
@@ -41,9 +42,21 @@ export async function GET(req: NextRequest) {
 
     // 2. Fetch & Cache tides per beach
     for (const beach of beaches) {
+      const coordinates = getValidBeachCoordinates(beach.latitude, beach.longitude);
+      if (!coordinates) {
+        console.warn(`Skipping tide refresh for ${beach.name}: valid coordinates are missing.`);
+        results.push({
+          beachId: beach.id,
+          beachName: beach.name,
+          cachedCount: 0,
+          status: 'Skipped: valid coordinates are missing',
+        });
+        continue;
+      }
+
       const tideExtremes = await fetchStormglassTides(
-        Number(beach.latitude),
-        Number(beach.longitude)
+        coordinates.latitude,
+        coordinates.longitude
       );
 
       // Upsert into beach_weather_snapshots
