@@ -24,8 +24,9 @@ import {
 import type { BeachRecord, BeachPhoto } from '@/lib/db/beaches';
 import { LocationPickerModal } from '@/components/map/location-picker-modal';
 import { VirtualTourModal } from '@/components/virtual-tour-modal';
+import { CottagePhotosModal, type CottagePhoto } from '@/components/cottages/cottage-photos-modal';
 import { getValidBeachCoordinates } from '@/lib/utils/beach-coordinates';
-import { MAX_BEACH_IMAGE_SIZE_BYTES, uploadBeachImage } from '@/lib/utils/beach-image-upload';
+import { MAX_BEACH_IMAGE_SIZE_BYTES, uploadBeachImage, uploadBeachImageWithPath } from '@/lib/utils/beach-image-upload';
 
 interface CottageItem {
   id: string;
@@ -34,6 +35,13 @@ interface CottageItem {
   capacity: string;
   description: string;
   image_url: string;
+  photos: CottagePhoto[];
+}
+
+interface CottagePhotoDraft extends CottagePhoto {
+  localId: string;
+  progress: number;
+  status: 'uploading' | 'saved' | 'error';
 }
 
 interface FacilityItem {
@@ -157,20 +165,15 @@ export default function ManageInformationPage() {
   // Modals for adding cottage / facility
   const [showAddCottage, setShowAddCottage] = useState(false);
   const [editingCottageId, setEditingCottageId] = useState<string | null>(null);
-  const [originalCottageImage, setOriginalCottageImage] = useState('');
-  const [cottagePreviewFailed, setCottagePreviewFailed] = useState(false);
   const [failedCottageImages, setFailedCottageImages] = useState<Set<string>>(new Set());
   const [uploadingCottageImage, setUploadingCottageImage] = useState(false);
   const [createdCottageDuringUpload, setCreatedCottageDuringUpload] = useState(false);
-  const cottagePreviewUrlRef = useRef<string | null>(null);
   const [savingCottage, setSavingCottage] = useState(false);
   const [cottageModalStatus, setCottageModalStatus] = useState<ModalStatus | null>(null);
   const [cottageFieldErrors, setCottageFieldErrors] = useState<{ name?: string; price?: string }>({});
-  const [cottageUploadProgress, setCottageUploadProgress] = useState(0);
-  const [cottageUploadState, setCottageUploadState] = useState<'idle' | 'uploading' | 'success' | 'error' | 'fading'>('idle');
+  const [cottagePhotos, setCottagePhotos] = useState<CottagePhotoDraft[]>([]);
+  const [viewingCottagePhotos, setViewingCottagePhotos] = useState<CottageItem | null>(null);
   const cottageStatusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const cottageProgressTimerRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const cottageProgressHideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [newCottage, setNewCottage] = useState<Partial<CottageItem>>({
     name: '',
     price: '',
@@ -459,52 +462,209 @@ export default function ManageInformationPage() {
     return uploadBeachImage(file, formData.id);
   };
 
-  const uploadCottageImage = async (file: File): Promise<string> => {
-    const allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
-    if (!allowedTypes.includes(file.type)) {
-      throw new Error('Cottage images must be JPG, PNG, or WebP.');
-    }
-    if (file.size < 1 || file.size > MAX_IMAGE_SIZE_BYTES) {
-      throw new Error('Cottage images must be no larger than 20 GB.');
-    }
-    if (!formData.id) {
-      throw new Error('Save your resort listing before uploading cottage photos.');
+  const handleCottagePhotoFiles = async (files: File[]) => {
+    if (!files.length) return;
+    if (cottagePhotos.length + files.length > 10) {
+      setCottageModalStatus({ type: 'error', message: 'A cottage can have up to 10 photos.' });
+      return;
     }
 
-    return uploadBeachImage(file, formData.id, 'cottages');
+    for (const file of files) {
+      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+        setCottageModalStatus({ type: 'error', message: 'Choose JPG, PNG, or WebP photos only.' });
+        return;
+      }
+      if (file.size < 1 || file.size > MAX_IMAGE_SIZE_BYTES) {
+        setCottageModalStatus({ type: 'error', message: 'Choose an image smaller than 20 GB.' });
+        return;
+      }
+    }
+
+    const name = (newCottage.name || '').trim();
+    if (!name || newCottage.price === '') {
+      const fieldErrors = {
+        ...(!name ? { name: 'Cottage name is required.' } : {}),
+        ...(newCottage.price === '' ? { price: 'Daily rate is required.' } : {}),
+      };
+      setCottageFieldErrors(fieldErrors);
+      setCottageModalStatus({
+        type: 'error',
+        message: 'Enter the cottage name and daily rate before adding photos.',
+      });
+      return;
+    }
+
+    setCottageModalStatus(null);
+    setCottageFieldErrors({});
+    setUploadingCottageImage(true);
+    let cottageId = editingCottageId;
+
+    try {
+      if (!cottageId) {
+        const newItem = await saveCatalogItem<CottageItem>('cottage', {
+          name,
+          price: newCottage.price || '',
+          capacity: newCottage.capacity || '',
+          description: newCottage.description || '',
+          image_url: '',
+        });
+        cottageId = newItem.id;
+        setEditingCottageId(newItem.id);
+        setCreatedCottageDuringUpload(true);
+        setCottages((current) => [...current, newItem]);
+      }
+
+      for (const file of files) {
+        const localId = crypto.randomUUID();
+        const previewUrl = URL.createObjectURL(file);
+        const previewPhoto: CottagePhotoDraft = {
+          localId,
+          image_url: previewUrl,
+          storage_path: '',
+          progress: 0,
+          status: 'uploading',
+        };
+        setCottagePhotos((current) => [...current, previewPhoto]);
+
+        const timer = setInterval(() => {
+          setCottagePhotos((current) => current.map((photo) => photo.localId === localId
+            ? { ...photo, progress: Math.min(90, photo.progress + 5) }
+            : photo));
+        }, 200);
+        try {
+          const uploaded = await uploadBeachImageWithPath(file, formData.id, 'cottages');
+          const response = await fetch('/api/owner/beach/cottage-photos', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              beach_id: formData.id,
+              cottage_id: cottageId,
+              storage_path: uploaded.storagePath,
+            }),
+          });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || 'Failed to save cottage photo.');
+
+          const uploadedPhoto: CottagePhotoDraft = {
+            ...data.photo,
+            localId,
+            progress: 100,
+            status: 'saved',
+          };
+          setCottagePhotos((current) => current
+            .map((photo) => photo.localId === localId ? uploadedPhoto : photo)
+            .sort((left, right) => (left.sort_order || 0) - (right.sort_order || 0)));
+          if (data.photo.sort_order === 0) {
+            setNewCottage((current) => ({ ...current, image_url: data.photo.image_url }));
+          }
+          setCottages((current) => current.map((item) => {
+            if (item.id !== cottageId) return item;
+            const photos = [...(item.photos || []), data.photo]
+              .sort((left, right) => (left.sort_order || 0) - (right.sort_order || 0));
+            return { ...item, image_url: photos[0]?.image_url || '', photos };
+          }));
+          URL.revokeObjectURL(previewUrl);
+        } catch (error) {
+          URL.revokeObjectURL(previewUrl);
+          setCottagePhotos((current) => current.filter((photo) => photo.localId !== localId));
+          throw error;
+        } finally {
+          clearInterval(timer);
+        }
+      }
+    } catch (error) {
+      setCottageModalStatus({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Failed to upload cottage photo.',
+      });
+    } finally {
+      setUploadingCottageImage(false);
+    }
   };
 
-  const removeCottageImage = async (url: string) => {
-    if (!formData.id || !url) return;
-    const params = new URLSearchParams({ beach_id: formData.id, url });
-    const response = await fetch(`/api/owner/beach/cottages/images?${params}`, {
-      method: 'DELETE',
-    });
-    const data = await response.json();
-    if (!response.ok) throw new Error(data.error || 'Failed to remove cottage image.');
+  const removeCottagePhoto = async (photo: CottagePhotoDraft) => {
+    if (!photo.id) {
+      if (photo.image_url.startsWith('blob:')) URL.revokeObjectURL(photo.image_url);
+      setCottagePhotos((current) => current.filter((item) => item.localId !== photo.localId));
+      return;
+    }
+    try {
+      const params = new URLSearchParams({
+        beach_id: formData.id,
+        cottage_id: editingCottageId || '',
+        photo_id: photo.id,
+      });
+      const response = await fetch(`/api/owner/beach/cottage-photos?${params}`, { method: 'DELETE' });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to remove cottage photo.');
+      const next = cottagePhotos.filter((item) => item.id !== photo.id);
+      setCottagePhotos(next);
+      const orderedIds = next.flatMap((item) => item.id ? [item.id] : []);
+      if (editingCottageId && orderedIds.length) {
+        const reorderResponse = await fetch('/api/owner/beach/cottage-photos', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ beach_id: formData.id, cottage_id: editingCottageId, photo_ids: orderedIds }),
+        });
+        const reorderData = await reorderResponse.json();
+        if (!reorderResponse.ok) throw new Error(reorderData.error || 'Photo removed, but the cover could not be updated.');
+      }
+      const cover = next[0]?.image_url || '';
+      setNewCottage((current) => ({ ...current, image_url: cover }));
+      setCottages((current) => current.map((item) => item.id === editingCottageId
+        ? { ...item, image_url: cover, photos: next }
+        : item));
+      setCottageModalStatus(null);
+    } catch (error) {
+      setCottageModalStatus({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Failed to remove cottage photo.',
+      });
+    }
+  };
+
+  const makeCottagePhotoCover = async (photo: CottagePhotoDraft) => {
+    if (!photo.id || !editingCottageId) return;
+    const next = [...cottagePhotos].sort((left, right) =>
+      Number(left.id !== photo.id) - Number(right.id !== photo.id)
+    );
+    try {
+      const response = await fetch('/api/owner/beach/cottage-photos', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          beach_id: formData.id,
+          cottage_id: editingCottageId,
+          photo_ids: next.flatMap((item) => item.id ? [item.id] : []),
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to change cottage cover photo.');
+      const sorted = next.map((item, index) => ({ ...item, sort_order: index }));
+      setCottagePhotos(sorted);
+      setNewCottage((current) => ({ ...current, image_url: sorted[0]?.image_url || '' }));
+      setCottages((current) => current.map((item) => item.id === editingCottageId
+        ? { ...item, image_url: sorted[0]?.image_url || '', photos: sorted }
+        : item));
+      setCottageModalStatus({ type: 'success', message: 'Cover photo updated.' });
+    } catch (error) {
+      setCottageModalStatus({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Failed to change cottage cover photo.',
+      });
+    }
   };
 
   const resetCottageEditor = () => {
     if (cottageStatusTimerRef.current) clearTimeout(cottageStatusTimerRef.current);
-    if (cottageProgressTimerRef.current) clearInterval(cottageProgressTimerRef.current);
-    if (cottageProgressHideTimerRef.current) clearTimeout(cottageProgressHideTimerRef.current);
     cottageStatusTimerRef.current = null;
-    cottageProgressTimerRef.current = null;
-    cottageProgressHideTimerRef.current = null;
-    if (cottagePreviewUrlRef.current) {
-      URL.revokeObjectURL(cottagePreviewUrlRef.current);
-      cottagePreviewUrlRef.current = null;
-    }
     setShowAddCottage(false);
     setEditingCottageId(null);
     setCreatedCottageDuringUpload(false);
-    setOriginalCottageImage('');
-    setCottagePreviewFailed(false);
     setSavingCottage(false);
     setCottageModalStatus(null);
     setCottageFieldErrors({});
-    setCottageUploadProgress(0);
-    setCottageUploadState('idle');
+    setCottagePhotos([]);
     setNewCottage({ name: '', price: '', capacity: '', description: '', image_url: '' });
   };
 
@@ -1018,12 +1178,9 @@ export default function ManageInformationPage() {
                 type="button"
                 onClick={() => {
                   setEditingCottageId(null);
-                  setOriginalCottageImage('');
-                  setCottagePreviewFailed(false);
                   setCottageModalStatus(null);
                   setCottageFieldErrors({});
-                  setCottageUploadProgress(0);
-                  setCottageUploadState('idle');
+                  setCottagePhotos([]);
                   setNewCottage({ name: '', price: '', capacity: '', description: '', image_url: '' });
                   setShowAddCottage(true);
                 }}
@@ -1052,11 +1209,22 @@ export default function ManageInformationPage() {
                         onError={() => setFailedCottageImages((current) => new Set(current).add(item.id))}
                       />
                     ) : (
-                      <div className="flex h-full items-center justify-center text-slate-400">
+                      <div className="absolute inset-0 flex items-center justify-center text-slate-400">
                         <Camera className="h-8 w-8" />
                       </div>
                     )}
-                    <div className="absolute top-3 right-3 bg-white/95 dark:bg-black/90 backdrop-blur-xs px-3.5 py-1 rounded-full text-xs font-bold text-[#1F3F74] dark:text-[#4987BA] shadow-xs">
+                    <button
+                      type="button"
+                      onClick={() => setViewingCottagePhotos(item)}
+                      aria-label={`View photos of ${item.name}`}
+                      className="absolute inset-0 z-[1] cursor-pointer focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+                    />
+                    {(item.photos?.length || 0) > 1 && (
+                      <span className="absolute left-3 top-3 z-[2] rounded-full bg-black/65 px-2.5 py-1 text-[11px] font-semibold text-white">
+                        {item.photos.length} photos
+                      </span>
+                    )}
+                    <div className="absolute top-3 right-3 z-[2] bg-white/95 dark:bg-black/90 backdrop-blur-xs px-3.5 py-1 rounded-full text-xs font-bold text-[#1F3F74] dark:text-[#4987BA] shadow-xs">
                       ₱{item.price} / day
                     </div>
                   </div>
@@ -1079,12 +1247,19 @@ export default function ManageInformationPage() {
                         type="button"
                         onClick={() => {
                           setEditingCottageId(item.id);
-                          setOriginalCottageImage(item.image_url || '');
-                          setCottagePreviewFailed(false);
                           setCottageModalStatus(null);
                           setCottageFieldErrors({});
-                          setCottageUploadProgress(0);
-                          setCottageUploadState('idle');
+                          setCottagePhotos((item.photos?.length
+                            ? item.photos
+                            : item.image_url
+                              ? [{ image_url: item.image_url, storage_path: '', sort_order: 0 }]
+                              : []
+                          ).map((photo, index) => ({
+                            ...photo,
+                            localId: photo.id || `existing-${item.id}-${index}`,
+                            progress: 100,
+                            status: 'saved' as const,
+                          })));
                           setNewCottage({
                             name: item.name,
                             price: item.price,
@@ -2010,6 +2185,20 @@ export default function ManageInformationPage() {
         </button>
       </div>
 
+      {viewingCottagePhotos && (
+        <CottagePhotosModal
+          name={viewingCottagePhotos.name}
+          price={viewingCottagePhotos.price}
+          capacity={viewingCottagePhotos.capacity}
+          photos={viewingCottagePhotos.photos?.length
+            ? viewingCottagePhotos.photos
+            : viewingCottagePhotos.image_url
+              ? [{ image_url: viewingCottagePhotos.image_url }]
+              : []}
+          onClose={() => setViewingCottagePhotos(null)}
+        />
+      )}
+
       {/* ── MODAL: ADD COTTAGE (PNG/JPG Upload Only, Built-in ₱) ── */}
       {showAddCottage && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
@@ -2141,191 +2330,75 @@ export default function ManageInformationPage() {
               {/* Persistent cottage image upload */}
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
-                  Cottage Photo (JPG, PNG, or WebP; automatically optimized to 1600px and 5 MB max)
+                  Cottage Photos (up to 10; JPG, PNG, or WebP, optimized to 1600px and 5 MB each)
                 </label>
-                <div className="flex items-center gap-3">
+                <div className="flex flex-wrap items-center gap-3">
                   <label className="px-4 py-2 rounded-full border border-slate-300 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-950 text-xs font-semibold text-slate-700 dark:text-neutral-300 hover:bg-slate-100 cursor-pointer inline-flex items-center gap-1.5">
                     <Upload className="w-3.5 h-3.5" />
-                    <span>{newCottage.image_url ? 'Replace Photo' : 'Choose Photo'}</span>
+                    <span>Add Photos</span>
                     <input
                       type="file"
                       accept="image/jpeg, image/png, image/webp"
-                      disabled={uploadingCottageImage}
-                      onChange={async (e) => {
-                        const fileInput = e.currentTarget;
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        if (cottageProgressTimerRef.current) clearInterval(cottageProgressTimerRef.current);
-                        if (cottageProgressHideTimerRef.current) clearTimeout(cottageProgressHideTimerRef.current);
-                        cottageProgressTimerRef.current = null;
-                        cottageProgressHideTimerRef.current = null;
-                        setCottageUploadProgress(0);
-                        setCottageUploadState('idle');
-                        setCottageModalStatus(null);
-                        setCottageFieldErrors({});
-                        if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-                          setCottageModalStatus({ type: 'error', message: 'Choose a JPG, PNG, or WebP image.' });
-                          fileInput.value = '';
-                          return;
-                        }
-                        if (file.size < 1 || file.size > MAX_IMAGE_SIZE_BYTES) {
-                          setCottageModalStatus({ type: 'error', message: 'Choose an image smaller than 20 GB.' });
-                          fileInput.value = '';
-                          return;
-                        }
-                        const nameIsMissing = !(newCottage.name || '').trim();
-                        const rateIsMissing = newCottage.price === '';
-                        if (nameIsMissing || rateIsMissing) {
-                          const errors = {
-                            ...(nameIsMissing ? { name: 'Cottage name is required.' } : {}),
-                            ...(rateIsMissing ? { price: 'Daily rate is required.' } : {}),
-                          };
-                          setCottageFieldErrors(errors);
-                          setCottageModalStatus({
-                            type: 'error',
-                            message: 'Enter the cottage name and daily rate first so the photo can be saved automatically.',
-                          });
-                          fileInput.value = '';
-                          return;
-                        }
-                        const previousImage = newCottage.image_url || originalCottageImage;
-                        const previewUrl = URL.createObjectURL(file);
-                        if (cottagePreviewUrlRef.current) {
-                          URL.revokeObjectURL(cottagePreviewUrlRef.current);
-                        }
-                        cottagePreviewUrlRef.current = previewUrl;
-                        setCottagePreviewFailed(false);
-                        setNewCottage((current) => ({ ...current, image_url: previewUrl }));
-                        setUploadingCottageImage(true);
-                        setCottageUploadState('uploading');
-                        cottageProgressTimerRef.current = setInterval(() => {
-                          setCottageUploadProgress((current) => Math.min(90, current + 4));
-                        }, 200);
-                        setFailedCottageImages((current) => {
-                          if (!editingCottageId || !current.has(editingCottageId)) return current;
-                          const next = new Set(current);
-                          next.delete(editingCottageId);
-                          return next;
-                        });
-                        try {
-                          const url = await uploadCottageImage(file);
-                          const image = new window.Image();
-                          image.src = url;
-                          await image.decode();
-
-                          if (editingCottageId) {
-                            const savedCottage = await saveCatalogItem<CottageItem>('cottage', {
-                              id: editingCottageId,
-                              name: (newCottage.name || '').trim(),
-                              price: newCottage.price || '',
-                              capacity: newCottage.capacity || '',
-                              description: newCottage.description || '',
-                              image_url: url,
-                            });
-                            setCottages((current) =>
-                              current.map((cottage) => cottage.id === savedCottage.id ? savedCottage : cottage)
-                            );
-                          } else {
-                            const savedCottage = await saveCatalogItem<CottageItem>('cottage', {
-                              name: (newCottage.name || '').trim(),
-                              price: newCottage.price || '',
-                              capacity: newCottage.capacity || '',
-                              description: newCottage.description || '',
-                              image_url: url,
-                            });
-                            setCottages((current) => [...current, savedCottage]);
-                            setEditingCottageId(savedCottage.id);
-                            setOriginalCottageImage(url);
-                            setCreatedCottageDuringUpload(true);
-                          }
-                          if (cottagePreviewUrlRef.current === previewUrl) {
-                            URL.revokeObjectURL(previewUrl);
-                            cottagePreviewUrlRef.current = null;
-                          }
-                          if (cottageProgressTimerRef.current) {
-                            clearInterval(cottageProgressTimerRef.current);
-                            cottageProgressTimerRef.current = null;
-                          }
-                          setNewCottage((current) => ({ ...current, image_url: url }));
-                          setCottageUploadProgress(100);
-                          setCottageUploadState('success');
-                          setCottageModalStatus(null);
-                          cottageProgressHideTimerRef.current = setTimeout(() => {
-                            setCottageUploadState('fading');
-                            cottageProgressHideTimerRef.current = setTimeout(() => {
-                              setCottageUploadProgress(0);
-                              setCottageUploadState('idle');
-                              cottageProgressHideTimerRef.current = null;
-                            }, 200);
-                          }, 800);
-                        } catch (err: unknown) {
-                          if (cottageProgressTimerRef.current) {
-                            clearInterval(cottageProgressTimerRef.current);
-                            cottageProgressTimerRef.current = null;
-                          }
-                          if (cottagePreviewUrlRef.current === previewUrl) {
-                            URL.revokeObjectURL(previewUrl);
-                            cottagePreviewUrlRef.current = null;
-                          }
-                          setNewCottage((current) => ({ ...current, image_url: previousImage }));
-                          setCottageUploadState('error');
-                          setCottageUploadProgress((current) => Math.max(current, 8));
-                          setCottageModalStatus({ type: 'error', message: err instanceof Error ? err.message : 'Upload failed' });
-                        } finally {
-                          setUploadingCottageImage(false);
-                          fileInput.value = '';
-                        }
+                      multiple
+                      disabled={uploadingCottageImage || cottagePhotos.length >= 10}
+                      onChange={(e) => {
+                        const files = Array.from(e.currentTarget.files || []);
+                        void handleCottagePhotoFiles(files);
+                        e.currentTarget.value = '';
                       }}
                       className="hidden"
                     />
                   </label>
-                  {newCottage.image_url && (
-                    <div className="flex items-center gap-2">
-                      <div className="relative flex h-12 w-16 items-center justify-center overflow-hidden rounded-lg border border-slate-200 bg-slate-100 dark:border-neutral-700 dark:bg-neutral-800">
-                        {!cottagePreviewFailed ? (
-                          <Image
-                            src={newCottage.image_url}
-                            alt="Cottage photo preview"
-                            fill
-                            unoptimized
-                            className="object-cover"
-                            onError={() => setCottagePreviewFailed(true)}
-                          />
-                        ) : (
-                          <Camera className="h-5 w-5 text-slate-400" />
-                        )}
-                      </div>
-                      <span className="text-xs font-bold text-emerald-600">
-                        {cottagePreviewFailed
-                          ? 'Image could not be loaded'
-                          : cottageUploadState === 'uploading'
-                            ? 'Uploading photo...'
-                            : 'Saved photo'}
-                      </span>
-                    </div>
-                  )}
                 </div>
-                {cottageUploadState !== 'idle' && (
-                  <div
-                    className={`h-1.5 w-full overflow-hidden rounded-full bg-slate-200 transition-opacity duration-200 dark:bg-neutral-700 ${
-                      cottageUploadState === 'fading' ? 'opacity-0' : 'opacity-100'
-                    }`}
-                    role="progressbar"
-                    aria-label="Cottage photo upload progress"
-                    aria-valuenow={cottageUploadProgress}
-                    aria-valuemin={0}
-                    aria-valuemax={100}
-                  >
-                    <div
-                      className={`h-full rounded-full transition-[width] duration-200 ease-out ${
-                        cottageUploadState === 'error'
-                          ? 'bg-rose-500'
-                          : 'bg-[#1F3F74] dark:bg-[#4987BA]'
-                      }`}
-                      style={{ width: `${cottageUploadProgress}%` }}
-                    />
-                  </div>
-                )}
+                <div className="flex gap-3 overflow-x-auto pb-2">
+                  {cottagePhotos.map((photo, index) => (
+                    <div key={photo.localId} className="w-24 shrink-0 space-y-1.5">
+                      <div className="relative aspect-4/3 overflow-hidden rounded-lg border border-slate-200 bg-slate-100 dark:border-neutral-700 dark:bg-neutral-800">
+                        <Image
+                          src={photo.image_url}
+                          alt={`Cottage photo ${index + 1}`}
+                          fill
+                          unoptimized
+                          className="object-cover"
+                        />
+                        <button
+                          type="button"
+                          aria-label={`Remove photo ${index + 1}`}
+                          disabled={uploadingCottageImage}
+                          onClick={() => void removeCottagePhoto(photo)}
+                          className="absolute right-1 top-1 rounded-full bg-black/70 p-1 text-white disabled:opacity-50"
+                        >
+                          <XCircle className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      {index === 0 ? (
+                        <span className="block text-center text-[10px] font-bold text-emerald-700 dark:text-emerald-400">Cover</span>
+                      ) : (
+                        <button
+                          type="button"
+                          disabled={uploadingCottageImage || !photo.id}
+                          onClick={() => void makeCottagePhotoCover(photo)}
+                          className="block w-full text-center text-[10px] font-semibold text-[#1F3F74] disabled:opacity-50 dark:text-[#4987BA]"
+                        >
+                          Make cover
+                        </button>
+                      )}
+                      <div
+                        className="h-1 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-neutral-700"
+                        role="progressbar"
+                        aria-label={`Photo ${index + 1} upload progress`}
+                        aria-valuenow={photo.progress}
+                        aria-valuemin={0}
+                        aria-valuemax={100}
+                      >
+                        <div
+                          className={`h-full transition-[width] duration-200 ${photo.status === 'error' ? 'bg-rose-500' : 'bg-emerald-500'}`}
+                          style={{ width: `${photo.progress}%` }}
+                        />
+                      </div>
+                    </div>
+                  ))}
+                </div>
               </div>
 
               <div className="space-y-1">
@@ -2345,12 +2418,6 @@ export default function ManageInformationPage() {
                 <button
                   type="button"
                   onClick={async () => {
-                    if (cottageProgressTimerRef.current) clearInterval(cottageProgressTimerRef.current);
-                    if (cottageProgressHideTimerRef.current) clearTimeout(cottageProgressHideTimerRef.current);
-                    cottageProgressTimerRef.current = null;
-                    cottageProgressHideTimerRef.current = null;
-                    setCottageUploadProgress(0);
-                    setCottageUploadState('idle');
                     if (createdCottageDuringUpload && editingCottageId) {
                       try {
                         await deleteCatalogItem('cottage', editingCottageId);
@@ -2359,17 +2426,6 @@ export default function ManageInformationPage() {
                         setCottageModalStatus({
                           type: 'error',
                           message: error instanceof Error ? error.message : 'Failed to remove the new cottage.',
-                        });
-                        return;
-                      }
-                    }
-                    if (newCottage.image_url && newCottage.image_url !== originalCottageImage) {
-                      try {
-                        await removeCottageImage(newCottage.image_url);
-                      } catch (error) {
-                        setCottageModalStatus({
-                          type: 'error',
-                          message: error instanceof Error ? error.message : 'Failed to remove the unsaved cottage image.',
                         });
                         return;
                       }

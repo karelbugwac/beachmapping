@@ -53,11 +53,11 @@ async function compressBeachImage(file: File): Promise<File> {
   }
 }
 
-export async function uploadBeachImage(
+export async function uploadBeachImageWithPath(
   file: File,
   beachId: string,
   folder?: string
-): Promise<string> {
+): Promise<{ imageUrl: string; storagePath: string }> {
   const compressedFile = await compressBeachImage(file);
   const supabase = createClient();
   const [{ data: sessionData, error: sessionError }, { data: userData, error: userError }] =
@@ -83,5 +83,17 @@ export async function uploadBeachImage(
     });
   if (uploadError) throw uploadError;
 
-  return supabase.storage.from('beach-media').getPublicUrl(objectName).data.publicUrl;
+  return {
+    imageUrl: supabase.storage.from('beach-media').getPublicUrl(objectName).data.publicUrl,
+    storagePath: objectName,
+  };
+}
+
+export async function uploadBeachImage(
+  file: File,
+  beachId: string,
+  folder?: string
+): Promise<string> {
+  const uploaded = await uploadBeachImageWithPath(file, beachId, folder);
+  return uploaded.imageUrl;
 }

@@ -10,6 +10,22 @@ const tableByType = {
 type CatalogType = keyof typeof tableByType;
 type AuthorizedAuth = Extract<Awaited<ReturnType<typeof authorizeRoles>>, { authorized: true }>;
 
+function getCatalogErrorMessage(error: unknown): string {
+  if (typeof error === 'object' && error !== null && 'code' in error) {
+    const databaseError = error as { code?: unknown; message?: unknown; details?: unknown };
+    if (
+      databaseError.code === '42P01'
+      || databaseError.code === 'PGRST200'
+      || databaseError.code === 'PGRST201'
+    ) {
+      return 'Cottage photo storage is not ready. Apply supabase/migrations/20261104_beach_cottage_photos.sql in Supabase, then reload the schema cache.';
+    }
+    if (typeof databaseError.message === 'string') return databaseError.message;
+  }
+  if (error instanceof Error) return error.message;
+  return 'Failed to load beach listings.';
+}
+
 function isCatalogType(value: string | null): value is CatalogType {
   return value === 'cottage' || value === 'facility' || value === 'post';
 }
@@ -59,13 +75,29 @@ function getOwnedCottageImagePath(
 function toCatalogItem(type: CatalogType, row: Record<string, any>, auth?: AuthorizedAuth) {
   if (type === 'cottage') {
     const image = Array.isArray(row.images) ? row.images[0] : '';
+    const photos = Array.isArray(row.photos)
+      ? row.photos
+        .sort((left: Record<string, any>, right: Record<string, any>) => left.sort_order - right.sort_order)
+        .map((photo: Record<string, any>) => ({
+          id: photo.id,
+          image_url: getCottageImageUrl(auth!.adminClient.storage.from('beach-media'), photo.image_url),
+          storage_path: photo.storage_path,
+          sort_order: photo.sort_order,
+        }))
+      : [];
+    const normalizedPhotos = photos.length
+      ? photos
+      : image
+        ? [{ image_url: getCottageImageUrl(auth!.adminClient.storage.from('beach-media'), image), storage_path: '', sort_order: 0 }]
+        : [];
     return {
       id: row.id,
       name: row.name,
       price: row.price == null ? '' : String(row.price),
       capacity: row.capacity_label || (row.capacity ? `${row.capacity} persons` : ''),
       description: row.description || '',
-      image_url: auth ? getCottageImageUrl(auth.adminClient.storage.from('beach-media'), image) : '',
+      image_url: normalizedPhotos[0]?.image_url || (auth ? getCottageImageUrl(auth.adminClient.storage.from('beach-media'), image) : ''),
+      photos: normalizedPhotos,
     };
   }
   if (type === 'facility') {
@@ -99,8 +131,11 @@ export async function GET(request: NextRequest) {
 
     const entries = await Promise.all(
       (Object.entries(tableByType) as Array<[CatalogType, string]>).map(async ([type, table]) => {
-        const { data, error } = await (auth.adminClient.from(table) as any)
-          .select('*')
+        const query = (auth.adminClient.from(table) as any)
+          .select(type === 'cottage'
+            ? '*, photos:beach_cottage_photos(id, image_url, storage_path, sort_order, created_at)'
+            : '*');
+        const { data, error } = await query
           .eq('beach_id', beach.id)
           .order('created_at', { ascending: type === 'post' });
         if (error) throw error;
@@ -113,8 +148,8 @@ export async function GET(request: NextRequest) {
       { headers: noStoreHeaders }
     );
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Failed to load beach listings.';
-    console.error('Owner beach catalog GET error:', message);
+    const message = getCatalogErrorMessage(error);
+    console.error('Owner beach catalog GET error:', error);
     return NextResponse.json({ error: message }, { status: 500, headers: noStoreHeaders });
   }
 }
@@ -180,7 +215,6 @@ export async function POST(request: NextRequest) {
     }
 
     const id = typeof body.id === 'string' ? body.id : null;
-    let existingCottageImage: unknown = null;
     if (type === 'cottage' && id) {
       const { data: existingCottage, error: existingCottageError } = await (auth.adminClient
         .from('beach_cottages') as any)
@@ -192,7 +226,6 @@ export async function POST(request: NextRequest) {
       if (!existingCottage) {
         return NextResponse.json({ error: 'Cottage listing not found.' }, { status: 404, headers: noStoreHeaders });
       }
-      existingCottageImage = Array.isArray(existingCottage.images) ? existingCottage.images[0] : null;
     }
 
     const table = auth.adminClient.from(tableByType[type]) as any;
@@ -202,24 +235,18 @@ export async function POST(request: NextRequest) {
     const { data, error } = await query.select('*').single();
     if (error) throw error;
 
-    const newCottageImage = type === 'cottage' && Array.isArray(row.images)
-      ? row.images[0]
-      : null;
-    if (type === 'cottage' && existingCottageImage && existingCottageImage !== newCottageImage) {
-      const oldPath = getOwnedCottageImagePath(
-        auth.adminClient.storage.from('beach-media'),
-        existingCottageImage,
-        beach.owner_id,
-        beach.id
-      );
-      if (oldPath) {
-        const { error: removeError } = await auth.adminClient.storage.from('beach-media').remove([oldPath]);
-        if (removeError) throw removeError;
-      }
+    let responseRow = data;
+    if (type === 'cottage') {
+      const { data: cottageWithPhotos, error: photosError } = await (auth.adminClient.from('beach_cottages') as any)
+        .select('*, photos:beach_cottage_photos(id, image_url, storage_path, sort_order, created_at)')
+        .eq('id', data.id)
+        .single();
+      if (photosError) throw photosError;
+      responseRow = cottageWithPhotos;
     }
 
     return NextResponse.json(
-      { item: toCatalogItem(type, data, auth) },
+      { item: toCatalogItem(type, responseRow, auth) },
       { status: id && type === 'cottage' ? 200 : 201, headers: noStoreHeaders }
     );
   } catch (error: unknown) {
@@ -247,6 +274,7 @@ export async function DELETE(request: NextRequest) {
 
     const table = auth.adminClient.from(tableByType[typeParam]) as any;
     let cottageImage: unknown = null;
+    let cottagePhotoPaths: string[] = [];
     if (typeParam === 'cottage') {
       const { data: cottage, error: cottageError } = await table
         .select('images')
@@ -258,6 +286,11 @@ export async function DELETE(request: NextRequest) {
         return NextResponse.json({ error: 'Listing not found.' }, { status: 404, headers: noStoreHeaders });
       }
       cottageImage = Array.isArray(cottage.images) ? cottage.images[0] : null;
+      const { data: photos, error: photosError } = await (beachResult.auth.adminClient.from('beach_cottage_photos') as any)
+        .select('storage_path')
+        .eq('cottage_id', id);
+      if (photosError) throw photosError;
+      cottagePhotoPaths = (photos || []).map((photo: { storage_path: string }) => photo.storage_path);
     }
 
     const { data, error } = await table
@@ -270,15 +303,18 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Listing not found.' }, { status: 404, headers: noStoreHeaders });
     }
 
-    if (typeParam === 'cottage' && cottageImage) {
-      const path = getOwnedCottageImagePath(
-        auth.adminClient.storage.from('beach-media'),
-        cottageImage,
-        beachResult.beach.owner_id,
-        beachResult.beach.id
-      );
-      if (path) {
-        const { error: removeError } = await auth.adminClient.storage.from('beach-media').remove([path]);
+    if (typeParam === 'cottage') {
+      if (cottageImage) {
+        const path = getOwnedCottageImagePath(
+          auth.adminClient.storage.from('beach-media'),
+          cottageImage,
+          beachResult.beach.owner_id,
+          beachResult.beach.id
+        );
+        if (path && !cottagePhotoPaths.includes(path)) cottagePhotoPaths.push(path);
+      }
+      if (cottagePhotoPaths.length) {
+        const { error: removeError } = await auth.adminClient.storage.from('beach-media').remove(cottagePhotoPaths);
         if (removeError) throw removeError;
       }
     }

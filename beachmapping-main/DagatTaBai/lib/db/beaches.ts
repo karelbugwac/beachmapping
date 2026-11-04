@@ -23,6 +23,12 @@ export interface BeachCottage {
   price: string | null;
   capacity: string | null;
   image_url: string | null;
+  photos?: Array<{
+    id?: string;
+    image_url: string;
+    storage_path?: string;
+    sort_order?: number;
+  }>;
 }
 
 export interface BeachFacility {

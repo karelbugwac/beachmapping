@@ -25,7 +25,7 @@ export async function GET(
 
     const [cottagesResult, facilitiesResult, postsResult] = await Promise.all([
       (supabase.from('beach_cottages') as any)
-        .select('id, name, description, price, capacity_label, capacity, images')
+        .select('id, name, description, price, capacity_label, capacity, images, photos:beach_cottage_photos(id, image_url, storage_path, sort_order, created_at)')
         .eq('beach_id', beach.id)
         .eq('is_available', true)
         .order('display_order'),
@@ -46,14 +46,35 @@ export async function GET(
 
     return NextResponse.json({
       ...beach,
-      cottages: (cottagesResult.data || []).map((item: any) => ({
-        id: item.id,
-        name: item.name,
-        description: item.description || '',
-        price: item.price == null ? null : String(item.price),
-        capacity: item.capacity_label || (item.capacity ? `${item.capacity} persons` : null),
-        image_url: item.images?.[0] || null,
-      })),
+      cottages: (cottagesResult.data || []).map((item: any) => {
+        const photos = Array.isArray(item.photos) && item.photos.length
+          ? item.photos
+            .sort((left: any, right: any) => left.sort_order - right.sort_order)
+            .map((photo: any) => ({
+              id: photo.id,
+              image_url: /^https?:\/\//i.test(photo.image_url)
+                ? photo.image_url
+                : supabase.storage.from('beach-media').getPublicUrl(photo.image_url).data.publicUrl,
+              storage_path: photo.storage_path,
+              sort_order: photo.sort_order,
+            }))
+          : (item.images || []).slice(0, 1).map((image_url: string) => ({
+            image_url: /^https?:\/\//i.test(image_url)
+              ? image_url
+              : supabase.storage.from('beach-media').getPublicUrl(image_url).data.publicUrl,
+            storage_path: '',
+            sort_order: 0,
+          }));
+        return {
+          id: item.id,
+          name: item.name,
+          description: item.description || '',
+          price: item.price == null ? null : String(item.price),
+          capacity: item.capacity_label || (item.capacity ? `${item.capacity} persons` : null),
+          image_url: photos[0]?.image_url || null,
+          photos,
+        };
+      }),
       facility_items: (facilitiesResult.data || []).map((item: any) => ({
         id: item.id,
         name: item.name,

@@ -23,8 +23,9 @@ import {
   AlertTriangle,
   MessageSquare,
 } from 'lucide-react';
-import type { BeachRecord } from '@/lib/db/beaches';
+import type { BeachCottage, BeachRecord } from '@/lib/db/beaches';
 import { VirtualTourModal } from '@/components/virtual-tour-modal';
+import { CottagePhotosModal } from '@/components/cottages/cottage-photos-modal';
 import { showToast } from '@/components/ui/feedback-toasts';
 
 interface ResortRuleItem {
@@ -117,6 +118,7 @@ export default function BeachProfilePage({
   const [activeTab, setActiveTab] = useState<'general' | 'posts' | 'cottages' | 'facilities' | 'dos' | 'reviews'>('general');
   const [showTourModal, setShowTourModal] = useState(false);
   const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
+  const [selectedCottage, setSelectedCottage] = useState<BeachCottage | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -566,8 +568,19 @@ export default function BeachProfilePage({
                         {cottage.image_url && (
                           <div className="relative h-48 bg-slate-100 dark:bg-neutral-900">
                             <Image src={cottage.image_url} alt={cottage.name} fill className="object-cover" sizes="(max-width: 640px) 100vw, 50vw" />
-                          </div>
-                        )}
+                              <button
+                                type="button"
+                                onClick={() => setSelectedCottage(cottage)}
+                                aria-label={`View photos of ${cottage.name}`}
+                                className="absolute inset-0 z-[1] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
+                              />
+                              {(cottage.photos?.length || 0) > 1 && (
+                                <span className="absolute left-3 top-3 z-[2] rounded-full bg-black/65 px-2.5 py-1 text-[11px] font-semibold text-white">
+                                  {cottage.photos?.length} photos
+                                </span>
+                              )}
+                            </div>
+                          )}
                         <div className="space-y-2 p-4">
                           <div className="flex items-start justify-between gap-3">
                             <h3 className="font-bold text-slate-900 dark:text-white">{cottage.name}</h3>
@@ -766,6 +779,19 @@ export default function BeachProfilePage({
         tourUrl={beach.virtual_tour_url}
         beachName={beach.name}
       />
+      {selectedCottage && (
+        <CottagePhotosModal
+          name={selectedCottage.name}
+          price={selectedCottage.price}
+          capacity={selectedCottage.capacity}
+          photos={selectedCottage.photos?.length
+            ? selectedCottage.photos
+            : selectedCottage.image_url
+              ? [{ image_url: selectedCottage.image_url }]
+              : []}
+          onClose={() => setSelectedCottage(null)}
+        />
+      )}
     </div>
   );
 }
