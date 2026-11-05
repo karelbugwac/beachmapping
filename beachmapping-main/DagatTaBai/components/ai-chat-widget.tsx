@@ -9,12 +9,30 @@ import {
   Trash2,
 } from 'lucide-react';
 import { showToast } from '@/components/ui/feedback-toasts';
+import {
+  BAI_SUGGESTED_QUESTIONS,
+  getContextualBranchQuestions,
+} from '@/lib/services/baiKnowledgeBase';
 
 interface ChatMessage {
   id: string;
   sender: 'user' | 'assistant';
   text: string;
   timestamp: string;
+}
+
+function renderFormattedText(text: string) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, idx) => {
+    if (part.startsWith('**') && part.endsWith('**')) {
+      return (
+        <strong key={idx} className="font-bold">
+          {part.slice(2, -2)}
+        </strong>
+      );
+    }
+    return <React.Fragment key={idx}>{part}</React.Fragment>;
+  });
 }
 
 export function AiChatWidget() {
@@ -29,7 +47,7 @@ export function AiChatWidget() {
     {
       id: 'welcome-1',
       sender: 'assistant',
-      text: "Maayong adlaw! I'm Bai, the Dagat Ta Bai guide. Ask about information currently listed in our verified beach database.",
+      text: "Maayong adlaw! I'm **Bai**, your Dagat Ta Bai local guide for Barangay Binongkalan, Catmon. Tap a question below or ask me about **Rañola Beach**, **Lite Bay Resort**, **Turtle Point Beach**, **Majestique Beach**, or **Hinagdan Beach 1**!",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -84,14 +102,18 @@ export function AiChatWidget() {
     return () => window.removeEventListener('open-bai-chat', handleOpenChat);
   }, []);
 
-  const handleSend = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!input.trim() || loading) return;
+  const submitQuestion = async (questionText: string) => {
+    if (!questionText.trim() || loading) return;
+
+    const recentHistory = messages
+      .filter((m) => m.id !== 'welcome-1' && m.text.trim().length > 0)
+      .slice(-8)
+      .map((m) => ({ role: m.sender, text: m.text }));
 
     const userMsg: ChatMessage = {
       id: Date.now().toString(),
       sender: 'user',
-      text: input.trim(),
+      text: questionText.trim(),
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     };
 
@@ -117,6 +139,7 @@ export function AiChatWidget() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           message: userMsg.text,
+          history: recentHistory,
         }),
       });
 
@@ -163,6 +186,11 @@ export function AiChatWidget() {
     }
   };
 
+  const handleSend = async (e: React.FormEvent) => {
+    e.preventDefault();
+    await submitQuestion(input);
+  };
+
   const handleClearHistory = async () => {
     try {
       const response = await fetch('/api/assistant/history', { method: 'DELETE' });
@@ -188,6 +216,16 @@ export function AiChatWidget() {
     (!messages.length ||
       messages[messages.length - 1].sender === 'user' ||
       !messages[messages.length - 1].text.trim());
+
+  // Compute contextual follow-up / branch questions after the latest assistant response
+  let branchQuestions: { label: string; question: string }[] = [];
+  if (!loading && visibleMessages.length >= 2) {
+    const lastMsg = visibleMessages[visibleMessages.length - 1];
+    const prevUserMsg = [...visibleMessages].reverse().find((m) => m.sender === 'user');
+    if (lastMsg.sender === 'assistant' && lastMsg.id !== 'welcome-1' && prevUserMsg) {
+      branchQuestions = getContextualBranchQuestions(prevUserMsg.text, lastMsg.text);
+    }
+  }
 
   const isMap = pathname === '/map';
 
@@ -290,7 +328,7 @@ export function AiChatWidget() {
                   }`}
                 >
                   <p className="whitespace-pre-line leading-relaxed text-xs">
-                    {msg.text}
+                    {renderFormattedText(msg.text)}
                   </p>
                   <span
                     className={`text-[9.5px] block text-right font-medium ${
@@ -302,6 +340,28 @@ export function AiChatWidget() {
                 </div>
               </div>
             ))}
+
+            {/* Contextual Follow-Up / Branch Questions right below the latest answer */}
+            {branchQuestions.length > 0 && (
+              <div className="pt-0.5 space-y-1.5">
+                <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
+                  Continue / Ask next:
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {branchQuestions.map((item) => (
+                    <button
+                      key={item.label}
+                      type="button"
+                      disabled={loading}
+                      onClick={() => void submitQuestion(item.question)}
+                      className="px-2.5 py-1 rounded-none bg-blue-50/80 dark:bg-[#152642] text-[#1F3F74] dark:text-blue-200 hover:bg-[#1F3F74] hover:text-white dark:hover:bg-[#1F3F74] dark:hover:text-white border border-blue-200/80 dark:border-blue-900/60 text-[11px] font-medium transition-colors cursor-pointer"
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
 
             {/* Thinking State: Only 3 Bouncing Dots - Absolutely NO Empty Chat Bubble */}
             {isThinking && (
@@ -315,36 +375,19 @@ export function AiChatWidget() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Quick Prompts: Modern Square Chips */}
+          {/* Quick Prompts: Modern Square Chips (One-Click Ask) */}
           <div className="px-3 py-2 border-t border-slate-200 dark:border-neutral-800 bg-white dark:bg-[#0c1424] flex gap-1.5 overflow-x-auto text-[11px] no-scrollbar">
-            <button
-              type="button"
-              onClick={() => setInput('Which beaches are listed in the verified database?')}
-              className="px-2.5 py-1 rounded-none bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-[#1F3F74] hover:text-white dark:hover:bg-[#1F3F74] dark:hover:text-white border border-slate-200 dark:border-slate-700 whitespace-nowrap transition-colors font-medium cursor-pointer"
-            >
-              Listed beaches
-            </button>
-            <button
-              type="button"
-              onClick={() => setInput('Which beach is best for snorkeling?')}
-              className="px-2.5 py-1 rounded-none bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-[#1F3F74] hover:text-white dark:hover:bg-[#1F3F74] dark:hover:text-white border border-slate-200 dark:border-slate-700 whitespace-nowrap transition-colors font-medium cursor-pointer"
-            >
-              Snorkeling spot
-            </button>
-            <button
-              type="button"
-              onClick={() => setInput('What are the entrance fees?')}
-              className="px-2.5 py-1 rounded-none bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-[#1F3F74] hover:text-white dark:hover:bg-[#1F3F74] dark:hover:text-white border border-slate-200 dark:border-slate-700 whitespace-nowrap transition-colors font-medium cursor-pointer"
-            >
-              Entrance fees
-            </button>
-            <button
-              type="button"
-              onClick={() => setInput('What is the current tide status and sea condition?')}
-              className="px-2.5 py-1 rounded-none bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-[#1F3F74] hover:text-white dark:hover:bg-[#1F3F74] dark:hover:text-white border border-slate-200 dark:border-slate-700 whitespace-nowrap transition-colors font-medium cursor-pointer"
-            >
-              Tide status
-            </button>
+            {BAI_SUGGESTED_QUESTIONS.map((item) => (
+              <button
+                key={item.label}
+                type="button"
+                disabled={loading}
+                onClick={() => void submitQuestion(item.question)}
+                className="px-2.5 py-1 rounded-none bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-[#1F3F74] hover:text-white dark:hover:bg-[#1F3F74] dark:hover:text-white border border-slate-200 dark:border-slate-700 whitespace-nowrap transition-colors font-medium cursor-pointer disabled:opacity-50"
+              >
+                {item.label}
+              </button>
+            ))}
           </div>
 
           {/* Input Form: Sharp Modern Docked Input (No Verified Footer Text) */}
@@ -356,7 +399,7 @@ export function AiChatWidget() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about cottages, fees, tides..."
+              placeholder="Ask about Rañola, Lite Bay, Turtle Point, Majestique, Hinagdan..."
               className="flex-1 bg-slate-50 dark:bg-[#132035] border border-slate-200 dark:border-slate-800 rounded-none px-3.5 py-2 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-[#1F3F74] transition-all"
             />
             <button
