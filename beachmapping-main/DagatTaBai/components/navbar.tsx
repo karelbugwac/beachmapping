@@ -8,7 +8,7 @@ import {
   Menu,
   X,
   LogOut,
-  User as UserIcon,
+  Bell,
 } from 'lucide-react';
 import type { AuthUser } from '@/lib/db/auth';
 
@@ -17,9 +17,15 @@ function getDisplayName(user: AuthUser): string {
   return user.full_name || user.email?.split('@')[0] || 'User';
 }
 
+function isUserRole(role: unknown): role is AuthUser['role'] {
+  return role === 'user' || role === 'beach_owner' || role === 'beach_manager' || role === 'admin';
+}
+
 export function Navbar() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [user, setUser] = useState<AuthUser | null>(null);
+  const [authLoading, setAuthLoading] = useState(true);
+  const [unreadNotifications, setUnreadNotifications] = useState(0);
 
   const pathname = usePathname();
   const router = useRouter();
@@ -53,6 +59,7 @@ export function Navbar() {
         const data = await res.json();
         if (data.user && isMounted) {
           setUser(data.user);
+          setAuthLoading(false);
           return;
         }
       } catch {}
@@ -71,18 +78,21 @@ export function Navbar() {
               sbUser.email?.split('@')[0] ||
               'User',
             email: sbUser.email || '',
-            role: (sbUser.user_metadata?.role as any) || 'user',
+            role: isUserRole(sbUser.user_metadata?.role) ? sbUser.user_metadata.role : 'user',
             profile_image_url:
+              sbUser.user_metadata?.profile_image_url ||
               sbUser.user_metadata?.avatar_url ||
               sbUser.user_metadata?.picture ||
               null,
             created_at: sbUser.created_at,
           });
+          setAuthLoading(false);
           return;
         }
       } catch {}
 
       if (isMounted) setUser(null);
+      if (isMounted) setAuthLoading(false);
     };
 
     void checkSession();
@@ -95,22 +105,27 @@ export function Navbar() {
           if (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'USER_UPDATED') {
             void checkSession();
           } else if (event === 'SIGNED_OUT') {
-            if (isMounted) setUser(null);
+            if (isMounted) {
+              setUser(null);
+              setUnreadNotifications(0);
+              setAuthLoading(false);
+            }
           }
         });
         authSubscription = data.subscription;
       })
       .catch(() => {});
 
-    const handleUserUpdate = (e: any) => {
-      if (e.detail && isMounted) {
+    const handleUserUpdate = (event: Event) => {
+      const detail = (event as CustomEvent<Partial<AuthUser>>).detail;
+      if (detail && isMounted) {
         setUser((prev) => {
-          if (!prev) return e.detail;
+          if (!prev) return null;
           return {
             ...prev,
-            ...e.detail,
-            full_name: e.detail.full_name !== undefined ? e.detail.full_name : prev.full_name,
-            profile_image_url: e.detail.profile_image_url !== undefined ? e.detail.profile_image_url : prev.profile_image_url,
+            ...detail,
+            full_name: detail.full_name !== undefined ? detail.full_name : prev.full_name,
+            profile_image_url: detail.profile_image_url !== undefined ? detail.profile_image_url : prev.profile_image_url,
           };
         });
       }
@@ -123,6 +138,40 @@ export function Navbar() {
       window.removeEventListener('dtb_user_updated', handleUserUpdate);
     };
   }, [isDedicatedPortal]);
+
+  useEffect(() => {
+    if (!user || isDedicatedPortal) return;
+
+    let isMounted = true;
+    const refreshCount = async () => {
+      try {
+        const response = await fetch('/api/notifications', { cache: 'no-store' });
+        if (response.status === 401) {
+          if (isMounted) setUnreadNotifications(0);
+          return;
+        }
+        const contentType = response.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+          throw new Error(`Notification endpoint returned ${response.status} without a JSON response.`);
+        }
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Could not load notification count.');
+        if (isMounted) setUnreadNotifications(Number(result.unreadCount) || 0);
+      } catch (error: unknown) {
+        console.error('Could not refresh notification count:', error);
+      }
+    };
+
+    const refreshOnUpdate = () => void refreshCount();
+    void refreshCount();
+    const intervalId = window.setInterval(refreshCount, 30_000);
+    window.addEventListener('dtb_notifications_updated', refreshOnUpdate);
+    return () => {
+      isMounted = false;
+      window.clearInterval(intervalId);
+      window.removeEventListener('dtb_notifications_updated', refreshOnUpdate);
+    };
+  }, [user, pathname, isDedicatedPortal]);
 
   const handleSignOut = async () => {
     try {
@@ -198,6 +247,23 @@ export function Navbar() {
           <div className="hidden md:flex items-center gap-3 flex-shrink-0">
             {user ? (
               <div className="flex items-center gap-3">
+                <Link
+                  href="/notifications"
+                  title="Notifications"
+                  aria-label={unreadNotifications ? `Notifications, ${unreadNotifications} unread` : 'Notifications'}
+                  className={`relative rounded-full p-2 transition-colors hover:bg-slate-100 dark:hover:bg-neutral-800 ${
+                    pathname === '/notifications'
+                      ? 'text-[#1F3F74] dark:text-[#4987BA]'
+                      : 'text-slate-600 dark:text-slate-300'
+                  }`}
+                >
+                  <Bell className="h-[18px] w-[18px]" />
+                  {unreadNotifications > 0 && (
+                    <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-rose-600 px-1 text-center text-[10px] font-bold leading-4 text-white">
+                      {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                    </span>
+                  )}
+                </Link>
                 {/* Circular Profile Avatar (Direct link to Settings, NO dropdown) */}
                 <Link
                   href="/profile"
@@ -205,16 +271,19 @@ export function Navbar() {
                   aria-label="Account Settings"
                   className="relative group p-0.5 rounded-full ring-2 ring-[#1F3F74]/20 dark:ring-[#4987BA]/30 hover:ring-[#1F3F74] dark:hover:ring-[#4987BA] transition-all cursor-pointer flex-shrink-0"
                 >
-                  <div className="w-8 h-8 rounded-full bg-[#1F3F74] dark:bg-[#4987BA] text-white flex items-center justify-center font-bold text-xs overflow-hidden shadow-xs">
-                    {user.profile_image_url ? (
+                  <div className="relative w-8 h-8 rounded-full bg-[#1F3F74] dark:bg-[#4987BA] text-white flex items-center justify-center font-bold text-xs overflow-hidden shadow-xs">
+                    <span>{getDisplayName(user).charAt(0).toUpperCase()}</span>
+                    {user.profile_image_url && (
                       // eslint-disable-next-line @next/next/no-img-element
                       <img
+                        key={user.profile_image_url}
                         src={user.profile_image_url}
-                        alt={getDisplayName(user)}
-                        className="w-full h-full object-cover"
+                        alt=""
+                        onError={(event) => {
+                          event.currentTarget.style.display = 'none';
+                        }}
+                        className="absolute inset-0 w-full h-full object-cover"
                       />
-                    ) : (
-                      getDisplayName(user).charAt(0).toUpperCase()
                     )}
                   </div>
                 </Link>
@@ -230,7 +299,7 @@ export function Navbar() {
                   <LogOut className="w-4 h-4" />
                 </button>
               </div>
-            ) : (
+            ) : !authLoading ? (
               /* Public / Unauthenticated: Sign Up button */
               <Link
                 href="/register"
@@ -238,35 +307,60 @@ export function Navbar() {
               >
                 Sign Up
               </Link>
+            ) : (
+              <div className="h-9 w-24" aria-hidden="true" />
             )}
           </div>
 
           {/* Mobile Actions: Circular Avatar or Menu Toggle */}
           <div className="flex items-center gap-2.5 md:hidden">
             {user && (
+              <>
               <Link
-                href="/profile"
-                className="w-7 h-7 rounded-full bg-[#1F3F74] dark:bg-[#4987BA] text-white flex items-center justify-center font-bold text-xs overflow-hidden shadow-xs"
-                title="Account Settings"
+                href="/notifications"
+                title="Notifications"
+                aria-label={unreadNotifications ? `Notifications, ${unreadNotifications} unread` : 'Notifications'}
+                className={`relative rounded-full p-1.5 ${
+                  pathname === '/notifications'
+                    ? 'text-[#1F3F74] dark:text-[#4987BA]'
+                    : 'text-slate-600 dark:text-slate-300'
+                }`}
               >
-                {user.profile_image_url ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={user.profile_image_url}
-                    alt={getDisplayName(user)}
-                    className="w-full h-full object-cover"
-                  />
-                ) : (
-                  getDisplayName(user).charAt(0).toUpperCase()
+                <Bell className="h-[18px] w-[18px]" />
+                {unreadNotifications > 0 && (
+                  <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-rose-600 px-1 text-center text-[10px] font-bold leading-4 text-white">
+                    {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                  </span>
                 )}
               </Link>
+              <Link
+                href="/profile"
+                className="relative w-7 h-7 rounded-full bg-[#1F3F74] dark:bg-[#4987BA] text-white flex items-center justify-center font-bold text-xs overflow-hidden shadow-xs"
+                title="Account Settings"
+              >
+                <span>{getDisplayName(user).charAt(0).toUpperCase()}</span>
+                {user.profile_image_url && (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    key={user.profile_image_url}
+                    src={user.profile_image_url}
+                    alt=""
+                    onError={(event) => {
+                      event.currentTarget.style.display = 'none';
+                    }}
+                    className="absolute inset-0 w-full h-full object-cover"
+                  />
+                )}
+              </Link>
+            </>
             )}
 
             <button
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-1.5 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-neutral-800"
-              aria-label="Open menu"
+              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={mobileMenuOpen}
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -301,16 +395,7 @@ export function Navbar() {
 
           <div className="pt-2 border-t border-slate-100 dark:border-neutral-800 space-y-2">
             {user ? (
-              <div className="space-y-2">
-                <Link
-                  href="/profile"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-neutral-900 rounded-xl"
-                >
-                  <UserIcon className="w-4 h-4 text-[#1F3F74] dark:text-[#4987BA]" />
-                  <span>Account Settings ({getDisplayName(user)})</span>
-                </Link>
-
+              <div>
                 <button
                   type="button"
                   onClick={() => {
@@ -323,7 +408,7 @@ export function Navbar() {
                   <span>Log Out</span>
                 </button>
               </div>
-            ) : (
+            ) : !authLoading ? (
               <Link
                 href="/register"
                 onClick={() => setMobileMenuOpen(false)}
@@ -331,7 +416,7 @@ export function Navbar() {
               >
                 Sign Up
               </Link>
-            )}
+            ) : null}
           </div>
         </div>
       )}

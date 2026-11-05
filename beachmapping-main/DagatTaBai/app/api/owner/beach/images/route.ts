@@ -3,6 +3,7 @@ import { NextResponse } from 'next/server';
 import { authorizeRoles } from '@/lib/supabase/authorization';
 
 const bucketName = 'beach-media';
+const MAX_IMAGE_SIZE_BYTES = 20 * 1024 * 1024;
 const allowedTypes = new Map([
   ['image/jpeg', 'jpg'],
   ['image/jpg', 'jpg'],
@@ -18,15 +19,15 @@ export async function POST(request: Request) {
     if (!auth.authorized) return NextResponse.json({ error: auth.message }, { status: auth.status });
 
     const formData = await request.formData();
-    const file = formData.get('image');
+    const file = formData.get('file') ?? formData.get('image');
     if (!(file instanceof File)) return NextResponse.json({ error: 'Choose an image file.' }, { status: 400 });
 
     const fileNameExt = file.name.split('.').pop()?.toLowerCase();
     const extension = allowedTypes.get(file.type) || (['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif'].includes(fileNameExt || '') ? (fileNameExt === 'jpeg' ? 'jpg' : fileNameExt) : null);
     if (!extension) return NextResponse.json({ error: 'Images must be JPEG, PNG, WebP, GIF, or AVIF.' }, { status: 400 });
 
-    if (file.size < 1 || file.size > 10 * 1024 * 1024) {
-      return NextResponse.json({ error: 'Image must be no larger than 10 MB.' }, { status: 400 });
+    if (file.size < 1 || file.size > MAX_IMAGE_SIZE_BYTES) {
+      return NextResponse.json({ error: 'Image must be no larger than 20 MB.' }, { status: 400 });
     }
 
     const requestedBeachId = formData.get('beach_id');

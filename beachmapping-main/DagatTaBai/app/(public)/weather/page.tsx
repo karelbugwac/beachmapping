@@ -1,22 +1,25 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Waves,
   Wind,
   Droplets,
   Sun,
   SunMedium,
-  Umbrella,
   CloudRain,
+  CloudDrizzle,
+  CloudLightning,
+  CloudFog,
+  CloudMoon,
   CloudSun,
+  Snowflake,
   AlertTriangle,
-  Lightbulb,
-  AlertCircle,
   Calendar,
   Moon,
   ChevronDown,
   Activity,
+  Cloud,
 } from 'lucide-react';
 import type { WeatherData } from '@/lib/services/weather';
 import type { CurrentTideState, TideExtreme } from '@/lib/services/tide-interpolation';
@@ -32,140 +35,181 @@ function StarSparkle({ className }: { className?: string }) {
   );
 }
 
-// Custom Sunscreen / Lotion Bottle Icon (Clean vector design with SPF badge)
-function LotionBottleIcon({ className }: { className?: string }) {
-  return (
-    <svg
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-      className={className}
-    >
-      <path d="M10 2h4v3h-4z" />
-      <path d="M8 5h8a2 2 0 0 1 2 2v13a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2V7a2 2 0 0 1 2-2z" />
-      <circle cx="12" cy="13" r="2.5" />
-      <path d="M12 9.5v.5M12 16v.5M8.5 13H9M15 13h.5" />
-    </svg>
-  );
+function WeatherIcon({ code, className, isNight = false }: { code: number; className?: string; isNight?: boolean }) {
+  if (isNight && code === 0) return <Moon className={className} />;
+  if (isNight && (code === 1 || code === 2)) return <CloudMoon className={className} />;
+  if (code >= 95) return <CloudLightning className={className} />;
+  if ((code >= 71 && code <= 77) || (code >= 85 && code <= 86)) return <Snowflake className={className} />;
+  if ((code >= 61 && code <= 67) || (code >= 80 && code <= 82)) return <CloudRain className={className} />;
+  if (code >= 51 && code <= 57) return <CloudDrizzle className={className} />;
+  if (code >= 45 && code <= 48) return <CloudFog className={className} />;
+  if (code === 3) return <Cloud className={className} />;
+  if (code === 1 || code === 2) return <CloudSun className={className} />;
+  return <Sun className={className} />;
 }
 
 // Helper to convert wind direction degrees to compass direction
 function getWindDirection(degrees: number): string {
-  const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WSW', 'NW', 'NNW'];
+  const directions = ['N', 'NNE', 'NE', 'ENE', 'E', 'ESE', 'SE', 'SSE', 'S', 'SSW', 'SW', 'WSW', 'W', 'WNW', 'NW', 'NNW'];
   const index = Math.round(degrees / 22.5) % 16;
   return directions[index];
 }
 
-// Generate smart reminders based on weather conditions and time of day
 function generateReminders(weather: WeatherData | null, currentTide: CurrentTideState | null) {
-  const reminders: { icon: React.ComponentType<{ className?: string }>; text: string; type: 'info' | 'warning' | 'alert' }[] = [];
-
+  const reminders: { text: string; type: 'info' | 'warning' | 'alert' }[] = [];
   if (!weather) return reminders;
 
-  const hour = new Date().getHours();
-  const isMorning = hour >= 6 && hour < 12;
-  const isAfternoon = hour >= 12 && hour < 18;
-  const isNight = hour >= 18 || hour < 6;
-
-  // Time-specific tips
-  if (isMorning) {
-    reminders.push({
-      icon: Sun,
-      text: 'Pleasant morning conditions - ideal for coastal walks and photography.',
-      type: 'info',
-    });
-    reminders.push({
-      icon: Droplets,
-      text: 'Keep hydrated throughout your morning beach excursion.',
-      type: 'info',
-    });
-  } else if (isNight) {
-    reminders.push({
-      icon: Moon,
-      text: 'Cool evening offshore breeze - consider bringing a light overshirt.',
-      type: 'info',
-    });
-    reminders.push({
-      icon: AlertCircle,
-      text: 'Stay within illuminated cottage areas for safe shoreline walking at night.',
-      type: 'warning',
-    });
-  } else if (isAfternoon) {
-    reminders.push({
-      icon: LotionBottleIcon,
-      text: 'Peak daylight UV exposure - seek cottage shade and re-apply SPF 30+ sunscreen lotion.',
-      type: 'warning',
-    });
-  }
-
-  // Rain/Drizzle reminders
-  if (weather.weatherCode >= 51 && weather.weatherCode <= 67) {
-    reminders.push({
-      icon: Umbrella,
-      text: 'Passing light showers expected along Catmon - keep waterproof pouches ready for gadgets.',
-      type: 'warning',
-    });
-  }
-
-  // Thunderstorm alert
   if (weather.weatherCode >= 95) {
     reminders.push({
-      icon: AlertTriangle,
-      text: 'Thunderstorm advisory - avoid open water swimming and seek solid cottage shelter.',
+      text: 'Thunderstorm conditions are reported. Avoid entering the water and seek proper shelter.',
       type: 'alert',
     });
+  } else if ((weather.weatherCode >= 51 && weather.weatherCode <= 67) || (weather.weatherCode >= 80 && weather.weatherCode <= 82)) {
+    reminders.push({
+      text: `${weather.conditionLabel} is reported. Use care near the shoreline and on the water.`,
+      type: 'warning',
+    });
   }
 
-  // Low tide coastal exploring reminder (Sandbar removed)
-  if (currentTide && currentTide.currentHeight < 0.7) {
+  if (weather.uvIndex !== null && weather.uvIndex >= 6) {
     reminders.push({
-      icon: Waves,
-      text: 'Low tide window active - shallow shoreline reveals safe reefs for coastal exploring.',
+      text: `The current UV index is ${weather.uvIndex.toFixed(0)}. Seek shade and use sun protection outdoors.`,
+      type: 'warning',
+    });
+  }
+
+  if (weather.windSpeed >= 30) {
+    reminders.push({
+      text: `Wind is ${weather.windSpeed.toFixed(0)} km/h. Take care around exposed shorelines and small boats.`,
+      type: 'warning',
+    });
+  }
+
+  if (weather.waveHeight !== null && weather.waveHeight >= 1.5) {
+    reminders.push({
+      text: `Forecast wave height is ${weather.waveHeight.toFixed(1)} m. Use caution before swimming or boating.`,
+      type: 'warning',
+    });
+  }
+
+  if (currentTide && currentTide.currentHeight <= 0.3) {
+    reminders.push({
+      text: `The tide is low at ${currentTide.currentHeight.toFixed(2)} m. Use care on exposed and slippery shoreline areas.`,
       type: 'info',
     });
   }
 
-  // Default fallback
-  if (reminders.length < 3) {
+  const missingMarineReadings = [
+    weather.waveHeight === null ? 'wave' : null,
+    weather.swellHeight === null ? 'swell' : null,
+    currentTide === null ? 'tide' : null,
+  ].filter(Boolean);
+  if (missingMarineReadings.length > 0) {
     reminders.push({
-      icon: Waves,
-      text: 'Coastal waters and shoreline conditions are favorable for visiting Binongkalan.',
-      type: 'info',
+      text: `${missingMarineReadings.join(', ')} readings are unavailable, so some coastal guidance is limited.`,
+      type: 'warning',
     });
   }
 
+  if (reminders.length === 0) {
+    reminders.push({
+      text: 'No weather alerts were triggered by the readings that are currently available.',
+      type: 'info',
+    });
+  }
   return reminders;
 }
 
-// Real-time 4-day forecast generator dynamically anchored to the current calendar date
-function getDynamicFourDayForecast(baseDate: Date) {
-  const dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-  const forecastTemplates = [
-    { condition: 'Partly Cloudy', high: 31, low: 26, rain: 20, icon: CloudSun },
-    { condition: 'Mostly Sunny', high: 32, low: 26, rain: 10, icon: Sun },
-    { condition: 'Passing Showers', high: 30, low: 25, rain: 35, icon: CloudRain },
-    { condition: 'Clear Sky', high: 31, low: 26, rain: 15, icon: Sun },
-  ];
+function getForecastIconColor(weatherCode: number) {
+  if (weatherCode >= 95) return 'text-violet-500';
+  if ((weatherCode >= 71 && weatherCode <= 77) || (weatherCode >= 85 && weatherCode <= 86)) return 'text-sky-400';
+  if ((weatherCode >= 51 && weatherCode <= 82)) return 'text-sky-500';
+  if ((weatherCode >= 45 && weatherCode <= 48) || weatherCode === 3) return 'text-slate-400';
+  return 'text-amber-500';
+}
 
-  return [1, 2, 3, 4].map((offset, index) => {
-    const targetDate = new Date(baseDate);
-    targetDate.setDate(targetDate.getDate() + offset);
-    const dayLabel = offset === 1 ? 'Tomorrow' : dayNames[targetDate.getDay()];
-    const template = forecastTemplates[index % forecastTemplates.length];
+function formatWeatherTime(value: string | null) {
+  if (!value) return 'Unavailable';
+  const parsed = /(?:Z|[+-]\d{2}:\d{2})$/.test(value)
+    ? new Date(value)
+    : new Date(`${value}:00+08:00`);
+  if (!Number.isFinite(parsed.getTime())) return 'Unavailable';
+  return new Intl.DateTimeFormat(undefined, {
+    timeZone: 'Asia/Manila',
+    hour: 'numeric',
+    minute: '2-digit',
+  }).format(parsed);
+}
 
+function getAirQualityLabel(usAqi: number) {
+  if (usAqi <= 50) return 'Good';
+  if (usAqi <= 100) return 'Moderate';
+  if (usAqi <= 150) return 'Unhealthy for sensitive groups';
+  if (usAqi <= 200) return 'Unhealthy';
+  if (usAqi <= 300) return 'Very unhealthy';
+  return 'Hazardous';
+}
+
+function getAirQualityColor(usAqi: number) {
+  if (usAqi <= 50) return 'text-emerald-200';
+  if (usAqi <= 100) return 'text-amber-200';
+  if (usAqi <= 150) return 'text-orange-200';
+  return 'text-rose-200';
+}
+
+function getParticulateReadings(airQuality: NonNullable<WeatherData['airQuality']>) {
+  const readings = [
+    airQuality.pm25 == null ? null : `PM2.5 ${airQuality.pm25.toFixed(1)}`,
+    airQuality.pm10 == null ? null : `PM10 ${airQuality.pm10.toFixed(1)}`,
+  ].filter((reading): reading is string => reading !== null).join(' · ');
+  return readings ? `${readings} μg/m³` : 'Particulate readings unavailable';
+}
+
+function getActivityAssessments(weather: WeatherData | null, tide: CurrentTideState | null) {
+  if (!weather) return [];
+
+  const storm = weather.weatherCode >= 95;
+  const rain = (weather.weatherCode >= 51 && weather.weatherCode <= 67) || (weather.weatherCode >= 80 && weather.weatherCode <= 82);
+  const roughWaves = weather.waveHeight !== null && weather.waveHeight >= 1.5;
+  const strongWind = weather.windSpeed >= 30;
+  const lowTide = tide !== null && tide.currentHeight <= 0.3;
+  const highTide = tide !== null && tide.currentHeight >= 1.8;
+  const reasons = {
+    storm: storm ? 'thunderstorm' : null,
+    rain: rain ? 'rain' : null,
+    waves: roughWaves ? `waves ${weather.waveHeight?.toFixed(1)} m` : null,
+    swell: weather.swellHeight !== null && weather.swellHeight >= 1.2
+      ? `swell ${weather.swellHeight.toFixed(1)} m`
+      : null,
+    wind: strongWind ? `wind ${weather.windSpeed.toFixed(0)} km/h` : null,
+    tide: lowTide ? 'very low tide' : highTide ? 'high tide' : null,
+  };
+  const makeAssessment = (activity: string, signals: (string | null)[]) => {
+    const activeSignals = signals.filter((signal): signal is string => Boolean(signal));
+    const caution = activeSignals.length > 0;
+    const limitedData = weather.waveHeight === null || weather.swellHeight === null || tide === null;
     return {
-      day: dayLabel,
-      dateLabel: targetDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-      condition: template.condition,
-      high: template.high,
-      low: template.low,
-      rain: template.rain,
-      icon: template.icon,
+      activity,
+      status: caution ? 'Use caution' : limitedData ? 'Limited data' : 'No alert reported',
+      statusStyle: caution
+        ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
+        : limitedData
+          ? 'bg-slate-200 text-slate-700 dark:bg-neutral-800 dark:text-slate-300'
+          : 'bg-blue-100 text-[#1F3F74] dark:bg-blue-950/60 dark:text-blue-300',
+      note: caution
+        ? `Current readings include ${activeSignals.join(', ')}. Conditions can change.`
+        : limitedData
+          ? 'Some wave or tide readings are unavailable; guidance is limited.'
+          : 'No related weather alert in the current feed; conditions can still change.',
     };
-  });
+  };
+
+  return [
+    makeAssessment('Swimming', [reasons.storm, reasons.rain, reasons.waves, strongWind ? reasons.wind : null, lowTide ? reasons.tide : null]),
+    makeAssessment('Snorkeling', [reasons.storm, reasons.rain, reasons.waves, reasons.swell]),
+    makeAssessment('Shoreline walking', [reasons.storm, reasons.wind, reasons.tide]),
+    makeAssessment('Kayaking & boating', [reasons.storm, reasons.wind, reasons.waves, reasons.swell]),
+  ];
 }
 
 export default function WeatherPage() {
@@ -175,13 +219,8 @@ export default function WeatherPage() {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [tideExtremes, setTideExtremes] = useState<TideExtreme[]>([]);
   const [currentTide, setCurrentTide] = useState<CurrentTideState | null>(null);
-  const [, setLoading] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [dataError, setDataError] = useState<string | null>(null);
-  const [now, setNow] = useState<Date>(new Date());
-
-  useEffect(() => {
-    setNow(new Date());
-  }, []);
 
   useEffect(() => {
     fetch('/api/beaches')
@@ -197,6 +236,7 @@ export default function WeatherPage() {
       })
       .catch((err) => {
         console.error('Failed to load beaches for weather:', err);
+        setDataError(err instanceof Error ? err.message : 'Could not load beach locations.');
       })
       .finally(() => {
         setBeachesLoaded(true);
@@ -204,21 +244,36 @@ export default function WeatherPage() {
   }, []);
 
   const selectedBeach = beaches.find((b) => b.id === selectedBeachId) || beaches[0] || null;
+  const beachBackgroundCandidate = selectedBeach?.cover_image || selectedBeach?.images?.[0]?.photo_url;
+  const beachBackgroundUrl = (() => {
+    if (beachBackgroundCandidate) {
+      try {
+        const url = new URL(beachBackgroundCandidate);
+        if (url.protocol === 'https:' && (url.hostname === 'images.unsplash.com' || url.hostname.endsWith('.supabase.co'))) {
+          return url.toString();
+        }
+      } catch {
+        console.warn('Ignoring an invalid beach cover image URL.');
+      }
+    }
+    return 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=2400&q=85';
+  })();
 
   useEffect(() => {
     if (!beachesLoaded) return;
 
     const lat = selectedBeach?.latitude ?? 10.6865;
     const lon = selectedBeach?.longitude ?? 124.0152;
-
-    setLoading(true);
-    setDataError(null);
+    let active = true;
 
     const loadConditions = async () => {
       const [weatherResult, tideResult] = await Promise.allSettled([
         fetch(`/api/weather?lat=${lat}&lon=${lon}`, { cache: 'no-store' })
           .then(async (response) => {
-            if (!response.ok) throw new Error('Weather data is unavailable.');
+            if (!response.ok) {
+              const result = await response.json().catch(() => null);
+              throw new Error(result?.error || 'Weather data is unavailable.');
+            }
             return response.json() as Promise<WeatherData>;
           }),
         fetch(`/api/tides?lat=${lat}&lon=${lon}`, { cache: 'no-store' })
@@ -228,8 +283,13 @@ export default function WeatherPage() {
           }),
       ]);
 
+      if (!active) return;
+
       if (weatherResult.status === 'fulfilled') setWeather(weatherResult.value);
-      else setWeather(null);
+      else {
+        setWeather(null);
+        setDataError(weatherResult.reason instanceof Error ? weatherResult.reason.message : 'Weather data is unavailable.');
+      }
 
       if (tideResult.status === 'fulfilled') {
         setTideExtremes(Array.isArray(tideResult.value.extremes) ? tideResult.value.extremes : []);
@@ -237,12 +297,18 @@ export default function WeatherPage() {
       } else {
         setTideExtremes([]);
         setCurrentTide(null);
+        if (weatherResult.status === 'fulfilled') {
+          setDataError(tideResult.reason instanceof Error ? tideResult.reason.message : 'Tide data is unavailable.');
+        }
       }
 
       setLoading(false);
     };
 
     void loadConditions();
+    return () => {
+      active = false;
+    };
   }, [beachesLoaded, selectedBeach]);
 
   const formatDate = (date: Date) => {
@@ -253,32 +319,140 @@ export default function WeatherPage() {
     return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
   };
 
-  const currentHour = now.getHours();
-  const timeOfDayLabel =
-    currentHour >= 6 && currentHour < 12
+  const currentHour = weather ? Number(weather.timestamp.slice(11, 13)) : new Date().getHours();
+  const now = new Date();
+  const currentMinutes = Number.isFinite(currentHour) ? currentHour * 60 : now.getHours() * 60 + now.getMinutes();
+  const sunriseMinutes = weather?.sunrise ? Number(weather.sunrise.slice(11, 13)) * 60 + Number(weather.sunrise.slice(14, 16)) : null;
+  const sunsetMinutes = weather?.sunset ? Number(weather.sunset.slice(11, 13)) * 60 + Number(weather.sunset.slice(14, 16)) : null;
+  const isNight = sunriseMinutes !== null && sunsetMinutes !== null
+    ? currentMinutes < sunriseMinutes || currentMinutes >= sunsetMinutes
+    : currentHour >= 18 || currentHour < 6;
+  const heroBackground = isNight
+    ? 'from-[#101a3c]/45 via-[#243d72]/30 to-[#365b79]/20'
+    : weather?.weatherCode && weather.weatherCode >= 95
+        ? 'from-[#334155]/50 via-[#526579]/35 to-[#284461]/25'
+      : weather?.weatherCode && weather.weatherCode >= 51 && weather.weatherCode <= 82
+          ? 'from-[#24566d]/45 via-[#347e96]/30 to-[#5c9eac]/20'
+        : weather?.weatherCode === 3 || (weather?.weatherCode !== undefined && weather.weatherCode >= 45 && weather.weatherCode <= 48)
+            ? 'from-[#627c8d]/40 via-[#829baa]/25 to-[#a9c1c5]/15'
+            : 'from-[#0789b5]/35 via-[#49b6cf]/20 to-[#8bd4d2]/10';
+  const nightSkyBackground = weather?.weatherCode && weather.weatherCode >= 95
+    ? [
+        'radial-gradient(ellipse at 72% 54%, rgba(110, 142, 165, 0.32), transparent 50%)',
+        'radial-gradient(ellipse at 18% 72%, rgba(75, 108, 139, 0.48), transparent 54%)',
+        'linear-gradient(180deg, #08101f 0%, #111f35 42%, #213b53 76%, #182c3d 100%)',
+      ]
+    : weather?.weatherCode && weather.weatherCode >= 3
+      ? [
+          'radial-gradient(ellipse at 72% 58%, rgba(125, 151, 174, 0.38), transparent 52%)',
+          'radial-gradient(ellipse at 18% 74%, rgba(83, 117, 150, 0.42), transparent 56%)',
+          'linear-gradient(180deg, #080f20 0%, #17243b 46%, #29445d 100%)',
+        ]
+      : [
+          'radial-gradient(1.5px 1.5px at 7% 14%, rgba(255,255,255,.9) 50%, transparent 100%)',
+          'radial-gradient(1px 1px at 18% 32%, rgba(220,237,255,.85) 50%, transparent 100%)',
+          'radial-gradient(1.5px 1.5px at 31% 11%, rgba(255,255,255,.8) 50%, transparent 100%)',
+          'radial-gradient(1px 1px at 44% 26%, rgba(220,237,255,.85) 50%, transparent 100%)',
+          'radial-gradient(1.5px 1.5px at 57% 9%, rgba(255,255,255,.9) 50%, transparent 100%)',
+          'radial-gradient(1px 1px at 68% 30%, rgba(220,237,255,.8) 50%, transparent 100%)',
+          'radial-gradient(1.5px 1.5px at 81% 16%, rgba(255,255,255,.9) 50%, transparent 100%)',
+          'radial-gradient(1px 1px at 94% 35%, rgba(220,237,255,.8) 50%, transparent 100%)',
+          'radial-gradient(1px 1px at 13% 51%, rgba(255,255,255,.75) 50%, transparent 100%)',
+          'radial-gradient(1.5px 1.5px at 38% 44%, rgba(220,237,255,.8) 50%, transparent 100%)',
+          'radial-gradient(1px 1px at 62% 52%, rgba(255,255,255,.8) 50%, transparent 100%)',
+          'radial-gradient(1px 1px at 88% 48%, rgba(220,237,255,.75) 50%, transparent 100%)',
+          'linear-gradient(180deg, #050b1b 0%, #101c38 48%, #192e4e 78%, #18344b 100%)',
+        ];
+  const pageBackgroundStyle = isNight
+    ? { backgroundImage: nightSkyBackground.join(', ') }
+    : {
+        backgroundImage: `linear-gradient(rgba(15, 54, 76, 0.32), rgba(15, 54, 76, 0.32)), url(${JSON.stringify(beachBackgroundUrl)})`,
+      };
+  const nightStars = [
+    { left: '4%', top: '5%', size: 'h-2 w-2' },
+    { left: '11%', top: '17%', size: 'h-1.5 w-1.5' },
+    { left: '19%', top: '8%', size: 'h-2.5 w-2.5' },
+    { left: '27%', top: '24%', size: 'h-1.5 w-1.5' },
+    { left: '34%', top: '12%', size: 'h-2 w-2' },
+    { left: '42%', top: '6%', size: 'h-1.5 w-1.5' },
+    { left: '49%', top: '20%', size: 'h-2.5 w-2.5' },
+    { left: '57%', top: '9%', size: 'h-1.5 w-1.5' },
+    { left: '64%', top: '26%', size: 'h-2 w-2' },
+    { left: '72%', top: '7%', size: 'h-2.5 w-2.5' },
+    { left: '79%', top: '18%', size: 'h-1.5 w-1.5' },
+    { left: '87%', top: '10%', size: 'h-2 w-2' },
+    { left: '95%', top: '23%', size: 'h-1.5 w-1.5' },
+    { left: '7%', top: '34%', size: 'h-1.5 w-1.5' },
+    { left: '23%', top: '39%', size: 'h-2 w-2' },
+    { left: '39%', top: '33%', size: 'h-1.5 w-1.5' },
+    { left: '55%', top: '41%', size: 'h-2 w-2' },
+    { left: '75%', top: '36%', size: 'h-1.5 w-1.5' },
+    { left: '92%', top: '43%', size: 'h-2 w-2' },
+  ];
+  const timeOfDayLabel = !weather
+    ? 'Current Coastal Weather'
+    : currentHour >= 6 && currentHour < 12
       ? 'Morning Coastal Weather'
       : currentHour >= 12 && currentHour < 18
       ? 'Afternoon Coastal Weather'
       : 'Evening Coastal Weather';
 
-  const fourDayForecast = getDynamicFourDayForecast(now);
+  const activityAssessments = getActivityAssessments(weather, currentTide);
+
+  if (loading) {
+    return (
+      <div className={`relative isolate min-h-[calc(100vh-4rem)] bg-cover bg-center bg-fixed px-4 py-8 text-slate-900 dark:text-zinc-100 sm:px-6 lg:px-8 ${isNight ? 'bg-[length:100%_100%]' : ''}`} style={pageBackgroundStyle} aria-busy="true" aria-label="Loading coastal conditions">
+        <div className="pointer-events-none absolute inset-0 -z-10 bg-black/10" />
+        <div className="relative mx-auto max-w-7xl space-y-6">
+          <div className="h-14 w-72 animate-pulse rounded-xl bg-slate-200 dark:bg-neutral-800" />
+          <div className="h-56 animate-pulse rounded-2xl bg-[#1f3f74]/15 dark:bg-[#1f3f74]/30" />
+          <div className="grid gap-5 lg:grid-cols-2">
+            <div className="h-72 animate-pulse rounded-2xl bg-slate-200 dark:bg-neutral-800" />
+            <div className="h-72 animate-pulse rounded-2xl bg-slate-200 dark:bg-neutral-800" />
+          </div>
+          <div className="grid gap-5 lg:grid-cols-2">
+            <div className="h-72 animate-pulse rounded-2xl bg-slate-200 dark:bg-neutral-800" />
+            <div className="h-72 animate-pulse rounded-2xl bg-slate-200 dark:bg-neutral-800" />
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-zinc-100 transition-colors duration-200">
+    <div className={`relative isolate min-h-screen bg-cover bg-center bg-fixed text-slate-900 transition-colors duration-200 dark:text-zinc-100 ${isNight ? 'bg-[length:100%_100%]' : ''}`} style={pageBackgroundStyle}>
+      {isNight && (
+        <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
+          {nightStars.map((star, index) => (
+            <span
+              key={star.left + star.top}
+              className={`absolute ${star.size} rounded-full bg-white shadow-[0_0_7px_2px_rgba(219,234,254,0.8)] animate-pulse`}
+              style={{
+                left: star.left,
+                top: star.top,
+                animationDelay: `${(index % 6) * 350}ms`,
+                animationDuration: `${2.2 + (index % 4) * 0.45}s`,
+              }}
+            />
+          ))}
+        </div>
+      )}
       
       {/* ── Main Dashboard Body ───────────────────────────── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-12 space-y-6 sm:space-y-7">
+      <div className="relative z-10 mx-auto max-w-7xl space-y-6 px-4 pb-12 pt-6 sm:space-y-7 sm:px-6 sm:pt-8 lg:px-8">
         
         {/* Freestanding Header: Location Title & Controls */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div className="glass-card flex flex-col gap-4 rounded-2xl p-4 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1F3F74] dark:text-white tracking-tight leading-tight">
-              Barangay Binongkalan
+              {selectedBeach?.name || 'Barangay Binongkalan'}
             </h1>
             <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 font-medium flex items-center gap-1.5 mt-0.5">
-              <span>Catmon, Cebu</span>
+              <span>{selectedBeach?.location || 'Catmon, Cebu'}</span>
               <span className="text-slate-300 dark:text-neutral-700">•</span>
-              <span className="text-slate-400 dark:text-neutral-500 font-mono text-xs">10.6865° N, 124.0152° E</span>
+              <span className="text-slate-400 dark:text-neutral-500 font-mono text-xs">
+                {(selectedBeach?.latitude ?? 10.6865).toFixed(4)}° N, {(selectedBeach?.longitude ?? 124.0152).toFixed(4)}° E
+              </span>
             </p>
           </div>
 
@@ -287,8 +461,12 @@ export default function WeatherPage() {
               <div className="relative">
                 <select
                   value={selectedBeachId}
-                  onChange={(e) => setSelectedBeachId(e.target.value)}
-                  className="appearance-none bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-full text-xs font-semibold text-slate-800 dark:text-neutral-200 pl-3.5 pr-8 py-2 focus:outline-none focus:ring-1 focus:ring-[#1F3F74] cursor-pointer shadow-xs"
+                  onChange={(e) => {
+                    setLoading(true);
+                    setDataError(null);
+                    setSelectedBeachId(e.target.value);
+                  }}
+                  className="appearance-none rounded-full border border-white/60 bg-white/70 pl-3.5 pr-8 py-2 text-xs font-semibold text-slate-800 shadow-xs backdrop-blur-xl focus:outline-none focus:ring-1 focus:ring-[#1F3F74] dark:border-white/10 dark:bg-black/40 dark:text-neutral-200"
                 >
                   <option value="">Binongkalan Coast (General)</option>
                   {beaches.map((b) => (
@@ -309,112 +487,146 @@ export default function WeatherPage() {
         </div>
 
         {dataError && (
-          <div role="status" className="rounded-xl border border-amber-300 bg-amber-50 dark:bg-amber-950/40 px-4 py-3 text-xs sm:text-sm text-amber-900 dark:text-amber-300 flex items-center gap-2">
+          <div role="status" className="glass-card flex items-center gap-2 rounded-xl border-amber-300/70 bg-amber-50/75 px-4 py-3 text-xs text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/55 dark:text-amber-300 sm:text-sm">
             <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
             <span>{dataError}</span>
           </div>
         )}
 
         {/* ── ZONE 1: BALANCED HERO OVERVIEW (Dive Blue #1F3F74) ── */}
-        <div className="bg-[#1F3F74] dark:bg-[#14284b] text-white rounded-2xl p-6 sm:p-7 shadow-md relative overflow-hidden transition-colors">
+        <div className="relative overflow-hidden rounded-3xl border border-white/30 bg-slate-950/30 p-5 text-white shadow-2xl backdrop-blur-xl sm:p-7">
+          <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${heroBackground}`} />
+          <div className="pointer-events-none absolute -right-20 -top-32 h-80 w-80 rounded-full border border-white/15 bg-white/10 blur-2xl" />
+          <div className="pointer-events-none absolute -bottom-36 left-1/4 h-64 w-64 rounded-full bg-cyan-100/10 blur-3xl" />
           <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             
-            {/* Left: Freestanding Animated Weather Display */}
-            <div className="flex items-center gap-5 sm:gap-6">
-              <div className="relative flex items-center justify-center flex-shrink-0">
-                {currentHour >= 18 || currentHour < 6 ? (
-                  /* Animated Night Moon with Genuine 4-Point Sparkle Stars */
-                  <div className="relative flex items-center justify-center">
-                    <Moon className="w-14 h-14 sm:w-16 sm:h-16 text-amber-300 fill-amber-300/15 stroke-[1.8] relative z-10 animate-[bounce_4s_ease-in-out_infinite]" />
-                    <StarSparkle className="w-4 h-4 text-amber-200 absolute -top-1 -right-2.5 animate-pulse" />
-                    <StarSparkle className="w-2.5 h-2.5 text-blue-100 absolute bottom-1 -left-2.5 animate-pulse delay-700" />
-                    <StarSparkle className="w-2 h-2 text-amber-100 absolute top-4 -left-3 animate-ping" />
-                  </div>
-                ) : weather && weather.weatherCode >= 51 ? (
-                  /* Animated Rain Cloud */
-                  <div className="relative flex items-center justify-center">
-                    <CloudRain className="w-14 h-14 sm:w-16 sm:h-16 text-sky-200 stroke-[1.8] relative z-10 animate-bounce" />
-                  </div>
-                ) : weather && weather.weatherCode >= 2 ? (
-                  /* Animated Partly Cloudy */
-                  <div className="relative flex items-center justify-center">
-                    <CloudSun className="w-14 h-14 sm:w-16 sm:h-16 text-amber-300 stroke-[1.8] relative z-10 animate-pulse" />
-                  </div>
-                ) : (
-                  /* Animated Daylight Sun */
-                  <div className="relative flex items-center justify-center">
-                    <Sun className="w-14 h-14 sm:w-16 sm:h-16 text-amber-300 stroke-[1.8] relative z-10 animate-[spin_20s_linear_infinite]" />
-                  </div>
+            <div className="flex items-center gap-5 sm:gap-7">
+              <div className="relative flex h-28 w-28 shrink-0 items-center justify-center sm:h-36 sm:w-36">
+                <div className="absolute inset-2 rounded-full bg-white/10 blur-xl" />
+                <WeatherIcon
+                  code={weather?.weatherCode ?? 2}
+                  isNight={isNight}
+                  className={`relative z-10 h-20 w-20 stroke-[1.35] drop-shadow-[0_8px_18px_rgba(15,35,60,0.28)] sm:h-28 sm:w-28 ${
+                    isNight ? 'text-amber-200 fill-amber-100/15' : weather?.weatherCode === 0 ? 'text-amber-200' : 'text-white'
+                  }`}
+                />
+                {isNight && (
+                  <>
+                    <StarSparkle className="absolute right-2 top-1 h-3 w-3 text-blue-100 animate-pulse" />
+                    <StarSparkle className="absolute bottom-3 left-2 h-2.5 w-2.5 text-amber-100 animate-pulse delay-700" />
+                    <StarSparkle className="absolute left-5 top-4 h-2 w-2 text-white/80 animate-pulse" />
+                  </>
                 )}
               </div>
 
               <div className="space-y-0.5">
-                <div className="text-xs uppercase tracking-wider text-blue-200/90 font-semibold">
+                <div className="text-xs uppercase tracking-[0.2em] text-white/75 font-semibold">
                   {timeOfDayLabel}
                 </div>
                 <div className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white">
                   {weather ? `${weather.temperature.toFixed(1)}°C` : '--'}
                 </div>
-                <div className="text-xs sm:text-sm text-blue-100/90 font-medium">
-                  {weather?.conditionLabel || 'Clear Sky'} · RealFeel {weather?.heatIndex ? `${weather.heatIndex.heatIndexCelsius.toFixed(1)}°C` : weather ? `${weather.temperature.toFixed(1)}°C` : '--'}
+                <div className="text-sm sm:text-base text-white/90 font-medium">
+                  {weather?.conditionLabel || 'Current conditions unavailable'} · RealFeel {weather?.heatIndex ? `${weather.heatIndex.heatIndexCelsius.toFixed(1)}°C` : weather ? `${weather.temperature.toFixed(1)}°C` : '--'}
+                </div>
+                <div className="pt-1 text-xs text-white/70">
+                  {weather ? `Humidity ${weather.relativeHumidity}%` : 'Waiting for current readings'}
                 </div>
               </div>
             </div>
 
-            {/* Right: 4 Key Coastal Telemetry Badges */}
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2.5 lg:gap-3 w-full lg:w-auto">
+            <div className="grid w-full grid-cols-2 gap-2.5 sm:grid-cols-3 xl:grid-cols-5 lg:w-auto lg:gap-3">
               
               {/* Sea Temperature */}
-              <div className="bg-white/10 hover:bg-white/15 backdrop-blur-md rounded-xl p-3 border border-white/10 transition-colors">
-                <div className="flex items-center gap-1.5 text-blue-200 text-xs">
+              <div className="rounded-xl border border-white/20 bg-white/15 p-3 backdrop-blur-xl transition-colors hover:bg-white/20">
+                <div className="flex items-center gap-1.5 text-white/75 text-xs">
                   <Droplets className="w-3.5 h-3.5" />
                   <span>Sea Temp</span>
                 </div>
                 <div className="text-base sm:text-lg font-bold text-white mt-1">
-                  {weather?.waterTemperature ? `${weather.waterTemperature.toFixed(1)}°C` : '27.7°C'}
+                  {weather?.waterTemperature != null ? `${weather.waterTemperature.toFixed(1)}°C` : 'Unavailable'}
                 </div>
-                <div className="text-[10px] text-blue-200/70">Shoreline water</div>
+                <div className="text-[10px] text-white/65">Marine forecast</div>
               </div>
 
               {/* Wind Speed & Direction */}
-              <div className="bg-white/10 hover:bg-white/15 backdrop-blur-md rounded-xl p-3 border border-white/10 transition-colors">
-                <div className="flex items-center gap-1.5 text-blue-200 text-xs">
+              <div className="rounded-xl border border-white/20 bg-white/15 p-3 backdrop-blur-xl transition-colors hover:bg-white/20">
+                <div className="flex items-center gap-1.5 text-white/75 text-xs">
                   <Wind className="w-3.5 h-3.5" />
                   <span>Wind</span>
                 </div>
                 <div className="text-base sm:text-lg font-bold text-white mt-1">
-                  {weather ? `${weather.windSpeed.toFixed(0)} km/h ${getWindDirection(weather.windDirection)}` : '2 km/h NNE'}
+                  {weather ? `${weather.windSpeed.toFixed(0)} km/h ${getWindDirection(weather.windDirection)}` : 'Unavailable'}
                 </div>
-                <div className="text-[10px] text-blue-200/70">Gentle breeze</div>
+                <div className="text-[10px] text-white/65">Current conditions</div>
               </div>
 
               {/* Wave Swell */}
-              <div className="bg-white/10 hover:bg-white/15 backdrop-blur-md rounded-xl p-3 border border-white/10 transition-colors">
-                <div className="flex items-center gap-1.5 text-blue-200 text-xs">
+              <div className="rounded-xl border border-white/20 bg-white/15 p-3 backdrop-blur-xl transition-colors hover:bg-white/20">
+                <div className="flex items-center gap-1.5 text-white/75 text-xs">
                   <Waves className="w-3.5 h-3.5" />
-                  <span>Wave Swell</span>
+                  <span>Swell</span>
                 </div>
                 <div className="text-base sm:text-lg font-bold text-white mt-1">
-                  {weather?.swellHeight ? `${weather.swellHeight.toFixed(1)} m` : '0.4 m'}
+                  {weather?.swellHeight != null ? `${weather.swellHeight.toFixed(1)} m` : 'Unavailable'}
                 </div>
-                <div className="text-[10px] text-blue-200/70">Calm waters</div>
+                <div className="text-[10px] text-white/65">Forecast swell height</div>
               </div>
 
               {/* UV Index */}
-              <div className="bg-white/10 hover:bg-white/15 backdrop-blur-md rounded-xl p-3 border border-white/10 transition-colors">
-                <div className="flex items-center gap-1.5 text-blue-200 text-xs">
+              <div className="rounded-xl border border-white/20 bg-white/15 p-3 backdrop-blur-xl transition-colors hover:bg-white/20">
+                <div className="flex items-center gap-1.5 text-white/75 text-xs">
                   <SunMedium className="w-3.5 h-3.5" />
                   <span>UV Index</span>
                 </div>
                 <div className="text-base sm:text-lg font-bold text-white mt-1">
-                  Moderate (5)
+                  {weather?.uvIndex != null ? weather.uvIndex.toFixed(1) : 'Unavailable'}
                 </div>
-                <div className="text-[10px] text-blue-200/70">SPF 30+ advised</div>
+                <div className="text-[10px] text-white/65">
+                  {weather?.uvIndex == null ? 'Current UV unavailable' : weather.uvIndex >= 6 ? 'High exposure' : 'Current UV'}
+                </div>
+              </div>
+
+              <div className="rounded-xl border border-white/20 bg-white/15 p-3 backdrop-blur-xl transition-colors hover:bg-white/20">
+                <div className="flex items-center gap-1.5 text-blue-100 text-xs">
+                  <Activity className="w-3.5 h-3.5" />
+                  <span>Air quality</span>
+                </div>
+                <div className={`mt-1 text-base font-bold sm:text-lg ${weather?.airQuality ? getAirQualityColor(weather.airQuality.usAqi) : 'text-white'}`}>
+                  {weather?.airQuality ? `AQI ${weather.airQuality.usAqi}` : 'Unavailable'}
+                </div>
+                <div className="text-[10px] text-white/75">
+                  {weather?.airQuality
+                    ? `${getAirQualityLabel(weather.airQuality.usAqi)} · US AQI`
+                    : 'Live reading unavailable'}
+                </div>
+                {weather?.airQuality && (
+                  <div className="mt-1 text-[9px] text-white/65">
+                    {getParticulateReadings(weather.airQuality)}
+                  </div>
+                )}
               </div>
 
             </div>
 
           </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+          {[
+            { label: 'Sunrise', value: formatWeatherTime(weather?.sunrise ?? null), icon: Sun, tone: 'text-amber-500' },
+            { label: 'Sunset', value: formatWeatherTime(weather?.sunset ?? null), icon: Sun, tone: 'text-orange-500' },
+            { label: 'Moonrise · est.', value: formatWeatherTime(weather?.moonrise ?? null), icon: Moon, tone: 'text-indigo-500' },
+            { label: 'Moonset · est.', value: formatWeatherTime(weather?.moonset ?? null), icon: Moon, tone: 'text-indigo-500' },
+          ].map(({ label, value, icon: SkyIcon, tone }) => (
+            <div key={label} className="flex items-center gap-3 rounded-2xl border border-white/80 bg-white/65 px-3.5 py-3 shadow-sm backdrop-blur-xl dark:border-white/10 dark:bg-white/[0.06]">
+              <SkyIcon className={`h-5 w-5 shrink-0 ${tone}`} />
+              <div className="min-w-0">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">{label}</div>
+                <div className="truncate text-sm font-bold text-slate-800 dark:text-white">{value}</div>
+              </div>
+            </div>
+          ))}
         </div>
 
         {/* ── ZONE 2: CORE DECISION HUB (Tide Status + Activities) ── */}
@@ -426,7 +638,7 @@ export default function WeatherPage() {
           </div>
 
           {/* Right Column (40% / col-span-5): Beach Activity Feasibility (Sandbar removed) */}
-          <div className="lg:col-span-5 bg-white dark:bg-[#121215] rounded-2xl border border-slate-200/80 dark:border-neutral-800 p-4 sm:p-5 shadow-xs space-y-3">
+          <div className="glass-card space-y-3 rounded-3xl p-4 sm:p-5">
             <div>
               <div className="flex items-center gap-2 mb-1">
                 <Activity className="w-4 h-4 text-[#1F3F74] dark:text-[#4987BA]" />
@@ -435,32 +647,22 @@ export default function WeatherPage() {
                 </h3>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Live assessment guided by current tides and wave telemetry.
+                Advisory signals are calculated from the latest weather, wave, and tide readings.
               </p>
             </div>
 
-            {/* 6 Clean Activity Rows without Sandbar */}
             <div className="space-y-2">
-              {[
-                { activity: 'Swimming', status: 'Favorable', color: 'emerald', note: 'Calm shoreline waters and gentle currents.' },
-                { activity: 'Snorkeling', status: 'Favorable', color: 'emerald', note: 'Clear underwater reef visibility.' },
-                { activity: 'Shoreline Walking', status: 'Favorable', color: 'emerald', note: 'Pleasant shoreline walking along Binongkalan.' },
-                { activity: 'Diving', status: 'Caution', color: 'amber', note: 'Check mid-day channel currents before deep dive.' },
-                { activity: 'Kayaking & Boating', status: 'Favorable', color: 'emerald', note: 'Safe light offshore breeze.' },
-                { activity: 'Beachfront Dining', status: 'Favorable', color: 'emerald', note: 'Cottages sheltered from strong wind.' },
-              ].map((item, i) => (
-                <div key={i} className="flex items-center justify-between p-2 sm:p-2.5 rounded-xl bg-slate-50 dark:bg-neutral-900/60 border border-slate-100 dark:border-neutral-800/80">
+              {activityAssessments.length === 0 ? (
+                <p className="rounded-xl bg-slate-50 p-4 text-xs leading-5 text-slate-500 dark:bg-neutral-900/60 dark:text-slate-400">
+                  Activity guidance is unavailable until current weather data loads.
+                </p>
+              ) : activityAssessments.map((item) => (
+                <div key={item.activity} className="flex items-center justify-between rounded-xl border border-white/50 bg-white/35 p-2 backdrop-blur-md dark:border-white/5 dark:bg-black/20 sm:p-2.5">
                   <div className="min-w-0 pr-2">
                     <div className="text-xs font-bold text-slate-900 dark:text-white">{item.activity}</div>
-                    <div className="text-[10px] text-slate-400 truncate">{item.note}</div>
+                    <div className="text-[10px] text-slate-500 dark:text-slate-400">{item.note}</div>
                   </div>
-                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${
-                    item.color === 'emerald'
-                      ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/60 dark:text-emerald-300'
-                      : item.color === 'amber'
-                      ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
-                      : 'bg-blue-100 text-[#1F3F74] dark:bg-blue-950/60 dark:text-blue-300'
-                  }`}>
+                  <span className={`text-[9px] font-bold px-2 py-0.5 rounded-full flex-shrink-0 ${item.statusStyle}`}>
                     {item.status}
                   </span>
                 </div>
@@ -474,85 +676,92 @@ export default function WeatherPage() {
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-5 sm:gap-6 items-start">
           
           {/* Left Column (50%): Dynamic 4-Day Coastal Forecast */}
-          <div className="bg-white dark:bg-[#121215] rounded-2xl border border-slate-200/80 dark:border-neutral-800 p-4 sm:p-5 shadow-xs space-y-3">
+          <div className="glass-card space-y-3 rounded-3xl p-4 shadow-lg shadow-slate-200/40 dark:shadow-black/10 sm:p-5">
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <Calendar className="w-4 h-4 text-[#1F3F74] dark:text-[#4987BA]" />
+                <Calendar className="w-4 h-4 text-[#1F3F74] dark:text-sky-300" />
                 <h3 className="font-bold text-sm text-[#1F3F74] dark:text-white uppercase tracking-wider">
-                  4-Day Coastal Forecast
+                  4-day forecast
                 </h3>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Live upcoming forecast trends for beach visits in Catmon.
+                Daily conditions for {selectedBeach?.name || 'this location'}
               </p>
             </div>
 
-            <div className="space-y-2">
-              {fourDayForecast.map((day, i) => (
-                <div key={i} className="flex items-center justify-between gap-3 p-2.5 rounded-xl bg-slate-50 dark:bg-neutral-900/60 border border-slate-100 dark:border-neutral-800/80">
-                  <div className="flex items-center gap-2.5 min-w-0">
-                    <day.icon className="w-4 h-4 text-[#1F3F74] dark:text-[#4987BA] flex-shrink-0" />
-                    <div>
-                      <div className="text-xs font-bold text-slate-900 dark:text-white">
-                        {day.day} <span className="text-[10px] font-normal text-slate-400">({day.dateLabel})</span>
+            <div className="mt-3 space-y-2.5">
+              {weather?.dailyForecast.length ? weather.dailyForecast.map((day) => {
+                const date = new Date(`${day.date}T12:00:00`);
+                return (
+                  <div key={day.date} className="grid grid-cols-[3rem_2.5rem_minmax(0,1fr)_auto] items-center gap-2 rounded-2xl border border-white/60 bg-white/35 px-2 py-3 backdrop-blur-md dark:border-white/5 dark:bg-black/20 sm:grid-cols-[4rem_3rem_minmax(0,1fr)_auto] sm:gap-3 sm:px-3">
+                    <div className="shrink-0 text-center">
+                      <div className="text-xs font-bold uppercase text-slate-800 dark:text-white">
+                        {date.toLocaleDateString(undefined, { weekday: 'short' }).toUpperCase()}
                       </div>
-                      <div className="text-[10px] text-slate-400">{day.condition}</div>
+                      <div className="mt-0.5 text-[10px] text-slate-500 dark:text-slate-400">
+                        {date.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}
+                      </div>
+                    </div>
+                    <WeatherIcon code={day.weatherCode} className={`h-7 w-7 justify-self-center sm:h-8 sm:w-8 ${getForecastIconColor(day.weatherCode)}`} />
+                    <div className="min-w-0">
+                      <div className="truncate text-xs font-semibold text-slate-800 dark:text-slate-100">{day.conditionLabel}</div>
+                      <div className="mt-1 flex flex-wrap gap-x-2.5 text-[10px] text-slate-500 dark:text-slate-400">
+                        <span className="inline-flex items-center gap-1">
+                          <Droplets className="h-3 w-3 text-sky-600 dark:text-sky-400" />
+                          {day.precipitationProbability == null ? 'Rain —' : `Rain ${day.precipitationProbability}%`}
+                        </span>
+                        <span>UV {day.uvIndexMax == null ? '—' : day.uvIndexMax.toFixed(0)}</span>
+                      </div>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <span className="text-lg font-bold text-slate-900 dark:text-white">{day.high.toFixed(0)}°</span>
+                      <span className="ml-1.5 text-xs text-slate-500 dark:text-slate-400">{day.low.toFixed(0)}°</span>
                     </div>
                   </div>
-                  <div className="flex items-center gap-3 flex-shrink-0">
-                    <div className="text-xs font-semibold text-slate-700 dark:text-slate-300">
-                      {day.low}°C – {day.high}°C
-                    </div>
-                    <div className="flex items-center gap-1 text-[11px] text-slate-500 font-medium w-12 justify-end">
-                      <Droplets className="w-3 h-3 text-sky-500" />
-                      <span>{day.rain}%</span>
-                    </div>
-                  </div>
-                </div>
-              ))}
+                );
+              }) : (
+                <p className="rounded-xl bg-slate-50 p-4 text-xs text-slate-500 dark:bg-neutral-900/60 dark:text-slate-400">
+                  The four-day forecast is unavailable from the weather service right now.
+                </p>
+              )}
             </div>
           </div>
 
           {/* Right Column (50%): Coastal Reminders & Travel Tips with Lotion & Waves Icons */}
-          <div className="bg-white dark:bg-[#121215] rounded-2xl border border-slate-200/80 dark:border-neutral-800 p-4 sm:p-5 shadow-xs space-y-3">
+          <div className="glass-card space-y-3 rounded-3xl p-4 shadow-lg shadow-slate-200/40 dark:shadow-black/10 sm:p-5">
             <div>
-              <div className="flex items-center gap-2 mb-1">
-                <Lightbulb className="w-4 h-4 text-amber-500" />
+              <div className="mb-1">
                 <h3 className="font-bold text-sm text-[#1F3F74] dark:text-white uppercase tracking-wider">
                   Coastal Reminders
                 </h3>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Helpful advisories for your safety and comfort in Binongkalan.
+                Advisories are based on current weather and coastal readings.
               </p>
             </div>
 
             <div className="space-y-2">
-              {generateReminders(weather, currentTide).map((reminder, i) => (
+              {(weather ? generateReminders(weather, currentTide) : []).map((reminder, i) => (
                 <div
                   key={i}
-                  className={`flex items-start gap-2.5 p-2.5 rounded-xl border ${
+                  className={`rounded-xl border-l-4 px-3 py-2.5 ${
                     reminder.type === 'alert'
-                      ? 'bg-red-50 dark:bg-red-950/30 border-red-200 dark:border-red-900/50 text-red-900 dark:text-red-300'
+                      ? 'border-red-500 bg-red-50/65 text-red-900 backdrop-blur-md dark:bg-red-950/35 dark:text-red-300'
                       : reminder.type === 'warning'
-                      ? 'bg-amber-50 dark:bg-amber-950/30 border-amber-200 dark:border-amber-900/50 text-amber-900 dark:text-amber-300'
-                      : 'bg-slate-50 dark:bg-neutral-900/60 border-slate-100 dark:border-neutral-800 text-slate-700 dark:text-neutral-300'
+                      ? 'border-amber-400 bg-amber-50/65 text-amber-900 backdrop-blur-md dark:bg-amber-950/35 dark:text-amber-300'
+                      : 'border-sky-500 bg-white/45 text-slate-700 backdrop-blur-md dark:bg-black/25 dark:text-neutral-300'
                   }`}
                 >
-                  <div className={`w-6 h-6 rounded-lg flex items-center justify-center flex-shrink-0 ${
-                    reminder.type === 'alert'
-                      ? 'bg-red-100 text-red-600'
-                      : reminder.type === 'warning'
-                      ? 'bg-amber-100 text-amber-600'
-                      : 'bg-blue-100 dark:bg-blue-950 text-[#1F3F74] dark:text-sky-300'
-                  }`}>
-                    <reminder.icon className="w-3.5 h-3.5" />
-                  </div>
-                  <p className="text-xs font-medium leading-relaxed flex-1">
+                  <p className="text-xs font-medium leading-relaxed">
                     {reminder.text}
                   </p>
                 </div>
               ))}
+              {!weather && (
+                <p className="rounded-xl bg-slate-50 p-4 text-xs text-slate-500 dark:bg-neutral-900/60 dark:text-slate-400">
+                  Coastal reminders are unavailable until live weather data loads.
+                </p>
+              )}
             </div>
           </div>
 

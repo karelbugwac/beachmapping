@@ -36,8 +36,16 @@ export default function EditProfilePage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ full_name: name.trim() }),
       });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to save profile.');
+      const data = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(data?.error || `Could not save your profile (HTTP ${response.status}).`);
+      }
+      if (!data?.user?.full_name) throw new Error('The server did not confirm the profile update.');
+      window.dispatchEvent(
+        new CustomEvent('dtb_user_updated', {
+          detail: { full_name: data.user.full_name },
+        })
+      );
       showToast('Profile updated successfully.');
     } catch (error: unknown) {
       showToast(error instanceof Error ? error.message : 'Failed to save profile.', 'error');

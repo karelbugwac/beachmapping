@@ -215,7 +215,7 @@ export async function POST(request: Request) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       let { data: ownerProfile } = await (adminSupabase.from('profiles') as any)
         .select('id, email, full_name, role, pin')
-        .eq('role', 'beach_owner')
+        .in('role', ['beach_owner', 'beach_manager'])
         .ilike('email', ownerEmail)
         .eq('pin', pinHash)
         .maybeSingle();
@@ -223,7 +223,7 @@ export async function POST(request: Request) {
       if (!ownerProfile) {
         const { data: legacyProfile } = await (adminSupabase.from('profiles') as any)
           .select('id, email, full_name, role, pin')
-          .eq('role', 'beach_owner')
+          .in('role', ['beach_owner', 'beach_manager'])
           .ilike('email', ownerEmail)
           .eq('pin', cleanPin)
           .maybeSingle();
@@ -256,7 +256,7 @@ export async function POST(request: Request) {
       return NextResponse.json({
         success: true,
         email,
-        role: 'beach_owner',
+        role: ownerProfile.role,
         redirect: '/owner/dashboard',
       });
     }

@@ -47,6 +47,108 @@ export interface Database {
         };
         Relationships: [];
       };
+      platform_reviews: {
+        Row: {
+          id: string;
+          user_id: string | null;
+          rating: number;
+          comment: string;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id?: string | null;
+          rating: number;
+          comment: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string | null;
+          rating?: number;
+          comment?: string;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Relationships: [{
+          foreignKeyName: 'platform_reviews_user_id_fkey';
+          columns: ['user_id'];
+          isOneToOne: false;
+          referencedRelation: 'profiles';
+          referencedColumns: ['id'];
+        }];
+      };
+      login_devices: {
+        Row: {
+          id: string;
+          user_id: string;
+          device_id: string;
+          browser: string;
+          platform: string;
+          first_seen_at: string;
+          last_seen_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          device_id: string;
+          browser: string;
+          platform: string;
+          first_seen_at?: string;
+          last_seen_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          device_id?: string;
+          browser?: string;
+          platform?: string;
+          first_seen_at?: string;
+          last_seen_at?: string;
+        };
+        Relationships: [];
+      };
+      user_notifications: {
+        Row: {
+          id: string;
+          user_id: string;
+          login_device_id: string;
+          type: 'new_device_login';
+          created_at: string;
+          read_at: string | null;
+          response: 'confirmed' | 'unrecognized' | null;
+          responded_at: string | null;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          login_device_id: string;
+          type: 'new_device_login';
+          created_at?: string;
+          read_at?: string | null;
+          response?: 'confirmed' | 'unrecognized' | null;
+          responded_at?: string | null;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          login_device_id?: string;
+          type?: 'new_device_login';
+          created_at?: string;
+          read_at?: string | null;
+          response?: 'confirmed' | 'unrecognized' | null;
+          responded_at?: string | null;
+        };
+        Relationships: [{
+          foreignKeyName: 'user_notifications_login_device_id_fkey';
+          columns: ['login_device_id'];
+          isOneToOne: false;
+          referencedRelation: 'login_devices';
+          referencedColumns: ['id'];
+        }];
+      };
       beaches: {
         Row: {
           id: string;
@@ -379,7 +481,14 @@ export interface Database {
       [_ in never]: never;
     };
     Functions: {
-      [_ in never]: never;
+      register_login_device: {
+        Args: {
+          p_device_id: string;
+          p_browser: string;
+          p_platform: string;
+        };
+        Returns: boolean;
+      };
     };
     Enums: {
       [_ in never]: never;

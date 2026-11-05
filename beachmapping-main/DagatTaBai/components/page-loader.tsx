@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
 
 export function PageLoader() {
@@ -8,52 +8,66 @@ export function PageLoader() {
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
   const [progress, setProgress] = useState(0);
+  const timers = useRef<number[]>([]);
+  const routeKey = `${pathname}?${searchParams.toString()}`;
+  const previousRoute = useRef(routeKey);
 
-  // Complete progress whenever route finishes changing
+  const clearTimers = () => {
+    timers.current.forEach((timer) => window.clearTimeout(timer));
+    timers.current = [];
+  };
+
   useEffect(() => {
-    if (loading) {
+    if (previousRoute.current === routeKey) return;
+    previousRoute.current = routeKey;
+    if (!loading) return;
+
+    clearTimers();
+    let timer: number | undefined;
+    const frame = window.requestAnimationFrame(() => {
       setProgress(100);
-      const timer = setTimeout(() => {
+      timer = window.setTimeout(() => {
         setLoading(false);
         setProgress(0);
-      }, 250);
-      return () => clearTimeout(timer);
-    }
-  }, [pathname, searchParams]);
+      }, 350);
+    });
+    return () => {
+      window.cancelAnimationFrame(frame);
+      if (timer !== undefined) window.clearTimeout(timer);
+    };
+  }, [routeKey, loading]);
 
-  // Global click listener on internal links to provide instant feedback
   useEffect(() => {
     const handleClick = (e: MouseEvent) => {
-      const target = (e.target as HTMLElement).closest('a');
+      const target = e.target instanceof Element ? e.target.closest('a') : null;
       if (!target) return;
 
       const href = target.getAttribute('href');
       const targetAttr = target.getAttribute('target');
-
-      // Only trigger for internal links that don't open in a new tab and aren't hash anchors
       if (
         href &&
         href.startsWith('/') &&
+        !href.startsWith('//') &&
         !href.startsWith('/#') &&
         targetAttr !== '_blank' &&
+        href !== `${pathname}${window.location.search}` &&
         href !== pathname
       ) {
+        clearTimers();
         setLoading(true);
-        setProgress(35);
-
-        // Gradually advance progress while route is loading/compiling
-        const p1 = setTimeout(() => setProgress(65), 150);
-        const p2 = setTimeout(() => setProgress(85), 450);
-
-        return () => {
-          clearTimeout(p1);
-          clearTimeout(p2);
-        };
+        setProgress(25);
+        timers.current = [
+          window.setTimeout(() => setProgress(60), 180),
+          window.setTimeout(() => setProgress(85), 600),
+        ];
       }
     };
 
     document.addEventListener('click', handleClick);
-    return () => document.removeEventListener('click', handleClick);
+    return () => {
+      document.removeEventListener('click', handleClick);
+      clearTimers();
+    };
   }, [pathname]);
 
   if (!loading && progress === 0) return null;
@@ -64,7 +78,7 @@ export function PageLoader() {
       aria-hidden="true"
     >
       <div
-        className="h-full bg-gradient-to-r from-[#1F3F74] via-[#4987BA] to-sky-400 transition-all duration-200 ease-out shadow-[0_0_10px_rgba(73,135,186,0.8)]"
+        className="h-full bg-[#1F3F74] transition-all duration-300 ease-out"
         style={{
           width: `${progress}%`,
         }}

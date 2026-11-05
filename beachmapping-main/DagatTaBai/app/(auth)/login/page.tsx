@@ -53,6 +53,9 @@ function UserLoginForm() {
       }
 
       showToast('You are now signed in.');
+      window.dispatchEvent(new CustomEvent('dtb_login_completed', {
+        detail: { userId: data.user.id },
+      }));
       const redirectUrl = searchParams.get('redirect') || '/';
       router.push(redirectUrl);
       router.refresh();

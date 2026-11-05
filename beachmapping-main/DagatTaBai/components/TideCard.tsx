@@ -13,9 +13,12 @@ export default function TideCard({ extremes }: TideCardProps) {
   const clipId = useId().replace(/:/g, '');
 
   useEffect(() => {
-    setNow(new Date());
-    const interval = setInterval(() => setNow(new Date()), 60000);
-    return () => clearInterval(interval);
+    const initialTimer = window.setTimeout(() => setNow(new Date()), 0);
+    const interval = window.setInterval(() => setNow(new Date()), 60000);
+    return () => {
+      window.clearTimeout(initialTimer);
+      window.clearInterval(interval);
+    };
   }, []);
 
   if (!now) {
@@ -30,7 +33,7 @@ export default function TideCard({ extremes }: TideCardProps) {
         <h3 className="font-bold text-sm text-[#1F3F74] dark:text-white uppercase tracking-wider">
           Tide Status
         </h3>
-        <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">Loading tide records for Catmon coast...</p>
+        <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">Tide readings are currently unavailable.</p>
       </div>
     );
   }
@@ -77,8 +80,8 @@ export default function TideCard({ extremes }: TideCardProps) {
   const isRising = nextTide?.type === 'high';
   const tideLabel = isRising ? 'Rising Tide (Gataob)' : 'Receding Tide (Gahunas)';
   const tideAdvice = isRising
-    ? 'Water is deepening towards high tide. Ideal for swimming.'
-    : 'Water is shallowing towards low tide. Great for shoreline walking.';
+    ? 'Tide is rising. Check local shoreline conditions before entering the water.'
+    : 'Tide is falling. Use care around exposed shoreline and changing currents.';
 
   // Sample tide every 10 minutes from 00:00 to 24:00 Manila time
   const samples: { time: Date; height: number }[] = [];
@@ -111,11 +114,10 @@ export default function TideCard({ extremes }: TideCardProps) {
   const areaPath = `${linePath} L${W} ${H} L 0 ${H} Z`;
 
   const nowMinutes = manilaNow.getHours() * 60 + manilaNow.getMinutes();
-  const nowX = x(nowMinutes);
   const nowY = y(currentTide?.currentHeight ?? 0);
 
   return (
-    <div className="bg-white dark:bg-[#121215] rounded-2xl border border-slate-200/80 dark:border-neutral-800 p-4 sm:p-5 shadow-xs space-y-3">
+    <div className="glass-card rounded-3xl p-4 shadow-lg shadow-slate-200/40 dark:shadow-black/10 sm:p-5">
       {/* Top Header: Waves icon removed, arrow removed from status pill */}
       <div className="flex items-center justify-between gap-3">
         <h3 className="font-bold text-sm text-[#1F3F74] dark:text-white uppercase tracking-wider">
@@ -135,7 +137,7 @@ export default function TideCard({ extremes }: TideCardProps) {
       </div>
 
       {/* Current Water Level & Next Tide */}
-      <div className="grid grid-cols-2 gap-2.5 p-2.5 rounded-xl bg-slate-50 dark:bg-neutral-900/60 border border-slate-100 dark:border-neutral-800/80">
+      <div className="grid grid-cols-2 gap-2.5 rounded-xl border border-white/60 bg-white/40 p-2.5 backdrop-blur-md dark:border-white/5 dark:bg-black/20">
         <div>
           <span className="text-[11px] text-slate-500 font-medium">Current Water Level</span>
           <div className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
@@ -160,7 +162,7 @@ export default function TideCard({ extremes }: TideCardProps) {
       </div>
 
       {/* Quick Beachgoer Tip */}
-      <div className="flex items-center gap-1.5 px-2.5 py-1.5 rounded-lg bg-blue-50/60 dark:bg-blue-950/30 text-slate-600 dark:text-slate-300 text-[11px]">
+      <div className="flex items-center gap-1.5 rounded-lg border border-white/50 bg-white/35 px-2.5 py-1.5 text-[11px] text-slate-600 backdrop-blur-md dark:border-white/5 dark:bg-black/20 dark:text-slate-300">
         <Info className="w-3.5 h-3.5 text-[#1F3F74] dark:text-sky-400 flex-shrink-0" />
         <span>{tideAdvice}</span>
       </div>
@@ -255,10 +257,10 @@ export default function TideCard({ extremes }: TideCardProps) {
                 key={i}
                 className={`rounded-lg border p-1.5 text-center transition-all ${
                   isPassed
-                    ? 'opacity-40 bg-slate-50 dark:bg-neutral-900 border-slate-200 dark:border-neutral-800'
+                    ? 'opacity-40 border-white/40 bg-white/25 dark:border-white/5 dark:bg-black/15'
                     : isNext
-                    ? 'border-[#1F3F74] ring-1 ring-[#1F3F74] bg-blue-50/50 dark:bg-[#1F3F74]/20'
-                    : 'border-slate-200 bg-slate-50/60 dark:border-neutral-800 dark:bg-neutral-900'
+                    ? 'border-[#1F3F74]/70 bg-white/55 ring-1 ring-[#1F3F74]/60 dark:border-sky-300/50 dark:bg-sky-950/30'
+                    : 'border-white/50 bg-white/35 dark:border-white/5 dark:bg-black/20'
                 }`}
               >
                 <div className="text-[9px] font-bold flex items-center justify-center gap-0.5">

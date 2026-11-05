@@ -7,6 +7,7 @@ const nextConfig: NextConfig = {
   devIndicators: false, // Disables the floating Next.js ("N") dev indicator badge
   experimental: {
     optimizePackageImports: ["lucide-react", "@supabase/supabase-js"],
+    proxyClientMaxBodySize: "25mb",
   },
   images: {
     remotePatterns: [
