@@ -56,9 +56,11 @@ async function compressBeachImage(file: File): Promise<File> {
 export async function uploadBeachImageWithPath(
   file: File,
   beachId: string,
-  folder?: string
+  folder?: string,
+  signal?: AbortSignal
 ): Promise<{ imageUrl: string; storagePath: string }> {
   const compressedFile = await compressBeachImage(file);
+  if (signal?.aborted) throw new DOMException('The upload was cancelled.', 'AbortError');
   const supabase = createClient();
   const [{ data: sessionData, error: sessionError }, { data: userData, error: userError }] =
     await Promise.all([supabase.auth.getSession(), supabase.auth.getUser()]);
@@ -74,14 +76,53 @@ export async function uploadBeachImageWithPath(
     folder,
     `${crypto.randomUUID()}.${compressedFile.type === 'image/webp' ? 'webp' : 'jpg'}`,
   ].filter(Boolean).join('/');
-  const { error: uploadError } = await supabase.storage
-    .from('beach-media')
-    .upload(objectName, compressedFile, {
-      cacheControl: '3600',
-      contentType: compressedFile.type,
-      upsert: false,
-    });
-  if (uploadError) throw uploadError;
+  if (signal) {
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-project.supabase.co';
+    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
+    const encodedPath = objectName.split('/').map(encodeURIComponent).join('/');
+    try {
+      const response = await fetch(`${supabaseUrl}/storage/v1/object/beach-media/${encodedPath}`, {
+        method: 'POST',
+        headers: {
+          apikey: anonKey,
+          Authorization: `Bearer ${sessionData.session.access_token}`,
+          'cache-control': 'max-age=3600',
+          'content-type': compressedFile.type,
+          'x-upsert': 'false',
+        },
+        body: compressedFile,
+        signal,
+      });
+      if (!response.ok) {
+        const detail = await response.text();
+        throw new Error(detail || `Image upload failed (${response.status}).`);
+      }
+    } catch (error) {
+      if (signal.aborted) {
+        try {
+          const cleanupResponse = await fetch(`${supabaseUrl}/storage/v1/object/beach-media/${encodedPath}`, {
+            method: 'DELETE',
+            headers: { apikey: anonKey, Authorization: `Bearer ${sessionData.session.access_token}` },
+          });
+          if (!cleanupResponse.ok) {
+            console.error('Failed to clean up a cancelled cottage photo upload:', await cleanupResponse.text());
+          }
+        } catch (cleanupError) {
+          console.error('Failed to clean up a cancelled cottage photo upload:', cleanupError);
+        }
+      }
+      throw error;
+    }
+  } else {
+    const { error: uploadError } = await supabase.storage
+      .from('beach-media')
+      .upload(objectName, compressedFile, {
+        cacheControl: '3600',
+        contentType: compressedFile.type,
+        upsert: false,
+      });
+    if (uploadError) throw uploadError;
+  }
 
   return {
     imageUrl: supabase.storage.from('beach-media').getPublicUrl(objectName).data.publicUrl,
@@ -96,4 +137,12 @@ export async function uploadBeachImage(
 ): Promise<string> {
   const uploaded = await uploadBeachImageWithPath(file, beachId, folder);
   return uploaded.imageUrl;
+}
+
+export async function removeBeachImageByPath(storagePath: string): Promise<void> {
+  const supabase = createClient();
+  const { error: sessionError } = await supabase.auth.getSession();
+  if (sessionError) throw sessionError;
+  const { error } = await supabase.storage.from('beach-media').remove([storagePath]);
+  if (error) throw error;
 }

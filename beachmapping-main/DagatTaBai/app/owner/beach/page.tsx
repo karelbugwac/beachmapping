@@ -15,18 +15,18 @@ import {
   MapPin,
   ChevronDown,
   Clock,
-  Sparkles,
   Share2,
   XCircle,
-  AlertTriangle,
-  Pencil,
+  X,
 } from 'lucide-react';
 import type { BeachRecord, BeachPhoto } from '@/lib/db/beaches';
 import { LocationPickerModal } from '@/components/map/location-picker-modal';
 import { VirtualTourModal } from '@/components/virtual-tour-modal';
-import { CottagePhotosModal, type CottagePhoto } from '@/components/cottages/cottage-photos-modal';
+import { PhotoViewerModal, type CottagePhoto } from '@/components/cottages/cottage-photos-modal';
+import { CottageCard } from '@/components/cottages/cottage-card';
+import { FacilityCard, type FacilityCardPhoto } from '@/components/owner/facility-card';
 import { getValidBeachCoordinates } from '@/lib/utils/beach-coordinates';
-import { MAX_BEACH_IMAGE_SIZE_BYTES, uploadBeachImage, uploadBeachImageWithPath } from '@/lib/utils/beach-image-upload';
+import { MAX_BEACH_IMAGE_SIZE_BYTES, removeBeachImageByPath, uploadBeachImage, uploadBeachImageWithPath } from '@/lib/utils/beach-image-upload';
 
 interface CottageItem {
   id: string;
@@ -40,6 +40,9 @@ interface CottageItem {
 
 interface CottagePhotoDraft extends CottagePhoto {
   localId: string;
+  previewUrl?: string;
+  file?: File;
+  error?: string;
   progress: number;
   status: 'uploading' | 'saved' | 'error';
 }
@@ -51,6 +54,16 @@ interface FacilityItem {
   price: string;
   description: string;
   image_url: string;
+  photos: FacilityCardPhoto[];
+}
+
+interface FacilityPhotoDraft extends FacilityCardPhoto {
+  localId: string;
+  previewUrl?: string;
+  file?: File;
+  error?: string;
+  progress: number;
+  status: 'uploading' | 'saved' | 'error';
 }
 
 interface ResortPost {
@@ -165,15 +178,30 @@ export default function ManageInformationPage() {
   // Modals for adding cottage / facility
   const [showAddCottage, setShowAddCottage] = useState(false);
   const [editingCottageId, setEditingCottageId] = useState<string | null>(null);
-  const [failedCottageImages, setFailedCottageImages] = useState<Set<string>>(new Set());
   const [uploadingCottageImage, setUploadingCottageImage] = useState(false);
   const [createdCottageDuringUpload, setCreatedCottageDuringUpload] = useState(false);
   const [savingCottage, setSavingCottage] = useState(false);
   const [cottageModalStatus, setCottageModalStatus] = useState<ModalStatus | null>(null);
   const [cottageFieldErrors, setCottageFieldErrors] = useState<{ name?: string; price?: string }>({});
   const [cottagePhotos, setCottagePhotos] = useState<CottagePhotoDraft[]>([]);
+  const [showDiscardConfirmation, setShowDiscardConfirmation] = useState(false);
   const [viewingCottagePhotos, setViewingCottagePhotos] = useState<CottageItem | null>(null);
+  const [viewingFacility, setViewingFacility] = useState<FacilityItem | null>(null);
   const cottageStatusTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const cottageUploadAbortControllerRef = useRef<AbortController | null>(null);
+  const cottageUploadCompletionRef = useRef<Promise<void> | null>(null);
+  const cottageUploadCompletionResolveRef = useRef<(() => void) | null>(null);
+  const cottageSessionPhotoIdsRef = useRef<Set<string>>(new Set());
+  const cottageAllSessionPhotoIdsRef = useRef<Set<string>>(new Set());
+  const cottageSessionStoragePathsRef = useRef<Map<string, string | null>>(new Map());
+  const cottageStagedRemovalIdsRef = useRef<Set<string>>(new Set());
+  const cottageEditorIdRef = useRef<string | null>(null);
+  const createdCottageIdRef = useRef<string | null>(null);
+  const cottageOriginalSnapshotRef = useRef<CottageItem | null>(null);
+  const cottageNeedsLegacyRestoreRef = useRef(false);
+  const requestCloseCottageEditorRef = useRef<() => void>(() => {});
+  const cottageHasChangesRef = useRef(false);
+  const cottageDiscardingRef = useRef(false);
   const [newCottage, setNewCottage] = useState<Partial<CottageItem>>({
     name: '',
     price: '',
@@ -183,6 +211,23 @@ export default function ManageInformationPage() {
   });
 
   const [showAddFacility, setShowAddFacility] = useState(false);
+  const [editingFacilityId, setEditingFacilityId] = useState<string | null>(null);
+  const [facilityPhotos, setFacilityPhotos] = useState<FacilityPhotoDraft[]>([]);
+  const [facilityModalStatus, setFacilityModalStatus] = useState<ModalStatus | null>(null);
+  const [facilityFieldError, setFacilityFieldError] = useState('');
+  const [uploadingFacilityPhotos, setUploadingFacilityPhotos] = useState(false);
+  const [savingFacility, setSavingFacility] = useState(false);
+  const [showDiscardFacilityConfirmation, setShowDiscardFacilityConfirmation] = useState(false);
+  const facilityUploadAbortControllerRef = useRef<AbortController | null>(null);
+  const facilityUploadCompletionRef = useRef<Promise<void> | null>(null);
+  const facilityUploadCompletionResolveRef = useRef<(() => void) | null>(null);
+  const facilitySessionPhotosRef = useRef<Map<string, string | null>>(new Map());
+  const facilityStagedRemovalIdsRef = useRef<Set<string>>(new Set());
+  const facilityOriginalSnapshotRef = useRef<FacilityItem | null>(null);
+  const facilityCreatedIdRef = useRef<string | null>(null);
+  const facilityHasChangesRef = useRef(false);
+  const facilityDiscardingRef = useRef(false);
+  const facilityCloseRef = useRef<() => void>(() => {});
   const [newFacility, setNewFacility] = useState<Partial<FacilityItem>>({
     title: '',
     category: 'parking',
@@ -462,6 +507,91 @@ export default function ManageInformationPage() {
     return uploadBeachImage(file, formData.id);
   };
 
+  const uploadCottagePhotoDraft = async (photo: CottagePhotoDraft, cottageId: string): Promise<boolean> => {
+    if (!photo.file) return false;
+    const timer = setInterval(() => {
+      setCottagePhotos((current) => current.map((item) => item.localId === photo.localId
+        ? { ...item, progress: Math.min(90, item.progress + 5), status: 'uploading' }
+        : item));
+    }, 200);
+
+    try {
+      const uploaded = await uploadBeachImageWithPath(
+        photo.file,
+        formData.id,
+        'cottages',
+        cottageUploadAbortControllerRef.current?.signal
+      );
+      cottageSessionStoragePathsRef.current.set(uploaded.storagePath, null);
+      if (cottageDiscardingRef.current) {
+        await removeBeachImageByPath(uploaded.storagePath);
+        return false;
+      }
+      const loadedImage = new window.Image();
+      loadedImage.src = uploaded.imageUrl;
+      await loadedImage.decode();
+      if (cottageDiscardingRef.current) {
+        await removeBeachImageByPath(uploaded.storagePath);
+        return false;
+      }
+      const response = await fetch('/api/owner/beach/cottage-photos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          beach_id: formData.id,
+          cottage_id: cottageId,
+          storage_path: uploaded.storagePath,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to save cottage photo.');
+
+      cottageSessionPhotoIdsRef.current.add(data.photo.id);
+      cottageAllSessionPhotoIdsRef.current.add(data.photo.id);
+      cottageSessionStoragePathsRef.current.set(uploaded.storagePath, data.photo.id);
+      setCottagePhotos((current) => current.map((item) => item.localId === photo.localId
+        ? {
+            ...item,
+            ...data.photo,
+            localId: photo.localId,
+            previewUrl: undefined,
+            file: undefined,
+            error: undefined,
+            progress: 100,
+            status: 'saved',
+          }
+        : item));
+      if (photo.previewUrl) URL.revokeObjectURL(photo.previewUrl);
+      setCottages((current) => current.map((item) => {
+        if (item.id !== cottageId) return item;
+        const photos = [...(item.photos || []), data.photo]
+          .sort((left, right) => (left.sort_order || 0) - (right.sort_order || 0));
+        return { ...item, image_url: photos[0]?.image_url || '', photos };
+      }));
+      if (data.photo.sort_order === 0) {
+        setNewCottage((current) => ({ ...current, image_url: data.photo.image_url }));
+      }
+      return true;
+    } catch (error) {
+      if (!cottageDiscardingRef.current) {
+        setCottagePhotos((current) => current.map((item) => item.localId === photo.localId
+          ? {
+              ...item,
+              status: 'error',
+              error: error instanceof Error ? error.message : 'Failed to upload photo.',
+            }
+          : item));
+        setCottageModalStatus({
+          type: 'error',
+          message: error instanceof Error ? error.message : 'Failed to upload cottage photo.',
+        });
+      }
+      return false;
+    } finally {
+      clearInterval(timer);
+    }
+  };
+
   const handleCottagePhotoFiles = async (files: File[]) => {
     if (!files.length) return;
     if (cottagePhotos.length + files.length > 10) {
@@ -496,10 +626,33 @@ export default function ManageInformationPage() {
 
     setCottageModalStatus(null);
     setCottageFieldErrors({});
+    cottageHasChangesRef.current = true;
+    cottageDiscardingRef.current = false;
+    const abortController = new AbortController();
+    cottageUploadAbortControllerRef.current = abortController;
+    cottageUploadCompletionRef.current = new Promise<void>((resolve) => {
+      cottageUploadCompletionResolveRef.current = resolve;
+    });
     setUploadingCottageImage(true);
+    const newPhotos = files.map((file): CottagePhotoDraft => {
+      const previewUrl = URL.createObjectURL(file);
+      return {
+        localId: crypto.randomUUID(),
+        image_url: '',
+        previewUrl,
+        file,
+        storage_path: '',
+        progress: 0,
+        status: 'uploading',
+      };
+    });
+    setCottagePhotos((current) => [...current, ...newPhotos]);
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
     let cottageId = editingCottageId;
 
     try {
+      if (cottageDiscardingRef.current) return;
       if (!cottageId) {
         const newItem = await saveCatalogItem<CottageItem>('cottage', {
           name,
@@ -509,117 +662,115 @@ export default function ManageInformationPage() {
           image_url: '',
         });
         cottageId = newItem.id;
+        cottageEditorIdRef.current = newItem.id;
+        createdCottageIdRef.current = newItem.id;
         setEditingCottageId(newItem.id);
         setCreatedCottageDuringUpload(true);
         setCottages((current) => [...current, newItem]);
       }
+      if (cottageDiscardingRef.current) return;
 
-      for (const file of files) {
-        const localId = crypto.randomUUID();
-        const previewUrl = URL.createObjectURL(file);
-        const previewPhoto: CottagePhotoDraft = {
-          localId,
-          image_url: previewUrl,
-          storage_path: '',
-          progress: 0,
-          status: 'uploading',
-        };
-        setCottagePhotos((current) => [...current, previewPhoto]);
-
-        const timer = setInterval(() => {
-          setCottagePhotos((current) => current.map((photo) => photo.localId === localId
-            ? { ...photo, progress: Math.min(90, photo.progress + 5) }
-            : photo));
-        }, 200);
-        try {
-          const uploaded = await uploadBeachImageWithPath(file, formData.id, 'cottages');
-          const response = await fetch('/api/owner/beach/cottage-photos', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              beach_id: formData.id,
-              cottage_id: cottageId,
-              storage_path: uploaded.storagePath,
-            }),
-          });
-          const data = await response.json();
-          if (!response.ok) throw new Error(data.error || 'Failed to save cottage photo.');
-
-          const uploadedPhoto: CottagePhotoDraft = {
-            ...data.photo,
-            localId,
-            progress: 100,
-            status: 'saved',
-          };
-          setCottagePhotos((current) => current
-            .map((photo) => photo.localId === localId ? uploadedPhoto : photo)
-            .sort((left, right) => (left.sort_order || 0) - (right.sort_order || 0)));
-          if (data.photo.sort_order === 0) {
-            setNewCottage((current) => ({ ...current, image_url: data.photo.image_url }));
-          }
-          setCottages((current) => current.map((item) => {
-            if (item.id !== cottageId) return item;
-            const photos = [...(item.photos || []), data.photo]
-              .sort((left, right) => (left.sort_order || 0) - (right.sort_order || 0));
-            return { ...item, image_url: photos[0]?.image_url || '', photos };
-          }));
-          URL.revokeObjectURL(previewUrl);
-        } catch (error) {
-          URL.revokeObjectURL(previewUrl);
-          setCottagePhotos((current) => current.filter((photo) => photo.localId !== localId));
-          throw error;
-        } finally {
-          clearInterval(timer);
+      let uploadFailed = false;
+      for (const photo of newPhotos) {
+        if (cottageDiscardingRef.current) break;
+        if (!await uploadCottagePhotoDraft(photo, cottageId)) uploadFailed = true;
+      }
+      if (!uploadFailed) setCottageModalStatus({ type: 'success', message: 'Photos uploaded and saved.' });
+    } catch (error) {
+      for (const photo of newPhotos) {
+        if (photo.previewUrl) {
+          setCottagePhotos((current) => current.map((item) => item.localId === photo.localId
+            ? {
+                ...item,
+                status: 'error',
+                error: error instanceof Error ? error.message : 'Failed to save cottage before uploading.',
+              }
+            : item));
         }
       }
-    } catch (error) {
-      setCottageModalStatus({
-        type: 'error',
-        message: error instanceof Error ? error.message : 'Failed to upload cottage photo.',
-      });
+      if (!cottageDiscardingRef.current) {
+        setCottageModalStatus({
+          type: 'error',
+          message: error instanceof Error ? error.message : 'Failed to upload cottage photo.',
+        });
+      }
     } finally {
       setUploadingCottageImage(false);
+      cottageUploadAbortControllerRef.current = null;
+      cottageUploadCompletionResolveRef.current?.();
+      cottageUploadCompletionResolveRef.current = null;
+      cottageUploadCompletionRef.current = null;
     }
   };
 
   const removeCottagePhoto = async (photo: CottagePhotoDraft) => {
     if (!photo.id) {
-      if (photo.image_url.startsWith('blob:')) URL.revokeObjectURL(photo.image_url);
+      cottageHasChangesRef.current = true;
+      if (photo.previewUrl) URL.revokeObjectURL(photo.previewUrl);
       setCottagePhotos((current) => current.filter((item) => item.localId !== photo.localId));
       return;
     }
+    cottageHasChangesRef.current = true;
+    cottageStagedRemovalIdsRef.current.add(photo.id);
+    const next = cottagePhotos.filter((item) => item.id !== photo.id);
+    setCottagePhotos(next);
+    setNewCottage((current) => ({ ...current, image_url: next[0]?.image_url || '' }));
+    setCottageModalStatus(null);
+  };
+
+  const retryCottagePhoto = async (photo: CottagePhotoDraft) => {
+    if (!photo.file) return;
+    setUploadingCottageImage(true);
+    cottageHasChangesRef.current = true;
+    cottageDiscardingRef.current = false;
+    cottageUploadAbortControllerRef.current = new AbortController();
+    cottageUploadCompletionRef.current = new Promise<void>((resolve) => {
+      cottageUploadCompletionResolveRef.current = resolve;
+    });
+    setCottageModalStatus(null);
+    setCottagePhotos((current) => current.map((item) => item.localId === photo.localId
+      ? { ...item, progress: 0, status: 'uploading', error: undefined }
+      : item));
     try {
-      const params = new URLSearchParams({
-        beach_id: formData.id,
-        cottage_id: editingCottageId || '',
-        photo_id: photo.id,
-      });
-      const response = await fetch(`/api/owner/beach/cottage-photos?${params}`, { method: 'DELETE' });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to remove cottage photo.');
-      const next = cottagePhotos.filter((item) => item.id !== photo.id);
-      setCottagePhotos(next);
-      const orderedIds = next.flatMap((item) => item.id ? [item.id] : []);
-      if (editingCottageId && orderedIds.length) {
-        const reorderResponse = await fetch('/api/owner/beach/cottage-photos', {
-          method: 'PATCH',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ beach_id: formData.id, cottage_id: editingCottageId, photo_ids: orderedIds }),
+      let cottageId = editingCottageId;
+      if (!cottageId) {
+        const newItem = await saveCatalogItem<CottageItem>('cottage', {
+          name: (newCottage.name || '').trim(),
+          price: newCottage.price || '',
+          capacity: newCottage.capacity || '',
+          description: newCottage.description || '',
+          image_url: '',
         });
-        const reorderData = await reorderResponse.json();
-        if (!reorderResponse.ok) throw new Error(reorderData.error || 'Photo removed, but the cover could not be updated.');
+        cottageId = newItem.id;
+        cottageEditorIdRef.current = newItem.id;
+        createdCottageIdRef.current = newItem.id;
+        setEditingCottageId(newItem.id);
+        setCreatedCottageDuringUpload(true);
+        setCottages((current) => [...current, newItem]);
       }
-      const cover = next[0]?.image_url || '';
-      setNewCottage((current) => ({ ...current, image_url: cover }));
-      setCottages((current) => current.map((item) => item.id === editingCottageId
-        ? { ...item, image_url: cover, photos: next }
-        : item));
-      setCottageModalStatus(null);
+      if (cottageDiscardingRef.current) return;
+      if (cottageDiscardingRef.current) return;
+      if (await uploadCottagePhotoDraft(photo, cottageId)) {
+        setCottageModalStatus({ type: 'success', message: 'Photo uploaded and saved.' });
+      }
     } catch (error) {
+      setCottagePhotos((current) => current.map((item) => item.localId === photo.localId
+        ? {
+            ...item,
+            status: 'error',
+            error: error instanceof Error ? error.message : 'Failed to save cottage before uploading.',
+          }
+        : item));
       setCottageModalStatus({
         type: 'error',
-        message: error instanceof Error ? error.message : 'Failed to remove cottage photo.',
+        message: error instanceof Error ? error.message : 'Failed to retry cottage photo upload.',
       });
+    } finally {
+      setUploadingCottageImage(false);
+      cottageUploadAbortControllerRef.current = null;
+      cottageUploadCompletionResolveRef.current?.();
+      cottageUploadCompletionResolveRef.current = null;
+      cottageUploadCompletionRef.current = null;
     }
   };
 
@@ -628,36 +779,19 @@ export default function ManageInformationPage() {
     const next = [...cottagePhotos].sort((left, right) =>
       Number(left.id !== photo.id) - Number(right.id !== photo.id)
     );
-    try {
-      const response = await fetch('/api/owner/beach/cottage-photos', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          beach_id: formData.id,
-          cottage_id: editingCottageId,
-          photo_ids: next.flatMap((item) => item.id ? [item.id] : []),
-        }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to change cottage cover photo.');
-      const sorted = next.map((item, index) => ({ ...item, sort_order: index }));
-      setCottagePhotos(sorted);
-      setNewCottage((current) => ({ ...current, image_url: sorted[0]?.image_url || '' }));
-      setCottages((current) => current.map((item) => item.id === editingCottageId
-        ? { ...item, image_url: sorted[0]?.image_url || '', photos: sorted }
-        : item));
-      setCottageModalStatus({ type: 'success', message: 'Cover photo updated.' });
-    } catch (error) {
-      setCottageModalStatus({
-        type: 'error',
-        message: error instanceof Error ? error.message : 'Failed to change cottage cover photo.',
-      });
-    }
+    cottageHasChangesRef.current = true;
+    const sorted = next.map((item, index) => ({ ...item, sort_order: index }));
+    setCottagePhotos(sorted);
+    setNewCottage((current) => ({ ...current, image_url: sorted[0]?.image_url || '' }));
+    setCottageModalStatus(null);
   };
 
   const resetCottageEditor = () => {
     if (cottageStatusTimerRef.current) clearTimeout(cottageStatusTimerRef.current);
     cottageStatusTimerRef.current = null;
+    cottagePhotos.forEach((photo) => {
+      if (photo.previewUrl) URL.revokeObjectURL(photo.previewUrl);
+    });
     setShowAddCottage(false);
     setEditingCottageId(null);
     setCreatedCottageDuringUpload(false);
@@ -665,8 +799,470 @@ export default function ManageInformationPage() {
     setCottageModalStatus(null);
     setCottageFieldErrors({});
     setCottagePhotos([]);
+    setShowDiscardConfirmation(false);
     setNewCottage({ name: '', price: '', capacity: '', description: '', image_url: '' });
+    cottageSessionPhotoIdsRef.current.clear();
+    cottageAllSessionPhotoIdsRef.current.clear();
+    cottageSessionStoragePathsRef.current.clear();
+    cottageStagedRemovalIdsRef.current.clear();
+    cottageEditorIdRef.current = null;
+    createdCottageIdRef.current = null;
+    cottageOriginalSnapshotRef.current = null;
+    cottageNeedsLegacyRestoreRef.current = false;
+    cottageHasChangesRef.current = false;
+    cottageDiscardingRef.current = false;
   };
+
+  const discardCottageEditor = async () => {
+    if (savingCottage) return;
+    if (cottageDiscardingRef.current) return;
+    cottageDiscardingRef.current = true;
+    cottageUploadAbortControllerRef.current?.abort();
+    await cottageUploadCompletionRef.current;
+
+    try {
+      const cottageId = cottageEditorIdRef.current || editingCottageId;
+      const createdCottageId = createdCottageIdRef.current || (createdCottageDuringUpload ? editingCottageId : null);
+      const sessionPhotoIds = new Set(cottageAllSessionPhotoIdsRef.current);
+      if (createdCottageId) {
+        await deleteCatalogItem('cottage', createdCottageId);
+        setCottages((current) => current.filter((cottage) => cottage.id !== createdCottageId));
+        createdCottageIdRef.current = null;
+        cottageEditorIdRef.current = null;
+        setEditingCottageId(null);
+        setCreatedCottageDuringUpload(false);
+      } else if (cottageId && cottageSessionPhotoIdsRef.current.size) {
+        cottageNeedsLegacyRestoreRef.current = Boolean(cottageOriginalSnapshotRef.current);
+        for (const photoId of cottageSessionPhotoIdsRef.current) {
+          const params = new URLSearchParams({
+            beach_id: formData.id,
+            cottage_id: cottageId,
+            photo_id: photoId,
+          });
+          const response = await fetch(`/api/owner/beach/cottage-photos?${params}`, { method: 'DELETE' });
+          const data = await response.json();
+          if (!response.ok) throw new Error(data.error || 'Failed to discard uploaded cottage photos.');
+          cottageSessionPhotoIdsRef.current.delete(photoId);
+        }
+      }
+      if (cottageNeedsLegacyRestoreRef.current && cottageOriginalSnapshotRef.current) {
+        const original = cottageOriginalSnapshotRef.current;
+        await saveCatalogItem('cottage', {
+          id: original.id,
+          name: original.name,
+          price: original.price,
+          capacity: original.capacity,
+          description: original.description,
+          image_url: original.image_url,
+        });
+        cottageNeedsLegacyRestoreRef.current = false;
+      }
+      if (cottageId && cottageSessionPhotoIdsRef.current.size === 0) {
+        setCottages((current) => current.map((cottage) => cottage.id === cottageId
+          ? {
+            ...cottage,
+            photos: cottage.photos.filter((photo) => !photo.id || !sessionPhotoIds.has(photo.id)),
+            image_url: cottage.photos.find((photo) => !photo.id || !sessionPhotoIds.has(photo.id))?.image_url
+              || cottageOriginalSnapshotRef.current?.image_url
+              || '',
+          }
+          : cottage));
+      }
+      for (const [storagePath, photoId] of cottageSessionStoragePathsRef.current) {
+        if (!photoId) await removeBeachImageByPath(storagePath);
+      }
+      resetCottageEditor();
+    } catch (error) {
+      cottageDiscardingRef.current = false;
+      setCottageModalStatus({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Failed to discard cottage changes.',
+      });
+    }
+  };
+
+  const requestCloseCottageEditor = () => {
+    if (savingCottage) return;
+    if (cottageHasChangesRef.current || uploadingCottageImage) {
+      setShowDiscardConfirmation(true);
+      return;
+    }
+    void discardCottageEditor();
+  };
+  requestCloseCottageEditorRef.current = requestCloseCottageEditor;
+
+  useEffect(() => {
+    if (!showAddCottage || savingCottage) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        if (showDiscardConfirmation) setShowDiscardConfirmation(false);
+        else requestCloseCottageEditorRef.current();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showAddCottage, savingCottage, showDiscardConfirmation]);
+
+  const resetFacilityEditor = () => {
+    facilityPhotos.forEach((photo) => {
+      if (photo.previewUrl) URL.revokeObjectURL(photo.previewUrl);
+    });
+    setShowAddFacility(false);
+    setEditingFacilityId(null);
+    setFacilityPhotos([]);
+    setFacilityModalStatus(null);
+    setFacilityFieldError('');
+    setUploadingFacilityPhotos(false);
+    setSavingFacility(false);
+    setShowDiscardFacilityConfirmation(false);
+    setNewFacility({ title: '', category: 'parking', price: '', description: '', image_url: '' });
+    facilitySessionPhotosRef.current.clear();
+    facilityStagedRemovalIdsRef.current.clear();
+    facilityOriginalSnapshotRef.current = null;
+    facilityCreatedIdRef.current = null;
+    facilityHasChangesRef.current = false;
+    facilityDiscardingRef.current = false;
+  };
+
+  const startFacilityEditor = (facility?: FacilityItem) => {
+    facilityDiscardingRef.current = false;
+    facilityHasChangesRef.current = false;
+    facilitySessionPhotosRef.current.clear();
+    facilityStagedRemovalIdsRef.current.clear();
+    facilityCreatedIdRef.current = null;
+    facilityOriginalSnapshotRef.current = facility || null;
+    setEditingFacilityId(facility?.id || null);
+    setFacilityModalStatus(null);
+    setFacilityFieldError('');
+    setFacilityPhotos((facility?.photos || (facility?.image_url
+      ? [{ image_url: facility.image_url, storage_path: '', sort_order: 0 }]
+      : []
+    )).map((photo, index) => ({
+      ...photo,
+      localId: photo.id || `existing-${facility?.id || 'new'}-${index}`,
+      progress: 100,
+      status: 'saved' as const,
+    })));
+    setNewFacility(facility
+      ? {
+          title: facility.title,
+          category: facility.category,
+          price: facility.price,
+          description: facility.description,
+          image_url: facility.image_url,
+        }
+      : { title: '', category: 'parking', price: '', description: '', image_url: '' });
+    setShowAddFacility(true);
+  };
+
+  const saveFacilityPhotoDraft = async (photo: FacilityPhotoDraft, facilityId: string): Promise<boolean> => {
+    if (!photo.file) return false;
+    const timer = setInterval(() => {
+      setFacilityPhotos((current) => current.map((item) => item.localId === photo.localId
+        ? { ...item, progress: Math.min(90, item.progress + 5), status: 'uploading' }
+        : item));
+    }, 200);
+    try {
+      const uploaded = await uploadBeachImageWithPath(
+        photo.file,
+        formData.id,
+        'facilities',
+        facilityUploadAbortControllerRef.current?.signal
+      );
+      facilitySessionPhotosRef.current.set(uploaded.storagePath, null);
+      if (facilityDiscardingRef.current) {
+        await removeBeachImageByPath(uploaded.storagePath);
+        return false;
+      }
+      const loadedImage = new window.Image();
+      loadedImage.src = uploaded.imageUrl;
+      await loadedImage.decode();
+      if (facilityDiscardingRef.current) {
+        await removeBeachImageByPath(uploaded.storagePath);
+        return false;
+      }
+      const response = await fetch('/api/owner/beach/facility-photos', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          beach_id: formData.id,
+          facility_id: facilityId,
+          storage_path: uploaded.storagePath,
+        }),
+      });
+      const data = await response.json();
+      if (!response.ok) throw new Error(data.error || 'Failed to save facility photo.');
+      facilitySessionPhotosRef.current.set(uploaded.storagePath, data.photo.id);
+      setFacilityPhotos((current) => current.map((item) => item.localId === photo.localId
+        ? {
+            ...item,
+            ...data.photo,
+            localId: photo.localId,
+            previewUrl: undefined,
+            file: undefined,
+            error: undefined,
+            progress: 100,
+            status: 'saved',
+          }
+        : item));
+      setNewFacility((current) => ({ ...current, image_url: facilityPhotos[0]?.image_url || data.photo.image_url }));
+      setFacilities((current) => current.map((facility) => facility.id === facilityId
+        ? {
+            ...facility,
+            image_url: facility.photos?.length ? facility.image_url : data.photo.image_url,
+            photos: [...(facility.photos || []), data.photo].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)),
+          }
+        : facility));
+      if (photo.previewUrl) URL.revokeObjectURL(photo.previewUrl);
+      return true;
+    } catch (error) {
+      if (!facilityDiscardingRef.current) {
+        const message = error instanceof Error ? error.message : 'Failed to upload facility photo.';
+        setFacilityPhotos((current) => current.map((item) => item.localId === photo.localId
+          ? { ...item, status: 'error', error: message }
+          : item));
+        setFacilityModalStatus({ type: 'error', message });
+      }
+      return false;
+    } finally {
+      clearInterval(timer);
+    }
+  };
+
+  const handleFacilityPhotoFiles = async (files: File[]) => {
+    if (!files.length) return;
+    if (facilityPhotos.length + files.length > 10) {
+      setFacilityModalStatus({ type: 'error', message: 'A facility can have up to 10 photos.' });
+      return;
+    }
+    if (files.some((file) => !['image/jpeg', 'image/png', 'image/webp'].includes(file.type))) {
+      setFacilityModalStatus({ type: 'error', message: 'Choose JPG, PNG, or WebP photos only.' });
+      return;
+    }
+    if (files.some((file) => file.size < 1 || file.size > MAX_IMAGE_SIZE_BYTES)) {
+      setFacilityModalStatus({ type: 'error', message: 'Choose a non-empty image under 20 GB; photos are optimized to 5 MB.' });
+      return;
+    }
+    if (!newFacility.title?.trim()) {
+      setFacilityFieldError('Facility name is required before adding photos.');
+      return;
+    }
+
+    facilityHasChangesRef.current = true;
+    facilityDiscardingRef.current = false;
+    const controller = new AbortController();
+    facilityUploadAbortControllerRef.current = controller;
+    facilityUploadCompletionRef.current = new Promise<void>((resolve) => {
+      facilityUploadCompletionResolveRef.current = resolve;
+    });
+    setFacilityModalStatus(null);
+    setFacilityFieldError('');
+    setUploadingFacilityPhotos(true);
+    const drafts = files.map((file): FacilityPhotoDraft => ({
+      localId: crypto.randomUUID(),
+      image_url: '',
+      previewUrl: URL.createObjectURL(file),
+      file,
+      storage_path: '',
+      progress: 0,
+      status: 'uploading',
+    }));
+    setFacilityPhotos((current) => [...current, ...drafts]);
+    await new Promise<void>((resolve) => requestAnimationFrame(() => resolve()));
+
+    try {
+      let facilityId = editingFacilityId;
+      if (facilityDiscardingRef.current) return;
+      if (!facilityId) {
+        const item = await saveCatalogItem<FacilityItem>('facility', {
+          title: newFacility.title.trim(),
+          category: newFacility.category || 'amenity',
+          price: newFacility.price || '',
+          description: newFacility.description || '',
+          image_url: newFacility.image_url || '',
+        });
+        facilityId = item.id;
+        facilityCreatedIdRef.current = item.id;
+        setEditingFacilityId(item.id);
+        setFacilities((current) => [...current, item]);
+      }
+      for (const draft of drafts) {
+        if (facilityDiscardingRef.current) break;
+        await saveFacilityPhotoDraft(draft, facilityId);
+      }
+    } catch (error) {
+      if (!facilityDiscardingRef.current) {
+        const message = error instanceof Error ? error.message : 'Failed to prepare facility photo upload.';
+        setFacilityPhotos((current) => current.map((photo) => drafts.some((draft) => draft.localId === photo.localId)
+          ? { ...photo, status: 'error', error: message }
+          : photo));
+        setFacilityModalStatus({ type: 'error', message });
+      }
+    } finally {
+      setUploadingFacilityPhotos(false);
+      facilityUploadAbortControllerRef.current = null;
+      facilityUploadCompletionResolveRef.current?.();
+      facilityUploadCompletionResolveRef.current = null;
+      facilityUploadCompletionRef.current = null;
+    }
+  };
+
+  const retryFacilityPhoto = async (photo: FacilityPhotoDraft) => {
+    if (!photo.file || uploadingFacilityPhotos) return;
+    const controller = new AbortController();
+    facilityUploadAbortControllerRef.current = controller;
+    facilityUploadCompletionRef.current = new Promise<void>((resolve) => {
+      facilityUploadCompletionResolveRef.current = resolve;
+    });
+    setUploadingFacilityPhotos(true);
+    setFacilityModalStatus(null);
+    setFacilityPhotos((current) => current.map((item) => item.localId === photo.localId
+      ? { ...item, progress: 0, status: 'uploading', error: undefined }
+      : item));
+    try {
+      const createdFacility = editingFacilityId
+        ? null
+        : await saveCatalogItem<FacilityItem>('facility', {
+          title: newFacility.title?.trim() || '',
+          category: newFacility.category || 'amenity',
+          price: newFacility.price || '',
+          description: newFacility.description || '',
+          image_url: newFacility.image_url || '',
+        });
+      const facilityId = editingFacilityId || createdFacility?.id;
+      if (!facilityId) throw new Error('Facility listing could not be prepared for photo upload.');
+      if (createdFacility) {
+        facilityCreatedIdRef.current = createdFacility.id;
+        setEditingFacilityId(createdFacility.id);
+        setFacilities((current) => [...current, createdFacility]);
+      }
+      await saveFacilityPhotoDraft(photo, facilityId);
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to retry facility photo upload.';
+      setFacilityPhotos((current) => current.map((item) => item.localId === photo.localId
+        ? { ...item, status: 'error', error: message }
+        : item));
+      setFacilityModalStatus({ type: 'error', message });
+    } finally {
+      setUploadingFacilityPhotos(false);
+      facilityUploadAbortControllerRef.current = null;
+      facilityUploadCompletionResolveRef.current?.();
+      facilityUploadCompletionResolveRef.current = null;
+      facilityUploadCompletionRef.current = null;
+    }
+  };
+
+  const removeFacilityPhoto = async (photo: FacilityPhotoDraft) => {
+    facilityHasChangesRef.current = true;
+    if (!photo.id) {
+      if (photo.previewUrl) URL.revokeObjectURL(photo.previewUrl);
+      setFacilityPhotos((current) => current.filter((item) => item.localId !== photo.localId));
+      return;
+    }
+    const uploadedThisSession = [...facilitySessionPhotosRef.current.values()].includes(photo.id);
+    if (uploadedThisSession && editingFacilityId) {
+      try {
+        const params = new URLSearchParams({
+          beach_id: formData.id,
+          facility_id: editingFacilityId,
+          photo_id: photo.id,
+        });
+        const response = await fetch(`/api/owner/beach/facility-photos?${params}`, { method: 'DELETE' });
+        const data = await response.json();
+        if (!response.ok) throw new Error(data.error || 'Failed to remove facility photo.');
+        for (const [path, id] of facilitySessionPhotosRef.current) {
+          if (id === photo.id) facilitySessionPhotosRef.current.delete(path);
+        }
+      } catch (error) {
+        setFacilityModalStatus({
+          type: 'error',
+          message: error instanceof Error ? error.message : 'Failed to remove facility photo.',
+        });
+        return;
+      }
+    } else {
+      facilityStagedRemovalIdsRef.current.add(photo.id);
+    }
+    setFacilityPhotos((current) => current.filter((item) => item.localId !== photo.localId));
+    setNewFacility((current) => ({ ...current, image_url: facilityPhotos.filter((item) => item.localId !== photo.localId)[0]?.image_url || '' }));
+  };
+
+  const makeFacilityPhotoCover = (photo: FacilityPhotoDraft) => {
+    facilityHasChangesRef.current = true;
+    const sorted = [photo, ...facilityPhotos.filter((item) => item.localId !== photo.localId)]
+      .map((item, index) => ({ ...item, sort_order: index }));
+    setFacilityPhotos(sorted);
+    setNewFacility((current) => ({ ...current, image_url: sorted[0]?.image_url || '' }));
+  };
+
+  const discardFacilityEditor = async () => {
+    if (savingFacility || facilityDiscardingRef.current) return;
+    facilityDiscardingRef.current = true;
+    facilityUploadAbortControllerRef.current?.abort();
+    await facilityUploadCompletionRef.current;
+    try {
+      if (facilityCreatedIdRef.current) {
+        await deleteCatalogItem('facility', facilityCreatedIdRef.current);
+        for (const [path, photoId] of facilitySessionPhotosRef.current) {
+          if (!photoId) await removeBeachImageByPath(path);
+        }
+        setFacilities((current) => current.filter((facility) => facility.id !== facilityCreatedIdRef.current));
+      } else if (editingFacilityId) {
+        for (const [path, photoId] of facilitySessionPhotosRef.current) {
+          if (photoId) {
+            const params = new URLSearchParams({
+              beach_id: formData.id,
+              facility_id: editingFacilityId,
+              photo_id: photoId,
+            });
+            const response = await fetch(`/api/owner/beach/facility-photos?${params}`, { method: 'DELETE' });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.error || 'Failed to discard uploaded facility photos.');
+          } else {
+            await removeBeachImageByPath(path);
+          }
+        }
+        if (facilityOriginalSnapshotRef.current) {
+          setFacilities((current) => current.map((facility) => facility.id === editingFacilityId
+            ? facilityOriginalSnapshotRef.current!
+            : facility));
+        }
+      } else {
+        for (const [path] of facilitySessionPhotosRef.current) await removeBeachImageByPath(path);
+      }
+      resetFacilityEditor();
+    } catch (error) {
+      facilityDiscardingRef.current = false;
+      setFacilityModalStatus({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Failed to discard facility changes.',
+      });
+    }
+  };
+
+  const requestCloseFacilityEditor = () => {
+    if (savingFacility) return;
+    if (facilityHasChangesRef.current || uploadingFacilityPhotos) {
+      setShowDiscardFacilityConfirmation(true);
+      return;
+    }
+    void discardFacilityEditor();
+  };
+  facilityCloseRef.current = requestCloseFacilityEditor;
+
+  useEffect(() => {
+    if (!showAddFacility || savingFacility) return;
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        if (showDiscardFacilityConfirmation) setShowDiscardFacilityConfirmation(false);
+        else facilityCloseRef.current();
+      }
+    };
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [showAddFacility, savingFacility, showDiscardFacilityConfirmation]);
 
   const handleGalleryFileSelection = (file?: File) => {
     if (!file) return;
@@ -868,7 +1464,7 @@ export default function ManageInformationPage() {
       <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-7 gap-1.5 pb-1">
         {[
           { key: 'basic', label: 'Basic Info' },
-          { key: 'cottages', label: 'Cottages & Rooms' },
+          { key: 'cottages', label: 'Cottages' },
           { key: 'facilities', label: 'Facilities & Parkings' },
           { key: 'hours', label: 'Operating Schedule' },
           { key: 'photos', label: 'Photos & Updates' },
@@ -1178,7 +1774,17 @@ export default function ManageInformationPage() {
                 type="button"
                 onClick={() => {
                   setEditingCottageId(null);
-                  setCottageModalStatus(null);
+                    cottageEditorIdRef.current = null;
+                    createdCottageIdRef.current = null;
+                    cottageOriginalSnapshotRef.current = null;
+                    cottageNeedsLegacyRestoreRef.current = false;
+                    cottageSessionPhotoIdsRef.current.clear();
+                    cottageAllSessionPhotoIdsRef.current.clear();
+                    cottageSessionStoragePathsRef.current.clear();
+                    cottageStagedRemovalIdsRef.current.clear();
+                    cottageHasChangesRef.current = false;
+                    cottageDiscardingRef.current = false;
+                    setCottageModalStatus(null);
                   setCottageFieldErrors({});
                   setCottagePhotos([]);
                   setNewCottage({ name: '', price: '', capacity: '', description: '', image_url: '' });
@@ -1192,107 +1798,62 @@ export default function ManageInformationPage() {
             </div>
 
             {/* Cottage Cards Grid */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
               {cottages.map((item) => (
-                <div
+                <CottageCard
                   key={item.id}
-                  className="rounded-2xl border border-slate-200/80 dark:border-neutral-800 overflow-hidden bg-white dark:bg-neutral-950 flex flex-col justify-between shadow-2xs"
-                >
-                  <div className="relative w-full h-48 bg-slate-200 dark:bg-neutral-800">
-                    {item.image_url && !failedCottageImages.has(item.id) ? (
-                      <Image
-                        src={item.image_url}
-                        alt={item.name}
-                        fill
-                        className="object-cover"
-                        sizes="(max-width: 768px) 100vw, 50vw"
-                        onError={() => setFailedCottageImages((current) => new Set(current).add(item.id))}
-                      />
-                    ) : (
-                      <div className="absolute inset-0 flex items-center justify-center text-slate-400">
-                        <Camera className="h-8 w-8" />
-                      </div>
-                    )}
-                    <button
-                      type="button"
-                      onClick={() => setViewingCottagePhotos(item)}
-                      aria-label={`View photos of ${item.name}`}
-                      className="absolute inset-0 z-[1] cursor-pointer focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-                    />
-                    {(item.photos?.length || 0) > 1 && (
-                      <span className="absolute left-3 top-3 z-[2] rounded-full bg-black/65 px-2.5 py-1 text-[11px] font-semibold text-white">
-                        {item.photos.length} photos
-                      </span>
-                    )}
-                    <div className="absolute top-3 right-3 z-[2] bg-white/95 dark:bg-black/90 backdrop-blur-xs px-3.5 py-1 rounded-full text-xs font-bold text-[#1F3F74] dark:text-[#4987BA] shadow-xs">
-                      ₱{item.price} / day
-                    </div>
-                  </div>
-
-                  <div className="p-5 space-y-2 flex-1 flex flex-col justify-between">
-                    <div>
-                      <h3 className="text-sm sm:text-base font-bold text-slate-900 dark:text-white">
-                        {item.name}
-                      </h3>
-                      <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 mt-0.5">
-                        Capacity: {item.capacity}
-                      </p>
-                      <p className="text-xs text-slate-600 dark:text-neutral-400 mt-2 leading-relaxed">
-                        {item.description}
-                      </p>
-                    </div>
-
-                    <div className="pt-3 border-t border-slate-200/60 dark:border-neutral-800 flex justify-end gap-4">
-                      <button
-                        type="button"
-                        onClick={() => {
-                          setEditingCottageId(item.id);
-                          setCottageModalStatus(null);
-                          setCottageFieldErrors({});
-                          setCottagePhotos((item.photos?.length
-                            ? item.photos
-                            : item.image_url
-                              ? [{ image_url: item.image_url, storage_path: '', sort_order: 0 }]
-                              : []
-                          ).map((photo, index) => ({
-                            ...photo,
-                            localId: photo.id || `existing-${item.id}-${index}`,
-                            progress: 100,
-                            status: 'saved' as const,
-                          })));
-                          setNewCottage({
-                            name: item.name,
-                            price: item.price,
-                            capacity: item.capacity,
-                            description: item.description,
-                            image_url: item.image_url || '',
-                          });
-                          setShowAddCottage(true);
-                        }}
-                        className="text-xs text-[#1F3F74] dark:text-[#4987BA] font-semibold inline-flex items-center gap-1 cursor-pointer"
-                      >
-                        <Pencil className="w-3.5 h-3.5" />
-                        <span>Edit</span>
-                      </button>
-                      <button
-                        type="button"
-                        onClick={async () => {
-                          try {
-                            await deleteCatalogItem('cottage', item.id);
-                            setCottages((current) => current.filter((c) => c.id !== item.id));
-                            setToast({ type: 'success', message: 'Cottage removed.' });
-                          } catch (error) {
-                            setToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to remove cottage.' });
-                          }
-                        }}
-                        className="text-xs text-rose-500 hover:text-rose-700 font-semibold inline-flex items-center gap-1 cursor-pointer"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                        <span>Delete</span>
-                      </button>
-                    </div>
-                  </div>
-                </div>
+                  name={item.name}
+                  imageUrl={item.image_url}
+                  photoCount={item.photos?.length || 0}
+                  price={item.price}
+                  priceSuffix="/ day"
+                  capacity={item.capacity}
+                  description={item.description}
+                  onView={() => setViewingCottagePhotos(item)}
+                  onEdit={() => {
+                    setEditingCottageId(item.id);
+                    cottageEditorIdRef.current = item.id;
+                    createdCottageIdRef.current = null;
+                    cottageOriginalSnapshotRef.current = item;
+                    cottageNeedsLegacyRestoreRef.current = false;
+                    cottageSessionPhotoIdsRef.current.clear();
+                    cottageAllSessionPhotoIdsRef.current.clear();
+                    cottageSessionStoragePathsRef.current.clear();
+                    cottageStagedRemovalIdsRef.current.clear();
+                    cottageHasChangesRef.current = false;
+                    cottageDiscardingRef.current = false;
+                    setCottageModalStatus(null);
+                    setCottageFieldErrors({});
+                    setCottagePhotos((item.photos?.length
+                      ? item.photos
+                      : item.image_url
+                        ? [{ image_url: item.image_url, storage_path: '', sort_order: 0 }]
+                        : []
+                    ).map((photo, index) => ({
+                      ...photo,
+                      localId: photo.id || `existing-${item.id}-${index}`,
+                      progress: 100,
+                      status: 'saved' as const,
+                    })));
+                    setNewCottage({
+                      name: item.name,
+                      price: item.price,
+                      capacity: item.capacity,
+                      description: item.description,
+                      image_url: item.image_url || '',
+                    });
+                    setShowAddCottage(true);
+                  }}
+                  onDelete={async () => {
+                    try {
+                      await deleteCatalogItem('cottage', item.id);
+                      setCottages((current) => current.filter((c) => c.id !== item.id));
+                      setToast({ type: 'success', message: 'Cottage removed.' });
+                    } catch (error) {
+                      setToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to remove cottage.' });
+                    }
+                  }}
+                />
               ))}
               {cottages.length === 0 && (
                 <p className="md:col-span-2 rounded-xl border border-dashed border-slate-200 dark:border-neutral-800 p-6 text-center text-xs text-slate-500 dark:text-neutral-400">
@@ -1319,7 +1880,7 @@ export default function ManageInformationPage() {
 
             <button
               type="button"
-              onClick={() => setShowAddFacility(true)}
+              onClick={() => startFacilityEditor()}
               className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-bold shadow-xs cursor-pointer transition-all"
             >
               <Plus className="w-3.5 h-3.5" />
@@ -1327,71 +1888,30 @@ export default function ManageInformationPage() {
             </button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
             {facilities.map((fac) => (
-              <div
+              <FacilityCard
                 key={fac.id}
-                className="rounded-2xl border border-slate-200/80 dark:border-neutral-800 overflow-hidden bg-white dark:bg-neutral-950 flex flex-col justify-between shadow-2xs"
-              >
-                <div className="relative w-full h-40 bg-slate-200 dark:bg-neutral-800">
-                  {fac.image_url ? (
-                    <Image
-                      src={fac.image_url}
-                      alt={fac.title}
-                      fill
-                      className="object-cover"
-                      sizes="(max-width: 768px) 100vw, 33vw"
-                    />
-                  ) : (
-                    <div className="flex h-full items-center justify-center text-slate-400">
-                      <Camera className="h-8 w-8" />
-                    </div>
-                  )}
-                  <span className="absolute top-2.5 left-2.5 bg-black/70 backdrop-blur-xs text-white text-[10px] font-bold px-2.5 py-0.5 rounded-full uppercase tracking-wider">
-                    {fac.category}
-                  </span>
-                  {fac.price && (
-                    <span className="absolute top-2.5 right-2.5 bg-white/95 dark:bg-black/90 backdrop-blur-xs text-[#1F3F74] dark:text-[#4987BA] text-xs font-bold px-2.5 py-0.5 rounded-full">
-                      {fac.price === 'Free' ? 'Free' : `₱${fac.price}`}
-                    </span>
-                  )}
-                </div>
-
-                <div className="p-4 space-y-2 flex-1 flex flex-col justify-between">
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                      {fac.title}
-                    </h3>
-                    {fac.description && (
-                      <p className="text-xs text-slate-600 dark:text-neutral-400 mt-1 leading-relaxed">
-                        {fac.description}
-                      </p>
-                    )}
-                  </div>
-
-                  <div className="pt-3 border-t border-slate-200/60 dark:border-neutral-800 flex justify-end">
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        try {
-                          await deleteCatalogItem('facility', fac.id);
-                          setFacilities((current) => current.filter((f) => f.id !== fac.id));
-                          setToast({ type: 'success', message: 'Facility item removed.' });
-                        } catch (error) {
-                          setToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to remove facility.' });
-                        }
-                      }}
-                      className="text-xs text-rose-500 hover:text-rose-700 font-semibold inline-flex items-center gap-1 cursor-pointer"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>Delete</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
+                name={fac.title}
+                category={fac.category}
+                photos={fac.photos || (fac.image_url ? [{ image_url: fac.image_url }] : [])}
+                price={fac.price}
+                description={fac.description}
+                onView={() => setViewingFacility(fac)}
+                onEdit={() => startFacilityEditor(fac)}
+                onDelete={async () => {
+                  try {
+                    await deleteCatalogItem('facility', fac.id);
+                    setFacilities((current) => current.filter((facility) => facility.id !== fac.id));
+                    setToast({ type: 'success', message: 'Facility item removed.' });
+                  } catch (error) {
+                    setToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to remove facility.' });
+                  }
+                }}
+              />
             ))}
             {facilities.length === 0 && (
-              <p className="md:col-span-3 rounded-xl border border-dashed border-slate-200 dark:border-neutral-800 p-6 text-center text-xs text-slate-500 dark:text-neutral-400">
+              <p className="md:col-span-2 rounded-xl border border-dashed border-slate-200 dark:border-neutral-800 p-6 text-center text-xs text-slate-500 dark:text-neutral-400">
                 No facilities added yet.
               </p>
             )}
@@ -2186,26 +2706,59 @@ export default function ManageInformationPage() {
       </div>
 
       {viewingCottagePhotos && (
-        <CottagePhotosModal
-          name={viewingCottagePhotos.name}
-          price={viewingCottagePhotos.price}
-          capacity={viewingCottagePhotos.capacity}
-          photos={viewingCottagePhotos.photos?.length
-            ? viewingCottagePhotos.photos
-            : viewingCottagePhotos.image_url
-              ? [{ image_url: viewingCottagePhotos.image_url }]
-              : []}
+        <PhotoViewerModal
+          item={{
+            name: viewingCottagePhotos.name,
+            price: viewingCottagePhotos.price,
+            capacity: viewingCottagePhotos.capacity,
+            description: viewingCottagePhotos.description,
+            photos: viewingCottagePhotos.photos?.length
+              ? viewingCottagePhotos.photos
+              : viewingCottagePhotos.image_url
+                ? [{ image_url: viewingCottagePhotos.image_url }]
+                : [],
+          }}
           onClose={() => setViewingCottagePhotos(null)}
+        />
+      )}
+      {viewingFacility && (
+        <PhotoViewerModal
+          item={{
+            name: viewingFacility.title,
+            photos: viewingFacility.image_url ? [{ image_url: viewingFacility.image_url }] : [],
+            description: viewingFacility.description,
+            infoLabel: viewingFacility.category,
+            price: viewingFacility.price || null,
+            priceLabel: 'Fee',
+            priceUnit: '',
+          }}
+          onClose={() => setViewingFacility(null)}
         />
       )}
 
       {/* ── MODAL: ADD COTTAGE (PNG/JPG Upload Only, Built-in ₱) ── */}
       {showAddCottage && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) requestCloseCottageEditor();
+          }}
+        >
           <div className="max-h-[90vh] w-full max-w-lg space-y-5 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200 dark:border-neutral-800 dark:bg-neutral-900 sm:p-8">
-            <h3 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
-              {editingCottageId ? 'Edit Resort Cottage' : 'Add New Resort Cottage'}
-            </h3>
+            <div className="flex items-start justify-between gap-3">
+              <h3 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
+                {editingCottageId ? 'Edit Resort Cottage' : 'Add New Resort Cottage'}
+              </h3>
+              <button
+                type="button"
+                aria-label="Close cottage editor"
+                onClick={requestCloseCottageEditor}
+                disabled={savingCottage}
+                className="rounded-full p-1.5 text-slate-500 hover:bg-slate-100 disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-neutral-800"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
 
             <form
               onSubmit={async (e) => {
@@ -2227,6 +2780,9 @@ export default function ManageInformationPage() {
                 setCottageModalStatus(null);
                 setSavingCottage(true);
                 try {
+                  for (const [storagePath, photoId] of cottageSessionStoragePathsRef.current) {
+                    if (!photoId) await removeBeachImageByPath(storagePath);
+                  }
                   const item = await saveCatalogItem<CottageItem>('cottage', {
                     ...(editingCottageId ? { id: editingCottageId } : {}),
                     name: cottageName,
@@ -2235,9 +2791,47 @@ export default function ManageInformationPage() {
                     description: newCottage.description || '',
                     image_url: newCottage.image_url || '',
                   });
+                  for (const photoId of cottageStagedRemovalIdsRef.current) {
+                    const params = new URLSearchParams({
+                      beach_id: formData.id,
+                      cottage_id: item.id,
+                      photo_id: photoId,
+                    });
+                    const response = await fetch(`/api/owner/beach/cottage-photos?${params}`, { method: 'DELETE' });
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.error || 'Failed to remove a cottage photo.');
+                  }
+                  const orderedPhotoIds = cottagePhotos.flatMap((photo) => photo.id ? [photo.id] : []);
+                  if (orderedPhotoIds.length) {
+                    const response = await fetch('/api/owner/beach/cottage-photos', {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        beach_id: formData.id,
+                        cottage_id: item.id,
+                        photo_ids: orderedPhotoIds,
+                      }),
+                    });
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.error || 'Failed to save the cottage photo order.');
+                  }
                   setCottages((current) => editingCottageId
-                    ? current.map((cottage) => cottage.id === item.id ? item : cottage)
-                    : [...current, item]);
+                    ? current.map((cottage) => cottage.id === item.id
+                      ? {
+                        ...item,
+                        image_url: cottagePhotos.length
+                          ? cottagePhotos.find((photo) => photo.id)?.image_url || item.image_url
+                          : '',
+                        photos: cottagePhotos.filter((photo) => photo.id),
+                      }
+                      : cottage)
+                    : [...current, {
+                      ...item,
+                      image_url: cottagePhotos.length
+                        ? cottagePhotos.find((photo) => photo.id)?.image_url || item.image_url
+                        : '',
+                      photos: cottagePhotos.filter((photo) => photo.id),
+                    }]);
                   setCottageModalStatus({
                     type: 'success',
                     message: editingCottageId ? 'Cottage updated successfully.' : 'Cottage added successfully.',
@@ -2265,6 +2859,7 @@ export default function ManageInformationPage() {
                   type="text"
                   value={newCottage.name}
                   onChange={(e) => {
+                    cottageHasChangesRef.current = true;
                     setNewCottage({ ...newCottage, name: e.target.value });
                     setCottageFieldErrors((current) => ({ ...current, name: undefined }));
                     if (cottageModalStatus?.type === 'error') setCottageModalStatus(null);
@@ -2294,6 +2889,7 @@ export default function ManageInformationPage() {
                       type="number"
                       value={newCottage.price}
                       onChange={(e) => {
+                        cottageHasChangesRef.current = true;
                         setNewCottage({ ...newCottage, price: e.target.value });
                         setCottageFieldErrors((current) => ({ ...current, price: undefined }));
                         if (cottageModalStatus?.type === 'error') setCottageModalStatus(null);
@@ -2320,7 +2916,10 @@ export default function ManageInformationPage() {
                   <input
                     type="text"
                     value={newCottage.capacity}
-                    onChange={(e) => setNewCottage({ ...newCottage, capacity: e.target.value })}
+                    onChange={(e) => {
+                      cottageHasChangesRef.current = true;
+                      setNewCottage({ ...newCottage, capacity: e.target.value });
+                    }}
                     placeholder="e.g. 10 - 15 persons"
                     className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs text-slate-900 dark:text-white placeholder:italic focus:outline-none focus:border-[#1F3F74]"
                   />
@@ -2332,34 +2931,26 @@ export default function ManageInformationPage() {
                 <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
                   Cottage Photos (up to 10; JPG, PNG, or WebP, optimized to 1600px and 5 MB each)
                 </label>
-                <div className="flex flex-wrap items-center gap-3">
-                  <label className="px-4 py-2 rounded-full border border-slate-300 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-950 text-xs font-semibold text-slate-700 dark:text-neutral-300 hover:bg-slate-100 cursor-pointer inline-flex items-center gap-1.5">
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>Add Photos</span>
-                    <input
-                      type="file"
-                      accept="image/jpeg, image/png, image/webp"
-                      multiple
-                      disabled={uploadingCottageImage || cottagePhotos.length >= 10}
-                      onChange={(e) => {
-                        const files = Array.from(e.currentTarget.files || []);
-                        void handleCottagePhotoFiles(files);
-                        e.currentTarget.value = '';
-                      }}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
                 <div className="flex gap-3 overflow-x-auto pb-2">
                   {cottagePhotos.map((photo, index) => (
                     <div key={photo.localId} className="w-24 shrink-0 space-y-1.5">
-                      <div className="relative aspect-4/3 overflow-hidden rounded-lg border border-slate-200 bg-slate-100 dark:border-neutral-700 dark:bg-neutral-800">
+                      <div className={`relative aspect-[4/3] overflow-hidden rounded-none border border-slate-200 dark:border-neutral-700 ${
+                        photo.status === 'uploading' ? 'opacity-80' : 'opacity-100'
+                      }`}>
                         <Image
-                          src={photo.image_url}
+                          src={photo.previewUrl || photo.image_url}
+                          alt=""
+                          aria-hidden="true"
+                          fill
+                          unoptimized
+                          className="pointer-events-none scale-110 object-cover blur-xl brightness-90"
+                        />
+                        <Image
+                          src={photo.previewUrl || photo.image_url}
                           alt={`Cottage photo ${index + 1}`}
                           fill
                           unoptimized
-                          className="object-cover"
+                          className="relative z-10 object-contain"
                         />
                         <button
                           type="button"
@@ -2371,7 +2962,7 @@ export default function ManageInformationPage() {
                           <XCircle className="h-3.5 w-3.5" />
                         </button>
                       </div>
-                      {index === 0 ? (
+                      {photo.id && photo.sort_order === 0 ? (
                         <span className="block text-center text-[10px] font-bold text-emerald-700 dark:text-emerald-400">Cover</span>
                       ) : (
                         <button
@@ -2396,8 +2987,58 @@ export default function ManageInformationPage() {
                           style={{ width: `${photo.progress}%` }}
                         />
                       </div>
+                      {photo.status === 'uploading' && (
+                        <span className="block text-center text-[10px] text-slate-500">Uploading...</span>
+                      )}
+                      {photo.status === 'saved' && (
+                        <span className="block text-center text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">Saved photo</span>
+                      )}
+                      {photo.status === 'error' && (
+                        <div className="space-y-1">
+                          <span className="block text-center text-[10px] text-rose-600" role="alert">
+                            {photo.error || 'Upload failed'}
+                          </span>
+                          <button
+                            type="button"
+                            disabled={uploadingCottageImage}
+                            onClick={() => void retryCottagePhoto(photo)}
+                            className="block w-full text-center text-[10px] font-bold text-[#1F3F74] disabled:opacity-50 dark:text-[#4987BA]"
+                          >
+                            Retry
+                          </button>
+                        </div>
+                      )}
                     </div>
                   ))}
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <label
+                    aria-disabled={cottagePhotos.length >= 10}
+                    className={`px-4 py-2 rounded-full border border-slate-300 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-950 text-xs font-semibold text-slate-700 dark:text-neutral-300 inline-flex items-center gap-1.5 ${
+                      cottagePhotos.length >= 10
+                        ? 'pointer-events-none opacity-50'
+                        : 'hover:bg-slate-100 cursor-pointer'
+                    }`}
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    <span>{cottagePhotos.length ? 'Add more photos' : 'Add Photos'}</span>
+                    {cottagePhotos.length > 0 && <span className="text-slate-500">{cottagePhotos.length} / 10</span>}
+                    <input
+                      type="file"
+                      accept="image/jpeg, image/png, image/webp"
+                      multiple
+                      disabled={uploadingCottageImage || cottagePhotos.length >= 10}
+                      onChange={(e) => {
+                        const files = Array.from(e.currentTarget.files || []);
+                        void handleCottagePhotoFiles(files);
+                        e.currentTarget.value = '';
+                      }}
+                      className="hidden"
+                    />
+                  </label>
+                  {cottagePhotos.length >= 10 && (
+                    <span className="text-xs text-slate-500">The 10-photo limit has been reached.</span>
+                  )}
                 </div>
               </div>
 
@@ -2408,7 +3049,10 @@ export default function ManageInformationPage() {
                 <textarea
                   rows={2}
                   value={newCottage.description}
-                  onChange={(e) => setNewCottage({ ...newCottage, description: e.target.value })}
+                  onChange={(e) => {
+                    cottageHasChangesRef.current = true;
+                    setNewCottage({ ...newCottage, description: e.target.value });
+                  }}
                   placeholder="Details about shade, grilling area, table setup..."
                   className="w-full rounded-2xl border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 p-3 text-xs text-slate-900 dark:text-white placeholder:italic focus:outline-none focus:border-[#1F3F74]"
                 />
@@ -2417,22 +3061,8 @@ export default function ManageInformationPage() {
               <div className="flex justify-end gap-2 pt-3">
                 <button
                   type="button"
-                  onClick={async () => {
-                    if (createdCottageDuringUpload && editingCottageId) {
-                      try {
-                        await deleteCatalogItem('cottage', editingCottageId);
-                        setCottages((current) => current.filter((cottage) => cottage.id !== editingCottageId));
-                      } catch (error) {
-                        setCottageModalStatus({
-                          type: 'error',
-                          message: error instanceof Error ? error.message : 'Failed to remove the new cottage.',
-                        });
-                        return;
-                      }
-                    }
-                    resetCottageEditor();
-                  }}
-                  disabled={savingCottage || uploadingCottageImage}
+                  onClick={requestCloseCottageEditor}
+                  disabled={savingCottage}
                   className="rounded-full px-5 py-2 text-xs font-bold text-slate-600 dark:text-neutral-400 hover:bg-slate-100 dark:hover:bg-neutral-800 cursor-pointer"
                 >
                   Cancel
@@ -2452,42 +3082,154 @@ export default function ManageInformationPage() {
               </div>
             </form>
           </div>
+          {showDiscardConfirmation && (
+            <div
+              className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4"
+              onMouseDown={(event) => {
+                if (event.target === event.currentTarget) setShowDiscardConfirmation(false);
+              }}
+            >
+              <div
+                role="alertdialog"
+                aria-modal="true"
+                aria-labelledby="discard-cottage-title"
+                className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl dark:bg-neutral-900"
+              >
+                <h4 id="discard-cottage-title" className="font-bold text-slate-900 dark:text-white">
+                  Discard changes?
+                </h4>
+                <p className="mt-2 text-sm text-slate-600 dark:text-neutral-300">
+                  Your cottage edits and any photos still uploading will be discarded.
+                </p>
+                <div className="mt-5 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowDiscardConfirmation(false)}
+                    className="rounded-full border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 dark:border-neutral-700 dark:text-neutral-200"
+                  >
+                    Keep editing
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void discardCottageEditor()}
+                    className="rounded-full bg-rose-600 px-4 py-2 text-xs font-semibold text-white hover:bg-rose-700"
+                  >
+                    Discard
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
       {/* ── MODAL: ADD FACILITY (PNG/JPG Upload Only, Built-in ₱) ── */}
       {showAddFacility && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-6 sm:p-8 max-w-lg w-full space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <h3 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
-              Add Facility or Equipment
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 p-4 backdrop-blur-xs"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget) requestCloseFacilityEditor();
+          }}
+        >
+          <div className="relative max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-neutral-800 dark:bg-neutral-900 sm:p-7">
+            <button
+              type="button"
+              onClick={requestCloseFacilityEditor}
+              disabled={savingFacility}
+              aria-label="Close facility editor"
+              className="absolute right-4 top-4 rounded-full p-1.5 text-slate-500 hover:bg-slate-100 disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-neutral-800"
+            >
+              <X className="h-4 w-4" />
+            </button>
+            <h3 className="pr-10 text-lg font-bold text-[#1F3F74] dark:text-[#4987BA]">
+              {facilityOriginalSnapshotRef.current ? 'Edit Facility or Equipment' : 'Add Facility or Equipment'}
             </h3>
 
             <form
-              onSubmit={async (e) => {
-                e.preventDefault();
-                if (!newFacility.title) {
-                  setToast({ type: 'error', message: 'Facility title is required.' });
+              onSubmit={async (event) => {
+                event.preventDefault();
+                if (!newFacility.title?.trim()) {
+                  setFacilityFieldError('Facility name is required.');
                   return;
                 }
+                if (uploadingFacilityPhotos || facilityPhotos.some((photo) => photo.status === 'error')) {
+                  setFacilityModalStatus({
+                    type: 'error',
+                    message: 'Wait for photo uploads to finish or retry/remove failed photos before saving.',
+                  });
+                  return;
+                }
+                setSavingFacility(true);
+                setFacilityModalStatus(null);
                 try {
-                  const item = await saveCatalogItem<FacilityItem>('facility', {
+                  const wasEditing = Boolean(facilityOriginalSnapshotRef.current);
+                  let item = await saveCatalogItem<FacilityItem>('facility', {
+                    ...(editingFacilityId ? { id: editingFacilityId } : {}),
                     title: newFacility.title.trim(),
                     category: newFacility.category || 'amenity',
                     price: newFacility.price || '',
                     description: newFacility.description || '',
-                    image_url: newFacility.image_url || '',
+                    image_url: facilityPhotos[0]?.image_url || '',
                   });
-                  setFacilities((current) => [...current, item]);
-                  setShowAddFacility(false);
-                  setNewFacility({ title: '', category: 'parking', price: '', description: '', image_url: '' });
-                  setToast({ type: 'success', message: 'New facility or equipment added!' });
+                  if (!editingFacilityId) {
+                    facilityCreatedIdRef.current = item.id;
+                    setEditingFacilityId(item.id);
+                    setFacilities((current) => [...current, item]);
+                  }
+                  for (const photoId of facilityStagedRemovalIdsRef.current) {
+                    const params = new URLSearchParams({
+                      beach_id: formData.id,
+                      facility_id: item.id,
+                      photo_id: photoId,
+                    });
+                    const response = await fetch(`/api/owner/beach/facility-photos?${params}`, { method: 'DELETE' });
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.error || 'Failed to remove a facility photo.');
+                  }
+                  const orderedPhotoIds = facilityPhotos.flatMap((photo) => photo.id ? [photo.id] : []);
+                  if (orderedPhotoIds.length) {
+                    const response = await fetch('/api/owner/beach/facility-photos', {
+                      method: 'PATCH',
+                      headers: { 'Content-Type': 'application/json' },
+                      body: JSON.stringify({
+                        beach_id: formData.id,
+                        facility_id: item.id,
+                        photo_ids: orderedPhotoIds,
+                      }),
+                    });
+                    const data = await response.json();
+                    if (!response.ok) throw new Error(data.error || 'Failed to save the facility photo order.');
+                  }
+                  item = {
+                    ...item,
+                    image_url: facilityPhotos[0]?.image_url || '',
+                    photos: facilityPhotos.filter((photo) => photo.id),
+                  };
+                  setFacilities((current) => editingFacilityId
+                    ? current.map((facility) => facility.id === item.id ? item : facility)
+                    : current.some((facility) => facility.id === item.id)
+                      ? current.map((facility) => facility.id === item.id ? item : facility)
+                      : [...current, item]);
+                  setFacilityModalStatus({
+                    type: 'success',
+                    message: wasEditing ? 'Facility updated successfully.' : 'Facility added successfully.',
+                  });
+                  window.setTimeout(resetFacilityEditor, 800);
                 } catch (error) {
-                  setToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to add facility.' });
+                  setFacilityModalStatus({
+                    type: 'error',
+                    message: error instanceof Error ? error.message : 'Failed to save facility.',
+                  });
+                  setSavingFacility(false);
                 }
               }}
-              className="space-y-4"
+              className="mt-5 space-y-4"
             >
+              <ModalStatusBanner status={facilityModalStatus} />
+              {facilityFieldError && (
+                <p className="text-xs text-rose-600" role="alert">{facilityFieldError}</p>
+              )}
+
               <div className="space-y-1">
                 <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
                   Facility / Equipment Name *
@@ -2496,116 +3238,234 @@ export default function ManageInformationPage() {
                   type="text"
                   required
                   value={newFacility.title}
-                  onChange={(e) => setNewFacility({ ...newFacility, title: e.target.value })}
+                  onChange={(event) => {
+                    facilityHasChangesRef.current = true;
+                    setNewFacility({ ...newFacility, title: event.target.value });
+                    setFacilityFieldError('');
+                    if (facilityModalStatus?.type === 'error') setFacilityModalStatus(null);
+                  }}
                   placeholder="e.g. Secured Gated Parking"
-                  className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs text-slate-900 dark:text-white placeholder:italic focus:outline-none focus:border-[#1F3F74]"
+                  className="w-full rounded-full border border-slate-300 bg-white px-4 py-2.5 text-xs text-slate-900 placeholder:italic focus:border-[#1F3F74] focus:outline-none dark:border-neutral-700 dark:bg-neutral-950 dark:text-white"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
-                    Category
-                  </label>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">Category</label>
                   <div className="relative">
                     <select
                       value={newFacility.category}
-                      onChange={(e) => setNewFacility({ ...newFacility, category: e.target.value as any })}
-                      className="w-full appearance-none rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 pl-4 pr-10 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#1F3F74]"
+                      onChange={(event) => {
+                        facilityHasChangesRef.current = true;
+                        setNewFacility({ ...newFacility, category: event.target.value as FacilityItem['category'] });
+                      }}
+                      className="w-full appearance-none rounded-full border border-slate-300 bg-white py-2.5 pl-4 pr-10 text-xs text-slate-900 focus:border-[#1F3F74] focus:outline-none dark:border-neutral-700 dark:bg-neutral-950 dark:text-white"
                     >
                       <option value="parking">Parking Area</option>
                       <option value="equipment">Water Equipment / Life Vests</option>
                       <option value="amenity">Comfort Rooms &amp; Showers</option>
                       <option value="safety">Lifeguard &amp; Safety Station</option>
                     </select>
-                    <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                    <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   </div>
                 </div>
-
                 <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
-                    Rental Rate / Fee
-                  </label>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">Rental Rate / Fee</label>
                   <div className="relative flex items-center">
                     <span className="absolute left-3.5 text-xs font-bold text-[#1F3F74] dark:text-[#4987BA]">₱</span>
                     <input
                       type="text"
                       value={newFacility.price}
-                      onChange={(e) => setNewFacility({ ...newFacility, price: e.target.value })}
+                      onChange={(event) => {
+                        facilityHasChangesRef.current = true;
+                        setNewFacility({ ...newFacility, price: event.target.value });
+                      }}
                       placeholder="Free or 100"
-                      className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 pl-8 pr-4 text-xs text-slate-900 dark:text-white placeholder:italic focus:outline-none focus:border-[#1F3F74]"
+                      className="w-full rounded-full border border-slate-300 bg-white py-2.5 pl-8 pr-4 text-xs text-slate-900 placeholder:italic focus:border-[#1F3F74] focus:outline-none dark:border-neutral-700 dark:bg-neutral-950 dark:text-white"
                     />
                   </div>
                 </div>
               </div>
 
-              {/* PNG/JPG File Upload Input */}
-              <div className="space-y-1.5">
+              <div className="space-y-2">
                 <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
-                  Upload Photo (PNG or JPG, max 20 GB)
+                  Photos (up to 10; JPG, PNG, or WebP, optimized to 1600px and 5 MB each)
                 </label>
-                <div className="flex items-center gap-3">
-                  <label className="px-4 py-2 rounded-full border border-slate-300 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-950 text-xs font-semibold text-slate-700 dark:text-neutral-300 hover:bg-slate-100 cursor-pointer inline-flex items-center gap-1.5">
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>Choose PNG/JPG File</span>
+                {facilityPhotos.length > 0 && (
+                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
+                    {facilityPhotos.map((photo, index) => {
+                      const source = photo.previewUrl || photo.image_url;
+                      return (
+                        <div key={photo.localId} className="min-w-0 space-y-1.5">
+                          <div className="relative aspect-[4/3] overflow-hidden border border-slate-200 bg-slate-100 dark:border-neutral-700 dark:bg-neutral-800">
+                            {source && (
+                              <Image
+                                src={source}
+                                alt={`Facility photo ${index + 1}`}
+                                fill
+                                unoptimized
+                                className="object-contain"
+                              />
+                            )}
+                            <button
+                              type="button"
+                              aria-label={`Remove photo ${index + 1}`}
+                              disabled={savingFacility}
+                              onClick={() => void removeFacilityPhoto(photo)}
+                              className="absolute right-1 top-1 rounded-full bg-black/70 p-1 text-white disabled:opacity-50"
+                            >
+                              <XCircle className="h-3.5 w-3.5" />
+                            </button>
+                          </div>
+                          {photo.id && photo.sort_order === 0 ? (
+                            <span className="block text-center text-[10px] font-bold text-emerald-700 dark:text-emerald-400">Cover</span>
+                          ) : (
+                            <button
+                              type="button"
+                              disabled={uploadingFacilityPhotos || savingFacility || !photo.id}
+                              onClick={() => makeFacilityPhotoCover(photo)}
+                              className="block w-full text-center text-[10px] font-semibold text-[#1F3F74] disabled:opacity-50 dark:text-[#4987BA]"
+                            >
+                              Make cover
+                            </button>
+                          )}
+                          <div
+                            className="h-1 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-neutral-700"
+                            role="progressbar"
+                            aria-label={`Photo ${index + 1} upload progress`}
+                            aria-valuenow={photo.progress}
+                            aria-valuemin={0}
+                            aria-valuemax={100}
+                          >
+                            <div
+                              className={`h-full transition-[width] duration-200 ${photo.status === 'error' ? 'bg-rose-500' : 'bg-emerald-500'}`}
+                              style={{ width: `${photo.progress}%` }}
+                            />
+                          </div>
+                          {photo.status === 'uploading' && <span className="block text-center text-[10px] text-slate-500">Uploading...</span>}
+                          {photo.status === 'saved' && <span className="block text-center text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">Saved photo</span>}
+                          {photo.status === 'error' && (
+                            <div className="space-y-1">
+                              <span className="block text-center text-[10px] text-rose-600" role="alert">
+                                {photo.error || 'Upload failed'}
+                              </span>
+                              <button
+                                type="button"
+                                disabled={uploadingFacilityPhotos || savingFacility}
+                                onClick={() => void retryFacilityPhoto(photo)}
+                                className="block w-full text-center text-[10px] font-bold text-[#1F3F74] disabled:opacity-50 dark:text-[#4987BA]"
+                              >
+                                Retry
+                              </button>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+                <div className="flex flex-wrap items-center gap-3">
+                  <label className={`inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-700 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-300 ${
+                    facilityPhotos.length >= 10 || uploadingFacilityPhotos || savingFacility
+                      ? 'pointer-events-none opacity-50'
+                      : 'cursor-pointer hover:bg-slate-100'
+                  }`}>
+                    <Upload className="h-3.5 w-3.5" />
+                    <span>{facilityPhotos.length ? 'Add more photos' : 'Add Photos'}</span>
+                    {facilityPhotos.length > 0 && <span className="text-slate-500">{facilityPhotos.length} / 10</span>}
                     <input
                       type="file"
-                      accept="image/png, image/jpeg, image/jpg"
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        if (!file) return;
-                        try {
-                          const url = await uploadImageFile(file);
-                          setNewFacility({ ...newFacility, image_url: url });
-                          setToast({ type: 'success', message: 'Facility photo uploaded!' });
-                        } catch (err: unknown) {
-                          setToast({ type: 'error', message: err instanceof Error ? err.message : 'Upload failed' });
-                        }
+                      accept="image/jpeg, image/png, image/webp"
+                      multiple
+                      disabled={facilityPhotos.length >= 10 || uploadingFacilityPhotos || savingFacility}
+                      onChange={(event) => {
+                        const files = Array.from(event.currentTarget.files || []);
+                        void handleFacilityPhotoFiles(files);
+                        event.currentTarget.value = '';
                       }}
                       className="hidden"
                     />
                   </label>
-                  {newFacility.image_url && (
-                    <div className="flex items-center gap-2">
-                      <div className="relative h-12 w-16 overflow-hidden rounded-lg border border-slate-200 dark:border-neutral-700">
-                        <Image src={newFacility.image_url} alt="Facility photo preview" fill className="object-cover" />
-                      </div>
-                      <span className="text-xs font-bold text-emerald-600">Preview ready</span>
-                    </div>
+                  {facilityPhotos.length >= 10 && (
+                    <span className="text-xs text-slate-500">The 10-photo limit has been reached.</span>
                   )}
                 </div>
               </div>
 
               <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
-                  Description
-                </label>
+                <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">Description</label>
                 <textarea
                   rows={2}
                   value={newFacility.description}
-                  onChange={(e) => setNewFacility({ ...newFacility, description: e.target.value })}
+                  onChange={(event) => {
+                    facilityHasChangesRef.current = true;
+                    setNewFacility({ ...newFacility, description: event.target.value });
+                  }}
                   placeholder="Description of the facility, capacity, fee if any..."
-                  className="w-full rounded-2xl border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 p-3 text-xs text-slate-900 dark:text-white placeholder:italic focus:outline-none focus:border-[#1F3F74]"
+                  className="w-full rounded-2xl border border-slate-300 bg-white p-3 text-xs text-slate-900 placeholder:italic focus:border-[#1F3F74] focus:outline-none dark:border-neutral-700 dark:bg-neutral-950 dark:text-white"
                 />
               </div>
 
-              <div className="flex justify-end gap-2 pt-3">
+              <div className="flex justify-end gap-2 pt-2">
                 <button
                   type="button"
-                  onClick={() => setShowAddFacility(false)}
-                  className="rounded-full px-5 py-2 text-xs font-bold text-slate-600 dark:text-neutral-400 hover:bg-slate-100 dark:hover:bg-neutral-800 cursor-pointer"
+                  onClick={requestCloseFacilityEditor}
+                  disabled={savingFacility}
+                  className="rounded-full px-5 py-2 text-xs font-bold text-slate-600 hover:bg-slate-100 disabled:opacity-50 dark:text-neutral-400 dark:hover:bg-neutral-800"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="rounded-full px-6 py-2 bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-bold shadow-xs cursor-pointer"
+                  disabled={savingFacility || uploadingFacilityPhotos}
+                  className="rounded-full bg-[#1F3F74] px-6 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#183460] disabled:opacity-50"
                 >
-                  Add Facility
+                  {savingFacility ? (
+                    <span className="inline-flex items-center gap-1.5">
+                      <Loader2 aria-hidden="true" className="h-3.5 w-3.5 animate-spin" />
+                      Saving...
+                    </span>
+                  ) : facilityOriginalSnapshotRef.current ? 'Save Changes' : 'Add Facility'}
                 </button>
               </div>
             </form>
           </div>
+          {showDiscardFacilityConfirmation && (
+            <div
+              className="fixed inset-0 z-[60] flex items-center justify-center bg-black/40 p-4"
+              onMouseDown={(event) => {
+                if (event.target === event.currentTarget) setShowDiscardFacilityConfirmation(false);
+              }}
+            >
+              <div
+                role="alertdialog"
+                aria-modal="true"
+                aria-labelledby="discard-facility-title"
+                className="w-full max-w-sm rounded-2xl bg-white p-5 shadow-2xl dark:bg-neutral-900"
+              >
+                <h4 id="discard-facility-title" className="font-bold text-slate-900 dark:text-white">Discard changes?</h4>
+                <p className="mt-2 text-sm text-slate-600 dark:text-neutral-300">
+                  Your facility edits and any photos still uploading will be discarded.
+                </p>
+                <div className="mt-5 flex justify-end gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setShowDiscardFacilityConfirmation(false)}
+                    className="rounded-full border border-slate-300 px-4 py-2 text-xs font-semibold text-slate-700 dark:border-neutral-700 dark:text-neutral-200"
+                  >
+                    Keep editing
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void discardFacilityEditor()}
+                    className="rounded-full bg-rose-600 px-4 py-2 text-xs font-semibold text-white hover:bg-rose-700"
+                  >
+                    Discard
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
 

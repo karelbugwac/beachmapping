@@ -18,7 +18,7 @@ function getCatalogErrorMessage(error: unknown): string {
       || databaseError.code === 'PGRST200'
       || databaseError.code === 'PGRST201'
     ) {
-      return 'Cottage photo storage is not ready. Apply supabase/migrations/20261104_beach_cottage_photos.sql in Supabase, then reload the schema cache.';
+      return 'Listing photo storage is not ready. Apply the relevant photo migration in Supabase, then reload the schema cache.';
     }
     if (typeof databaseError.message === 'string') return databaseError.message;
   }
@@ -101,13 +101,30 @@ function toCatalogItem(type: CatalogType, row: Record<string, any>, auth?: Autho
     };
   }
   if (type === 'facility') {
+    const cover = Array.isArray(row.images) ? row.images[0] : '';
+    const photos = Array.isArray(row.photos)
+      ? row.photos
+        .sort((left: Record<string, any>, right: Record<string, any>) => left.sort_order - right.sort_order)
+        .map((photo: Record<string, any>) => ({
+          id: photo.id,
+          image_url: getCottageImageUrl(auth!.adminClient.storage.from('beach-media'), photo.image_url),
+          storage_path: photo.storage_path,
+          sort_order: photo.sort_order,
+        }))
+      : [];
+    const normalizedPhotos = photos.length
+      ? photos
+      : cover
+        ? [{ image_url: getCottageImageUrl(auth!.adminClient.storage.from('beach-media'), cover), storage_path: '', sort_order: 0 }]
+        : [];
     return {
       id: row.id,
       title: row.name,
       category: row.category || 'amenity',
       price: row.price_label ?? (row.price == null ? '' : String(row.price)),
       description: row.description || '',
-      image_url: row.images?.[0] || '',
+      image_url: normalizedPhotos[0]?.image_url || '',
+      photos: normalizedPhotos,
     };
   }
   return {
@@ -134,7 +151,9 @@ export async function GET(request: NextRequest) {
         const query = (auth.adminClient.from(table) as any)
           .select(type === 'cottage'
             ? '*, photos:beach_cottage_photos(id, image_url, storage_path, sort_order, created_at)'
-            : '*');
+            : type === 'facility'
+              ? '*, photos:beach_facility_photos(id, image_url, storage_path, sort_order, created_at)'
+              : '*');
         const { data, error } = await query
           .eq('beach_id', beach.id)
           .order('created_at', { ascending: type === 'post' });
@@ -215,39 +234,44 @@ export async function POST(request: NextRequest) {
     }
 
     const id = typeof body.id === 'string' ? body.id : null;
-    if (type === 'cottage' && id) {
-      const { data: existingCottage, error: existingCottageError } = await (auth.adminClient
-        .from('beach_cottages') as any)
-        .select('id, images')
+    if ((type === 'cottage' || type === 'facility') && id) {
+      const { data: existingItem, error: existingItemError } = await (auth.adminClient
+        .from(tableByType[type]) as any)
+        .select('id')
         .eq('id', id)
         .eq('beach_id', beach.id)
         .maybeSingle();
-      if (existingCottageError) throw existingCottageError;
-      if (!existingCottage) {
-        return NextResponse.json({ error: 'Cottage listing not found.' }, { status: 404, headers: noStoreHeaders });
+      if (existingItemError) throw existingItemError;
+      if (!existingItem) {
+        return NextResponse.json(
+          { error: type === 'cottage' ? 'Cottage listing not found.' : 'Facility listing not found.' },
+          { status: 404, headers: noStoreHeaders }
+        );
       }
     }
 
     const table = auth.adminClient.from(tableByType[type]) as any;
-    const query = id && type === 'cottage'
+    const query = id && (type === 'cottage' || type === 'facility')
       ? table.update(row).eq('id', id).eq('beach_id', beach.id)
       : table.insert(row);
     const { data, error } = await query.select('*').single();
     if (error) throw error;
 
     let responseRow = data;
-    if (type === 'cottage') {
-      const { data: cottageWithPhotos, error: photosError } = await (auth.adminClient.from('beach_cottages') as any)
-        .select('*, photos:beach_cottage_photos(id, image_url, storage_path, sort_order, created_at)')
+    if (type === 'cottage' || type === 'facility') {
+      const { data: itemWithPhotos, error: photosError } = await (auth.adminClient.from(tableByType[type]) as any)
+        .select(type === 'cottage'
+          ? '*, photos:beach_cottage_photos(id, image_url, storage_path, sort_order, created_at)'
+          : '*, photos:beach_facility_photos(id, image_url, storage_path, sort_order, created_at)')
         .eq('id', data.id)
         .single();
       if (photosError) throw photosError;
-      responseRow = cottageWithPhotos;
+      responseRow = itemWithPhotos;
     }
 
     return NextResponse.json(
       { item: toCatalogItem(type, responseRow, auth) },
-      { status: id && type === 'cottage' ? 200 : 201, headers: noStoreHeaders }
+      { status: id && (type === 'cottage' || type === 'facility') ? 200 : 201, headers: noStoreHeaders }
     );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to save beach listing.';
@@ -275,6 +299,8 @@ export async function DELETE(request: NextRequest) {
     const table = auth.adminClient.from(tableByType[typeParam]) as any;
     let cottageImage: unknown = null;
     let cottagePhotoPaths: string[] = [];
+    let facilityImage: unknown = null;
+    let facilityPhotoPaths: string[] = [];
     if (typeParam === 'cottage') {
       const { data: cottage, error: cottageError } = await table
         .select('images')
@@ -291,6 +317,22 @@ export async function DELETE(request: NextRequest) {
         .eq('cottage_id', id);
       if (photosError) throw photosError;
       cottagePhotoPaths = (photos || []).map((photo: { storage_path: string }) => photo.storage_path);
+    } else if (typeParam === 'facility') {
+      const { data: facility, error: facilityError } = await table
+        .select('images')
+        .eq('id', id)
+        .eq('beach_id', beachResult.beach.id)
+        .maybeSingle();
+      if (facilityError) throw facilityError;
+      if (!facility) {
+        return NextResponse.json({ error: 'Listing not found.' }, { status: 404, headers: noStoreHeaders });
+      }
+      facilityImage = Array.isArray(facility.images) ? facility.images[0] : null;
+      const { data: photos, error: photosError } = await (beachResult.auth.adminClient.from('beach_facility_photos') as any)
+        .select('storage_path')
+        .eq('facility_id', id);
+      if (photosError) throw photosError;
+      facilityPhotoPaths = (photos || []).map((photo: { storage_path: string }) => photo.storage_path);
     }
 
     const { data, error } = await table
@@ -315,6 +357,24 @@ export async function DELETE(request: NextRequest) {
       }
       if (cottagePhotoPaths.length) {
         const { error: removeError } = await auth.adminClient.storage.from('beach-media').remove(cottagePhotoPaths);
+        if (removeError) throw removeError;
+      }
+    } else if (typeParam === 'facility') {
+      if (facilityImage) {
+        const path = getOwnedCottageImagePath(
+          auth.adminClient.storage.from('beach-media'),
+          facilityImage,
+          beachResult.beach.owner_id,
+          beachResult.beach.id
+        );
+        if (path && !facilityPhotoPaths.includes(path)) facilityPhotoPaths.push(path);
+      }
+      if (facilityPhotoPaths.length) {
+        facilityPhotoPaths = facilityPhotoPaths.filter((path) =>
+          path.startsWith(`${beachResult.beach.owner_id}/${beachResult.beach.id}/facilities/`)
+          && !path.includes('..')
+        );
+        const { error: removeError } = await auth.adminClient.storage.from('beach-media').remove(facilityPhotoPaths);
         if (removeError) throw removeError;
       }
     }

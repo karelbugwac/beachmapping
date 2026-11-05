@@ -23,9 +23,10 @@ import {
   AlertTriangle,
   MessageSquare,
 } from 'lucide-react';
-import type { BeachCottage, BeachRecord } from '@/lib/db/beaches';
+import type { BeachRecord } from '@/lib/db/beaches';
 import { VirtualTourModal } from '@/components/virtual-tour-modal';
-import { CottagePhotosModal } from '@/components/cottages/cottage-photos-modal';
+import { PhotoViewerModal, type PhotoViewerItem } from '@/components/cottages/cottage-photos-modal';
+import { CottageCard } from '@/components/cottages/cottage-card';
 import { showToast } from '@/components/ui/feedback-toasts';
 
 interface ResortRuleItem {
@@ -117,8 +118,7 @@ export default function BeachProfilePage({
   const [notFound, setNotFound] = useState(false);
   const [activeTab, setActiveTab] = useState<'general' | 'posts' | 'cottages' | 'facilities' | 'dos' | 'reviews'>('general');
   const [showTourModal, setShowTourModal] = useState(false);
-  const [selectedPhotoIndex, setSelectedPhotoIndex] = useState(0);
-  const [selectedCottage, setSelectedCottage] = useState<BeachCottage | null>(null);
+  const [selectedDetail, setSelectedDetail] = useState<PhotoViewerItem | null>(null);
 
   useEffect(() => {
     setLoading(true);
@@ -562,34 +562,31 @@ export default function BeachProfilePage({
                 )}
 
                 {beach.cottages && beach.cottages.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     {beach.cottages.map((cottage) => (
-                      <article key={cottage.id} className="overflow-hidden rounded-2xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/50">
-                        {cottage.image_url && (
-                          <div className="relative h-48 bg-slate-100 dark:bg-neutral-900">
-                            <Image src={cottage.image_url} alt={cottage.name} fill className="object-cover" sizes="(max-width: 640px) 100vw, 50vw" />
-                              <button
-                                type="button"
-                                onClick={() => setSelectedCottage(cottage)}
-                                aria-label={`View photos of ${cottage.name}`}
-                                className="absolute inset-0 z-[1] focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-                              />
-                              {(cottage.photos?.length || 0) > 1 && (
-                                <span className="absolute left-3 top-3 z-[2] rounded-full bg-black/65 px-2.5 py-1 text-[11px] font-semibold text-white">
-                                  {cottage.photos?.length} photos
-                                </span>
-                              )}
-                            </div>
-                          )}
-                        <div className="space-y-2 p-4">
-                          <div className="flex items-start justify-between gap-3">
-                            <h3 className="font-bold text-slate-900 dark:text-white">{cottage.name}</h3>
-                            {cottage.price && <span className="shrink-0 font-bold text-[#1F3F74] dark:text-[#4987BA]">₱{cottage.price}</span>}
-                          </div>
-                          {cottage.capacity && <p className="text-xs text-slate-500 dark:text-neutral-400">{cottage.capacity}</p>}
-                          {cottage.description && <p className="text-sm text-slate-600 dark:text-neutral-300">{cottage.description}</p>}
-                        </div>
-                      </article>
+                      <CottageCard
+                        key={cottage.id}
+                        name={cottage.name}
+                        imageUrl={cottage.image_url}
+                        photoCount={cottage.photos?.length || 0}
+                        price={cottage.price}
+                        capacity={cottage.capacity}
+                        description={cottage.description}
+                        onView={() => {
+                          setSelectedDetail({
+                            name: cottage.name,
+                            photos: cottage.photos?.length
+                              ? cottage.photos
+                              : cottage.image_url
+                                ? [{ image_url: cottage.image_url }]
+                                : [],
+                            description: cottage.description,
+                            capacity: cottage.capacity,
+                            price: cottage.price,
+                            priceUnit: 'day',
+                          });
+                        }}
+                      />
                     ))}
                   </div>
                 ) : (
@@ -623,27 +620,30 @@ export default function BeachProfilePage({
                 </div>
 
                 {beach.facility_items && beach.facility_items.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     {beach.facility_items.map((facility) => (
-                      <div
+                      <CottageCard
                         key={facility.id}
-                        className="overflow-hidden rounded-xl bg-slate-50 dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800"
-                      >
-                        {facility.image_url && (
-                          <div className="relative h-36 bg-slate-100 dark:bg-neutral-900">
-                            <Image src={facility.image_url} alt={facility.name} fill className="object-cover" sizes="(max-width: 768px) 100vw, 33vw" />
-                          </div>
-                        )}
-                        <div className="space-y-1.5 p-3.5">
-                          <h3 className="flex items-center gap-2 text-sm font-bold text-slate-900 dark:text-white">
-                            <ShieldCheck className="w-4 h-4 text-[#1F3F74] dark:text-[#4987BA] flex-shrink-0" />
-                            {facility.name}
-                          </h3>
-                          <p className="text-[11px] capitalize text-slate-500 dark:text-neutral-400">{facility.category}</p>
-                          {facility.price && <p className="text-xs font-semibold text-[#1F3F74] dark:text-[#4987BA]">{facility.price === 'Free' || facility.price.startsWith('₱') ? facility.price : `₱${facility.price}`}</p>}
-                          {facility.description && <p className="text-xs text-slate-600 dark:text-neutral-300">{facility.description}</p>}
-                        </div>
-                      </div>
+                        name={facility.name}
+                        imageUrl={facility.image_url}
+                        price={facility.price}
+                        description={facility.description}
+                        onView={() => {
+                          setSelectedDetail({
+                            name: facility.name,
+                            photos: facility.photos?.length
+                              ? facility.photos
+                              : facility.image_url
+                                ? [{ image_url: facility.image_url }]
+                                : [],
+                            description: facility.description,
+                            infoLabel: facility.category || undefined,
+                            price: facility.price,
+                            priceLabel: 'Fee',
+                            priceUnit: facility.category.toLowerCase() === 'room' ? 'night' : '',
+                          });
+                        }}
+                      />
                     ))}
                   </div>
                 ) : (
@@ -779,17 +779,10 @@ export default function BeachProfilePage({
         tourUrl={beach.virtual_tour_url}
         beachName={beach.name}
       />
-      {selectedCottage && (
-        <CottagePhotosModal
-          name={selectedCottage.name}
-          price={selectedCottage.price}
-          capacity={selectedCottage.capacity}
-          photos={selectedCottage.photos?.length
-            ? selectedCottage.photos
-            : selectedCottage.image_url
-              ? [{ image_url: selectedCottage.image_url }]
-              : []}
-          onClose={() => setSelectedCottage(null)}
+      {selectedDetail && (
+        <PhotoViewerModal
+          item={selectedDetail}
+          onClose={() => setSelectedDetail(null)}
         />
       )}
     </div>
