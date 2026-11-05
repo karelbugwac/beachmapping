@@ -9,13 +9,15 @@ const COOKIE_CONSENT_KEY = 'dtb_cookie_consent_v1';
 
 export function CookieConsent() {
   const pathname = usePathname();
-  if (pathname?.startsWith('/admin') || pathname?.startsWith('/owner') || pathname?.startsWith('/staff')) {
-    return null;
-  }
-
+  const isDedicatedPortal =
+    pathname?.startsWith('/admin') ||
+    pathname?.startsWith('/owner') ||
+    pathname?.startsWith('/staff');
   const [showBanner, setShowBanner] = useState(false);
 
   useEffect(() => {
+    if (isDedicatedPortal) return;
+
     try {
       const stored = localStorage.getItem(COOKIE_CONSENT_KEY);
       if (!stored) {
@@ -26,7 +28,9 @@ export function CookieConsent() {
     } catch {
       // Storage access blocked
     }
-  }, []);
+  }, [isDedicatedPortal]);
+
+  if (isDedicatedPortal) return null;
 
   const handleAccept = () => {
     try {

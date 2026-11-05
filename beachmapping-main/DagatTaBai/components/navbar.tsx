@@ -8,7 +8,6 @@ import {
   Menu,
   X,
   LogOut,
-  User as UserIcon,
   Bell,
 } from 'lucide-react';
 import type { AuthUser } from '@/lib/db/auth';
@@ -141,7 +140,7 @@ export function Navbar() {
   }, [isDedicatedPortal]);
 
   useEffect(() => {
-    if (!user) return;
+    if (!user || isDedicatedPortal) return;
 
     let isMounted = true;
     const refreshCount = async () => {
@@ -150,6 +149,10 @@ export function Navbar() {
         if (response.status === 401) {
           if (isMounted) setUnreadNotifications(0);
           return;
+        }
+        const contentType = response.headers.get('content-type') || '';
+        if (!contentType.includes('application/json')) {
+          throw new Error(`Notification endpoint returned ${response.status} without a JSON response.`);
         }
         const result = await response.json();
         if (!response.ok) throw new Error(result.error || 'Could not load notification count.');
@@ -168,7 +171,7 @@ export function Navbar() {
       window.clearInterval(intervalId);
       window.removeEventListener('dtb_notifications_updated', refreshOnUpdate);
     };
-  }, [user, pathname]);
+  }, [user, pathname, isDedicatedPortal]);
 
   const handleSignOut = async () => {
     try {
@@ -356,7 +359,8 @@ export function Navbar() {
               type="button"
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-1.5 rounded-lg text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-neutral-800"
-              aria-label="Open menu"
+              aria-label={mobileMenuOpen ? 'Close menu' : 'Open menu'}
+              aria-expanded={mobileMenuOpen}
             >
               {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
             </button>
@@ -391,31 +395,7 @@ export function Navbar() {
 
           <div className="pt-2 border-t border-slate-100 dark:border-neutral-800 space-y-2">
             {user ? (
-              <div className="space-y-2">
-                <Link
-                  href="/notifications"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center justify-between gap-2.5 rounded-xl bg-slate-50 px-3 py-2 text-xs font-bold text-slate-800 dark:bg-neutral-900 dark:text-slate-200"
-                >
-                  <span className="flex items-center gap-2.5">
-                    <Bell className="h-4 w-4 text-[#1F3F74] dark:text-[#4987BA]" />
-                    <span>Notifications</span>
-                  </span>
-                  {unreadNotifications > 0 && (
-                    <span className="rounded-full bg-rose-600 px-2 py-0.5 text-[10px] font-bold text-white">
-                      {unreadNotifications}
-                    </span>
-                  )}
-                </Link>
-                <Link
-                  href="/profile"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="flex items-center gap-2.5 px-3 py-2 text-xs font-bold text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-neutral-900 rounded-xl"
-                >
-                  <UserIcon className="w-4 h-4 text-[#1F3F74] dark:text-[#4987BA]" />
-                  <span>Account Settings ({getDisplayName(user)})</span>
-                </Link>
-
+              <div>
                 <button
                   type="button"
                   onClick={() => {

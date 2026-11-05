@@ -19,18 +19,39 @@ export function LoginDeviceTracker() {
     const supabase = createClient();
     const trackedUsers = new Set<string>();
 
+    const waitForServerSession = async (userId: string) => {
+      for (let attempt = 0; attempt < 6; attempt += 1) {
+        const response = await fetch('/api/auth/session', { cache: 'no-store' });
+        if (response.ok) {
+          const result = await response.json();
+          if (result.user?.id === userId) return true;
+        }
+
+        if (attempt < 5) {
+          await new Promise((resolve) => window.setTimeout(resolve, 500));
+        }
+      }
+
+      return false;
+    };
+
     const trackLogin = async (userId: string) => {
       if (trackedUsers.has(userId)) return;
       trackedUsers.add(userId);
 
       try {
+        if (!(await waitForServerSession(userId))) {
+          trackedUsers.delete(userId);
+          return;
+        }
+
         const response = await fetch('/api/auth/track-device', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ deviceId: getDeviceId() }),
         });
-        const result = await response.json();
-        if (!response.ok) throw new Error(result.error || 'Could not record this sign-in device.');
+        const result = await response.json().catch(() => null);
+        if (!response.ok) throw new Error(result?.error || 'Could not record this sign-in device.');
       } catch (error: unknown) {
         trackedUsers.delete(userId);
         console.error('Login device tracking failed:', error);
