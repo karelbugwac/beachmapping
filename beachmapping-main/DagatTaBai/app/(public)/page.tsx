@@ -282,7 +282,7 @@ export default function HomePage() {
                   className="w-[82vw] max-w-[320px] flex-shrink-0 snap-center sm:w-auto sm:max-w-none sm:flex-shrink"
                 >
                   <ScrollReveal direction="up" delay={index * 100} duration={600} className="h-full">
-                    <div className="h-full min-h-[220px] p-6 sm:p-7 rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-sm flex flex-col justify-between gap-5 hover:border-[#1F3F74]/30 hover:shadow-md transition-all duration-200">
+                    <div className="h-full min-h-[220px] min-w-0 p-6 sm:p-7 rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-sm flex flex-col justify-between gap-5 hover:border-[#1F3F74]/30 hover:shadow-md transition-all duration-200">
                       <div className="space-y-3.5">
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2.5 min-w-0">
@@ -327,7 +327,7 @@ export default function HomePage() {
                           </div>
                         </div>
 
-                        <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed pt-1">
+                        <p className="break-words text-sm text-slate-600 dark:text-slate-300 leading-relaxed pt-1 [overflow-wrap:anywhere]">
                           &ldquo;{item.comment}&rdquo;
                         </p>
                       </div>

@@ -21,47 +21,47 @@ interface TeamMember {
 const teamMembers: TeamMember[] = [
   {
     id: 1,
-    name: 'Team Member 1',
-    image: '',
+    name: 'Karel C. Bugwac',
+    image: '/member1.jpg',
   },
   {
     id: 2,
-    name: 'Team Member 2',
-    image: '',
+    name: 'Ana Marie Q. Calo',
+    image: '/member2.jpg',
   },
   {
     id: 3,
-    name: 'Team Member 3',
+    name: 'Charisse V. Garbo',
     image: '/member3.png',
   },
   {
     id: 4,
-    name: 'Team Member 4',
+    name: 'Patrick James D. Leswe',
     image: '',
   },
   {
     id: 5,
-    name: 'Team Member 5',
+    name: 'Julie Mae G. Matugas',
     image: '/member5.jpg',
   },
   {
     id: 6,
-    name: 'Team Member 6',
+    name: 'Kimberly Claire M. Parot',
     image: '/member6.jpg',
   },
   {
-    id: 7,
-    name: 'Team Member 7',
-    image: '',
-  },
-  {
     id: 8,
-    name: 'Team Member 8',
+    name: 'Jessica C. Raganas',
     image: '/member8.jpg',
   },
   {
+    id: 7,
+    name: 'Jamaica Sulla',
+    image: '',
+  },
+  {
     id: 9,
-    name: 'Team Member 9',
+    name: 'Nathaniel James P. Tiro',
     image: '/member9.jpg',
   },
 ];
@@ -233,63 +233,64 @@ export default function AboutPage() {
           <div
             onTouchStart={handleTouchStart}
             onTouchEnd={handleTouchEnd}
-            className="relative max-w-2xl sm:max-w-3xl mx-auto grid grid-cols-[1fr_auto_1fr] items-center justify-items-center py-4 select-none touch-pan-y"
+            className="relative mx-auto flex min-h-32 w-full max-w-2xl select-none items-center justify-center touch-pan-y py-4 sm:min-h-40 sm:max-w-3xl"
           >
 
             {/* 1. LEFT SIDE PROFILE (Click to center) */}
             <div
               onClick={handlePrev}
-              className="w-full flex flex-col items-center justify-center opacity-45 hover:opacity-90 scale-85 hover:scale-95 transition-all duration-300 cursor-pointer text-center group px-1 sm:px-2 max-w-[150px] sm:max-w-[180px]"
+              className="group absolute left-0 top-1/2 z-10 flex w-[72px] -translate-y-1/2 cursor-pointer flex-col items-center justify-center px-0.5 text-center opacity-50 transition-opacity duration-300 hover:opacity-90 sm:left-2 sm:w-28"
               title={prevMember.name}
             >
-              <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-2 border-white/60 bg-white/10 backdrop-blur-xs flex items-center justify-center shadow-lg transition-transform group-hover:border-white flex-shrink-0">
+              <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-full border-2 border-white/60 bg-white/10 shadow-lg transition-colors group-hover:border-white sm:h-24 sm:w-24">
                 {prevMember.image ? (
                   <Image src={prevMember.image} alt={prevMember.name} fill sizes="96px" className="object-cover" />
                 ) : (
-                  <User className="w-10 h-10 sm:w-12 sm:h-12 stroke-[1.6] text-white/80" />
+                  <User className="h-full w-full p-3 stroke-[1.6] text-white/80 sm:p-5" />
                 )}
               </div>
-              <span className="mt-2.5 text-xs text-white/80 font-medium block truncate max-w-full">
+              <span className="mt-2.5 block w-full truncate text-[10px] font-medium text-white/80 sm:text-xs">
                 {prevMember.name}
               </span>
             </div>
 
             {/* 2. CENTER ACTIVE PROFILE (Prominent, Glowing Ring, Centered, Name & Position Underneath) */}
-            <div className="flex flex-col items-center scale-100 transition-all duration-300 text-center px-2 sm:px-6 flex-shrink-0">
-              <div className="relative w-28 h-28 sm:w-36 sm:h-36 rounded-full overflow-hidden border-4 border-white shadow-2xl ring-4 ring-white/30 bg-white/20 backdrop-blur-md flex items-center justify-center transition-all duration-300 flex-shrink-0">
+            <div className="relative z-20 flex w-24 flex-shrink-0 flex-col items-center px-0 text-center sm:w-36">
+              <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-full border-4 border-white bg-white/20 shadow-2xl ring-4 ring-white/30 sm:h-36 sm:w-36">
                 {currentMember.image ? (
                   <Image src={currentMember.image} alt={currentMember.name} fill sizes="144px" className="object-cover" />
                 ) : (
-                  <User className="w-14 h-14 sm:w-16 sm:h-16 stroke-[1.6] text-white" />
+                  <User className="h-full w-full p-6 stroke-[1.6] text-white sm:p-9" />
                 )}
-              </div>
-
-              <div className="text-center mt-3 sm:mt-4">
-                <span className="block text-base sm:text-lg font-bold text-white tracking-wide">
-                  {currentMember.name}
-                </span>
               </div>
             </div>
 
             {/* 3. RIGHT SIDE PROFILE (Click to center) */}
             <div
               onClick={handleNext}
-              className="w-full flex flex-col items-center justify-center opacity-45 hover:opacity-90 scale-85 hover:scale-95 transition-all duration-300 cursor-pointer text-center group px-1 sm:px-2 max-w-[150px] sm:max-w-[180px]"
+              className="group absolute right-0 top-1/2 z-10 flex w-[72px] -translate-y-1/2 cursor-pointer flex-col items-center justify-center px-0.5 text-center opacity-50 transition-opacity duration-300 hover:opacity-90 sm:right-2 sm:w-28"
               title={nextMember.name}
             >
-              <div className="relative w-20 h-20 sm:w-24 sm:h-24 rounded-full overflow-hidden border-2 border-white/60 bg-white/10 backdrop-blur-xs flex items-center justify-center shadow-lg transition-transform group-hover:border-white flex-shrink-0">
+              <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-full border-2 border-white/60 bg-white/10 shadow-lg transition-colors group-hover:border-white sm:h-24 sm:w-24">
                 {nextMember.image ? (
                   <Image src={nextMember.image} alt={nextMember.name} fill sizes="96px" className="object-cover" />
                 ) : (
-                  <User className="w-10 h-10 sm:w-12 sm:h-12 stroke-[1.6] text-white/80" />
+                  <User className="h-full w-full p-3 stroke-[1.6] text-white/80 sm:p-5" />
                 )}
               </div>
-              <span className="mt-2.5 text-xs text-white/80 font-medium block truncate max-w-full">
+              <span className="mt-2.5 block w-full truncate text-[10px] font-medium text-white/80 sm:text-xs">
                 {nextMember.name}
               </span>
             </div>
 
           </div>
+
+          <p
+            aria-live="polite"
+            className="mt-3 w-full whitespace-nowrap px-2 text-center text-xs font-bold leading-tight tracking-wide text-white sm:mt-4 sm:text-sm"
+          >
+            {currentMember.name}
+          </p>
 
           {/* ── '<' and '>' Navigation Buttons ── */}
           <div className="flex items-center justify-center gap-6 mt-6">

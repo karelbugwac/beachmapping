@@ -47,7 +47,7 @@ export function FeedbackToasts() {
 
   return (
     <div
-      className="fixed top-6 left-1/2 -translate-x-1/2 z-[300] flex w-auto max-w-[90vw] sm:max-w-md flex-col items-center gap-2 pointer-events-none"
+      className="fixed left-1/2 top-20 z-[9999] flex w-auto max-w-[90vw] -translate-x-1/2 flex-col items-center gap-2 pointer-events-none sm:max-w-md"
       aria-live="polite"
     >
       {toasts.map((toast) => {

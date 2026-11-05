@@ -45,6 +45,8 @@ interface UserReview {
   created_at: string;
 }
 
+const AVATAR_PREVIEW_SIZE = 192;
+
 function cropAvatarImage(
   imageUrl: string,
   zoom: number,
@@ -132,6 +134,9 @@ export default function ProfilePage() {
   const [avatarZoom, setAvatarZoom] = useState(1);
   const [avatarOffsetX, setAvatarOffsetX] = useState(0);
   const [avatarOffsetY, setAvatarOffsetY] = useState(0);
+  const [avatarImageSize, setAvatarImageSize] = useState<{ width: number; height: number } | null>(null);
+  const avatarPreviewImageRef = useRef<HTMLImageElement>(null);
+  const avatarDragRef = useRef<{ pointerId: number; x: number; y: number } | null>(null);
 
   const [userLocation, setUserLocation] = useState('');
 
@@ -416,6 +421,7 @@ export default function ProfilePage() {
         reader.readAsDataURL(file);
       });
       setAvatarDraft(base64Data);
+      setAvatarImageSize(null);
       setAvatarZoom(1);
       setAvatarOffsetX(0);
       setAvatarOffsetY(0);
@@ -454,9 +460,9 @@ export default function ProfilePage() {
           detail: { profile_image_url: data.user.profile_image_url },
         })
       );
+      showToast('Profile photo updated.', 'success');
       setAvatarEditorOpen(false);
       setAvatarDraft(null);
-      showToast('Profile photo updated.', 'success');
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Could not update your photo.', 'error');
     } finally {
@@ -931,17 +937,95 @@ export default function ProfilePage() {
               </button>
             </header>
 
-            <div className="mx-auto flex h-48 w-48 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-5xl font-bold text-[#1F3F74] dark:bg-neutral-900 dark:text-[#4987BA]">
+            <div
+              className={`relative mx-auto flex h-48 w-48 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-5xl font-bold text-[#1F3F74] dark:bg-neutral-900 dark:text-[#4987BA] ${
+                avatarDraft ? 'cursor-grab touch-none active:cursor-grabbing' : ''
+              }`}
+              role={avatarDraft ? 'group' : undefined}
+              aria-label={avatarDraft ? 'Photo framing. Drag the image to reposition it.' : undefined}
+              tabIndex={avatarDraft ? 0 : undefined}
+              onPointerDown={(event) => {
+                if (!avatarDraft) return;
+                event.preventDefault();
+                event.currentTarget.setPointerCapture(event.pointerId);
+                avatarDragRef.current = {
+                  pointerId: event.pointerId,
+                  x: event.clientX,
+                  y: event.clientY,
+                };
+              }}
+              onPointerMove={(event) => {
+                const drag = avatarDragRef.current;
+                const image = avatarPreviewImageRef.current;
+                if (!avatarDraft || !drag || drag.pointerId !== event.pointerId || !image?.naturalWidth) return;
+
+                const deltaX = event.clientX - drag.x;
+                const deltaY = event.clientY - drag.y;
+                drag.x = event.clientX;
+                drag.y = event.clientY;
+
+                const shortestSide = Math.min(image.naturalWidth, image.naturalHeight);
+                const maxOffsetX = Math.max(
+                  0,
+                  (AVATAR_PREVIEW_SIZE * (image.naturalWidth / shortestSide) * avatarZoom - AVATAR_PREVIEW_SIZE) / 2
+                );
+                const maxOffsetY = Math.max(
+                  0,
+                  (AVATAR_PREVIEW_SIZE * (image.naturalHeight / shortestSide) * avatarZoom - AVATAR_PREVIEW_SIZE) / 2
+                );
+                if (maxOffsetX > 0) {
+                  setAvatarOffsetX((offset) => Math.max(-1, Math.min(1, offset - deltaX / maxOffsetX)));
+                }
+                if (maxOffsetY > 0) {
+                  setAvatarOffsetY((offset) => Math.max(-1, Math.min(1, offset - deltaY / maxOffsetY)));
+                }
+              }}
+              onPointerUp={(event) => {
+                if (avatarDragRef.current?.pointerId === event.pointerId) avatarDragRef.current = null;
+              }}
+              onPointerCancel={() => {
+                avatarDragRef.current = null;
+              }}
+              onKeyDown={(event) => {
+                const step = event.shiftKey ? 0.1 : 0.03;
+                if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+                  event.preventDefault();
+                  const direction = event.key === 'ArrowLeft' ? -1 : 1;
+                  setAvatarOffsetX((offset) => Math.max(-1, Math.min(1, offset + direction * step)));
+                } else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+                  event.preventDefault();
+                  const direction = event.key === 'ArrowUp' ? -1 : 1;
+                  setAvatarOffsetY((offset) => Math.max(-1, Math.min(1, offset + direction * step)));
+                }
+              }}
+            >
               {avatarDraft || user.picture ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
+                  ref={avatarPreviewImageRef}
                   src={avatarDraft || user.picture || ''}
                   alt="Profile photo preview"
-                  className="h-full w-full object-cover"
-                  style={{
-                    objectPosition: `${50 + avatarOffsetX * 50}% ${50 + avatarOffsetY * 50}%`,
-                    transform: `scale(${avatarZoom})`,
+                  draggable={false}
+                  onLoad={(event) => {
+                    if (avatarDraft) {
+                      setAvatarImageSize({
+                        width: event.currentTarget.naturalWidth,
+                        height: event.currentTarget.naturalHeight,
+                      });
+                    }
                   }}
+                  className={`absolute left-1/2 top-1/2 max-w-none ${
+                    avatarDraft ? '' : 'h-full w-full object-cover'
+                  }`}
+                  style={avatarDraft && avatarImageSize
+                    ? {
+                        width: `${AVATAR_PREVIEW_SIZE * (avatarImageSize.width / Math.min(avatarImageSize.width, avatarImageSize.height)) * avatarZoom}px`,
+                        height: `${AVATAR_PREVIEW_SIZE * (avatarImageSize.height / Math.min(avatarImageSize.width, avatarImageSize.height)) * avatarZoom}px`,
+                        transform: `translate(calc(-50% - ${avatarOffsetX * Math.max(0, (AVATAR_PREVIEW_SIZE * (avatarImageSize.width / Math.min(avatarImageSize.width, avatarImageSize.height)) * avatarZoom - AVATAR_PREVIEW_SIZE) / 2)}px), calc(-50% - ${avatarOffsetY * Math.max(0, (AVATAR_PREVIEW_SIZE * (avatarImageSize.height / Math.min(avatarImageSize.width, avatarImageSize.height)) * avatarZoom - AVATAR_PREVIEW_SIZE) / 2)}px))`,
+                      }
+                    : avatarDraft
+                      ? { width: '100%', height: '100%', objectFit: 'cover' }
+                      : undefined}
                 />
               ) : (
                 user.name.charAt(0).toUpperCase()
@@ -960,6 +1044,9 @@ export default function ProfilePage() {
 
               {avatarDraft && (
                 <div className="space-y-3">
+                  <p className="text-center text-xs text-slate-500 dark:text-slate-400">
+                    Drag the photo to reposition it. Use the arrow keys when the preview is focused.
+                  </p>
                   <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
                     Zoom
                     <input
@@ -968,31 +1055,11 @@ export default function ProfilePage() {
                       max="3"
                       step="0.01"
                       value={avatarZoom}
-                      onChange={(event) => setAvatarZoom(Number(event.target.value))}
-                      className="mt-2 block w-full accent-[#1F3F74]"
-                    />
-                  </label>
-                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
-                    Horizontal position
-                    <input
-                      type="range"
-                      min="-1"
-                      max="1"
-                      step="0.01"
-                      value={avatarOffsetX}
-                      onChange={(event) => setAvatarOffsetX(Number(event.target.value))}
-                      className="mt-2 block w-full accent-[#1F3F74]"
-                    />
-                  </label>
-                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
-                    Vertical position
-                    <input
-                      type="range"
-                      min="-1"
-                      max="1"
-                      step="0.01"
-                      value={avatarOffsetY}
-                      onChange={(event) => setAvatarOffsetY(Number(event.target.value))}
+                      onChange={(event) => {
+                        setAvatarZoom(Number(event.target.value));
+                        setAvatarOffsetX((offset) => Math.max(-1, Math.min(1, offset)));
+                        setAvatarOffsetY((offset) => Math.max(-1, Math.min(1, offset)));
+                      }}
                       className="mt-2 block w-full accent-[#1F3F74]"
                     />
                   </label>
@@ -1006,9 +1073,10 @@ export default function ProfilePage() {
                   type="button"
                   onClick={handleRemoveAvatar}
                   disabled={avatarUploading}
+                  aria-busy={avatarUploading}
                   className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-50 dark:hover:bg-rose-950/30"
                 >
-                  {avatarUploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Trash2 className="h-3.5 w-3.5" />}
+                  <Trash2 className="h-3.5 w-3.5" />
                   Remove photo
                 </button>
               ) : (
@@ -1019,6 +1087,7 @@ export default function ProfilePage() {
                   type="button"
                   onClick={handleApplyAvatar}
                   disabled={avatarUploading}
+                  aria-busy={avatarUploading}
                   className="inline-flex items-center gap-2 rounded-full bg-[#1F3F74] px-5 py-2.5 text-xs font-bold text-white hover:bg-[#285091] disabled:opacity-50"
                 >
                   {avatarUploading && <Loader2 className="h-4 w-4 animate-spin" />}
