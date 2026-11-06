@@ -411,14 +411,9 @@ export function AiChatWidget() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-<<<<<<< HEAD
               placeholder="Ask about Rañola, Lite Bay, Majestique, Hinagdan..."
-              className="flex-1 bg-slate-50 dark:bg-[#132035] border border-slate-200 dark:border-slate-800 rounded-none px-3.5 py-2 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-[#1F3F74] transition-all"
-=======
-              placeholder="Ask Bai anything..."
               aria-label="Message Bai"
               className="min-w-0 flex-1 rounded-full border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-900 transition focus:border-[#1F3F74] focus:outline-none focus:ring-2 focus:ring-[#1F3F74]/15 dark:border-slate-800 dark:bg-[#132035] dark:text-slate-100 dark:focus:border-[#4987BA] dark:focus:ring-[#4987BA]/20"
->>>>>>> e9788724af331c65d735eb54c2ec622cf7cc392f
             />
             <button
               type="submit"
