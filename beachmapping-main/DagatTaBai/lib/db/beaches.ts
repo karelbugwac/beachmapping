@@ -31,6 +31,12 @@ export interface BeachCottage {
   }>;
 }
 
+export interface FacilityRate {
+  key: string;
+  label: string;
+  amount: number | null;
+}
+
 export interface BeachFacility {
   id: string;
   name: string;
@@ -38,6 +44,7 @@ export interface BeachFacility {
   description: string;
   price: string | null;
   image_url: string | null;
+  rates?: FacilityRate[];
   photos?: Array<{
     image_url: string;
     sort_order?: number;

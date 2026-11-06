@@ -38,7 +38,7 @@ export async function GET(
         .order('display_order')
         .order('sort_order', { referencedTable: 'beach_cottage_photos', ascending: true }),
       (supabase.from('beach_facilities') as any)
-        .select('id, name, category, description, price, price_label, images, photos:beach_facility_photos(id, image_url, storage_path, sort_order, created_at)')
+        .select('id, name, category, description, price, price_label, rates, images, photos:beach_facility_photos(id, image_url, storage_path, sort_order, created_at)')
         .eq('beach_id', beach.id)
         .eq('is_available', true)
         .order('display_order')
@@ -111,6 +111,7 @@ export async function GET(
           category: item.category || 'amenity',
           description: item.description || '',
           price: item.price_label ?? (item.price == null ? null : String(item.price)),
+          rates: Array.isArray(item.rates) ? item.rates : [],
           image_url: photos[0]?.image_url || null,
           photos,
         };

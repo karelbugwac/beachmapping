@@ -28,8 +28,11 @@ import type { BeachRecord } from '@/lib/db/beaches';
 import { VirtualTourModal } from '@/components/virtual-tour-modal';
 import { PhotoViewerModal, type PhotoViewerItem } from '@/components/cottages/cottage-photos-modal';
 import { CottageCard } from '@/components/cottages/cottage-card';
+import { FacilityCard } from '@/components/FacilityCard';
+import { getFacilityCategoryLabel } from '@/lib/utils/facility-categories';
 import { OpeningStatusPill } from '@/components/opening-status-pill';
 import { formatOpeningHoursGroups } from '@/lib/utils/opening-status';
+import { getFacilityFeeItems } from '@/lib/utils/facility-pricing';
 import { showToast } from '@/components/ui/feedback-toasts';
 
 interface ResortRuleItem {
@@ -710,13 +713,15 @@ export default function BeachProfilePage({
                 {beach.facility_items && beach.facility_items.length > 0 ? (
                   <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
                     {beach.facility_items.map((facility) => (
-                      <CottageCard
+                      <FacilityCard
                         key={facility.id}
                         name={facility.name}
+                        category={facility.category}
                         imageUrl={facility.image_url}
-                        photoCount={facility.photos?.length || 0}
-                        price={facility.price}
                         description={facility.description}
+                        basePrice={facility.price}
+                        rates={facility.rates}
+                        editable={false}
                         onView={() => {
                           setSelectedDetail({
                             name: facility.name,
@@ -726,12 +731,11 @@ export default function BeachProfilePage({
                                 ? [{ image_url: facility.image_url }]
                                 : [],
                             description: facility.description,
-                            infoLabel: facility.category
-                              ? facility.category.charAt(0).toUpperCase() + facility.category.slice(1)
-                              : undefined,
-                            price: facility.price,
+                            infoLabel: getFacilityCategoryLabel(facility.category),
+                            price: null,
                             priceLabel: 'Fee',
                             priceUnit: facility.category.toLowerCase() === 'room' ? 'night' : '',
+                            feeItems: getFacilityFeeItems(facility.rates?.length ? facility.rates : facility.price),
                           });
                         }}
                       />

@@ -19,12 +19,14 @@ import {
   XCircle,
   X,
 } from 'lucide-react';
-import type { BeachRecord, BeachPhoto } from '@/lib/db/beaches';
+import type { BeachRecord, BeachPhoto, FacilityRate } from '@/lib/db/beaches';
 import { LocationPickerModal } from '@/components/map/location-picker-modal';
 import { VirtualTourModal } from '@/components/virtual-tour-modal';
 import { PhotoViewerModal, type CottagePhoto } from '@/components/cottages/cottage-photos-modal';
 import { CottageCard } from '@/components/cottages/cottage-card';
-import { FacilityCard, type FacilityCardPhoto } from '@/components/owner/facility-card';
+import { FacilityCard, type FacilityCardPhoto } from '@/components/FacilityCard';
+import { FACILITY_CATEGORY_CONFIG, type FacilityCategory, getFacilityCategoryLabel } from '@/lib/utils/facility-categories';
+import { getFacilityFeeItems } from '@/lib/utils/facility-pricing';
 import { getValidBeachCoordinates } from '@/lib/utils/beach-coordinates';
 import { MAX_BEACH_IMAGE_SIZE_BYTES, removeBeachImageByPath, uploadBeachImage, uploadBeachImageWithPath } from '@/lib/utils/beach-image-upload';
 
@@ -50,10 +52,11 @@ interface CottagePhotoDraft extends CottagePhoto {
 interface FacilityItem {
   id: string;
   title: string;
-  category: 'parking' | 'equipment' | 'amenity' | 'safety';
+  category: FacilityCategory | string;
   price: string;
   description: string;
   image_url: string;
+  rates: FacilityRate[];
   photos: FacilityCardPhoto[];
 }
 
@@ -64,6 +67,36 @@ interface FacilityPhotoDraft extends FacilityCardPhoto {
   error?: string;
   progress: number;
   status: 'uploading' | 'saved' | 'error';
+}
+
+interface FacilityRateDraft {
+  localId: string;
+  label: string;
+  amount: string;
+}
+
+const FACILITY_RATE_OPTIONS = {
+  comfort_room: [
+    { key: 'ihi', label: 'Ihi' },
+    { key: 'kalibang', label: 'Kalibang' },
+    { key: 'kaligo', label: 'Kaligo' },
+  ],
+  parking: [
+    { key: 'car', label: 'Car' },
+    { key: 'motorcycle', label: 'Motorcycle' },
+  ],
+} as const;
+
+function parseFacilityRateAmount(value: string): number | null | undefined {
+  const trimmed = value.trim();
+  if (trimmed.toLowerCase() === 'free') return null;
+  if (!/^(?:\d+(?:\.\d+)?|\.\d+)$/.test(trimmed)) return undefined;
+  const amount = Number(trimmed);
+  return Number.isFinite(amount) && amount >= 0 ? (amount === 0 ? null : amount) : undefined;
+}
+
+function formatFacilityRateInput(amount: number | null): string {
+  return amount == null || amount === 0 ? 'Free' : String(amount);
 }
 
 interface ResortPost {
@@ -215,6 +248,9 @@ export default function ManageInformationPage() {
   const [facilityPhotos, setFacilityPhotos] = useState<FacilityPhotoDraft[]>([]);
   const [facilityModalStatus, setFacilityModalStatus] = useState<ModalStatus | null>(null);
   const [facilityFieldError, setFacilityFieldError] = useState('');
+  const [facilityRateAmounts, setFacilityRateAmounts] = useState<Record<string, string>>({});
+  const [customFacilityRates, setCustomFacilityRates] = useState<FacilityRateDraft[]>([]);
+  const [facilityRateErrors, setFacilityRateErrors] = useState<Record<string, string>>({});
   const [uploadingFacilityPhotos, setUploadingFacilityPhotos] = useState(false);
   const [savingFacility, setSavingFacility] = useState(false);
   const [showDiscardFacilityConfirmation, setShowDiscardFacilityConfirmation] = useState(false);
@@ -283,6 +319,7 @@ export default function ManageInformationPage() {
     (formData.location.trim().toLowerCase() === formData.name.trim().toLowerCase() ||
       locationParts.length < 3)
   );
+  const validFacilities = facilities.filter((facility) => facility != null);
 
   // Load existing beach data
   useEffect(() => {
@@ -301,7 +338,17 @@ export default function ManageInformationPage() {
             throw new Error(catalogData.error || 'Failed to load cottages, facilities, and posts.');
           }
           setCottages(catalogData.items?.cottage || []);
-          setFacilities(catalogData.items?.facility || []);
+          const facilityItems = catalogData.items?.facility;
+          setFacilities(Array.isArray(facilityItems)
+            ? facilityItems.filter((facility: unknown): facility is FacilityItem =>
+                typeof facility === 'object'
+                && facility !== null
+                && 'id' in facility
+                && typeof facility.id === 'string'
+                && 'title' in facility
+                && typeof facility.title === 'string'
+              )
+            : []);
           setResortPosts(catalogData.items?.post || []);
 
           let feeAdults = '';
@@ -913,6 +960,9 @@ export default function ManageInformationPage() {
     setFacilityPhotos([]);
     setFacilityModalStatus(null);
     setFacilityFieldError('');
+    setFacilityRateAmounts({});
+    setCustomFacilityRates([]);
+    setFacilityRateErrors({});
     setUploadingFacilityPhotos(false);
     setSavingFacility(false);
     setShowDiscardFacilityConfirmation(false);
@@ -935,6 +985,19 @@ export default function ManageInformationPage() {
     setEditingFacilityId(facility?.id || null);
     setFacilityModalStatus(null);
     setFacilityFieldError('');
+    const applicableRateOptions = facility?.category === 'comfort_room' || facility?.category === 'parking'
+      ? FACILITY_RATE_OPTIONS[facility.category]
+      : [];
+    const savedRates = facility?.rates || [];
+    setFacilityRateAmounts(Object.fromEntries(
+      savedRates
+        .filter((rate) => rate.key !== 'custom' && applicableRateOptions.some((option) => option.key === rate.key))
+        .map((rate) => [rate.key, formatFacilityRateInput(rate.amount)])
+    ));
+    setCustomFacilityRates(savedRates
+      .filter((rate) => rate.key === 'custom' && applicableRateOptions.length > 0)
+      .map((rate) => ({ localId: crypto.randomUUID(), label: rate.label, amount: formatFacilityRateInput(rate.amount) })));
+    setFacilityRateErrors({});
     setFacilityPhotos((facility?.photos || (facility?.image_url
       ? [{ image_url: facility.image_url, storage_path: '', sort_order: 0 }]
       : []
@@ -954,6 +1017,45 @@ export default function ManageInformationPage() {
         }
       : { title: '', category: 'parking', price: '', description: '', image_url: '' });
     setShowAddFacility(true);
+  };
+
+  const collectFacilityRates = (): FacilityRate[] | null => {
+    const category = newFacility.category;
+    if (category !== 'comfort_room' && category !== 'parking') {
+      setFacilityRateErrors({});
+      return [];
+    }
+
+    const options = FACILITY_RATE_OPTIONS[category];
+    const selectedOptions = options.filter((option) => Object.prototype.hasOwnProperty.call(facilityRateAmounts, option.key));
+    const nextErrors: Record<string, string> = {};
+    const rates: FacilityRate[] = [];
+
+    if (!selectedOptions.length) {
+      nextErrors.selection = category === 'parking'
+        ? 'Select Car or Motorcycle and enter its rate.'
+        : 'Select at least one usage type and enter its rate.';
+    }
+
+    for (const option of selectedOptions) {
+      const amount = parseFacilityRateAmount(facilityRateAmounts[option.key] || '');
+      if (amount === undefined) {
+        nextErrors[option.key] = 'Enter a number of 0 or more, or Free.';
+      } else {
+        rates.push({ key: option.key, label: option.label, amount });
+      }
+    }
+
+    for (const customRate of customFacilityRates) {
+      const label = customRate.label.trim();
+      const amount = parseFacilityRateAmount(customRate.amount);
+      if (!label) nextErrors[`custom_${customRate.localId}_label`] = 'Enter a label for this rate.';
+      if (amount === undefined) nextErrors[`custom_${customRate.localId}_amount`] = 'Enter a number of 0 or more, or Free.';
+      if (label && amount !== undefined) rates.push({ key: 'custom', label, amount });
+    }
+
+    setFacilityRateErrors(nextErrors);
+    return Object.keys(nextErrors).length ? null : rates;
   };
 
   const saveFacilityPhotoDraft = async (photo: FacilityPhotoDraft, facilityId: string): Promise<boolean> => {
@@ -1889,14 +1991,16 @@ export default function ManageInformationPage() {
           </div>
 
           <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
-            {facilities.map((fac) => (
+            {validFacilities.map((fac) => (
               <FacilityCard
                 key={fac.id}
                 name={fac.title}
                 category={fac.category}
-                photos={fac.photos || (fac.image_url ? [{ image_url: fac.image_url }] : [])}
-                price={fac.price}
+                imageUrl={fac.photos?.[0]?.image_url || fac.image_url}
                 description={fac.description}
+                basePrice={fac.price}
+                rates={fac.rates}
+                editable
                 onView={() => setViewingFacility(fac)}
                 onEdit={() => startFacilityEditor(fac)}
                 onDelete={async () => {
@@ -1910,7 +2014,7 @@ export default function ManageInformationPage() {
                 }}
               />
             ))}
-            {facilities.length === 0 && (
+            {validFacilities.length === 0 && (
               <p className="md:col-span-2 rounded-xl border border-dashed border-slate-200 dark:border-neutral-800 p-6 text-center text-xs text-slate-500 dark:text-neutral-400">
                 No facilities added yet.
               </p>
@@ -2731,10 +2835,11 @@ export default function ManageInformationPage() {
                 ? [{ image_url: viewingFacility.image_url }]
                 : [],
             description: viewingFacility.description,
-            infoLabel: viewingFacility.category.charAt(0).toUpperCase() + viewingFacility.category.slice(1),
-            price: viewingFacility.price || null,
+            infoLabel: getFacilityCategoryLabel(viewingFacility.category),
+            price: null,
             priceLabel: 'Fee',
             priceUnit: '',
+            feeItems: getFacilityFeeItems(viewingFacility.rates?.length ? viewingFacility.rates : viewingFacility.price),
           }}
           onClose={() => setViewingFacility(null)}
         />
@@ -3163,6 +3268,8 @@ export default function ManageInformationPage() {
                   });
                   return;
                 }
+                const rates = collectFacilityRates();
+                if (!rates) return;
                 setSavingFacility(true);
                 setFacilityModalStatus(null);
                 try {
@@ -3174,6 +3281,7 @@ export default function ManageInformationPage() {
                     price: newFacility.price || '',
                     description: newFacility.description || '',
                     image_url: facilityPhotos[0]?.image_url || '',
+                    rates,
                   });
                   if (!editingFacilityId) {
                     facilityCreatedIdRef.current = item.id;
@@ -3207,6 +3315,7 @@ export default function ManageInformationPage() {
                   item = {
                     ...item,
                     image_url: facilityPhotos[0]?.image_url || '',
+                    rates,
                     photos: facilityPhotos.filter((photo) => photo.id),
                   };
                   setFacilities((current) => editingFacilityId
@@ -3253,43 +3362,214 @@ export default function ManageInformationPage() {
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className={`grid gap-3 ${newFacility.category === 'comfort_room' || newFacility.category === 'parking' ? 'grid-cols-1' : 'grid-cols-2'}`}>
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">Category</label>
                   <div className="relative">
                     <select
                       value={newFacility.category}
                       onChange={(event) => {
+                        const category = event.target.value as FacilityItem['category'];
                         facilityHasChangesRef.current = true;
-                        setNewFacility({ ...newFacility, category: event.target.value as FacilityItem['category'] });
+                        if (category !== newFacility.category) {
+                          setFacilityRateAmounts({});
+                          setCustomFacilityRates([]);
+                          setFacilityRateErrors({});
+                        }
+                        setNewFacility({ ...newFacility, category });
                       }}
                       className="w-full appearance-none rounded-full border border-slate-300 bg-white py-2.5 pl-4 pr-10 text-xs text-slate-900 focus:border-[#1F3F74] focus:outline-none dark:border-neutral-700 dark:bg-neutral-950 dark:text-white"
                     >
-                      <option value="parking">Parking Area</option>
-                      <option value="equipment">Water Equipment / Life Vests</option>
-                      <option value="amenity">Comfort Rooms &amp; Showers</option>
-                      <option value="safety">Lifeguard &amp; Safety Station</option>
+                      {Object.entries(FACILITY_CATEGORY_CONFIG)
+                        .filter(([, option]) => !('selectable' in option) || option.selectable !== false)
+                        .map(([value, option]) => (
+                          <option key={value} value={value}>{option.label}</option>
+                        ))}
                     </select>
                     <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                   </div>
                 </div>
-                <div className="space-y-1">
-                  <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">Rental Rate / Fee</label>
-                  <div className="relative flex items-center">
-                    <span className="absolute left-3.5 text-xs font-bold text-[#1F3F74] dark:text-[#4987BA]">₱</span>
-                    <input
-                      type="text"
-                      value={newFacility.price}
-                      onChange={(event) => {
-                        facilityHasChangesRef.current = true;
-                        setNewFacility({ ...newFacility, price: event.target.value });
-                      }}
-                      placeholder="Free or 100"
-                      className="w-full rounded-full border border-slate-300 bg-white py-2.5 pl-8 pr-4 text-xs text-slate-900 placeholder:italic focus:border-[#1F3F74] focus:outline-none dark:border-neutral-700 dark:bg-neutral-950 dark:text-white"
-                    />
+                {newFacility.category !== 'comfort_room' && newFacility.category !== 'parking' && (
+                  <div className="space-y-1">
+                    <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">Rental Rate / Fee</label>
+                    <div className="relative flex items-center">
+                      <span className="absolute left-3.5 text-xs font-bold text-[#1F3F74] dark:text-[#4987BA]">₱</span>
+                      <input
+                        type="text"
+                        value={newFacility.price}
+                        onChange={(event) => {
+                          facilityHasChangesRef.current = true;
+                          setNewFacility({ ...newFacility, price: event.target.value });
+                        }}
+                        placeholder="Free or 100"
+                        className="w-full rounded-full border border-slate-300 bg-white py-2.5 pl-8 pr-4 text-xs text-slate-900 placeholder:italic focus:border-[#1F3F74] focus:outline-none dark:border-neutral-700 dark:bg-neutral-950 dark:text-white"
+                      />
+                    </div>
                   </div>
-                </div>
+                )}
               </div>
+
+              {(newFacility.category === 'comfort_room' || newFacility.category === 'parking') && (
+                <section className="space-y-3 rounded-xl border border-slate-200 bg-slate-50 p-4 dark:border-neutral-700 dark:bg-neutral-950">
+                  <h4 className="text-sm font-bold text-slate-800 dark:text-white">
+                    {newFacility.category === 'parking' ? 'Vehicle Type and Rates' : 'Usage Type and Rates'}
+                  </h4>
+                  <div className="space-y-3">
+                    {FACILITY_RATE_OPTIONS[newFacility.category].map((option) => {
+                      const selected = Object.prototype.hasOwnProperty.call(facilityRateAmounts, option.key);
+                      const error = facilityRateErrors[option.key];
+                      return (
+                        <div key={option.key} className="space-y-2">
+                          <label className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
+                            selected
+                              ? 'border-[#1F3F74] bg-[#1F3F74] text-white'
+                              : 'border-slate-300 bg-white text-slate-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200'
+                          }`}>
+                            <input
+                              type="checkbox"
+                              checked={selected}
+                              onChange={(event) => {
+                                facilityHasChangesRef.current = true;
+                                setFacilityRateAmounts((current) => {
+                                  if (event.target.checked) return { ...current, [option.key]: '' };
+                                  const next = { ...current };
+                                  delete next[option.key];
+                                  return next;
+                                });
+                                setFacilityRateErrors((current) => {
+                                  const next = { ...current };
+                                  delete next[option.key];
+                                  delete next.selection;
+                                  return next;
+                                });
+                              }}
+                              className="h-3.5 w-3.5 accent-[#1F3F74]"
+                            />
+                            {option.label}
+                          </label>
+                          {selected && (
+                            <div className="space-y-1">
+                              <label htmlFor={`facility-rate-${option.key}`} className="block text-xs font-semibold text-slate-700 dark:text-neutral-300">
+                                {option.label} Rate / Fee
+                              </label>
+                              <div className="relative flex items-center">
+                                <span className="absolute left-3.5 text-xs font-bold text-[#1F3F74] dark:text-[#4987BA]">₱</span>
+                                <input
+                                  id={`facility-rate-${option.key}`}
+                                  type="text"
+                                  inputMode="decimal"
+                                  value={facilityRateAmounts[option.key]}
+                                  onChange={(event) => {
+                                    facilityHasChangesRef.current = true;
+                                    setFacilityRateAmounts((current) => ({ ...current, [option.key]: event.target.value }));
+                                    setFacilityRateErrors((current) => {
+                                      const next = { ...current };
+                                      delete next[option.key];
+                                      return next;
+                                    });
+                                  }}
+                                  placeholder="Free or 10"
+                                  aria-invalid={Boolean(error)}
+                                  className={`w-full rounded-full border bg-white py-2.5 pl-8 pr-4 text-xs text-slate-900 placeholder:italic focus:outline-none dark:bg-neutral-900 dark:text-white ${error ? 'border-rose-500' : 'border-slate-300 dark:border-neutral-700'}`}
+                                />
+                              </div>
+                              {error && <p className="text-xs text-rose-600" role="alert">{error}</p>}
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                    {facilityRateErrors.selection && (
+                      <p className="text-xs text-rose-600" role="alert">{facilityRateErrors.selection}</p>
+                    )}
+                  </div>
+
+                  <div className="space-y-3">
+                    {customFacilityRates.map((rate) => {
+                      const labelError = facilityRateErrors[`custom_${rate.localId}_label`];
+                      const amountError = facilityRateErrors[`custom_${rate.localId}_amount`];
+                      return (
+                        <div key={rate.localId} className="grid grid-cols-[1fr_1fr_auto] items-start gap-2">
+                          <div className="space-y-1">
+                            <label htmlFor={`custom-rate-label-${rate.localId}`} className="block text-xs font-semibold text-slate-700 dark:text-neutral-300">Rate label</label>
+                            <input
+                              id={`custom-rate-label-${rate.localId}`}
+                              type="text"
+                              value={rate.label}
+                              onChange={(event) => {
+                                facilityHasChangesRef.current = true;
+                                setCustomFacilityRates((current) => current.map((item) => item.localId === rate.localId ? { ...item, label: event.target.value } : item));
+                                setFacilityRateErrors((current) => {
+                                  const next = { ...current };
+                                  delete next[`custom_${rate.localId}_label`];
+                                  return next;
+                                });
+                              }}
+                              placeholder="e.g. Towel rental"
+                              aria-invalid={Boolean(labelError)}
+                              className={`w-full rounded-xl border bg-white px-3 py-2.5 text-xs text-slate-900 focus:outline-none dark:bg-neutral-900 dark:text-white ${labelError ? 'border-rose-500' : 'border-slate-300 dark:border-neutral-700'}`}
+                            />
+                            {labelError && <p className="text-xs text-rose-600" role="alert">{labelError}</p>}
+                          </div>
+                          <div className="space-y-1">
+                            <label htmlFor={`custom-rate-amount-${rate.localId}`} className="block text-xs font-semibold text-slate-700 dark:text-neutral-300">Rate / Fee</label>
+                            <div className="relative flex items-center">
+                              <span className="absolute left-3 text-xs font-bold text-[#1F3F74] dark:text-[#4987BA]">₱</span>
+                              <input
+                                id={`custom-rate-amount-${rate.localId}`}
+                                type="text"
+                                inputMode="decimal"
+                                value={rate.amount}
+                                onChange={(event) => {
+                                  facilityHasChangesRef.current = true;
+                                  setCustomFacilityRates((current) => current.map((item) => item.localId === rate.localId ? { ...item, amount: event.target.value } : item));
+                                  setFacilityRateErrors((current) => {
+                                    const next = { ...current };
+                                    delete next[`custom_${rate.localId}_amount`];
+                                    return next;
+                                  });
+                                }}
+                                placeholder="Free or 10"
+                                aria-invalid={Boolean(amountError)}
+                                className={`w-full rounded-xl border bg-white py-2.5 pl-7 pr-3 text-xs text-slate-900 focus:outline-none dark:bg-neutral-900 dark:text-white ${amountError ? 'border-rose-500' : 'border-slate-300 dark:border-neutral-700'}`}
+                              />
+                            </div>
+                            {amountError && <p className="text-xs text-rose-600" role="alert">{amountError}</p>}
+                          </div>
+                          <button
+                            type="button"
+                            onClick={() => {
+                              facilityHasChangesRef.current = true;
+                              setCustomFacilityRates((current) => current.filter((item) => item.localId !== rate.localId));
+                              setFacilityRateErrors((current) => {
+                                const next = { ...current };
+                                delete next[`custom_${rate.localId}_label`];
+                                delete next[`custom_${rate.localId}_amount`];
+                                return next;
+                              });
+                            }}
+                            aria-label={`Remove ${rate.label || 'custom'} rate`}
+                            className="mt-6 flex h-9 w-9 items-center justify-center rounded-full text-rose-600 hover:bg-rose-50 dark:text-rose-400 dark:hover:bg-rose-950/40"
+                          >
+                            <XCircle className="h-4 w-4" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <button
+                    type="button"
+                    onClick={() => {
+                      facilityHasChangesRef.current = true;
+                      setCustomFacilityRates((current) => [...current, { localId: crypto.randomUUID(), label: '', amount: '' }]);
+                    }}
+                    className="text-xs font-semibold text-[#1F3F74] hover:underline dark:text-[#4987BA]"
+                  >
+                    + Add other rate
+                  </button>
+                </section>
+              )}
 
               <div className="space-y-2">
                 <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">

@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import Image from 'next/image';
 import { Camera, ChevronLeft, ChevronRight, Info, UsersRound, X } from 'lucide-react';
+import { formatFacilityFeeAmount, type FacilityFeeItem } from '@/lib/utils/facility-pricing';
 
 export interface CottagePhoto {
   id?: string;
@@ -20,6 +21,7 @@ export interface PhotoViewerItem {
   price?: string | null;
   priceUnit?: string;
   priceLabel?: string;
+  feeItems?: FacilityFeeItem[];
 }
 
 interface PhotoViewerModalProps {
@@ -33,7 +35,7 @@ export function PhotoViewerModal({
   initialPhotoIndex = 0,
   onClose,
 }: PhotoViewerModalProps) {
-  const { name, photos, description, infoLabel, capacity, price, priceUnit = 'day', priceLabel = 'Rate' } = item;
+  const { name, photos, description, infoLabel, capacity, price, priceUnit = 'day', priceLabel = 'Rate', feeItems } = item;
   const [selectedIndex, setSelectedIndex] = useState(() =>
     photos.length ? Math.min(Math.max(initialPhotoIndex, 0), photos.length - 1) : 0
   );
@@ -294,7 +296,34 @@ export function PhotoViewerModal({
                 </p>
               </section>
             )}
-            {formattedRate && (
+            {feeItems !== undefined ? feeItems.length > 0 && (
+              <section className="border-t border-slate-200 pt-4 dark:border-neutral-800">
+                <div className="text-xs text-slate-500 dark:text-neutral-400">
+                  {feeItems.length === 1 ? 'Fee' : 'Fees'}
+                </div>
+                {feeItems.length === 1 ? (
+                  <div className="mt-1">
+                    {feeItems[0].label !== 'Fee' && (
+                      <div className="text-xs text-slate-500 dark:text-neutral-400">{feeItems[0].label}</div>
+                    )}
+                    <span className="text-2xl font-semibold text-[#1F3F74] dark:text-[#4987BA]">
+                      {formatFacilityFeeAmount(feeItems[0].amount)}
+                    </span>
+                  </div>
+                ) : (
+                  <div className="mt-2 grid grid-cols-3 gap-2">
+                    {feeItems.map((fee, index) => (
+                      <div key={`${fee.label}-${index}`} className="rounded-lg bg-slate-50 px-2.5 py-2 dark:bg-neutral-800">
+                        <div className="text-[10px] text-slate-500 dark:text-neutral-400">{fee.label}</div>
+                        <div className="text-base font-semibold text-[#1F3F74] dark:text-[#4987BA]">
+                          {formatFacilityFeeAmount(fee.amount)}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </section>
+            ) : formattedRate && (
               <section className="border-t border-slate-200 pt-4 dark:border-neutral-800">
                 <div className="text-xs text-slate-500 dark:text-neutral-400">{priceLabel}</div>
                 <div className="flex items-baseline gap-1.5 whitespace-nowrap">

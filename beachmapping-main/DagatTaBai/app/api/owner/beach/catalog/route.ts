@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authorizeRoles } from '@/lib/supabase/authorization';
+import { isFacilityCategory } from '@/lib/utils/facility-categories';
 
 const noStoreHeaders = { 'Cache-Control': 'no-store, max-age=0' };
 const tableByType = {
@@ -72,6 +73,31 @@ function getOwnedCottageImagePath(
       : null);
 }
 
+const facilityRateLabels: Record<string, Record<string, string>> = {
+  comfort_room: { ihi: 'Ihi', kalibang: 'Kalibang', kaligo: 'Kaligo' },
+  parking: { car: 'Car', motorcycle: 'Motorcycle' },
+};
+
+function normalizeFacilityRates(category: unknown, rates: unknown) {
+  if (typeof category !== 'string' || !facilityRateLabels[category] || !Array.isArray(rates)) return [];
+
+  return rates.flatMap((rate: unknown) => {
+    if (typeof rate !== 'object' || rate === null || !('key' in rate) || !('amount' in rate)) return [];
+    const key = typeof rate.key === 'string' ? rate.key : '';
+    const label = key === 'custom'
+      ? ('label' in rate && typeof rate.label === 'string' ? rate.label.trim() : '')
+      : facilityRateLabels[category][key] || '';
+    const amount = rate.amount;
+    if (
+      !label
+      || (key !== 'custom' && !facilityRateLabels[category][key])
+      || !(amount === null || (typeof amount === 'number' && Number.isFinite(amount) && amount >= 0))
+    ) return [];
+
+    return [{ key, label, amount: amount === 0 ? null : amount }];
+  });
+}
+
 function toCatalogItem(type: CatalogType, row: Record<string, any>, auth?: AuthorizedAuth) {
   if (type === 'cottage') {
     const image = Array.isArray(row.images) ? row.images[0] : '';
@@ -123,6 +149,7 @@ function toCatalogItem(type: CatalogType, row: Record<string, any>, auth?: Autho
       category: row.category || 'amenity',
       price: row.price_label ?? (row.price == null ? '' : String(row.price)),
       description: row.description || '',
+      rates: normalizeFacilityRates(row.category, row.rates),
       image_url: normalizedPhotos[0]?.image_url || '',
       photos: normalizedPhotos,
     };
@@ -212,7 +239,8 @@ export async function POST(request: NextRequest) {
             beach_id: beach.id,
             name: typeof body.title === 'string' ? body.title.trim() : '',
             description: typeof body.description === 'string' ? body.description.trim() || null : null,
-            category: ['parking', 'equipment', 'amenity', 'safety'].includes(body.category) ? body.category : 'amenity',
+            category: isFacilityCategory(body.category) ? body.category : 'amenity',
+            rates: normalizeFacilityRates(body.category, body.rates),
             price: parsedPriceValue == null ? null : parsedPriceValue,
             price_label: typeof body.price === 'string' ? body.price.trim() || null : null,
             price_unit: null,
