@@ -22,6 +22,7 @@ import {
   XCircle,
   AlertTriangle,
   MessageSquare,
+  Ticket,
 } from 'lucide-react';
 import type { BeachRecord } from '@/lib/db/beaches';
 import { VirtualTourModal } from '@/components/virtual-tour-modal';
@@ -83,6 +84,19 @@ function formatEntranceFeeSummary(beach: BeachRecord): string {
     return beach.entrance_fee.startsWith('₱') ? beach.entrance_fee : `₱${beach.entrance_fee}`;
   }
   return 'Contact resort';
+}
+
+function getEntranceFeeValues(beach: BeachRecord) {
+  const legacyValues = beach.entrance_fee?.split('|') || [];
+  const adultFee = beach.entrance_fee_adults || legacyValues[0] || beach.entrance_fee;
+  const childFee = beach.entrance_fee_children || legacyValues[1];
+  const formatFee = (value: string | null | undefined) =>
+    value ? (value.startsWith('₱') ? value : `₱${value}`) : 'Contact resort';
+
+  return {
+    adults: formatFee(adultFee),
+    children: formatFee(childFee),
+  };
 }
 
 function formatOpeningHoursSummary(openingHours: string | Record<string, string> | null | undefined): string {
@@ -427,12 +441,26 @@ export default function BeachProfilePage({
 
               {/* Admission & Schedule Highlights */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Entrance Admission</span>
-                  <div className="text-base font-extrabold text-[#1F3F74] dark:text-[#4987BA]">
-                    {formatEntranceFeeSummary(beach)}
+                <div className="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-950">
+                  <div className="flex items-center gap-3">
+                    <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-[#1F3F74] dark:bg-blue-950/50 dark:text-[#4987BA]">
+                      <Ticket className="h-6 w-6" aria-hidden="true" />
+                    </span>
+                    <span className="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-neutral-200">Entrance Admission</span>
                   </div>
-                  <p className="text-[11px] text-slate-500">Day access per guest</p>
+                  <div className="grid grid-cols-2 gap-3">
+                    {Object.entries(getEntranceFeeValues(beach)).map(([label, amount]) => (
+                      <div key={label} className="min-w-0 rounded-2xl bg-slate-50 px-4 py-4 dark:bg-neutral-900/60">
+                        <span className="block truncate text-sm text-slate-700 dark:text-neutral-300">
+                          {label === 'adults' ? 'Adult' : 'Children / Senior'}
+                        </span>
+                        <span className="mt-1 block truncate text-3xl font-extrabold text-[#1F3F74] dark:text-[#4987BA]">
+                          {amount}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                  <p className="text-sm text-slate-700 dark:text-neutral-300">Day access per guest</p>
                 </div>
 
                 <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950">
