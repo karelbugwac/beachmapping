@@ -8,14 +8,11 @@ import {
   Sun,
   Sunrise,
   Sunset,
-  SunMedium,
   AlertTriangle,
-  Calendar,
-  Clock,
-  Activity,
 } from 'lucide-react';
 import type { WeatherData } from '@/lib/services/weather';
 import type { CurrentTideState, TideExtreme } from '@/lib/services/tide-interpolation';
+import { calculateCurrentTide } from '@/lib/services/tide-interpolation';
 import TideCard from '@/components/TideCard';
 
 const BINONGKALAN_LATITUDE = 10.6865;
@@ -108,41 +105,50 @@ function generateReminders(weather: WeatherData | null, currentTide: CurrentTide
 
   if (weather.weatherCode >= 95) {
     reminders.push({
-      text: 'Thunderstorm conditions are reported. Avoid entering the water and seek proper shelter.',
+      text: 'A thunderstorm is nearby. Stay out of the water and move indoors until it passes.',
       type: 'alert',
     });
   } else if ((weather.weatherCode >= 51 && weather.weatherCode <= 67) || (weather.weatherCode >= 80 && weather.weatherCode <= 82)) {
     reminders.push({
-      text: `${weather.conditionLabel} is reported. Use care near the shoreline and on the water.`,
+      text: `${weather.conditionLabel} is expected. Wet paths and rocks can be slippery; wait for heavy rain to ease before swimming.`,
       type: 'warning',
     });
   }
 
   if (weather.uvIndex !== null && weather.uvIndex >= 6) {
     reminders.push({
-      text: `The current UV index is ${weather.uvIndex.toFixed(0)}. Seek shade and use sun protection outdoors.`,
+      text: `The UV index is ${weather.uvIndex.toFixed(0)}. Use sunscreen, wear a hat, and take breaks in the shade.`,
       type: 'warning',
     });
   }
 
   if (weather.windSpeed >= 30) {
     reminders.push({
-      text: `Wind is ${weather.windSpeed.toFixed(0)} km/h. Take care around exposed shorelines and small boats.`,
+      text: `Wind is ${weather.windSpeed.toFixed(0)} km/h. Avoid small boats and exposed parts of the shore while winds are strong.`,
       type: 'warning',
     });
   }
 
   if (weather.waveHeight !== null && weather.waveHeight >= 1.5) {
     reminders.push({
-      text: `Forecast wave height is ${weather.waveHeight.toFixed(1)} m. Use caution before swimming or boating.`,
+      text: `Waves may reach ${weather.waveHeight.toFixed(1)} m. Check with resort staff before swimming or taking a small boat out.`,
       type: 'warning',
     });
   }
 
-  if (currentTide && currentTide.currentHeight <= 0.3) {
+  const nearLowTide = currentTide !== null && (
+    (currentTide.previousExtreme.type === 'low' && currentTide.percentageBetween < 50)
+    || (currentTide.nextExtreme.type === 'low' && currentTide.percentageBetween >= 50)
+  );
+  if (currentTide && nearLowTide) {
+    const tideDirection = currentTide.status === 'Rising'
+      ? 'rising from low tide'
+      : currentTide.status === 'Falling'
+        ? 'falling toward low tide'
+        : 'near low tide';
     reminders.push({
-      text: `The tide is low at ${currentTide.currentHeight.toFixed(2)} m. Use care on exposed and slippery shoreline areas.`,
-      type: 'info',
+      text: `The tide is ${tideDirection} (estimated height ${currentTide.currentHeight.toFixed(1)} m). This does not show the actual depth at the resort; stay inside marked areas and ask staff before boating.`,
+      type: 'warning',
     });
   }
 
@@ -153,14 +159,14 @@ function generateReminders(weather: WeatherData | null, currentTide: CurrentTide
   ].filter(Boolean);
   if (missingMarineReadings.length > 0) {
     reminders.push({
-      text: `${missingMarineReadings.join(', ')} readings are unavailable, so some coastal guidance is limited.`,
+      text: `Some ${missingMarineReadings.join(', ')} readings are unavailable. Ask resort staff about local conditions before entering the water.`,
       type: 'warning',
     });
   }
 
   if (reminders.length === 0) {
     reminders.push({
-      text: 'No weather alerts were triggered by the readings that are currently available.',
+      text: 'No weather warnings are showing right now. Conditions can change, so follow resort signs and staff instructions.',
       type: 'info',
     });
   }
@@ -258,7 +264,10 @@ function getActivityAssessments(weather: WeatherData | null, tide: CurrentTideSt
   const rain = (weather.weatherCode >= 51 && weather.weatherCode <= 67) || (weather.weatherCode >= 80 && weather.weatherCode <= 82);
   const roughWaves = weather.waveHeight !== null && weather.waveHeight >= 1.5;
   const strongWind = weather.windSpeed >= 30;
-  const lowTide = tide !== null && tide.currentHeight <= 0.3;
+  const nearLowTide = tide !== null && (
+    (tide.previousExtreme.type === 'low' && tide.percentageBetween < 50)
+    || (tide.nextExtreme.type === 'low' && tide.percentageBetween >= 50)
+  );
   const highTide = tide !== null && tide.currentHeight >= 1.8;
   const reasons = {
     storm: storm ? 'thunderstorm' : null,
@@ -268,7 +277,9 @@ function getActivityAssessments(weather: WeatherData | null, tide: CurrentTideSt
       ? `swell ${weather.swellHeight.toFixed(1)} m`
       : null,
     wind: strongWind ? `wind ${weather.windSpeed.toFixed(0)} km/h` : null,
-    tide: lowTide ? 'very low tide' : highTide ? 'high tide' : null,
+    tide: nearLowTide
+      ? `tide ${tide?.status.toLowerCase()} (${tide?.currentHeight.toFixed(1)} m estimate)`
+      : highTide ? 'high tide' : null,
   };
   const makeAssessment = (activity: string, signals: (string | null)[]) => {
     const activeSignals = signals.filter((signal): signal is string => Boolean(signal));
@@ -276,32 +287,31 @@ function getActivityAssessments(weather: WeatherData | null, tide: CurrentTideSt
     const limitedData = weather.waveHeight === null || weather.swellHeight === null || tide === null;
     return {
       activity,
-      status: caution ? 'Use caution' : limitedData ? 'Limited data' : 'No alert reported',
+      status: caution ? 'Use caution' : limitedData ? 'Limited data' : 'No warning detected',
       statusStyle: caution
         ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
         : limitedData
           ? 'bg-slate-200 text-slate-700 dark:bg-neutral-800 dark:text-slate-300'
           : 'bg-blue-100 text-[#1F3F74] dark:bg-blue-950/60 dark:text-blue-300',
       note: caution
-        ? `Current readings include ${activeSignals.join(', ')}. Conditions can change.`
+        ? `Current readings: ${activeSignals.join(', ')}. Follow resort boundaries and ask staff before entering the water.`
         : limitedData
-          ? 'Some wave or tide readings are unavailable; guidance is limited.'
-          : 'No related weather alert in the current feed; conditions can still change.',
+          ? 'Some readings are unavailable, so this guidance may be incomplete. Follow resort signs and ask staff.'
+          : 'No warning was detected in the available readings. This is not a safety guarantee; follow resort signs and staff.',
     };
   };
 
   return [
-    makeAssessment('Swimming', [reasons.storm, reasons.rain, reasons.waves, strongWind ? reasons.wind : null, lowTide ? reasons.tide : null]),
+    makeAssessment('Swimming', [reasons.storm, reasons.rain, reasons.waves, strongWind ? reasons.wind : null]),
     makeAssessment('Snorkeling', [reasons.storm, reasons.rain, reasons.waves, reasons.swell]),
     makeAssessment('Shoreline walking', [reasons.storm, reasons.wind, reasons.tide]),
-    makeAssessment('Kayaking & boating', [reasons.storm, reasons.wind, reasons.waves, reasons.swell]),
+    makeAssessment('Kayaking & boating', [reasons.storm, reasons.wind, reasons.waves, reasons.swell, nearLowTide ? reasons.tide : null]),
   ];
 }
 
 export default function WeatherPage() {
   const [weather, setWeather] = useState<WeatherData | null>(null);
   const [tideExtremes, setTideExtremes] = useState<TideExtreme[]>([]);
-  const [currentTide, setCurrentTide] = useState<CurrentTideState | null>(null);
   const [tideAttribution, setTideAttribution] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [dataError, setDataError] = useState<string | null>(null);
@@ -345,13 +355,11 @@ export default function WeatherPage() {
 
       if (tideResult.status === 'fulfilled') {
         setTideExtremes(Array.isArray(tideResult.value.extremes) ? tideResult.value.extremes : []);
-        setCurrentTide(tideResult.value.current || null);
         setTideAttribution(
           typeof tideResult.value.copyright === 'string' ? tideResult.value.copyright : null
         );
       } else {
         setTideExtremes([]);
-        setCurrentTide(null);
         setTideAttribution(null);
         if (weatherResult.status === 'fulfilled') {
           setDataError(tideResult.reason instanceof Error ? tideResult.reason.message : 'Tide data is unavailable.');
@@ -395,6 +403,16 @@ export default function WeatherPage() {
   }).formatToParts(now);
   const currentHour = Number(manilaTimeParts.find((part) => part.type === 'hour')?.value);
   const currentMinutes = currentHour * 60 + Number(manilaTimeParts.find((part) => part.type === 'minute')?.value);
+  const currentTide = calculateCurrentTide(tideExtremes, now);
+  const timeOfDay = currentHour >= 4 && currentHour < 6
+    ? 'dawn'
+    : currentHour >= 6 && currentHour < 12
+      ? 'morning'
+      : currentHour >= 12 && currentHour < 17
+        ? 'afternoon'
+        : currentHour >= 17 && currentHour < 20
+          ? 'evening'
+          : 'midnight';
   const sunriseMinutes = weather?.sunrise ? Number(weather.sunrise.slice(11, 13)) * 60 + Number(weather.sunrise.slice(14, 16)) : null;
   const sunsetMinutes = weather?.sunset ? Number(weather.sunset.slice(11, 13)) * 60 + Number(weather.sunset.slice(14, 16)) : null;
   const daylightProgress = sunriseMinutes !== null && sunsetMinutes !== null && sunsetMinutes > sunriseMinutes
@@ -440,14 +458,26 @@ export default function WeatherPage() {
           'radial-gradient(1px 1px at 88% 48%, rgba(220,237,255,.75) 50%, transparent 100%)',
           'linear-gradient(180deg, #050b1b 0%, #101c38 48%, #192e4e 78%, #18344b 100%)',
         ];
-  const pageBackgroundStyle = isNight
-    ? { backgroundImage: nightSkyBackground.join(', ') }
-    : {
-        backgroundImage: [
-          'radial-gradient(circle at 85% 12%, rgba(255, 211, 112, 0.82) 0, rgba(255, 211, 112, 0.42) 3.5rem, rgba(255, 211, 112, 0) 12rem)',
-          'linear-gradient(180deg, #8fd7f2 0%, #c7edf8 42%, #eef9fa 76%, #a9d8e6 100%)',
-        ].join(', '),
-      };
+  const pageBackgrounds = {
+    dawn: [
+      'radial-gradient(ellipse at 82% 18%, rgba(255, 191, 128, 0.75), transparent 28%)',
+      'linear-gradient(180deg, #716b9c 0%, #d295a0 38%, #f5c59b 70%, #b8dce2 100%)',
+    ],
+    morning: [
+      'radial-gradient(circle at 84% 12%, rgba(255, 226, 145, 0.8), transparent 21%)',
+      'linear-gradient(180deg, #82c9eb 0%, #b8e3f2 42%, #e8f4ef 76%, #a7d6df 100%)',
+    ],
+    afternoon: [
+      'radial-gradient(circle at 78% 8%, rgba(255, 235, 160, 0.85), transparent 20%)',
+      'linear-gradient(180deg, #55b4df 0%, #9cdaea 42%, #e0f3ed 77%, #93cad9 100%)',
+    ],
+    evening: [
+      'radial-gradient(ellipse at 82% 18%, rgba(255, 174, 112, 0.7), transparent 27%)',
+      'linear-gradient(180deg, #465b86 0%, #a66f86 42%, #edaa8a 72%, #789bad 100%)',
+    ],
+    midnight: nightSkyBackground,
+  } satisfies Record<string, string[]>;
+  const pageBackgroundStyle = { backgroundImage: pageBackgrounds[timeOfDay].join(', ') };
   const nightStars = [
     { left: '4%', top: '5%', size: 'h-2 w-2' },
     { left: '11%', top: '17%', size: 'h-1.5 w-1.5' },
@@ -473,7 +503,7 @@ export default function WeatherPage() {
 
   if (loading) {
     return (
-      <div className={`relative isolate min-h-[calc(100vh-4rem)] bg-cover bg-center bg-fixed px-4 py-8 text-slate-900 dark:text-zinc-100 sm:px-6 lg:px-8 ${isNight ? 'bg-[length:100%_100%]' : ''}`} style={pageBackgroundStyle} aria-busy="true" aria-label="Loading coastal conditions">
+      <div className={`relative isolate min-h-[calc(100vh-4rem)] bg-cover bg-center bg-scroll px-4 py-8 text-slate-900 dark:text-zinc-100 sm:bg-fixed sm:px-6 lg:px-8 ${timeOfDay === 'midnight' ? 'bg-[length:100%_100%]' : ''}`} style={pageBackgroundStyle} aria-busy="true" aria-label="Loading coastal conditions">
         <div className="pointer-events-none absolute inset-0 -z-10 bg-black/10" />
         <div className="relative mx-auto max-w-7xl space-y-6">
           <div className="h-14 w-72 animate-pulse rounded-xl bg-slate-200 dark:bg-neutral-800" />
@@ -492,8 +522,8 @@ export default function WeatherPage() {
   }
 
   return (
-    <div className={`relative isolate min-h-screen bg-cover bg-center bg-fixed text-slate-900 transition-colors duration-200 dark:text-zinc-100 ${isNight ? 'bg-[length:100%_100%]' : ''}`} style={pageBackgroundStyle}>
-      {isNight && (
+    <div className={`relative isolate min-h-screen bg-cover bg-center bg-scroll text-slate-900 transition-colors duration-200 dark:text-zinc-100 sm:bg-fixed ${timeOfDay === 'midnight' ? 'bg-[length:100%_100%]' : ''}`} style={pageBackgroundStyle}>
+      {timeOfDay === 'midnight' && (
         <div className="pointer-events-none absolute inset-0 z-0 overflow-hidden" aria-hidden="true">
           {nightStars.map((star, index) => (
             <span
@@ -514,23 +544,22 @@ export default function WeatherPage() {
       <div className="relative z-10 mx-auto max-w-7xl space-y-6 px-4 pb-12 pt-6 sm:space-y-7 sm:px-6 sm:pt-8 lg:px-8">
         
         <div className="flex flex-col items-center gap-2 text-center">
-          <div className="text-center">
-            <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1F3F74] dark:text-white tracking-tight leading-tight">
+          <div className="w-full min-w-0 text-center">
+            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight text-white [text-shadow:0_1px_4px_rgba(0,0,0,0.75)]">
               Barangay Binongkalan
             </h1>
-            <p className="mt-0.5 flex items-center justify-center gap-1.5 text-xs font-medium text-slate-500 dark:text-slate-400 sm:text-sm">
+            <p className="mt-1 flex flex-col items-center justify-center gap-0.5 text-sm font-medium leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.75)] sm:flex-row sm:gap-1.5">
               <span>Catmon, Cebu</span>
-              <span className="text-slate-300 dark:text-neutral-700">•</span>
-              <span className="text-slate-400 dark:text-neutral-500 font-mono text-xs">
+              <span className="hidden text-white/80 sm:inline">•</span>
+              <span className="font-mono text-xs text-white/90">
                 {BINONGKALAN_LATITUDE.toFixed(4)}° N, {BINONGKALAN_LONGITUDE.toFixed(4)}° E
               </span>
             </p>
           </div>
 
-          <div className="flex items-center justify-center gap-2 text-xs font-medium text-slate-600 dark:text-slate-300">
-            <Clock className="h-4 w-4 text-[#1F3F74] dark:text-sky-300" />
-            <span>
-              Local time · {formatDate(now)} · <time dateTime={now.toISOString()}>{formatTime(now)}</time>
+          <div className="flex items-center justify-center text-sm font-medium text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.75)]">
+            <span className="text-center">
+              {formatDate(now)} · <time dateTime={now.toISOString()}>{formatTime(now)}</time>
             </span>
           </div>
         </div>
@@ -549,13 +578,13 @@ export default function WeatherPage() {
           <div className="pointer-events-none absolute -bottom-36 left-1/4 h-64 w-64 rounded-full bg-cyan-100/10 blur-3xl" />
           <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             
-            <div className="flex items-center gap-5 sm:gap-7">
-              <div className="relative flex h-28 w-28 shrink-0 items-center justify-center sm:h-36 sm:w-36">
+            <div className="flex items-center justify-center gap-0 sm:gap-1 lg:justify-start">
+              <div className="relative flex h-20 w-20 shrink-0 items-center justify-center sm:h-24 sm:w-24">
                 <div className="absolute inset-2 rounded-full bg-white/10 blur-xl" />
                 <WeatherIcon
                   code={weather?.weatherCode ?? 2}
                   isNight={isNight}
-                  className="relative z-10 h-20 w-20 drop-shadow-[0_8px_18px_rgba(15,35,60,0.28)] sm:h-28 sm:w-28"
+                  className="relative z-10 h-16 w-16 drop-shadow-[0_8px_18px_rgba(15,35,60,0.28)] sm:h-20 sm:w-20"
                 />
                 {isNight && (
                   <>
@@ -566,7 +595,7 @@ export default function WeatherPage() {
                 )}
               </div>
 
-              <div className="space-y-0.5">
+              <div className="-ml-4 space-y-0.5 sm:-ml-5">
                 <div className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white">
                   {weather ? `${weather.temperature.toFixed(1)}°C` : '--'}
                 </div>
@@ -616,10 +645,7 @@ export default function WeatherPage() {
 
               {/* UV Index */}
               <div className="rounded-xl border border-white/20 bg-white/15 p-3 backdrop-blur-xl transition-colors hover:bg-white/20">
-                <div className="flex items-center gap-1.5 text-white/75 text-xs">
-                  <SunMedium className="w-3.5 h-3.5" />
-                  <span>UV Index</span>
-                </div>
+                <div className="text-xs text-white/75">UV Index</div>
                 <div className="text-base sm:text-lg font-bold text-white mt-1">
                   {weather?.uvIndex != null ? weather.uvIndex.toFixed(1) : 'Unavailable'}
                 </div>
@@ -629,17 +655,14 @@ export default function WeatherPage() {
               </div>
 
               <div className="rounded-xl border border-white/20 bg-white/15 p-3 backdrop-blur-xl transition-colors hover:bg-white/20">
-                <div className="flex items-center gap-1.5 text-blue-100 text-xs">
-                  <Activity className="w-3.5 h-3.5" />
-                  <span>Air quality</span>
-                </div>
+                <div className="text-xs text-blue-100">Air quality estimate</div>
                 <div className={`mt-1 text-base font-bold sm:text-lg ${weather?.airQuality ? getAirQualityColor(weather.airQuality.usAqi) : 'text-white'}`}>
                   {weather?.airQuality ? `AQI ${weather.airQuality.usAqi}` : 'Unavailable'}
                 </div>
                 <div className="text-[10px] text-white/75">
                   {weather?.airQuality
-                    ? `${getAirQualityLabel(weather.airQuality.usAqi)} · US AQI`
-                    : 'Live reading unavailable'}
+                    ? `${getAirQualityLabel(weather.airQuality.usAqi)} · Catmon model`
+                    : 'Model data unavailable'}
                 </div>
                 {weather?.airQuality && (
                   <div className="mt-1 text-[9px] text-white/65">
@@ -657,7 +680,6 @@ export default function WeatherPage() {
           <section className="glass-card space-y-3 rounded-3xl p-4 shadow-lg shadow-slate-200/40 dark:shadow-black/10 sm:p-5">
             <div>
               <div className="mb-1 flex items-center gap-2">
-                <Calendar className="h-4 w-4 text-[#1F3F74] dark:text-sky-300" />
                 <h2 className="text-sm font-bold uppercase tracking-wider text-[#1F3F74] dark:text-white">4-day forecast</h2>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">Daily conditions for Barangay Binongkalan</p>
@@ -758,11 +780,10 @@ export default function WeatherPage() {
           <section className="glass-card min-w-0 space-y-3 rounded-3xl p-4 sm:p-5">
             <div>
               <div className="mb-1 flex items-start gap-2">
-                <Activity className="mt-0.5 h-4 w-4 shrink-0 text-[#1F3F74] dark:text-[#4987BA]" />
                 <h2 className="text-sm font-bold uppercase tracking-wider text-[#1F3F74] dark:text-white">Beach Activity Feasibility</h2>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Advisory signals are calculated from the latest weather, wave, and tide readings.
+                These are just safety announcements, kindly ask resort staff for the latest information.
               </p>
             </div>
 
@@ -789,7 +810,7 @@ export default function WeatherPage() {
             <div>
               <h2 className="mb-1 text-sm font-bold uppercase tracking-wider text-[#1F3F74] dark:text-white">Coastal Reminders</h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Advisories are based on current weather and coastal readings.
+                Advisories are based on current weather and tidal readings.
               </p>
             </div>
 

@@ -50,14 +50,14 @@ const teamMembers: TeamMember[] = [
     image: '/member6.jpg',
   },
   {
-    id: 8,
+    id: 7,
     name: 'Jessica C. Raganas',
-    image: '/member8.jpg',
+    image: '',
   },
   {
-    id: 7,
+    id: 8,
     name: 'Jamaica Sulla',
-    image: '',
+    image: '/member8.jpg',
   },
   {
     id: 9,
@@ -77,6 +77,9 @@ export default function AboutPage() {
   const currentMember = teamMembers[activeIndex];
   const prevMember = teamMembers[prevIndex];
   const nextMember = teamMembers[nextIndex];
+  const memberImageClass = (member: TeamMember) => (
+    member.id === 1 || member.id === 2 ? 'object-cover object-[center_30%]' : 'object-cover'
+  );
 
   // Previous and Next Navigation
   const handlePrev = () => {
@@ -244,7 +247,7 @@ export default function AboutPage() {
             >
               <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-full border-2 border-white/60 bg-white/10 shadow-lg transition-colors group-hover:border-white sm:h-24 sm:w-24">
                 {prevMember.image ? (
-                  <Image src={prevMember.image} alt={prevMember.name} fill sizes="96px" className="object-cover" />
+                  <Image src={prevMember.image} alt={prevMember.name} fill sizes="96px" unoptimized className={memberImageClass(prevMember)} />
                 ) : (
                   <User className="h-full w-full p-3 stroke-[1.6] text-white/80 sm:p-5" />
                 )}
@@ -258,7 +261,7 @@ export default function AboutPage() {
             <div className="relative z-20 flex w-24 flex-shrink-0 flex-col items-center px-0 text-center sm:w-36">
               <div className="relative h-24 w-24 flex-shrink-0 overflow-hidden rounded-full border-4 border-white bg-white/20 shadow-2xl ring-4 ring-white/30 sm:h-36 sm:w-36">
                 {currentMember.image ? (
-                  <Image src={currentMember.image} alt={currentMember.name} fill sizes="144px" className="object-cover" />
+                  <Image src={currentMember.image} alt={currentMember.name} fill sizes="144px" unoptimized className={memberImageClass(currentMember)} />
                 ) : (
                   <User className="h-full w-full p-6 stroke-[1.6] text-white sm:p-9" />
                 )}
@@ -273,7 +276,7 @@ export default function AboutPage() {
             >
               <div className="relative h-16 w-16 flex-shrink-0 overflow-hidden rounded-full border-2 border-white/60 bg-white/10 shadow-lg transition-colors group-hover:border-white sm:h-24 sm:w-24">
                 {nextMember.image ? (
-                  <Image src={nextMember.image} alt={nextMember.name} fill sizes="96px" className="object-cover" />
+                  <Image src={nextMember.image} alt={nextMember.name} fill sizes="96px" unoptimized className={memberImageClass(nextMember)} />
                 ) : (
                   <User className="h-full w-full p-3 stroke-[1.6] text-white/80 sm:p-5" />
                 )}

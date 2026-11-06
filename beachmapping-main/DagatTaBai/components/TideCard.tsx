@@ -77,8 +77,9 @@ export default function TideCard({ extremes, attribution }: TideCardProps) {
     return `in ${hours}h ${minutes}m`;
   };
 
-  const isRising = nextTide?.type === 'high';
-  const tideLabel = isRising ? 'Rising Tide (Gataob)' : 'Receding Tide (Gahunas)';
+  const isRising = currentTide?.status === 'Rising' || (!currentTide && nextTide?.type === 'high');
+  const isFalling = currentTide?.status === 'Falling' || (!currentTide && nextTide?.type === 'low');
+  const tideLabel = isRising ? 'Rising Tide (Gataob)' : isFalling ? 'Falling Tide (Gahunas)' : 'Turning Tide';
 
   // Sample tide every 10 minutes from 00:00 to 24:00 Manila time
   const samples: { time: Date; height: number }[] = [];
@@ -136,12 +137,12 @@ export default function TideCard({ extremes, attribution }: TideCardProps) {
       {/* Current Water Level & Next Tide */}
       <div className="grid grid-cols-2 gap-2.5 rounded-xl border border-white/60 bg-white/40 p-2.5 backdrop-blur-md dark:border-white/5 dark:bg-black/20">
         <div>
-          <span className="text-[11px] text-slate-500 font-medium">Current Water Level</span>
+          <span className="text-[11px] text-slate-500 font-medium">Estimated Tide Height</span>
           <div className="text-lg sm:text-xl font-extrabold text-slate-900 dark:text-white tracking-tight">
             {currentTide ? `${currentTide.currentHeight.toFixed(1)} m` : '--'}
           </div>
           <span className="text-[10px] text-slate-400">
-            {currentTide && currentTide.currentHeight >= 0.9 ? 'Deep water (Taob)' : 'Shallow water (Hunas)'}
+            {currentTide?.status ?? 'Tide trend unavailable'}
           </span>
         </div>
 
@@ -274,6 +275,9 @@ export default function TideCard({ extremes, attribution }: TideCardProps) {
           {attribution.match(/^.*?\bLLC\b\.?/i)?.[0] ?? attribution}
         </p>
       )}
+      <p className="pt-1 text-[10px] leading-relaxed text-slate-500 dark:text-slate-400">
+        Tide estimate is for the nearby coast; water depth and resort boundaries can differ. Follow local signs and staff.
+      </p>
     </div>
   );
 }

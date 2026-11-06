@@ -19,7 +19,7 @@ export function ScrollReveal({
   direction = 'up',
   distance = 24,
   duration = 700,
-  once = false,
+  once = true,
 }: ScrollRevealProps) {
   const [isVisible, setIsVisible] = useState(false);
   const elementRef = useRef<HTMLDivElement>(null);
@@ -29,8 +29,8 @@ export function ScrollReveal({
     if (!node) return;
 
     if (typeof IntersectionObserver === 'undefined') {
-      setIsVisible(true);
-      return;
+      const frame = window.requestAnimationFrame(() => setIsVisible(true));
+      return () => window.cancelAnimationFrame(frame);
     }
 
     const observer = new IntersectionObserver(
