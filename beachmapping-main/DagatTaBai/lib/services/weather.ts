@@ -78,6 +78,22 @@ interface OpenMeteoMarine {
   };
 }
 
+function fetchOpenMeteo<T>(url: string, endpoint: string, timeoutMs: number): Promise<T> {
+  return fetch(url, { next: { revalidate: 300 }, signal: AbortSignal.timeout(timeoutMs) })
+    .then((response) => {
+      if (!response.ok) throw new Error(`Open-Meteo ${endpoint} request failed (${response.status}).`);
+      return response.json() as Promise<T>;
+    })
+    .catch((error: unknown) => {
+      if (error instanceof Error && error.name === 'TimeoutError') {
+        throw new Error(`Open-Meteo ${endpoint} request timed out after ${timeoutMs / 1000} seconds.`, {
+          cause: error,
+        });
+      }
+      throw error;
+    });
+}
+
 function mapWeatherCode(code: number): string {
   if (code === 0) return 'Clear sky';
   if (code === 1) return 'Mainly clear';
@@ -167,21 +183,9 @@ export async function fetchLiveWeather(latitude: number, longitude: number): Pro
   const airQualityUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?${coordinates}&current=us_aqi,pm2_5,pm10&timezone=Asia%2FManila`;
 
   const [forecastResult, marineResult, airQualityResult] = await Promise.allSettled([
-    fetch(forecastUrl, { next: { revalidate: 300 }, signal: AbortSignal.timeout(8000) })
-      .then((response) => {
-        if (!response.ok) throw new Error(`Open-Meteo forecast request failed (${response.status}).`);
-        return response.json() as Promise<OpenMeteoForecast>;
-      }),
-    fetch(marineUrl, { next: { revalidate: 300 }, signal: AbortSignal.timeout(8000) })
-      .then((response) => {
-        if (!response.ok) throw new Error(`Open-Meteo marine request failed (${response.status}).`);
-        return response.json() as Promise<OpenMeteoMarine>;
-      }),
-    fetch(airQualityUrl, { next: { revalidate: 300 }, signal: AbortSignal.timeout(8000) })
-      .then((response) => {
-        if (!response.ok) throw new Error(`Open-Meteo air-quality request failed (${response.status}).`);
-        return response.json() as Promise<OpenMeteoAirQuality>;
-      }),
+    fetchOpenMeteo<OpenMeteoForecast>(forecastUrl, 'forecast', 15000),
+    fetchOpenMeteo<OpenMeteoMarine>(marineUrl, 'marine', 8000),
+    fetchOpenMeteo<OpenMeteoAirQuality>(airQualityUrl, 'air-quality', 8000),
   ]);
   if (forecastResult.status === 'rejected') throw forecastResult.reason;
   const forecast = forecastResult.value;

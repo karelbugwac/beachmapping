@@ -624,7 +624,7 @@ export default function BeachOwnerApplicationPage() {
                         required
                         value={formData.applicant_email}
                         onChange={(e) => setFormData({ ...formData, applicant_email: e.target.value })}
-                        placeholder="owner@resort.com"
+                        placeholder="owner@gmail.com"
                         className={`w-full px-5 py-3 text-xs sm:text-sm bg-white dark:bg-neutral-900 border rounded-full focus:outline-none focus:ring-2 focus:ring-[#1F3F74]/20 focus:border-[#1F3F74] text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 font-normal shadow-2xs transition-all ${
                           getEmailError()
                             ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'

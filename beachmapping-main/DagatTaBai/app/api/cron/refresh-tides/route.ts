@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { fetchStormglassTides } from '@/lib/services/tides';
+import { fetchWorldTides } from '@/lib/services/tides';
 import type { Beach } from '@/lib/supabase/types';
 
 /**
@@ -41,7 +41,7 @@ export async function GET(req: NextRequest) {
 
     // 2. Fetch & Cache tides per beach
     for (const beach of beaches) {
-      const tideExtremes = await fetchStormglassTides(
+      const { extremes: tideExtremes } = await fetchWorldTides(
         Number(beach.latitude),
         Number(beach.longitude)
       );

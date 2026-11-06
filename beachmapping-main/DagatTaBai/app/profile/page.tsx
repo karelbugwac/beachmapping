@@ -40,6 +40,7 @@ interface UserReview {
   beach_id: string;
   beach_name?: string;
   beach_slug?: string;
+  review_type?: 'beach' | 'platform';
   rating: number;
   comment: string;
   created_at: string;
@@ -387,7 +388,7 @@ export default function ProfilePage() {
         throw new Error(result.error || 'Could not delete your review.');
       }
       setReviews((previous) => previous.filter((review) => review.id !== reviewId));
-      showToast('Review removed successfully.', 'success');
+      showToast('Review removed.', 'destructive');
     } catch (error: unknown) {
       showToast(error instanceof Error ? error.message : 'Could not delete your review.', 'error');
     }
@@ -493,7 +494,7 @@ export default function ProfilePage() {
       );
       setAvatarEditorOpen(false);
       setAvatarDraft(null);
-      showToast('Profile photo removed.', 'success');
+      showToast('Profile photo removed.', 'destructive');
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Failed to remove picture', 'error');
     } finally {
@@ -862,9 +863,16 @@ export default function ProfilePage() {
                   className="flex items-start justify-between gap-4 border-b border-slate-200 py-4 dark:border-neutral-800"
                 >
                   <div className="space-y-2">
-                    <h3 className="text-sm font-bold text-[#1F3F74] dark:text-[#4987BA]">
-                      {review.beach_name || 'Beach'}
-                    </h3>
+                    <div className="flex items-center gap-2 flex-wrap">
+                      <h3 className="text-sm font-bold text-[#1F3F74] dark:text-[#4987BA]">
+                        {review.beach_name || 'Beach'}
+                      </h3>
+                      {review.review_type === 'platform' && (
+                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-sky-100 text-[#1F3F74] dark:bg-sky-950/60 dark:text-sky-300">
+                          Platform Feedback
+                        </span>
+                      )}
+                    </div>
                     <div className="flex items-center gap-1" aria-label={`${review.rating} out of 5 stars`}>
                       {Array.from({ length: 5 }, (_, index) => (
                         <Star
