@@ -1,14 +1,14 @@
 'use client';
 
 import React, { useState, useEffect, useId } from 'react';
-import { Info } from 'lucide-react';
 import { calculateCurrentTide, type TideExtreme } from '@/lib/services/tide-interpolation';
 
 interface TideCardProps {
   extremes: TideExtreme[];
+  attribution?: string | null;
 }
 
-export default function TideCard({ extremes }: TideCardProps) {
+export default function TideCard({ extremes, attribution }: TideCardProps) {
   const [now, setNow] = useState<Date | null>(null);
   const clipId = useId().replace(/:/g, '');
 
@@ -79,9 +79,6 @@ export default function TideCard({ extremes }: TideCardProps) {
 
   const isRising = nextTide?.type === 'high';
   const tideLabel = isRising ? 'Rising Tide (Gataob)' : 'Receding Tide (Gahunas)';
-  const tideAdvice = isRising
-    ? 'Tide is rising. Check local shoreline conditions before entering the water.'
-    : 'Tide is falling. Use care around exposed shoreline and changing currents.';
 
   // Sample tide every 10 minutes from 00:00 to 24:00 Manila time
   const samples: { time: Date; height: number }[] = [];
@@ -159,12 +156,6 @@ export default function TideCard({ extremes }: TideCardProps) {
             {nextTide ? `${getCountdown(nextTide.time)} · ${nextTide.height.toFixed(1)} m` : ''}
           </span>
         </div>
-      </div>
-
-      {/* Quick Beachgoer Tip */}
-      <div className="flex items-center gap-1.5 rounded-lg border border-white/50 bg-white/35 px-2.5 py-1.5 text-[11px] text-slate-600 backdrop-blur-md dark:border-white/5 dark:bg-black/20 dark:text-slate-300">
-        <Info className="w-3.5 h-3.5 text-[#1F3F74] dark:text-sky-400 flex-shrink-0" />
-        <span>{tideAdvice}</span>
       </div>
 
       {/* 24-Hour Wave Cycle Curve (Compact height) */}
@@ -278,6 +269,11 @@ export default function TideCard({ extremes }: TideCardProps) {
           })}
         </div>
       </div>
+      {attribution && (
+        <p className="pt-2 text-[10px] leading-relaxed text-slate-500 dark:text-slate-400">
+          {attribution.match(/^.*?\bLLC\b\.?/i)?.[0] ?? attribution}
+        </p>
+      )}
     </div>
   );
 }

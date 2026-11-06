@@ -1,6 +1,6 @@
 /**
  * Client-Side Real-Time Tide Interpolation Helper
- * Uses cosine interpolation between cached tide extremes (Stormglass).
+ * Uses cosine interpolation between tide extremes returned by the tide provider.
  */
 
 export interface TideExtreme {

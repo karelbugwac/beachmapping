@@ -64,7 +64,7 @@ export default function ManageOwnerLinksPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Failed to remove link.');
       setLinks((current) => current.filter((link) => link.id !== id));
-      showToast('External link removed.');
+      showToast('External link removed.', 'destructive');
     } catch (error: unknown) {
       showToast(error instanceof Error ? error.message : 'Failed to remove link.', 'error');
     }

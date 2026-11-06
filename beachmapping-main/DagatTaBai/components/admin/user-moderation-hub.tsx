@@ -444,7 +444,7 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
         setSelectedUser(null);
       }
 
-      showToast('User account permanently deleted in accordance with policy.');
+      showToast('User account deleted.', 'destructive');
       setDeleteModalUser(null);
     } catch (error: unknown) {
       showToast(error instanceof Error ? error.message : 'Failed to delete user account.', 'error');
@@ -517,7 +517,7 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
         );
       }
 
-      showToast('Review removed from municipal records.');
+      showToast('Review removed.', 'destructive');
     } catch (error: unknown) {
       showToast(error instanceof Error ? error.message : 'Failed to delete review.', 'error');
     }
@@ -543,7 +543,10 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
         setReviews((current) => current.filter((r) => r.id !== reportedReviewId));
       }
 
-      showToast(decision === 'remove' ? 'Reported review removed.' : 'Report dismissed.');
+      showToast(
+        decision === 'remove' ? 'Reported review removed.' : 'Report dismissed.',
+        decision === 'remove' ? 'destructive' : 'success'
+      );
     } catch (error: unknown) {
       showToast(error instanceof Error ? error.message : 'Could not process report decision.', 'error');
     }

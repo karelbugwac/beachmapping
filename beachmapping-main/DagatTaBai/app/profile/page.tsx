@@ -387,7 +387,7 @@ export default function ProfilePage() {
         throw new Error(result.error || 'Could not delete your review.');
       }
       setReviews((previous) => previous.filter((review) => review.id !== reviewId));
-      showToast('Review removed successfully.', 'success');
+      showToast('Review removed.', 'destructive');
     } catch (error: unknown) {
       showToast(error instanceof Error ? error.message : 'Could not delete your review.', 'error');
     }
@@ -493,7 +493,7 @@ export default function ProfilePage() {
       );
       setAvatarEditorOpen(false);
       setAvatarDraft(null);
-      showToast('Profile photo removed.', 'success');
+      showToast('Profile photo removed.', 'destructive');
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Failed to remove picture', 'error');
     } finally {

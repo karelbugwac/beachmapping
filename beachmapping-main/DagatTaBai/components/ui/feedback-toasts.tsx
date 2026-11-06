@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { AlertCircle, CheckCircle2 } from 'lucide-react';
+import { AlertCircle, CheckCircle2, Trash2 } from 'lucide-react';
 
-type ToastKind = 'success' | 'error';
+type ToastKind = 'success' | 'error' | 'destructive';
 type ToastItem = { id: number; kind: ToastKind; message: string };
 type ToastEventDetail = { kind: ToastKind; message: string };
 
@@ -52,7 +52,8 @@ export function FeedbackToasts() {
     >
       {toasts.map((toast) => {
         const isSuccess = toast.kind === 'success';
-        const Icon = isSuccess ? CheckCircle2 : AlertCircle;
+        const isDestructive = toast.kind === 'destructive';
+        const Icon = isDestructive ? Trash2 : isSuccess ? CheckCircle2 : AlertCircle;
         const formattedMsg = toast.message
           ? toast.message.charAt(0).toUpperCase() + toast.message.slice(1)
           : '';
@@ -60,15 +61,15 @@ export function FeedbackToasts() {
         return (
           <div
             key={toast.id}
-            role={isSuccess ? 'status' : 'alert'}
-            className={`pointer-events-auto flex items-center justify-center rounded-full px-6 py-3.5 shadow-2xl text-white font-medium text-xs sm:text-sm tracking-wide animate-in fade-in slide-in-from-top-4 duration-300 ${
+            role={toast.kind === 'error' ? 'alert' : 'status'}
+            className={`pointer-events-auto flex w-fit max-w-[calc(100vw-2rem)] items-center gap-2.5 rounded-xl border px-3.5 py-2.5 text-left text-xs font-medium leading-snug shadow-lg animate-in fade-in slide-in-from-top-2 duration-200 sm:max-w-sm sm:px-4 ${
               isSuccess
-                ? 'bg-emerald-600 shadow-emerald-950/20'
-                : 'bg-red-600 shadow-red-950/25'
+                ? 'border-emerald-700 bg-emerald-600 text-white shadow-emerald-950/20'
+                : 'border-red-700 bg-red-600 text-white shadow-red-950/25'
             }`}
           >
-            <Icon className="mr-2 h-4 w-4 shrink-0" aria-hidden="true" />
-            <span className="text-center">{formattedMsg}</span>
+            <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
+            <span className="min-w-0 break-words [overflow-wrap:anywhere]">{formattedMsg}</span>
           </div>
         );
       })}

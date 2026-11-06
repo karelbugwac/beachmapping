@@ -4,8 +4,8 @@ import { fetchLiveWeather } from '@/lib/services/weather';
 export async function GET(req: NextRequest) {
   try {
     const { searchParams } = new URL(req.url);
-    const lat = parseFloat(searchParams.get('lat') || '10.635');
-    const lon = parseFloat(searchParams.get('lon') || '124.027');
+    const lat = parseFloat(searchParams.get('lat') || '10.6865');
+    const lon = parseFloat(searchParams.get('lon') || '124.0152');
 
     if (!Number.isFinite(lat) || !Number.isFinite(lon) || lat < -90 || lat > 90 || lon < -180 || lon > 180) {
       return NextResponse.json(

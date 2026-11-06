@@ -197,7 +197,7 @@ export function AiChatWidget() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Could not delete history.');
       setMessages([]);
-      showToast('Your Bai chat history was deleted.');
+      showToast('Chat history deleted.', 'destructive');
     } catch (error: unknown) {
       showToast(error instanceof Error ? error.message : 'Could not delete chat history.', 'error');
     }
@@ -209,6 +209,7 @@ export function AiChatWidget() {
   const visibleMessages = messages.filter(
     (msg) => msg.sender === 'user' || (msg.sender === 'assistant' && msg.text.trim().length > 0)
   );
+  const hasUserMessages = visibleMessages.some((msg) => msg.sender === 'user');
 
   // Check if AI is thinking before first text chunk arrives
   const isThinking =
@@ -233,8 +234,8 @@ export function AiChatWidget() {
     <div
       className={`fixed z-50 transition-all duration-300 ${
         isMap
-          ? 'top-20 right-3 sm:top-auto sm:bottom-5 sm:right-5'
-          : 'bottom-5 right-5'
+          ? 'top-20 right-2 sm:top-auto sm:bottom-5 sm:right-5'
+          : 'bottom-2 right-2 sm:bottom-5 sm:right-5'
       }`}
     >
       {/* Floating Trigger Button with active online beacon */}
@@ -263,40 +264,39 @@ export function AiChatWidget() {
         </div>
       )}
 
-      {/* Modern AI Chat Window - Square / Non-Rounded Modern Architecture */}
+      {/* Responsive conversation panel */}
       {isOpen && (
-        <div className="bg-white dark:bg-[#0c1424] w-[92vw] sm:w-[390px] h-[530px] max-h-[82vh] rounded-none shadow-2xl border border-slate-300 dark:border-neutral-800 flex flex-col overflow-hidden animate-in fade-in slide-in-from-bottom-2 duration-150">
+        <section
+          aria-label="Chat with Bai"
+          className="flex h-[min(640px,calc(100dvh-1rem))] max-h-[calc(100dvh-1rem)] w-[min(390px,calc(100vw-1rem))] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_24px_70px_-20px_rgba(15,23,42,0.5)] animate-in fade-in slide-in-from-bottom-2 duration-200 dark:border-neutral-800 dark:bg-[#0c1424] sm:h-[min(640px,calc(100dvh-6rem))] sm:max-h-[82vh]"
+        >
           
-          {/* Header: Pure Signature Dive Blue - Clean & Minimalist */}
-          <div className="bg-[#1F3F74] dark:bg-[#12223d] text-white px-4 py-3 flex items-center justify-between border-b border-white/10 select-none">
-            <div className="flex items-center gap-2.5">
-              <div className="relative w-8 h-8 rounded-full overflow-hidden bg-white/15 p-0.5 flex items-center justify-center ring-1 ring-white/20 flex-shrink-0">
-                <Image
-                  src="/images/bai.png"
-                  alt="Bai"
-                  width={30}
-                  height={30}
-                  style={{ width: 'auto', height: 'auto' }}
-                  className="object-contain"
-                />
-                <span className="absolute bottom-0 right-0 w-2 h-2 bg-emerald-400 rounded-full ring-2 ring-[#1F3F74]" />
-              </div>
-              <div className="flex items-center gap-2">
-                <h3 className="text-sm font-sans font-extrabold tracking-tight text-white leading-none">
-                  Bai
-                </h3>
-                <span className="text-[10px] bg-white/15 text-blue-100 font-semibold px-2 py-0.5 rounded-none border border-white/20">
-                  Local Guide
-                </span>
+          {/* Branded header */}
+          <div className="flex shrink-0 items-center justify-between gap-2.5 border-b border-white/10 bg-[#1F3F74] px-3.5 py-2.5 text-white dark:bg-[#12223d] sm:px-5 sm:py-3">
+            <div className="flex min-w-0 items-center gap-2.5">
+              <Image
+                src="/images/bai.png"
+                alt="Bai"
+                width={38}
+                height={38}
+                className="h-9 w-9 shrink-0 object-contain"
+              />
+              <div className="min-w-0">
+                <div className="flex items-center gap-1.5">
+                  <h3 className="font-sans text-sm font-bold leading-tight tracking-tight text-white">Bai</h3>
+                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" aria-label="Online" />
+                  <span className="text-[10px] font-medium leading-tight text-blue-100/90">Local Guide</span>
+                </div>
+                <p className="mt-0.5 truncate text-[10px] leading-tight text-blue-100/75">Here to help you explore Catmon</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-1">
+            <div className="flex shrink-0 items-center gap-0.5">
               <button
                 type="button"
                 onClick={() => void handleClearHistory()}
                 disabled={!signedIn}
-                className="p-1.5 text-blue-200 hover:bg-white/15 hover:text-white transition-colors disabled:opacity-40 cursor-pointer"
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-blue-100/80 transition-colors hover:bg-white/15 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
                 aria-label="Delete saved chat history"
                 title={signedIn ? 'Delete your saved chat history' : 'Sign in to save or delete history'}
               >
@@ -305,7 +305,7 @@ export function AiChatWidget() {
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="p-1.5 text-blue-200 hover:bg-white/15 hover:text-white transition-colors cursor-pointer"
+                className="flex h-9 w-9 items-center justify-center rounded-lg text-blue-100/80 transition-colors hover:bg-white/15 hover:text-white"
                 aria-label="Close Chat"
               >
                 <X size={17} />
@@ -313,25 +313,35 @@ export function AiChatWidget() {
             </div>
           </div>
 
-          {/* Messages Stream: Clean Modern Flow without Repetitive Profile Avatars */}
-          <div className="flex-1 p-4 overflow-y-auto space-y-3.5 bg-slate-50/60 dark:bg-[#09101d] text-xs">
+          {/* Conversation stream */}
+          <div
+            role="log"
+            aria-live="polite"
+            aria-relevant="additions text"
+            className="flex-1 space-y-4 overflow-y-auto bg-slate-50/70 px-3 py-4 text-xs dark:bg-[#09101d] sm:px-4"
+          >
             {visibleMessages.map((msg) => (
               <div
                 key={msg.id}
-                className={`flex ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                className={`flex min-w-0 items-end gap-2 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
               >
+                {msg.sender === 'assistant' && (
+                  <div className="relative mb-5 h-7 w-7 shrink-0 overflow-hidden rounded-full bg-[#1F3F74]/10 ring-1 ring-[#1F3F74]/10 dark:bg-[#4987BA]/15 dark:ring-[#4987BA]/20">
+                    <Image src="/images/bai.png" alt="" fill sizes="28px" className="object-contain p-0.5" />
+                  </div>
+                )}
                 <div
-                  className={`max-w-[86%] px-3.5 py-2.5 space-y-1 rounded-none ${
+                  className={`max-w-[84%] min-w-0 space-y-1.5 px-3.5 py-2.5 shadow-sm sm:max-w-[80%] ${
                     msg.sender === 'user'
-                      ? 'bg-[#1F3F74] dark:bg-[#234b87] text-white shadow-xs border border-[#162e55]'
-                      : 'bg-white dark:bg-[#132035] text-slate-800 dark:text-slate-100 border border-slate-200 dark:border-slate-800 border-l-2 border-l-[#1F3F74] dark:border-l-[#4987BA] shadow-xs'
+                      ? 'rounded-2xl rounded-br-md border border-[#162e55] bg-[#1F3F74] text-white dark:bg-[#234b87]'
+                      : 'rounded-2xl rounded-bl-md border border-slate-200 bg-white text-slate-800 dark:border-slate-800 dark:bg-[#132035] dark:text-slate-100'
                   }`}
                 >
-                  <p className="whitespace-pre-line leading-relaxed text-xs">
+                  <p className="break-words whitespace-pre-line leading-relaxed [overflow-wrap:anywhere]">
                     {renderFormattedText(msg.text)}
                   </p>
                   <span
-                    className={`text-[9.5px] block text-right font-medium ${
+                    className={`block text-right text-[10px] font-medium ${
                       msg.sender === 'user' ? 'text-blue-200/80' : 'text-slate-400 dark:text-slate-500'
                     }`}
                   >
@@ -341,20 +351,16 @@ export function AiChatWidget() {
               </div>
             ))}
 
-            {/* Contextual Follow-Up / Branch Questions right below the latest answer */}
-            {branchQuestions.length > 0 && (
-              <div className="pt-0.5 space-y-1.5">
-                <span className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 dark:text-slate-500 block">
-                  Continue / Ask next:
-                </span>
-                <div className="flex flex-wrap gap-1.5">
-                  {branchQuestions.map((item) => (
+            {!hasUserMessages && !loading && (
+              <div className="ml-9 space-y-2.5 pt-1">
+                <p className="text-[11px] font-semibold text-slate-500 dark:text-slate-400">Try asking</p>
+                <div className="grid grid-cols-2 gap-2">
+                  {BAI_SUGGESTED_QUESTIONS.map((item) => (
                     <button
                       key={item.label}
                       type="button"
-                      disabled={loading}
                       onClick={() => void submitQuestion(item.question)}
-                      className="px-2.5 py-1 rounded-none bg-blue-50/80 dark:bg-[#152642] text-[#1F3F74] dark:text-blue-200 hover:bg-[#1F3F74] hover:text-white dark:hover:bg-[#1F3F74] dark:hover:text-white border border-blue-200/80 dark:border-blue-900/60 text-[11px] font-medium transition-colors cursor-pointer"
+                      className="min-h-10 rounded-xl border border-slate-200 bg-white px-3 py-2 text-left text-[11px] font-medium leading-relaxed text-[#1F3F74] transition-colors hover:border-[#1F3F74]/40 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74] dark:border-slate-700 dark:bg-[#132035] dark:text-blue-200 dark:hover:bg-[#182b48] dark:focus-visible:ring-[#4987BA]"
                     >
                       {item.label}
                     </button>
@@ -363,56 +369,63 @@ export function AiChatWidget() {
               </div>
             )}
 
-            {/* Thinking State: Only 3 Bouncing Dots - Absolutely NO Empty Chat Bubble */}
+            {/* Contextual Follow-Up / Branch Questions right below the latest answer */}
+            {branchQuestions.length > 0 && (
+              <div className="ml-9 space-y-2 pt-0.5">
+                <span className="block text-[11px] font-semibold text-slate-500 dark:text-slate-400">
+                  Keep exploring
+                </span>
+                <div className="flex flex-wrap gap-1.5">
+                  {branchQuestions.map((item) => (
+                    <button
+                      key={item.label}
+                      type="button"
+                      disabled={loading}
+                      onClick={() => void submitQuestion(item.question)}
+                      className="rounded-full border border-blue-200/80 bg-blue-50/80 px-3 py-1.5 text-[11px] font-medium text-[#1F3F74] transition-colors hover:bg-[#1F3F74] hover:text-white dark:border-blue-900/60 dark:bg-[#152642] dark:text-blue-200 dark:hover:bg-[#1F3F74] dark:hover:text-white"
+                    >
+                      {item.label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
             {isThinking && (
-              <div className="flex items-center gap-1.5 py-2 px-1">
-                <span className="w-2 h-2 rounded-full bg-[#1F3F74] dark:bg-[#4987BA] animate-bounce" />
-                <span className="w-2 h-2 rounded-full bg-[#1F3F74] dark:bg-[#4987BA] animate-bounce [animation-delay:0.2s]" />
-                <span className="w-2 h-2 rounded-full bg-[#1F3F74] dark:bg-[#4987BA] animate-bounce [animation-delay:0.4s]" />
+              <div className="ml-9 inline-flex items-center gap-1.5 rounded-2xl rounded-bl-md border border-slate-200 bg-white px-4 py-3 dark:border-slate-800 dark:bg-[#132035]" aria-label="Bai is typing">
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#1F3F74] dark:bg-[#4987BA]" />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#1F3F74] [animation-delay:0.2s] dark:bg-[#4987BA]" />
+                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#1F3F74] [animation-delay:0.4s] dark:bg-[#4987BA]" />
               </div>
             )}
 
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Quick Prompts: Modern Square Chips (One-Click Ask) */}
-          <div className="px-3 py-2 border-t border-slate-200 dark:border-neutral-800 bg-white dark:bg-[#0c1424] flex gap-1.5 overflow-x-auto text-[11px] no-scrollbar">
-            {BAI_SUGGESTED_QUESTIONS.map((item) => (
-              <button
-                key={item.label}
-                type="button"
-                disabled={loading}
-                onClick={() => void submitQuestion(item.question)}
-                className="px-2.5 py-1 rounded-none bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:bg-[#1F3F74] hover:text-white dark:hover:bg-[#1F3F74] dark:hover:text-white border border-slate-200 dark:border-slate-700 whitespace-nowrap transition-colors font-medium cursor-pointer disabled:opacity-50"
-              >
-                {item.label}
-              </button>
-            ))}
-          </div>
-
-          {/* Input Form: Sharp Modern Docked Input (No Verified Footer Text) */}
+          {/* Docked message composer */}
           <form
             onSubmit={handleSend}
-            className="p-3 border-t border-slate-200 dark:border-neutral-800 bg-white dark:bg-[#0c1424] flex items-center gap-2"
+            className="flex shrink-0 items-center gap-2 border-t border-slate-200 bg-white p-3 dark:border-neutral-800 dark:bg-[#0c1424] sm:p-3.5"
           >
             <input
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about Rañola, Lite Bay, Turtle Point, Majestique, Hinagdan..."
-              className="flex-1 bg-slate-50 dark:bg-[#132035] border border-slate-200 dark:border-slate-800 rounded-none px-3.5 py-2 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-[#1F3F74] transition-all"
+              placeholder="Ask Bai anything..."
+              aria-label="Message Bai"
+              className="min-w-0 flex-1 rounded-full border border-slate-200 bg-slate-50 px-4 py-3 text-xs text-slate-900 transition focus:border-[#1F3F74] focus:outline-none focus:ring-2 focus:ring-[#1F3F74]/15 dark:border-slate-800 dark:bg-[#132035] dark:text-slate-100 dark:focus:border-[#4987BA] dark:focus:ring-[#4987BA]/20"
             />
             <button
               type="submit"
               disabled={loading || !input.trim()}
-              className="w-8 h-8 rounded-none bg-[#1F3F74] hover:bg-[#16305a] active:scale-95 text-white flex items-center justify-center transition-all disabled:opacity-40 disabled:cursor-not-allowed shadow-xs flex-shrink-0 cursor-pointer"
+              className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-[#1F3F74] text-white shadow-sm transition hover:bg-[#16305a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74] focus-visible:ring-offset-2 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 dark:focus-visible:ring-offset-[#0c1424]"
               aria-label="Send message"
             >
-              <Send size={13} />
+              <Send size={16} />
             </button>
           </form>
 
-        </div>
+        </section>
       )}
     </div>
   );
