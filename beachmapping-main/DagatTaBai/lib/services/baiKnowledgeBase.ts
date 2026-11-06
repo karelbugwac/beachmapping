@@ -1,127 +1,173 @@
 /**
  * Verified Barangay Binongkalan, Catmon, Cebu Beach Resort Knowledge Base
- * Provides specific, easy-to-understand answers, multi-turn continuation/branching
- * question support, and Cebu-wide barangay/town commute & nearest-beach guides.
+ * 4 Official Verified Beaches:
+ * 1. Rañola Beach (Raniola)
+ * 2. Lite Bay Resort (Litebay)
+ * 3. Majestique Beach
+ * 4. Hinagdan Beach (Hinagdan)
+ *
+ * Fully supports Bisaya and English questions (both specific per-beach and broad questions).
  */
 
 export const VERIFIED_BINONGKALAN_KNOWLEDGE_CONTEXT = `
 OFFICIAL VERIFIED BEACH RESORTS IN BARANGAY BINONGKALAN, CATMON, CEBU:
+(Only 4 verified beaches: Rañola Beach, Lite Bay Resort, Majestique Beach, and Hinagdan Beach)
 
 GENERAL RULES & SPECIFIC ANSWERS FOR BARANGAY BINONGKALAN BEACHES:
-1. Pinakaduol na beach from (location) [Nearest beach from a location]:
-   - Always refer directly from the user's (location) to the specific nearest (beach) in Barangay Binongkalan, Catmon:
-   - If coming from the SOUTH (Cebu City, Talamban, Lahug, Mabolo, Mandaue, Lapu-Lapu, Consolacion, Liloan, Compostela, Danao, Carmen, Talisay, Minglanilla, Naga, Carcar, Toledo, Oslob, Moalboal, or southern Catmon barangays like Panalipan, San Jose Poblacion, Corazon, Flores, Catmondaan, Macaas, Duyan):
-     • Nearest / First Beach Reached from (location): Hinagdan Beach 1 and Majestique Beach (followed immediately beside them by Rañola Beach, Lite Bay Resort, and Turtle Point Beach along the highway).
-   - If coming from the NORTH (Sogod, Brgy. Bawo, Damolog, Borbon, Tabogon, Bogo City, San Remigio, Medellin, Daanbantayan/Maya, Tabuelan, Tuburan):
-     • Nearest / First Beach Reached from (location): Turtle Point Beach and Lite Bay Resort (followed immediately beside them by Rañola Beach, Majestique Beach, and Hinagdan Beach 1 along the highway).
-   - Include the exact travel time and step-by-step commute from (location) to the (beach).
 
-2. Safe ba mga beaches [Are the beaches safe?]:
-   - Answer: YES (Oo, safe!). All 5 beaches in Barangay Binongkalan are safe for swimming and family outings, and life jackets / floaters (salbabida) are available for rent.
-   - Always refer the user to check the Live Weather Update on our website (temperature, wind speed, tide schedule, and weather forecast in Catmon) before swimming.
+1. PINAKADUOL NA BEACH / NEAREST BEACH:
+   - Kung gikan sa SOUTH (Cebu City, Talamban, Mandaue, Lapu-Lapu, Consolacion, Liloan, Compostela, Danao, Carmen, Talisay, Minglanilla, Naga, Carcar, Toledo, etc.):
+     • Pinakaduol nga beach: Rañola Beach (Raniola) ang unang maagian.
+     • Pagkasunod-sunod: Rañola Beach ➔ Lite Bay Resort ➔ Majestique Beach ➔ Hinagdan Beach.
+   - Kung gikan sa NORTH (Sogod, Borbon, Tabogon, Bogo City, San Remigio, Medellin, Daanbantayan, Maya, Tabuelan, Tuburan, etc.):
+     • Pinakaduol nga beach: Hinagdan Beach ang unang maagian.
+     • Pagkasunod-sunod: Hinagdan Beach ➔ Majestique Beach ➔ Lite Bay Resort ➔ Rañola Beach.
+   - Broad ("Unsay pinakaduol na beach?"):
+     • If sa South gikan: Rañola Beach ang pinakaduol.
+     • If sa North gikan: Hinagdan Beach ang pinakaduol.
 
-3. If naay store/tinda [Store / Sari-Sari Store Availability]:
-   - Rañola Beach: Naa (Yes, has a store/tinda)
-   - Lite Bay Resort: Wala (No store/tinda inside)
-   - Hinagdan Beach 1: Naa (Yes, has a store/tinda)
-   - Majestique Beach: Naa (Yes, has a store/tinda)
-   - Turtle Point Beach: Not listed in the database
+2. BATOON BA O DILI / ROCKY SHORELINE:
+   - Rañola Beach (Raniola): Batoon gamay (slightly rocky with small pebbles/stones).
+   - Lite Bay Resort: Batoon gamay (slightly rocky).
+   - Majestique Beach: Dili ra batoon (not rocky).
+   - Hinagdan Beach: Dili batoon (sand/balas — natural sandy shoreline).
+   - Broad ("Asay batoon na beach?"): Rañola ug Lite Bay kay batoon gamay, samtang ang Majestique dili ra batoon, ug ang Hinagdan kay dili batoon (balas).
 
-4. If whitesand ba or dili [White Sand or Not / Shoreline Type]:
-   - Hinagdan Beach 1: Sand (Balas — has a sandy shoreline).
-   - Other beaches (Rañola, Lite Bay, Turtle Point, Majestique): Not pure white sand (natural coastal shoreline with pebbles/stones).
+3. SUGBAANAN / GRILLING AREA:
+   - Rañola Beach: Naay sugbaanan.
+   - Lite Bay Resort: Naay sugbaanan.
+   - Majestique Beach: Naay sugbaanan.
+   - Hinagdan Beach: Naay sugbaanan.
+   - Broad ("Asa na beach ang naay sugbaanan?"): Naay sugbaanan ang tanang 4 ka beach (Rañola, Lite Bay, Majestique, Hinagdan).
 
-5. Ma bookingan ba ang beaches (like private) [Private / Exclusive Beach Booking]:
-   - Walay private kay open sya sa tanan (No private/exclusive beach booking because all beaches are public and open to everyone; walk-ins are welcome).
+4. PINAKA-SAFE NA BEACH / SAFE BA NI:
+   - Asay pinaka-safe: Rañola Beach (Raniola) kay pinaka-safe labi na para sa mga bata (children) ug senior citizens tungod kay accessible ug dili dali molawm.
+   - Safe ba ang matag beach: Oo, safe maligo ang tanang 4 ka beach. Palihug tan-awa sab ang Live Weather / Tide update sa website sa dili pa maligo.
 
-6. If naay discount if naay event [Discounts for Events]:
-   - Wala (No discounts even if there is an event like a birthday, reunion, or team building; regular rates apply).
+5. LIFEGUARD:
+   - Specific ("Naa bay lifeguard ang kani na beach?"): Walay lifeguard sa kani nga beach (walay lifeguard ang mga beach diri sa Binongkalan, apan naay maabangan nga life jackets ug salbabida).
+   - Broad ("Naa bay lifeguard ang mga beach?"): Walay lifeguard ang mga beach (walay lifeguard sa tanang 4 ka beach).
 
-7. Other Helpful Beach Rules (Corkage, Food, Grilling, Pets, Walk-ins):
-   - Bringing own food & drinks (baon): Allowed with NO corkage fee.
-   - Grilling (sugba): Allowed at cottages/tables as long as guests keep the area clean.
-   - Walk-ins: Allowed anytime during operating hours.
+6. STORE / FOODS / KARNE:
+   - Specific ("Naa bay store or foods sa kani na beach?"): Yes naa ray store and foods ug naa rasad nearby stores daplin sa highway, pero walay mga baligya nga karne/meat (palit daan og karne sa merkado kung magplano magsugba).
+   - Broad ("Naa bay store or foods ang mga beach?"): Yes, naay stores and foods sa tanang beach ug nearby stores sa highway, apan walay baligya nga karne/meat.
+
+7. SHOWER / KALIGOAN:
+   - Specific ("Naa bay shower ang kani na beach?"): Yes naa ray shower / kaligoan para banlaw ug himasa.
+   - Broad ("Naa bay shower ang mga beach?"): Yes, naay shower ang tanang 4 ka beach (Rañola, Lite Bay, Majestique, Hinagdan).
+
+8. COMMUTE / UNSON PAG-ADTO:
+   - Step-by-step commute guide gikan sa nagkalain-laing lugar sa Cebu padulong sa specific nga beach subay sa Cebu North National Highway sa Brgy. Binongkalan, Catmon.
+
+9. ACCESSIBLE SA MGA SENIOR CITIZEN:
+   - Rañola Beach (Raniola): Yes, accessible sa senior citizens (patag ug dali rang lakton gikan sa highway).
+   - Lite Bay Resort, Majestique Beach, Hinagdan Beach: Dili accessible sa senior citizens tungod kay daghan ug hagdanan, maglisod ang mga senior.
+   - Broad ("Accessible ba sa mga senior citizen?"): Rañola ra ang yes accessible sa seniors; the rest of the beaches (Lite Bay, Majestique, Hinagdan) are not accessible since daghan ug hagdanan, maglisod ang mga senior.
+
+10. SINKHOLE:
+    - Rañola Beach: Naay sinkhole pero layo ra sa swimming area (safe ra maligo sa duol).
+    - Lite Bay Resort: Naa pero layo ra sad.
+    - Majestique Beach: Wala.
+    - Hinagdan Beach: Wala.
+    - Broad ("Are there any sinkholes in any of the beaches?"): Rañola naay sinkhole pero layo ra, Lite Bay naa pero layo ra sad, Majestique wala, Hinagdan wala.
+
+11. DALI MOLAWM / DEPTH:
+    - Lite Bay Resort: Dali molawm kay dili siya mohunas ug pamaayo.
+    - Majestique Beach: Dali molawm kay dili siya mohunas ug pamaayo.
+    - Rañola Beach: Dili ra dali molawm (gradual slope).
+    - Hinagdan Beach: Dili ra dali molawm (gradual slope ug balas).
+    - Broad ("Asa na beaches ang dali molawm?"): Lite Bay ug Majestique dali ra molawm tungod kay dili sila mohunas ug pamaayo; samtang ang Rañola ug Hinagdan dili ra dali molawm.
+
+12. PETS / MAGDALA OG HAYOP:
+    - Specific ("Pwede magda ug pets sa ari na beach?"): Yes, pwede ra magdala og pets.
+    - Broad ("Pwede magda ug pets?"): Yes, pwede magdala og pets sa tanang 4 ka beach (Rañola, Lite Bay, Majestique, Hinagdan).
+
+13. TAOB OR HUNAS / TIDE STATUS:
+    - Specific ug Broad: Refer sa Live Tide Status sa Weather section diri sa among website (nga nagpakita sa real-time high tide ug low tide). Timan-i nga ang Lite Bay ug Majestique kay dili mohunas ug pamaayo bisan low tide.
 
 DETAILED BEACH PROFILES:
 
-1. RAÑOLA BEACH
+1. RAÑOLA BEACH (RANIOLA)
 - Location: Barangay Binongkalan, Catmon, Cebu (Along Cebu North National Highway)
 - Contact Numbers: 0935-724-1824 / 0960-326-7698
-- Facebook / Social Media: Yes (has an official Facebook page, link not listed)
-- Email Address: Not listed
-- Operating Hours: Opens at 6:00 AM and closes at 7:00 PM. Open every day (Monday to Sunday). Overnight stays are allowed.
-- Entrance Fee per person: ₱20 per person (with cottage) — Cheapest entrance fee | ₱30 per person (without cottage). Overnight is the same price.
+- Facebook: Yes (official Facebook page exists)
+- Operating Hours: 6:00 AM – 7:00 PM, open every day (Monday to Sunday). Overnight tent camping is allowed.
+- Entrance Fee: ₱20 per person (with cottage) | ₱30 per person (without cottage). Overnight is same rate.
 - Cottage Rates: Small Cottage: ₱500 | Middle Cottage: ₱2,000 | Side Big Cottage (30 persons): ₱2,500
-- Rooms & Overnight: No rooms, but overnight tent camping is allowed (same price as regular day rate).
-- Store / Tinda: Naa (Yes, has a store/tindahan)
-- Sand / Shoreline: Natural coastal sand with pebbles (not pure white sand; Hinagdan Beach 1 has the sandy shoreline)
-- Private Booking: Walay private kay open sya sa tanan
-- Event Discount: Wala (No discount for events)
-- Restroom Fees: ₱5 urination (ihi) | ₱10 shower/bathing (ligo/libang)
-- Parking Fees: ₱50 Car | ₱20 Motorcycle
-- Activities & Rentals: Swimming & camping; Floater (salbabida) ₱30 from roving vendors.
+- Rooms & Overnight: No rooms; overnight tent camping is allowed at regular rate.
+- Batoon ba o dili: Batoon gamay.
+- Sugbaanan: Naay sugbaanan.
+- Pinaka-safe: Yes, Rañola is the safest beach (safe for children and seniors).
+- Lifeguard: Walay lifeguard (salbabida available for rent ₱30).
+- Store & Foods: Naay store and foods ug nearby stores, pero walay baligya nga meat.
+- Shower: Naay shower (₱10 ligo/shower, ₱5 ihi).
+- Senior Citizen: Yes, accessible sa senior citizens (patag ug walay daghang hagdanan).
+- Sinkhole: Naay sinkhole pero layo ra sa swimming area.
+- Dali molawm: Dili ra dali molawm.
+- Pets: Pwede magdala og pets.
+- Parking: ₱50 Car | ₱20 Motorcycle.
 
 2. LITE BAY RESORT
 - Location: Barangay Binongkalan, Catmon, Cebu (Along Cebu North National Highway)
 - Contact Number: 0953-411-7454
-- Facebook / Social Media: No
-- Email Address: No
-- Operating Hours: Sunday–Thursday: 6:00 AM – 8:00 PM | Friday: 6:00 AM – 5:00 PM | Saturday: CLOSED every Saturday
-- Entrance Fee per person: ₱50 per person
-- Cottage & Table Rates: Table: ₱300 | Cottage: ₱800 | Large Space (Dako na space): ₱1,000
-- Rooms & Overnight: No rooms and no overnight stays (Day use only)
-- Store / Tinda: Wala (No store/tindahan inside)
-- Sand / Shoreline: Natural coastal shoreline (not pure white sand; Hinagdan Beach 1 has the sandy shoreline)
-- Private Booking: Walay private kay open sya sa tanan
-- Event Discount: Wala (No discount for events)
-- Restroom & Parking Fees: FREE Restroom & FREE Parking (Walay bayad)
-- Activities & Rentals: Kayaking (₱200 for 2 hours), Life Jacket (₱50), Goggles (₱50), Fins (₱50), Snorkel Mouthpiece (₱50).
+- Operating Hours: Sunday–Thursday: 6:00 AM – 8:00 PM | Friday: 6:00 AM – 5:00 PM | CLOSED every Saturday.
+- Entrance Fee: ₱50 per person.
+- Cottage & Table Rates: Table: ₱300 | Cottage: ₱800 | Large Space: ₱1,000.
+- Rooms & Overnight: No rooms, no overnight (Day use only).
+- Batoon ba o dili: Batoon gamay.
+- Sugbaanan: Naay sugbaanan.
+- Safe: Safe maligo (mag-amping lang kay dali molawm).
+- Lifeguard: Walay lifeguard (kayak ₱200/2hrs, life jacket ₱50 for rent).
+- Store & Foods: Naay snacks/foods ug nearby stores daplin sa highway, pero walay baligya nga meat.
+- Shower: Naay shower (FREE Restroom & Shower).
+- Senior Citizen: Dili accessible sa senior citizens kay daghan ug hagdanan.
+- Sinkhole: Naay sinkhole pero layo ra sad.
+- Dali molawm: Dali molawm kay dili mohunas ug pamaayo.
+- Pets: Pwede magdala og pets.
+- Parking: FREE (Walay bayad).
 
-3. TURTLE POINT BEACH
-- Location: Barangay Binongkalan, Catmon, Cebu (Along Cebu North National Highway)
-- Contact Number / Facebook / Email: Not listed in the database
-- Operating Hours: 7:00 AM – 7:00 PM, open every day
-- Entrance Fee per person: ₱50 per person
-- Cottage & Table Rates: Table: ₱150 (cottage rate not listed)
-- Rooms & Overnight: Whole House Rental: ₱10,000
-- Store / Tinda: Not listed in the database
-- Sand / Shoreline: Natural coastal shoreline (Hinagdan Beach 1 has the sandy shoreline)
-- Private Booking: Walay private kay open sya sa tanan (beach is open to the public)
-- Event Discount: Wala (No discount for events)
-- Restroom Fees: ₱5 urination (ihi) | ₱10 shower/bathing (ligo)
-- Parking Fee: Not listed in the database
-- Activities & Rides: Banana Boat Ride (₱150 for 15 minutes) & Kayaking.
-
-4. MAJESTIQUE BEACH
+3. MAJESTIQUE BEACH
 - Location: Barangay Binongkalan, Catmon, Cebu (Along Cebu North National Highway)
 - Contact Number: 0943-622-7972
-- Facebook / Social Media: Yes (has an official Facebook page)
-- Email Address: Not listed in the database
-- Operating Hours: Day Use: 7:00 AM – 5:00 PM | Overnight: 6:00 PM – 6:00 AM (Open every day)
-- Entrance Fee per person: ₱30 per person (with or without cottage)
-- Cottage Rates: Day Cottages: ₱500–₱1,000 | Overnight Cottages: ₱800–₱1,200 (₱500 cottage becomes ₱800 overnight)
-- Rooms & Overnight: Regular Room: ₱2,000 | Aircon (AC) Room: ₱3,500
-- Store / Tinda: Naa (Yes, has a store/tindahan)
-- Sand / Shoreline: Natural coastal shoreline (Hinagdan Beach 1 has the sandy shoreline)
-- Private Booking: Walay private kay open sya sa tanan
-- Event Discount: Wala (No discount for events)
-- Restroom & Parking Fees: Restroom/Rinse (himasa): ₱10 | Parking: FREE (Walay bayad)
-- Activities & Rentals: Swimming; Life Jacket rental: ₱50.
+- Operating Hours: Day Use: 7:00 AM – 5:00 PM | Overnight: 6:00 PM – 6:00 AM (Open every day).
+- Entrance Fee: ₱30 per person (with or without cottage).
+- Cottage Rates: Day Cottages: ₱500–₱1,000 | Overnight Cottages: ₱800–₱1,200.
+- Rooms & Overnight: Regular Room: ₱2,000 | Aircon Room: ₱3,500.
+- Batoon ba o dili: Dili ra batoon.
+- Sugbaanan: Naay sugbaanan.
+- Safe: Safe maligo (mag-amping kay dali molawm).
+- Lifeguard: Walay lifeguard (life jacket rental ₱50).
+- Store & Foods: Naay store and foods ug nearby stores, pero walay baligya nga meat.
+- Shower: Naay shower (₱10 rinse/himasa).
+- Senior Citizen: Dili accessible sa senior citizens kay daghan ug hagdanan.
+- Sinkhole: Wala (Walay sinkhole).
+- Dali molawm: Dali molawm kay dili mohunas ug pamaayo.
+- Pets: Pwede magdala og pets.
+- Parking: FREE (Walay bayad).
 
-5. HINAGDAN BEACH 1
+4. HINAGDAN BEACH
 - Location: Barangay Binongkalan, Catmon, Cebu (Along Cebu North National Highway)
 - Contact Numbers: 0975-086-2570 / 0963-654-0904 / 0926-234-5373
-- Facebook / Email: Not listed in the database
-- Operating Hours: Day Use: 6:00 AM – 7:00 PM | Overnight: Open the whole night (Open every day)
-- Entrance Fee per person: Day WITH cottage: ₱30 | Day WITHOUT cottage: ₱50 | Overnight: ₱50
-- Cottage Rates: Day Cottage: ₱600 | Overnight Cottage: ₱700
-- Rooms & Overnight: Short-Time Room (3 hrs): ₱250 | Ordinary Room: ₱1,000 | Aircon (AC) Room: ₱2,500
-- Store / Tinda: Naa (Yes, has a store/tindahan)
-- Sand / Shoreline: SAND (Balas — Hinagdan Beach 1 has a sandy shoreline!)
-- Private Booking: Walay private kay open sya sa tanan
-- Event Discount: Wala (No discount for events)
-- Restroom & Parking Fees: Not listed in the database
-- Activities & Rentals: Swimming; Floater/Salbabida (₱50), Standard Life Jacket (₱50), Premium Life Jacket (₱100).
+- Operating Hours: Day Use: 6:00 AM – 7:00 PM | Overnight: Open whole night (Open every day).
+- Entrance Fee: Day with cottage: ₱30 | Day without cottage: ₱50 | Overnight: ₱50.
+- Cottage Rates: Day Cottage: ₱600 | Overnight Cottage: ₱700.
+- Rooms & Overnight: Short-Time Room (3 hrs): ₱250 | Ordinary Room: ₱1,000 | Aircon Room: ₱2,500.
+- Batoon ba o dili: Dili batoon (Sand / Balas — sandy shoreline).
+- Sugbaanan: Naay sugbaanan.
+- Safe: Safe kaayo maligo (sandy ug gradual).
+- Lifeguard: Walay lifeguard (salbabida ₱50, standard life jacket ₱50, premium life jacket ₱100).
+- Store & Foods: Naay store and foods ug nearby stores, pero walay baligya nga meat.
+- Shower: Naay shower / kaligoan.
+- Senior Citizen: Dili accessible sa senior citizens kay daghan ug hagdanan.
+- Sinkhole: Wala (Walay sinkhole).
+- Dali molawm: Dili ra dali molawm.
+- Pets: Pwede magdala og pets.
+- Parking: Not listed in database.
+- Senior Citizen: Dili accessible sa senior citizens kay daghan ug hagdanan.
+- Sinkhole: Wala (Walay sinkhole).
+- Dali molawm: Dili ra dali molawm.
+- Pets: Pwede magdala og pets.
+- Parking: Not listed in database.
 `.trim();
 
 export interface QuickPromptQuestion {
@@ -130,255 +176,241 @@ export interface QuickPromptQuestion {
 }
 
 export const BAI_SUGGESTED_QUESTIONS: QuickPromptQuestion[] = [
-  {
-    label: 'Unsay pinakabarato?',
-    question: 'Unsay pinakabarato?',
-  },
-  {
-    label: 'Pinakaduol from Cebu City?',
-    question: 'Pinakaduol na beach from Cebu City?',
-  },
-  {
-    label: 'Safe ba mga beaches?',
-    question: 'Safe ba mga beaches?',
-  },
-  {
-    label: 'Naay store / tinda?',
-    question: 'Naa bay store o tinda sa mga beach?',
-  },
-  {
-    label: 'Whitesand ba o dili?',
-    question: 'Whitesand ba o dili ang mga beach?',
-  },
-  {
-    label: 'Ma-bookingan ba (private)?',
-    question: 'Ma bookingan ba ang beaches like private?',
-  },
-  {
-    label: 'Naay discount sa event?',
-    question: 'Naa bay discount if naay event?',
-  },
-  {
-    label: 'Pila ka oras byahe?',
-    question: 'How many hours to commute to Barangay Binongkalan?',
-  },
-  {
-    label: 'Tagpila ang entrance?',
-    question: 'Tagpila ang entrance fee sa tanang beach?',
-  },
-  {
-    label: 'Tagpila ang cottage?',
-    question: 'Tagpila ang cottage ug table sa mga beach?',
-  },
-  {
-    label: 'Asay naay room?',
-    question: 'Asa nga beach ang naay room o overnight?',
-  },
+  { label: 'Unsay pinakaduol?', question: 'Unsay pinakaduol na beach?' },
+  { label: 'Batoon ba o dili?', question: 'Batoon ba ang mga beach o dili?' },
+  { label: 'Naay sugbaanan?', question: 'Asa na beach ang naay sugbaanan?' },
+  { label: 'Asay pinaka safe?', question: 'Asay pinaka safe na beach?' },
+  { label: 'Naay lifeguard?', question: 'Naa bay lifeguard ang mga beach?' },
+  { label: 'Naay store / foods?', question: 'Naa bay store or foods ang mga beach?' },
+  { label: 'Naay shower?', question: 'Naa bay shower ang mga beach?' },
+  { label: 'Senior accessible?', question: 'Accessible ba sa mga senior citizen ang mga beach?' },
+  { label: 'Naay sinkhole?', question: 'Are there any sinkholes in any of the beaches?' },
+  { label: 'Dali molawm?', question: 'Asa na beaches ang dali molawm?' },
+  { label: 'Pwede magda og pets?', question: 'Pwede ba magda ug pets sa mga beach?' },
+  { label: 'Taob or hunas?', question: 'Taob or hunas?' },
 ];
 
-type BeachKey = 'ranola' | 'litebay' | 'turtle' | 'majestique' | 'hinagdan';
+export type BeachKey = 'ranola' | 'litebay' | 'majestique' | 'hinagdan';
 
 interface StructuredBeachData {
   key: BeachKey;
   name: string;
+  aliases: string[];
   contact: string;
-  facebook: string;
-  email: string;
-  hours: string;
+  hoursEn: string;
   hoursCeb: string;
-  openTime: string;
-  closeTime: string;
-  openDays: string;
-  openDaysCeb: string;
-  entrance: string;
+  entranceEn: string;
   entranceCeb: string;
-  cottages: string;
+  cottagesEn: string;
   cottagesCeb: string;
-  rooms: string;
+  roomsEn: string;
   roomsCeb: string;
-  store: string;
+  // Specific requested topics
+  batoonCeb: string;
+  batoonEn: string;
+  sugbaCeb: string;
+  sugbaEn: string;
+  safeCeb: string;
+  safeEn: string;
+  lifeguardCeb: string;
+  lifeguardEn: string;
   storeCeb: string;
-  sand: string;
-  sandCeb: string;
-  restroom: string;
-  restroomCeb: string;
-  parking: string;
+  storeEn: string;
+  showerCeb: string;
+  showerEn: string;
+  seniorCeb: string;
+  seniorEn: string;
+  sinkholeCeb: string;
+  sinkholeEn: string;
+  molawmCeb: string;
+  molawmEn: string;
+  petsCeb: string;
+  petsEn: string;
+  tideCeb: string;
+  tideEn: string;
   parkingCeb: string;
-  activities: string;
-  activitiesCeb: string;
-  rentals: string;
-  rentalsCeb: string;
+  parkingEn: string;
+  restroomCeb: string;
+  restroomEn: string;
 }
 
 const BEACH_DATA: Record<BeachKey, StructuredBeachData> = {
   ranola: {
     key: 'ranola',
-    name: 'Rañola Beach',
+    name: 'Rañola Beach (Raniola)',
+    aliases: ['rañola', 'ranola', 'raniola'],
     contact: '0935-724-1824 or 0960-326-7698',
-    facebook: 'Yes, **Rañola Beach** has an official Facebook page (exact link is not listed in our database).',
-    email: 'Sorry, **Rañola Beach** does not have an email address listed in our database. You can call or text them at **0935-724-1824** or **0960-326-7698**.',
-    hours: '**6:00 AM to 7:00 PM**, open every day (Monday to Sunday). Overnight camping is also allowed.',
-    hoursCeb: '**6:00 AM hangtod 7:00 PM**, abli kada adlaw (Lunes hangtod Dominggo). Pwede sab mag-overnight.',
-    openTime: '**6:00 AM** every day',
-    closeTime: '**7:00 PM** (overnight tent camping is also allowed)',
-    openDays: 'Yes! **Rañola Beach** is open **every day (Monday to Sunday)** from **6:00 AM to 7:00 PM**.',
-    openDaysCeb: 'Oo! Ang **Rañola Beach** kay abli **kada adlaw (Lunes hangtod Dominggo)** gikan **6:00 AM hangtod 7:00 PM**.',
-    entrance: '**₱20 per person** (if you rent a cottage) or **₱30 per person** (without a cottage). Overnight entrance is the same price.',
+    hoursEn: '**6:00 AM to 7:00 PM**, open every day (Monday to Sunday). Overnight tent camping is allowed.',
+    hoursCeb: '**6:00 AM hangtod 7:00 PM**, abli kada adlaw (Lunes hangtod Dominggo). Pwede sab mag-overnight tent camping.',
+    entranceEn: '**₱20 per person** (with cottage) or **₱30 per person** (without cottage). Overnight is the same price.',
     entranceCeb: '**₱20 kada tawo** (kung naay cottage) o **₱30 kada tawo** (kung walay cottage). Mao ra gihapon ang presyo sa overnight.',
-    cottages: '**₱500** for a small cottage, **₱2,000** for a middle cottage, and **₱2,500** for the big side cottage (good for 30 persons).',
-    cottagesCeb: '**₱500** sa small cottage, **₱2,000** sa middle cottage, ug **₱2,500** sa dako nga side cottage (masulod og 30 ka tawo).',
-    rooms: '**Rañola Beach** does not have rooms, but you can stay overnight by bringing your own **tent** or overnight gear at the same regular price.',
-    roomsCeb: 'Walay kwarto (rooms) ang **Rañola Beach**, pero pwede kaayo mag-overnight ug magdala og kaugalingong **tent** (mao ra gihapon ang presyo sa regular).',
-    store: '**Yes (Naa)** — **Rañola Beach** has a store (tinda/tindahan) on-site.',
-    storeCeb: '**Naa!** Naay **tinda / tindahan (store)** sa **Rañola Beach**.',
-    sand: '**Rañola Beach** is not pure white sand (it has a natural coastal shoreline with pebbles). If you want a **sandy (sand/balas)** beach in Binongkalan, go to **Hinagdan Beach 1**.',
-    sandCeb: 'Dili purong white sand ang **Rañola Beach** (natural nga baybayon nga naay bato-bato). Ang **Hinagdan Beach 1** maoy **sand (balas)** nga beach sa Binongkalan.',
-    restroom: '**₱5** for urination (ihi) and **₱10** for shower/bathing (ligo).',
-    restroomCeb: '**₱5** sa ihi ug **₱10** sa kaligo/libang.',
-    parking: '**₱50** for cars and **₱20** for motorcycles.',
+    cottagesEn: '**₱500** for small cottage, **₱2,000** for middle cottage, and **₱2,500** for the big 30-person side cottage.',
+    cottagesCeb: '**₱500** sa small cottage, **₱2,000** sa middle cottage, ug **₱2,500** sa dako nga side cottage (good for 30 persons).',
+    roomsEn: 'No rooms, but overnight **tent camping** is allowed at the regular rate.',
+    roomsCeb: 'Walay kwarto (rooms), pero pwede mag-overnight ug magdala og kaugalingong **tent** sa regular nga presyo.',
+    batoonCeb: 'Ang **Rañola Beach (Raniola)** kay **batoon gamay** (natural coastal beach nga naay ginagmay nga bato/pebbles).',
+    batoonEn: '**Rañola Beach (Raniola)** is **slightly rocky (batoon gamay)** with small natural pebbles/stones.',
+    sugbaCeb: 'Oo, **naay sugbaanan** sa **Rañola Beach (Raniola)**.',
+    sugbaEn: 'Yes, **Rañola Beach (Raniola)** has a grilling area (naay sugbaanan).',
+    safeCeb: 'Oo, **safe kaayo maligo sa Rañola Beach (Raniola)**, ug kini sab ang **pinaka-safe nga beach labi na para sa mga bata (children) ug senior citizens** tungod kay accessible ug dili dali molawm. Palihug tan-awa sab ang Live Weather update sa among website sa dili pa maligo.',
+    safeEn: 'Yes, **Rañola Beach (Raniola) is safe for swimming**, and it is considered the **safest beach especially for children and seniors** because it is accessible and does not get deep quickly. Please check our website Live Weather update before swimming.',
+    lifeguardCeb: '**Walay lifeguard** sa **Rañola Beach (Raniola)** (walay lifeguard ang mga beach diri sa Binongkalan), pero naay maabangan nga salbabida gikan sa magsuroy-suroy tag **₱30**.',
+    lifeguardEn: 'There is **no lifeguard** at **Rañola Beach (Raniola)** (none of the beaches in Binongkalan have on-duty lifeguards), but floaters (**salbabida**) are available for rent from roving vendors for **₱30**.',
+    storeCeb: 'Oo, **naay store ug foods** sa **Rañola Beach (Raniola)** ug naa rasad mga tindahan sa duol daplin sa highway, pero **walay mga baligya nga karne (meat)**. Palit daan og karne sa merkado kung magplano mong magsugba.',
+    storeEn: 'Yes, there are **stores and food** at **Rañola Beach (Raniola)** and nearby sari-sari stores along the highway, but **they do not sell raw meat**. Please buy meat from the market in advance if you plan to grill.',
+    showerCeb: 'Oo, **naay shower / kaligoan** sa **Rañola Beach (Raniola)** (₱10 ang shower/kaligo, ₱5 ang ihi).',
+    showerEn: 'Yes, **Rañola Beach (Raniola) has showers** and rinse facilities (₱10 for shower/bath, ₱5 for restroom).',
+    seniorCeb: 'Oo, **accessible sa mga senior citizen ang Rañola Beach (Raniola)** kay patag kini ug dali rang sudlon gikan sa highway nga walay lisod nga mga hagdanan.',
+    seniorEn: 'Yes, **Rañola Beach (Raniola) is accessible for senior citizens** because the ground is flat and easy to enter from the highway without steep stairs.',
+    sinkholeCeb: 'Oo, **naay sinkhole sa Rañola Beach pero layo ra** kaayo sa swimming area, busa luwas ug safe ra maligo sa duol.',
+    sinkholeEn: 'Yes, there is a **sinkhole at Rañola Beach, but it is located far out** from the swimming area, so swimming near the shore is safe.',
+    molawmCeb: '**Dili ra dali molawm ang Rañola Beach (Raniola)**; hinay-hinay ra ang paglawm (gradual depth), busa mas safe sa mga bata.',
+    molawmEn: '**Rañola Beach (Raniola) does not get deep quickly**; the shoreline depth is gradual and safer for kids.',
+    petsCeb: 'Oo, **pwede kaayo magdala og pets** sa **Rañola Beach (Raniola)**! Palihug lang og bantay sa inyong binuhi ug tipigi ang kalimpyo sa palibot.',
+    petsEn: 'Yes, **pets are allowed** at **Rañola Beach (Raniola)**! Please supervise your pets and keep the surroundings clean.',
+    tideCeb: 'Para sa kahimtang sa taob (high tide) o hunas (low tide) sa **Rañola Beach (Raniola)**, palihug **i-refer ang Live Tide Status sa Weather section** diri sa among website para sa eksaktong oras sa taob ug hunas karong adlawa. Klaro sab kaayo ang paghunas sa Rañola.',
+    tideEn: 'To check if it is high tide (taob) or low tide (hunas) at **Rañola Beach (Raniola)**, please **refer to the Live Tide Status in the Weather section** on our website for today’s exact hours. Rañola has noticeably exposed shoreline at low tide.',
     parkingCeb: '**₱50** sa sakyanan (car) ug **₱20** sa motor.',
-    activities: '**Rañola Beach** is great for swimming and beach tent camping (no formal water rides like kayaking or banana boat).',
-    activitiesCeb: 'Swimming ug overnight tent camping ang kalihokan sa **Rañola Beach** (wala silay kayak o banana boat).',
-    rentals: 'Local vendors along **Rañola Beach** rent out floaters (**salbabida**) for **₱30**.',
-    rentalsCeb: 'Naay magsuroy-suroy nga magpa-abang og **salbabida** sa **Rañola Beach** tag **₱30**.',
+    parkingEn: '**₱50** for cars and **₱20** for motorcycles.',
+    restroomCeb: '**₱5** sa ihi ug **₱10** sa kaligo / shower.',
+    restroomEn: '**₱5** for restroom urination and **₱10** for shower / bath.',
   },
+
   litebay: {
     key: 'litebay',
     name: 'Lite Bay Resort',
+    aliases: ['lite bay', 'litebay', 'light bay'],
     contact: '0953-411-7454',
-    facebook: 'No, **Lite Bay Resort** does not have a Facebook page or social media account.',
-    email: 'No, **Lite Bay Resort** does not have an email address. You can call or text them at **0953-411-7454**.',
-    hours: '**6:00 AM to 8:00 PM** (Sunday–Thursday), **6:00 AM to 5:00 PM** (Friday), and **CLOSED every Saturday**.',
+    hoursEn: '**6:00 AM to 8:00 PM** (Sunday–Thursday), **6:00 AM to 5:00 PM** (Friday), and **CLOSED every Saturday**.',
     hoursCeb: '**6:00 AM hangtod 8:00 PM** (Dominggo–Huwebes), **6:00 AM hangtod 5:00 PM** (Biyernes), ug **SIRADO kada Sabado**.',
-    openTime: '**6:00 AM** (Sunday to Friday; closed on Saturdays)',
-    closeTime: '**8:00 PM** on Sunday–Thursday and **5:00 PM** on Fridays (closed on Saturdays)',
-    openDays: '**Lite Bay Resort** is open **Sunday to Friday**, and **CLOSED every Saturday**.',
-    openDaysCeb: 'Ang **Lite Bay Resort** kay abli **Dominggo hangtod Biyernes**, ug **SIRADO kada Sabado**.',
-    entrance: '**₱50 per person**.',
+    entranceEn: '**₱50 per person**.',
     entranceCeb: '**₱50 kada tawo**.',
-    cottages: '**₱300** for a table, **₱800** for a cottage, and **₱1,000** for a large space (dako na space).',
+    cottagesEn: '**₱300** for a table, **₱800** for a cottage, and **₱1,000** for a large space.',
     cottagesCeb: '**₱300** sa table, **₱800** sa cottage, ug **₱1,000** sa dako nga space.',
-    rooms: 'Sorry, **Lite Bay Resort** does not have rooms or overnight stays (day use only).',
-    roomsCeb: 'Pasensya na, walay kwarto (rooms) ug walay overnight sa **Lite Bay Resort** (day use ra sila).',
-    store: '**No (Wala)** — **Lite Bay Resort** does **not** have a store (walay tinda/tindahan) inside, so please bring your own food/drinks or buy along the highway.',
-    storeCeb: '**Wala!** Walay **tinda / tindahan (store)** sulod sa **Lite Bay Resort** (pwede ra mo magdala og kaugalingong pagkaon/snacks o mopalit sa highway).',
-    sand: '**Lite Bay Resort** is not pure white sand (it has a natural coastal shoreline). If you want a **sandy (sand/balas)** beach in Binongkalan, go to **Hinagdan Beach 1**.',
-    sandCeb: 'Dili purong white sand ang **Lite Bay Resort** (natural nga baybayon). Ang **Hinagdan Beach 1** maoy **sand (balas)** nga beach sa Binongkalan.',
-    restroom: '**FREE** (no charge / walay bayad).',
-    restroomCeb: '**LIBRE** (walay bayad ang CR ug kaligo).',
-    parking: '**FREE** (no charge / walay bayad).',
+    roomsEn: 'No rooms and no overnight stays (Day use only).',
+    roomsCeb: 'Walay kwarto ug walay overnight (day use ra sila).',
+    batoonCeb: 'Ang **Lite Bay Resort** kay **batoon gamay** (natural coastal beach nga naay ginagmay nga bato).',
+    batoonEn: '**Lite Bay Resort** is **slightly rocky (batoon gamay)** with small pebbles/stones.',
+    sugbaCeb: 'Oo, **naay sugbaanan** sa **Lite Bay Resort**.',
+    sugbaEn: 'Yes, **Lite Bay Resort** has a grilling area (naay sugbaanan).',
+    safeCeb: 'Oo, **safe maligo sa Lite Bay Resort**, mag-amping lang gamay tungod kay medyo dali kini molawm. Naay maabangan nga life jackets tag **₱50**. Palihug tan-awa sab ang Live Weather update sa website sa dili pa maligo.',
+    safeEn: 'Yes, **Lite Bay Resort is safe for swimming**, just take extra care as it gets deep quickly. Life jackets are available for rent for **₱50**. Please check the website Live Weather update before swimming.',
+    lifeguardCeb: '**Walay lifeguard** sa **Lite Bay Resort** (walay lifeguard ang mga beach sa Binongkalan), pero naay abangan nga **life jackets (₱50)** ug **kayak (₱200 sa 2 ka oras)**.',
+    lifeguardEn: 'There is **no lifeguard** at **Lite Bay Resort** (no lifeguards at any Binongkalan beach), but **life jackets (₱50)** and **kayaks (₱200 for 2 hrs)** are available for rent.',
+    storeCeb: 'Oo, **naay snacks ug foods** sa **Lite Bay Resort** ug naa ray mga tindahan sa duol daplin sa highway, pero **walay mga baligya nga karne (meat)**. Palit daan og karne sa merkado kung magplano mong magsugba.',
+    storeEn: 'Yes, there are **snacks and food** at **Lite Bay Resort** and nearby stores along the highway, but **they do not sell raw meat**. Please buy meat in advance from the market if you plan to grill.',
+    showerCeb: 'Oo, **naay shower / kaligoan** sa **Lite Bay Resort** (ug **LIBRE / walay bayad** ang ilang CR ug shower).',
+    showerEn: 'Yes, **Lite Bay Resort has showers** and comfort rooms (and both are **FREE of charge**).',
+    seniorCeb: '**Dili accessible sa mga senior citizen ang Lite Bay Resort** kay **daghan kini ug hagdanan** paubos sa dagat, busa maglisod ang mga senior.',
+    seniorEn: '**Lite Bay Resort is not accessible for senior citizens** because there are many stairs (daghan ug hagdanan) leading down to the beach, making it difficult for seniors.',
+    sinkholeCeb: 'Oo, **naay sinkhole sa Lite Bay Resort pero layo ra sad** sa swimming area, busa luwas ug safe ra maligo duol sa baybayon.',
+    sinkholeEn: 'Yes, there is a **sinkhole at Lite Bay Resort, but it is also far out** from the swimming area, so swimming near the shore is safe.',
+    molawmCeb: 'Oo, **dali molawm ang Lite Bay Resort** tungod kay **dili kini mohunas ug pamaayo** bisan kung low tide.',
+    molawmEn: 'Yes, **Lite Bay Resort gets deep quickly** because the water does not recede deeply (dili mohunas ug pamaayo) even during low tide.',
+    petsCeb: 'Oo, **pwede kaayo magdala og pets** sa **Lite Bay Resort**! Palihug lang og bantay sa inyong binuhi ug tabangi ang pagmintinar sa kalimpyo.',
+    petsEn: 'Yes, **pets are allowed** at **Lite Bay Resort**! Please supervise your pets and help maintain cleanliness.',
+    tideCeb: 'Para sa kahimtang sa taob o hunas sa **Lite Bay Resort**, palihug **i-refer ang Live Tide Status sa Weather section** diri sa among website. Timan-i sab nga ang Lite Bay kay **dili mohunas ug pamaayo** bisan kung low tide.',
+    tideEn: 'To check if it is high tide (taob) or low tide (hunas) at **Lite Bay Resort**, please **refer to the Live Tide Status in the Weather section** on our website. Note that Lite Bay does not recede deeply even at low tide.',
     parkingCeb: '**LIBRE** (walay bayad ang parking).',
-    activities: '**Lite Bay Resort** offers **Kayaking for ₱200 (good for 2 hours)** and snorkeling/swimming.',
-    activitiesCeb: 'Naay **Kayak (₱200 sa 2 ka oras)** ug snorkeling/swimming sa **Lite Bay Resort**.',
-    rentals: '**Kayak** (₱200 for 2 hours), **Life Jacket** (₱50), **Goggles** (₱50), **Fins** (₱50), and **Snorkel Mouthpiece** (₱50).',
-    rentalsCeb: '**Kayak** (₱200 sa 2 ka oras), **Life Jacket** (₱50), **Goggles** (₱50), **Fins** (₱50), ug **Snorkel Mouthpiece** (₱50).',
+    parkingEn: '**FREE** (no parking fee).',
+    restroomCeb: '**LIBRE** (walay bayad ang CR ug shower).',
+    restroomEn: '**FREE** (no restroom or shower fee).',
   },
-  turtle: {
-    key: 'turtle',
-    name: 'Turtle Point Beach',
-    contact: 'Sorry, the contact number for **Turtle Point Beach** is not yet listed in our database.',
-    facebook: 'Sorry, the Facebook page for **Turtle Point Beach** is not yet listed in our database.',
-    email: 'Sorry, **Turtle Point Beach** does not have an email address listed in our database.',
-    hours: '**7:00 AM to 7:00 PM**, open every day (Monday to Sunday).',
-    hoursCeb: '**7:00 AM hangtod 7:00 PM**, abli kada adlaw (Lunes hangtod Dominggo).',
-    openTime: '**7:00 AM** every day',
-    closeTime: '**7:00 PM** every day',
-    openDays: 'Yes! **Turtle Point Beach** is open **every day (Monday to Sunday)** from **7:00 AM to 7:00 PM**.',
-    openDaysCeb: 'Oo! Ang **Turtle Point Beach** kay abli **kada adlaw (Lunes hangtod Dominggo)** gikan **7:00 AM hangtod 7:00 PM**.',
-    entrance: '**₱50 per person**.',
-    entranceCeb: '**₱50 kada tawo**.',
-    cottages: '**₱150 for a table** (individual cottage rates are not yet listed in our database).',
-    cottagesCeb: '**₱150 sa table** (wala pa ma-lista sa database ang presyo sa ilang cottage).',
-    rooms: '**Turtle Point Beach** offers a **Whole House rental for ₱10,000**.',
-    roomsCeb: 'Naay **Whole House (tibuok balay) nga paabangan tag ₱10,000** sa **Turtle Point Beach**.',
-    store: 'Store availability inside **Turtle Point Beach** is not listed in our database (stores are available at **Rañola, Majestique, and Hinagdan 1** and along the highway).',
-    storeCeb: 'Wala pa ma-lista kung naa bay tindahan sulod sa **Turtle Point Beach** (naay tinda sa **Rañola, Majestique, ug Hinagdan 1** ug daplin sa highway).',
-    sand: '**Turtle Point Beach** is not pure white sand (natural coastal shoreline). For a **sandy (sand/balas)** shoreline in Binongkalan, visit **Hinagdan Beach 1**.',
-    sandCeb: 'Dili purong white sand ang **Turtle Point Beach**. Ang **Hinagdan Beach 1** maoy **sand (balas)** nga beach sa Binongkalan.',
-    restroom: '**₱5** for urination (ihi) and **₱10** for shower/bathing (ligo).',
-    restroomCeb: '**₱5** sa ihi ug **₱10** sa kaligo.',
-    parking: 'Sorry, the parking fee for **Turtle Point Beach** is not yet listed in our database.',
-    parkingCeb: 'Pasensya na, wala pa ma-lista sa among database ang bayad sa parking sa **Turtle Point Beach**.',
-    activities: '**Turtle Point Beach** offers a **Banana Boat ride for ₱150 (15 minutes)** and **Kayaking**.',
-    activitiesCeb: 'Naay **Banana Boat ride (₱150 sa 15 minutos)** ug **Kayak** sa **Turtle Point Beach**.',
-    rentals: '**Banana Boat ride** (₱150 for 15 minutes) and **Kayaking** are available on-site.',
-    rentalsCeb: 'Makasakay og **Banana Boat** (₱150 sa 15 minutos) ug **Kayak** sa **Turtle Point Beach**.',
-  },
+
   majestique: {
     key: 'majestique',
     name: 'Majestique Beach',
+    aliases: ['majestique', 'majestic'],
     contact: '0943-622-7972',
-    facebook: 'Yes, **Majestique Beach** has an official Facebook page.',
-    email: 'Sorry, **Majestique Beach** does not have an email address listed in our database. You can call or text them at **0943-622-7972**.',
-    hours: '**7:00 AM to 5:00 PM** for day use, and **6:00 PM to 6:00 AM** for overnight stays (open every day).',
-    hoursCeb: '**7:00 AM hangtod 5:00 PM** sa day use, ug **6:00 PM hangtod 6:00 AM** sa overnight (abli kada adlaw).',
-    openTime: '**7:00 AM** for day use (and **6:00 PM** for overnight check-in)',
-    closeTime: '**5:00 PM** for day use (and **6:00 AM** checkout for overnight stays)',
-    openDays: 'Yes! **Majestique Beach** is open **every day (Monday to Sunday)** for both day use and overnight stays.',
-    openDaysCeb: 'Oo! Ang **Majestique Beach** kay abli **kada adlaw (Lunes hangtod Dominggo)** para sa day use ug overnight.',
-    entrance: '**₱30 per person** (same price whether you rent a cottage or not).',
-    entranceCeb: '**₱30 kada tawo** (parehas ra ang presyo bisan naay cottage o wala).',
-    cottages: '**₱500 to ₱1,000** for day-use cottages, and **₱800 to ₱1,200** for overnight cottages (a ₱500 day cottage becomes ₱800 for overnight).',
-    cottagesCeb: '**₱500 hangtod ₱1,000** sa day-use cottage, ug **₱800 hangtod ₱1,200** sa overnight cottage (ang ₱500 nga cottage mahimong ₱800 kung overnight).',
-    rooms: '**₱2,000** for a regular room and **₱3,500** for an air-conditioned (AC) room. Overnight cottages are also available for **₱800–₱1,200**.',
-    roomsCeb: '**₱2,000** sa regular room ug **₱3,500** sa aircon (AC) room. Naa say overnight cottage tag **₱800–₱1,200**.',
-    store: '**Yes (Naa)** — **Majestique Beach** has a store (tinda/tindahan) on-site.',
-    storeCeb: '**Naa!** Naay **tinda / tindahan (store)** sa **Majestique Beach**.',
-    sand: '**Majestique Beach** is not pure white sand (natural coastal shoreline). For a **sandy (sand/balas)** shoreline in Binongkalan, visit **Hinagdan Beach 1**.',
-    sandCeb: 'Dili purong white sand ang **Majestique Beach**. Ang **Hinagdan Beach 1** maoy **sand (balas)** nga beach sa Binongkalan.',
-    restroom: '**₱10** for shower / rinse (himasa).',
-    restroomCeb: '**₱10** sa himasa / kaligo.',
-    parking: '**FREE** (no charge / walay bayad).',
+    hoursEn: '**7:00 AM to 5:00 PM** (Day use) and **6:00 PM to 6:00 AM** (Overnight), open every day.',
+    hoursCeb: '**7:00 AM hangtod 5:00 PM** (Day use) ug **6:00 PM hangtod 6:00 AM** (Overnight), abli kada adlaw.',
+    entranceEn: '**₱30 per person** (same price with or without cottage).',
+    entranceCeb: '**₱30 kada tawo** (pareho ra ang presyo naay cottage o wala).',
+    cottagesEn: '**₱500 to ₱1,000** for day cottages, and **₱800 to ₱1,200** for overnight cottages.',
+    cottagesCeb: '**₱500 hangtod ₱1,000** sa day cottage, ug **₱800 hangtod ₱1,200** sa overnight cottage.',
+    roomsEn: '**₱2,000** for regular room and **₱3,500** for air-conditioned (AC) room.',
+    roomsCeb: '**₱2,000** sa regular room ug **₱3,500** sa aircon (AC) room.',
+    batoonCeb: 'Ang **Majestique Beach** kay **dili ra batoon** (dili ra kaayo batoon ang baybayon).',
+    batoonEn: '**Majestique Beach** is **not rocky (dili ra batoon)**.',
+    sugbaCeb: 'Oo, **naay sugbaanan** sa **Majestique Beach**.',
+    sugbaEn: 'Yes, **Majestique Beach** has a grilling area (naay sugbaanan).',
+    safeCeb: 'Oo, **safe maligo sa Majestique Beach**, mag-amping lang gamay tungod kay medyo dali kini molawm. Naay abangan nga life jackets tag **₱50**. Palihug tan-awa sab ang Live Weather update sa among website sa dili pa maligo.',
+    safeEn: 'Yes, **Majestique Beach is safe for swimming**, just take extra care as it gets deep quickly. Life jackets are available for rent for **₱50**. Please check our website Live Weather update before swimming.',
+    lifeguardCeb: '**Walay lifeguard** sa **Majestique Beach** (walay lifeguard ang mga beach sa Binongkalan), pero naay maabangan nga **life jackets tag ₱50**.',
+    lifeguardEn: 'There is **no lifeguard** at **Majestique Beach** (no lifeguards at any Binongkalan beach), but **life jackets are available for rent for ₱50**.',
+    storeCeb: 'Oo, **naay store ug foods** sa **Majestique Beach** ug naa rasad mga tindahan sa duol daplin sa highway, pero **walay mga baligya nga karne (meat)**. Palit daan og karne sa merkado kung magplano mong magsugba.',
+    storeEn: 'Yes, there are **stores and food** at **Majestique Beach** and nearby stores along the highway, but **they do not sell raw meat**. Please buy meat from the market in advance if you plan to grill.',
+    showerCeb: 'Oo, **naay shower / kaligoan** sa **Majestique Beach** (₱10 ang himasa / rinse).',
+    showerEn: 'Yes, **Majestique Beach has showers** and rinse facilities (₱10 for shower / rinse).',
+    seniorCeb: '**Dili accessible sa mga senior citizen ang Majestique Beach** kay **daghan kini ug hagdanan** paubos sa dagat, busa maglisod ang mga senior.',
+    seniorEn: '**Majestique Beach is not accessible for senior citizens** because there are many stairs (daghan ug hagdanan) leading down to the shore, making it difficult for seniors.',
+    sinkholeCeb: '**Walay sinkhole** sa **Majestique Beach**.',
+    sinkholeEn: 'There is **no sinkhole** at **Majestique Beach**.',
+    molawmCeb: 'Oo, **dali molawm ang Majestique Beach** tungod kay **dili kini mohunas ug pamaayo** bisan kung low tide.',
+    molawmEn: 'Yes, **Majestique Beach gets deep quickly** because the water does not recede deeply (dili mohunas ug pamaayo) even during low tide.',
+    petsCeb: 'Oo, **pwede kaayo magdala og pets** sa **Majestique Beach**! Palihug lang og bantay sa inyong binuhi ug tipigi ang kalimpyo sa palibot.',
+    petsEn: 'Yes, **pets are allowed** at **Majestique Beach**! Please supervise your pets and help maintain cleanliness.',
+    tideCeb: 'Para sa kahimtang sa taob o hunas sa **Majestique Beach**, palihug **i-refer ang Live Tide Status sa Weather section** diri sa among website. Timan-i sab nga ang Majestique kay **dili mohunas ug pamaayo** bisan kung low tide.',
+    tideEn: 'To check if it is high tide (taob) or low tide (hunas) at **Majestique Beach**, please **refer to the Live Tide Status in the Weather section** on our website. Note that Majestique does not recede deeply even during low tide.',
     parkingCeb: '**LIBRE** (walay bayad ang parking).',
-    activities: '**Majestique Beach** is for swimming and relaxing (no formal water rides like kayaking or banana boat).',
-    activitiesCeb: 'Swimming ug pag-relax ang kalihokan sa **Majestique Beach** (wala silay kayak o banana boat).',
-    rentals: '**Life Jacket** rental is available for **₱50**.',
-    rentalsCeb: 'Naay paabangan nga **Life Jacket** tag **₱50**.',
+    parkingEn: '**FREE** (no parking fee).',
+    restroomCeb: '**₱10** sa himasa / shower.',
+    restroomEn: '**₱10** for rinse / shower.',
   },
+
   hinagdan: {
     key: 'hinagdan',
-    name: 'Hinagdan Beach 1',
+    name: 'Hinagdan Beach',
+    aliases: ['hinagdan', 'hinagdan beach'],
     contact: '0975-086-2570, 0963-654-0904, or 0926-234-5373',
-    facebook: 'Sorry, the Facebook page for **Hinagdan Beach 1** is not yet listed in our database.',
-    email: 'Sorry, **Hinagdan Beach 1** does not have an email address listed in our database. You can call them at **0975-086-2570**.',
-    hours: '**6:00 AM to 7:00 PM** for day use, and **open the whole night** for overnight stays (open every day).',
-    hoursCeb: '**6:00 AM hangtod 7:00 PM** sa day use, ug **abli tibuok gabii** para sa mag-overnight (abli kada adlaw).',
-    openTime: '**6:00 AM** every day',
-    closeTime: '**7:00 PM** for day use (and open all night for overnight guests)',
-    openDays: 'Yes! **Hinagdan Beach 1** is open **every day (Monday to Sunday)** for day use and overnight stays.',
-    openDaysCeb: 'Oo! Ang **Hinagdan Beach 1** kay abli **kada adlaw (Lunes hangtod Dominggo)** para sa day use ug overnight.',
-    entrance: '**₱30 per person** (day use with a cottage), **₱50 per person** (day use without a cottage), and **₱50 per person** (overnight stay).',
-    entranceCeb: '**₱30 kada tawo** (day use nga naay cottage), **₱50 kada tawo** (day use nga walay cottage), ug **₱50 kada tawo** (overnight).',
-    cottages: '**₱600** for a day cottage and **₱700** for an overnight cottage.',
+    hoursEn: '**6:00 AM to 7:00 PM** (Day use) and **open whole night** for overnight stays (open every day).',
+    hoursCeb: '**6:00 AM hangtod 7:00 PM** (Day use) ug **abli tibuok gabii** para sa overnight (abli kada adlaw).',
+    entranceEn: '**₱30 per person** (day use with cottage), **₱50 per person** (without cottage / overnight).',
+    entranceCeb: '**₱30 kada tawo** (day use nga naay cottage), **₱50 kada tawo** (walay cottage / overnight).',
+    cottagesEn: '**₱600** for day cottage and **₱700** for overnight cottage.',
     cottagesCeb: '**₱600** sa day cottage ug **₱700** sa overnight cottage.',
-    rooms: '**₱250** for a short-time room (3 hours), **₱1,000** for an ordinary room, and **₱2,500** for an air-conditioned (AC) room.',
+    roomsEn: '**₱250** for short-time room (3 hrs), **₱1,000** for ordinary room, and **₱2,500** for air-conditioned (AC) room.',
     roomsCeb: '**₱250** sa short-time room (3 ka oras), **₱1,000** sa ordinary room, ug **₱2,500** sa aircon (AC) room.',
-    store: '**Yes (Naa)** — **Hinagdan Beach 1** has a store (tinda/tindahan) on-site.',
-    storeCeb: '**Naa!** Naay **tinda / tindahan (store)** sa **Hinagdan Beach 1**.',
-    sand: '**Yes — Sand (Balas)!** **Hinagdan Beach 1** has a **sandy shoreline**.',
-    sandCeb: '**Oo — Sand (Balas)!** Ang **Hinagdan Beach 1** kay **sandy (balas)** ang baybayon.',
-    restroom: 'Sorry, the restroom fee for **Hinagdan Beach 1** is not yet listed in our database. You may call them at **0975-086-2570**.',
-    restroomCeb: 'Pasensya na, wala pa ma-lista sa among database ang bayad sa CR sa **Hinagdan Beach 1**. Pwede nimo silang tawagan sa **0975-086-2570**.',
-    parking: 'Sorry, the parking fee for **Hinagdan Beach 1** is not yet listed in our database. You may call them at **0975-086-2570**.',
-    parkingCeb: 'Pasensya na, wala pa ma-lista sa among database ang bayad sa parking sa **Hinagdan Beach 1**. Pwede nimo silang tawagan sa **0975-086-2570**.',
-    activities: '**Hinagdan Beach 1** is mainly for swimming on its sandy shoreline and relaxing, with floaters and life jackets available for rent.',
-    activitiesCeb: 'Swimming sa ilang balas nga baybayon ug pag-relax ang kalihokan sa **Hinagdan Beach 1**, ug naay maabangan nga salbabida ug life jacket.',
-    rentals: '**Floater / Salbabida** (₱50), **Standard Life Jacket** (₱50), and **Premium Life Jacket** (₱100).',
-    rentalsCeb: '**Salbabida** (₱50), **Baratohon nga Life Jacket** (₱50), ug **Mahalon nga Life Jacket** (₱100).',
+    batoonCeb: 'Ang **Hinagdan Beach** kay **dili batoon** — **balas (sand/sandy shoreline)** kini!',
+    batoonEn: '**Hinagdan Beach** is **not rocky (dili batoon)** — it has a **sandy shoreline (balas)**!',
+    sugbaCeb: 'Oo, **naay sugbaanan** sa **Hinagdan Beach**.',
+    sugbaEn: 'Yes, **Hinagdan Beach** has a grilling area (naay sugbaanan).',
+    safeCeb: 'Oo, **safe kaayo maligo sa Hinagdan Beach** tungod kay balas ang baybayon ug hinay-hinay ra ang paglawm. Naay abangan nga salbabida (₱50) ug life jackets (₱50–₱100). Palihug tan-awa sab ang Live Weather update sa website sa dili pa maligo.',
+    safeEn: 'Yes, **Hinagdan Beach is safe for swimming** with its sandy shoreline and gradual depth. Floaters (₱50) and life jackets (₱50–₱100) are available for rent. Please check our website Live Weather update before swimming.',
+    lifeguardCeb: '**Walay lifeguard** sa **Hinagdan Beach** (walay lifeguard ang mga beach sa Binongkalan), pero naay maabangan nga **salbabida (₱50)** ug **life jackets (₱50–₱100)**.',
+    lifeguardEn: 'There is **no lifeguard** at **Hinagdan Beach** (no lifeguards at any Binongkalan beach), but **floaters (₱50)** and **life jackets (₱50–₱100)** are available for rent.',
+    storeCeb: 'Oo, **naay store ug foods** sa **Hinagdan Beach** ug naa rasad mga tindahan sa duol daplin sa highway, pero **walay mga baligya nga karne (meat)**. Palit daan og karne sa merkado kung magplano mong magsugba.',
+    storeEn: 'Yes, there are **stores and food** at **Hinagdan Beach** and nearby stores along the highway, but **they do not sell raw meat**. Please buy meat from the market in advance if you plan to grill.',
+    showerCeb: 'Oo, **naay shower / kaligoan** sa **Hinagdan Beach** para sa pag-banlaw o himasa.',
+    showerEn: 'Yes, **Hinagdan Beach has showers** and rinse facilities for washing off after swimming.',
+    seniorCeb: '**Dili accessible sa mga senior citizen ang Hinagdan Beach** kay **daghan kini ug hagdanan** paubos sa baybayon, busa maglisod ang mga senior.',
+    seniorEn: '**Hinagdan Beach is not accessible for senior citizens** because there are many stairs (daghan ug hagdanan) going down to the beach, making it difficult for seniors.',
+    sinkholeCeb: '**Walay sinkhole** sa **Hinagdan Beach**.',
+    sinkholeEn: 'There is **no sinkhole** at **Hinagdan Beach**.',
+    molawmCeb: '**Dili ra dali molawm ang Hinagdan Beach**; balas ang baybayon ug hinay-hinay ra ang paglawm (gradual depth).',
+    molawmEn: '**Hinagdan Beach does not get deep quickly**; it has a sandy shoreline and gradual depth.',
+    petsCeb: 'Oo, **pwede kaayo magdala og pets** sa **Hinagdan Beach**! Palihug lang og bantay sa inyong binuhi ug tabangi ang pagmintinar sa kalimpyo sa baybayon.',
+    petsEn: 'Yes, **pets are allowed** at **Hinagdan Beach**! Please supervise your pets and help keep the beach clean.',
+    tideCeb: 'Para sa kahimtang sa taob o hunas sa **Hinagdan Beach**, palihug **i-refer ang Live Tide Status sa Weather section** diri sa among website. Klaro sab kaayo ang paghunas sa Hinagdan.',
+    tideEn: 'To check if it is high tide (taob) or low tide (hunas) at **Hinagdan Beach**, please **refer to the Live Tide Status in the Weather section** on our website. Hinagdan has noticeably exposed shoreline at low tide.',
+    parkingCeb: 'Pasensya na, wala pa ma-lista sa among database ang bayad sa parking sa **Hinagdan Beach**.',
+    parkingEn: 'Sorry, the parking fee for **Hinagdan Beach** is not yet listed in our database.',
+    restroomCeb: 'Pasensya na, wala pa ma-lista sa among database ang bayad sa CR sa **Hinagdan Beach**.',
+    restroomEn: 'Sorry, the restroom fee for **Hinagdan Beach** is not yet listed in our database.',
   },
 };
 
-function detectLanguage(q: string): 'ceb' | 'tl' | 'en' {
+export function detectLanguage(q: string): 'ceb' | 'tl' | 'en' {
   const lower = ` ${q.toLowerCase()} `;
   if (
-    /\b(tagpila|pila|unsa|unsay|asa|asay|abli|sirado|sabado|dominggo|walay|wala|bayad|kwarto|sakyanan|kadlawon|taob|hunas|unsaon|padulong|paingon|gikan|naay|naa|pwede|maayong|kumusta|daghang|pinakabarato|barato|pinakaduol|duol|nindot|kaligoan|abang|makabangag|kinsa|ngano|kanus-a|ila|ilang|didto|byahe|biyahe|sakay|oras|kung|tinda|tindahan|mabookingan|bookingan|maligo|balas|ba|mga|dili)\b/.test(
+    /\b(tagpila|pila|unsa|unsay|asa|asay|abli|sirado|sabado|dominggo|walay|wala|bayad|kwarto|sakyanan|taob|hunas|unsaon|padulong|paingon|gikan|naay|naa|pwede|maayong|kumusta|pinakabarato|barato|pinakaduol|duol|kaligoan|makabangag|kinsa|ngano|kanus-a|ila|ilang|didto|byahe|biyahe|sakay|oras|kung|tinda|tindahan|maligo|balas|ba|mga|dili|batoon|bato-on|bato|sugba|sugbaanan|sugba-anan|ihaw|luwas|bantay|karne|hagdanan|hagdan|molawm|lawm|lawom|pamaayo|iro|ayam|binuhi|kuting)\b/.test(
       lower
     )
   ) {
     return 'ceb';
   }
   if (
-    /\b(magkano|saan|paano|anong|anu-ano|bukas|sarado|bayad|kwarto|sasakyan|mula|papuntang|magandang|maraming|pinakamura|mura|pinakamalapit|malapit|bakit|kailan|sino|nila|doon|biyahe|sakay|ilang|meron|tindahan|ligtas)\b/.test(
+    /\b(magkano|saan|paano|anong|anu-ano|bukas|sarado|bayad|kwarto|sasakyan|mula|papuntang|pinakamura|mura|pinakamalapit|malapit|bakit|kailan|sino|nila|doon|biyahe|sakay|ilang|meron|tindahan|ligtas|bato|mabato|ihaw|karne|malalim|aso|pusa)\b/.test(
       lower
     )
   ) {
@@ -387,79 +419,99 @@ function detectLanguage(q: string): 'ceb' | 'tl' | 'en' {
   return 'en';
 }
 
-function detectBeachesInText(text: string): BeachKey[] {
+export function detectBeachesInText(text: string): BeachKey[] {
   const lower = text.toLowerCase();
   const found: BeachKey[] = [];
   if (lower.includes('rañola') || lower.includes('ranola') || lower.includes('raniola')) found.push('ranola');
   if (lower.includes('lite bay') || lower.includes('litebay') || lower.includes('light bay')) found.push('litebay');
-  if (lower.includes('turtle point') || lower.includes('turtle')) found.push('turtle');
   if (lower.includes('majestique') || lower.includes('majestic')) found.push('majestique');
   if (lower.includes('hinagdan')) found.push('hinagdan');
   return found;
 }
 
-interface TopicFlags {
+export interface TopicFlags {
+  asksMostRocky: boolean;
+  asksBatoon: boolean;
+  asksSugba: boolean;
+  asksSafest: boolean;
+  asksSafety: boolean;
+  asksLifeguard: boolean;
+  asksStore: boolean;
+  asksShower: boolean;
+  asksSenior: boolean;
+  asksSinkhole: boolean;
+  asksMolawm: boolean;
+  asksPets: boolean;
+  asksTide: boolean;
   asksEntrance: boolean;
   asksCottage: boolean;
   asksRoom: boolean;
   asksHours: boolean;
   asksContact: boolean;
-  asksFacebook: boolean;
-  asksEmail: boolean;
   asksParking: boolean;
   asksRestroom: boolean;
   asksActivities: boolean;
   asksRentals: boolean;
-  asksStore: boolean;
-  asksSand: boolean;
-  asksSafety: boolean;
   asksPrivateBooking: boolean;
   asksDiscount: boolean;
-  asksFoodCorkage: boolean;
 }
 
-function detectTopicsInText(text: string): TopicFlags {
+export function detectTopicsInText(text: string): TopicFlags {
   const lower = text.toLowerCase();
   return {
-    asksEntrance: /\b(entrance|entran|fee|bayad sa pagsulod|pagsulod|per head|per person)\b/i.test(lower),
+    asksMostRocky: /\b(most\s*rocky|pinaka\s*batoon|pinakabatoon|asay\s*pinaka\s*batoon|unsay\s*pinaka\s*batoon|pinaka\s*mabato|pinakamabato|pinaka\s*daghan\s*og\s*bato)\b/i.test(lower),
+    asksBatoon: /\b(batoon|bato-on|bato|batoa|rocky|rocks|pebble|pebbles|stone|stones|balas|sand|sandy|white\s*sand|whitesand)\b/i.test(lower),
+    asksSugba: /\b(sugba|sugbaanan|sugba-anan|ihaw|ihawan|grill|grilling|barbecue|bbq|barbeque)\b/i.test(lower),
+    asksSafest: /\b(pinaka\s*safe|pinakasafe|asay\s*pinaka\s*safe|safest|safest\s*beach|safe\s*for\s*(children|kids|seniors|families))\b/i.test(lower),
+    asksSafety: /\b(safe|safety|luwas|delikado|dangerous|wave|waves|bawod|current|ligtas)\b/i.test(lower),
+    asksLifeguard: /\b(lifeguard|life\s*guard|bantay\s*dagat|guard)\b/i.test(lower),
+    asksStore: /\b(store|stores|food|foods|tinda|tindahan|sari-sari|sari\s*sari|pagkaon|snack|snacks|canteen|karne|meat|shop|palitanan)\b/i.test(lower),
+    asksShower: /\b(shower|showers|kaligoan|himasa|rinse|banlaw|ligoan)\b/i.test(lower),
+    asksSenior: /\b(senior|seniors|senior\s*citizen|senior\s*citizens|tiguwang|elderly|accessible|wheelchair)\b/i.test(lower),
+    asksSinkhole: /\b(sinkhole|sink\s*hole|sinkholes|sink\s*holes|bangag|lungag)\b/i.test(lower),
+    asksMolawm: /\b(molawm|mo\s*lawm|dali\s*molawm|dali\s*mo\s*lawm|lawm|lawom|deep|depth|deeply|drop\s*off|drop-off|dropoff|shallow|mababaw|pamaayo|hunas\s*ug\s*pamaayo)\b/i.test(lower),
+    asksPets: /\b(pet|pets|iro|ayam|dog|dogs|cat|cats|kuting|hayop|animal|animals)\b/i.test(lower),
+    asksTide: /\b(taob|hunas|tide|tides|high\s*tide|low\s*tide|water\s*level)\b/i.test(lower),
+    asksEntrance: /\b(entrance|entran|fee|bayad\s*sa\s*pagsulod|pagsulod|per\s*head|per\s*person)\b/i.test(lower),
     asksCottage: /\b(cottage|cottages|table|tables|shed|payag|space)\b/i.test(lower),
-    asksRoom: /\b(room|rooms|kwarto|overnight|aircon|ac|short-time|shortime|short time|house|balay|tent|camp|camping|tulog|katulog|stay)\b/i.test(lower),
-    asksHours: /\b(open|opening|close|closing|operating|schedule|abli|sirado|mangabre|manirado|saturday|sabado|sunday|dominggo|everyday|kada adlaw)\b/i.test(lower),
+    asksRoom: /\b(room|rooms|kwarto|overnight|aircon|ac|short-time|shortime|short\s*time|balay|tent|camp|camping|tulog|katulog|stay)\b/i.test(lower),
+    asksHours: /\b(open|opening|close|closing|operating|schedule|abli|sirado|mangabre|manirado|saturday|sabado|sunday|dominggo|everyday|kada\s*adlaw)\b/i.test(lower),
     asksContact: /\b(contact|number|phone|cellphone|call|text|tawag|reach)\b/i.test(lower),
-    asksFacebook: /\b(facebook|fb|social media|page|messenger)\b/i.test(lower),
-    asksEmail: /\b(email|e-mail|gmail)\b/i.test(lower),
     asksParking: /\b(parking|park|car|motor|motorcycle|sakyanan)\b/i.test(lower),
-    asksRestroom: /\b(restroom|restrooms|cr|comfort room|toilet|shower|bath|ligo|ihi|libang|himasa|banlaw)\b/i.test(lower),
-    asksActivities: /\b(activity|activities|snorkel|snorkeling|kayak|kayaking|banana boat|fishing|ride|rides|water sport|lingaw)\b/i.test(lower),
-    asksRentals: /\b(rent|rental|rentals|equipment|gear|salbabida|floater|life jacket|lifejacket|vest|goggles|google|fins|mouthpiece|abang)\b/i.test(lower),
-    asksStore: /\b(store|stores|tinda|tindahan|sari-sari|sari sari|shop|palitanan|mapalitan|buy food|snack|snacks|canteen)\b/i.test(lower),
-    asksSand: /\b(white\s*sand|whitesand|sand|sandy|balas|batoon|bato-on|pebble|pebbles|rocky|shore|shoreline)\b/i.test(lower),
-    asksSafety: /\b(safe|safety|luwas|delikado|dangerous|wave|waves|bawod|current|weather|panahon|ulan|bagyo|forecast|tide|taob|hunas|ligtas)\b/i.test(lower),
-    asksPrivateBooking: /\b(book|booking|mabookingan|ma-bookingan|bookingan|reserve|reservation|private|exclusive|walk-in|walk in|pa-reserve)\b/i.test(lower),
-    asksDiscount: /\b(discount|discounts|promo|promos|event|events|birthday|birthdays|reunion|team building|group rate|less|hangyo)\b/i.test(lower),
-    asksFoodCorkage: /\b(corkage|baon|pagkaon|bring food|outside food|sugba|grill|grilling|luto|cook|lechon|inum|inom|drinks|liquor|beer|pet|pets|dog|dogs|iro)\b/i.test(lower),
+    asksRestroom: /\b(restroom|restrooms|cr|comfort\s*room|toilet|ihi|libang)\b/i.test(lower),
+    asksActivities: /\b(activity|activities|snorkel|snorkeling|kayak|kayaking|fishing|lingaw)\b/i.test(lower),
+    asksRentals: /\b(rent|rental|rentals|equipment|salbabida|floater|life\s*jacket|lifejacket|vest|goggles|fins|mouthpiece|abang)\b/i.test(lower),
+    asksPrivateBooking: /\b(book|booking|mabookingan|ma-bookingan|bookingan|reserve|reservation|private|exclusive|walk-in|walk\s*in)\b/i.test(lower),
+    asksDiscount: /\b(discount|discounts|promo|promos|event|events|birthday|birthdays|reunion|team\s*building|group\s*rate|less|hangyo)\b/i.test(lower),
   };
 }
 
-function hasAnyTopic(t: TopicFlags): boolean {
+export function hasAnyTopic(t: TopicFlags): boolean {
   return (
+    t.asksMostRocky ||
+    t.asksBatoon ||
+    t.asksSugba ||
+    t.asksSafest ||
+    t.asksSafety ||
+    t.asksLifeguard ||
+    t.asksStore ||
+    t.asksShower ||
+    t.asksSenior ||
+    t.asksSinkhole ||
+    t.asksMolawm ||
+    t.asksPets ||
+    t.asksTide ||
     t.asksEntrance ||
     t.asksCottage ||
     t.asksRoom ||
     t.asksHours ||
     t.asksContact ||
-    t.asksFacebook ||
-    t.asksEmail ||
     t.asksParking ||
     t.asksRestroom ||
     t.asksActivities ||
     t.asksRentals ||
-    t.asksStore ||
-    t.asksSand ||
-    t.asksSafety ||
     t.asksPrivateBooking ||
-    t.asksDiscount ||
-    t.asksFoodCorkage
+    t.asksDiscount
   );
 }
 
@@ -480,27 +532,27 @@ const SPECIFIC_CEBU_ORIGINS: SpecificOriginRoute[] = [
     label: 'Barangay Duyan / Macaas, Catmon',
     direction: 'south',
     timeEn: '2 to 5 minutes',
-    stepsEn: 'Ride a tricycle, multicab, or northbound bus heading north along the national highway directly to **Hinagdan Beach 1, Majestique Beach, Rañola Beach, Lite Bay Resort, or Turtle Point Beach** in Barangay Binongkalan.',
+    stepsEn: 'Ride a tricycle, multicab, or northbound bus heading north along the national highway directly to **Rañola Beach, Lite Bay Resort, Majestique Beach, or Hinagdan Beach** in Barangay Binongkalan.',
     timeCeb: '2 hangtod 5 minutos',
-    stepsCeb: 'Sakay lang og tricycle, multicab, o bus pa-Norte subay sa highway diretso sa **Hinagdan Beach 1, Majestique Beach, Rañola Beach, Lite Bay Resort, o Turtle Point Beach** sa Barangay Binongkalan.',
+    stepsCeb: 'Sakay lang og tricycle, multicab, o bus pa-Norte subay sa highway diretso sa **Rañola Beach, Lite Bay Resort, Majestique Beach, o Hinagdan Beach** sa Barangay Binongkalan.',
   },
   {
     pattern: /\b(catmondaan|flores|corazon|san jose|catmon proper|poblacion catmon)\b/i,
     label: 'Catmon Town Proper (Brgy. San Jose Poblacion / Corazon / Flores / Catmondaan)',
     direction: 'south',
     timeEn: '5 to 8 minutes',
-    stepsEn: 'Ride a tricycle, multicab, or any northbound bus heading north along the highway to **Barangay Binongkalan**.',
+    stepsEn: 'Ride a tricycle, multicab, or any northbound bus heading north along the highway to **Barangay Binongkalan** (Rañola Beach is the first beach you reach).',
     timeCeb: '5 hangtod 8 minutos',
-    stepsCeb: 'Sakay og tricycle, multicab, o bus pa-Norte subay sa highway padulong sa **Barangay Binongkalan**.',
+    stepsCeb: 'Sakay og tricycle, multicab, o bus pa-Norte subay sa highway padulong sa **Barangay Binongkalan** (Rañola Beach ang unang maagian).',
   },
   {
     pattern: /\b(panalipan)\b/i,
     label: 'Barangay Panalipan, Catmon',
     direction: 'south',
     timeEn: '8 to 12 minutes',
-    stepsEn: 'Ride a northbound bus, multicab, or tricycle along the national highway to **Barangay Binongkalan**.',
+    stepsEn: 'Ride a northbound bus, multicab, or tricycle along the national highway to **Barangay Binongkalan** (Rañola Beach is reached first).',
     timeCeb: '8 hangtod 12 minutos',
-    stepsCeb: 'Sakay og bus pa-Norte, multicab, o tricycle subay sa highway padulong sa **Barangay Binongkalan**.',
+    stepsCeb: 'Sakay og bus pa-Norte, multicab, o tricycle subay sa highway padulong sa **Barangay Binongkalan** (Rañola Beach ang unang maabot).',
   },
   {
     pattern: /\b(agsuwao|amancion|anapog|bactas|bongyas|cabungaan|cambangkaya|can-ibuang|ginabucan|tabili|tinabyonan)\b/i,
@@ -518,81 +570,81 @@ const SPECIFIC_CEBU_ORIGINS: SpecificOriginRoute[] = [
     label: 'Sogod, Cebu (Brgy. Bawo / Damolog / Poblacion)',
     direction: 'north',
     timeEn: '5 to 15 minutes',
-    stepsEn: 'Wait along the national highway and ride any southbound (Cebu City-bound) bus, mini-bus, or tricycle heading south to **Barangay Binongkalan, Catmon**.',
+    stepsEn: 'Wait along the national highway and ride any southbound (Cebu City-bound) bus, mini-bus, or tricycle heading south to **Barangay Binongkalan, Catmon** (Hinagdan Beach is the first beach reached).',
     timeCeb: '5 hangtod 15 minutos',
-    stepsCeb: 'Atang lang sa highway ug sakay og bus, mini-bus, o tricycle pa-Cebu City (pa-South) ug manaog sa **Barangay Binongkalan, Catmon**.',
+    stepsCeb: 'Atang lang sa highway ug sakay og bus, mini-bus, o tricycle pa-Cebu City (pa-South) ug manaog sa **Barangay Binongkalan, Catmon** (Hinagdan Beach ang unang maabot).',
   },
   {
     pattern: /\b(carmen|dawis|luyang|baring|puente|cantumog|cogon carmen)\b/i,
     label: 'Carmen, Cebu',
     direction: 'south',
     timeEn: '15 to 20 minutes',
-    stepsEn: 'Wait along the Cebu North National Highway and ride any northbound bus or mini-bus past Catmon Town Proper to **Barangay Binongkalan, Catmon**.',
+    stepsEn: 'Wait along the Cebu North National Highway and ride any northbound bus or mini-bus past Catmon Town Proper to **Barangay Binongkalan, Catmon** (Rañola Beach is the first beach reached).',
     timeCeb: '15 hangtod 20 minutos',
-    stepsCeb: 'Atang sa highway sa Carmen ug sakay og bisan unsang bus o mini-bus pa-Norte padulong sa **Barangay Binongkalan, Catmon**.',
+    stepsCeb: 'Atang sa highway sa Carmen ug sakay og bisan unsang bus o mini-bus pa-Norte padulong sa **Barangay Binongkalan, Catmon** (Rañola Beach ang unang maagian).',
   },
   {
     pattern: /\b(danao|sabang|guinsay|dunggoan|maslog|taytay danao|looc danao|suba danao|cambanay)\b/i,
     label: 'Danao City',
     direction: 'south',
     timeEn: '30 to 40 minutes',
-    stepsEn: 'Wait along the national highway in Danao City and ride any northbound bus or mini-bus passing through Carmen and Catmon to **Barangay Binongkalan, Catmon**.',
+    stepsEn: 'Wait along the national highway in Danao City and ride any northbound bus or mini-bus passing through Carmen to **Barangay Binongkalan, Catmon** (Rañola Beach is the first beach reached).',
     timeCeb: '30 hangtod 40 minutos',
-    stepsCeb: 'Atang sa highway sa Danao City ug sakay og bus o mini-bus pa-Norte (agi sa Carmen ug Catmon) ug manaog sa **Barangay Binongkalan, Catmon**.',
+    stepsCeb: 'Atang sa highway sa Danao City ug sakay og bus o mini-bus pa-Norte (agi sa Carmen) ug manaog sa **Barangay Binongkalan, Catmon** (Rañola Beach ang unang maagian).',
   },
   {
     pattern: /\b(compostela|magay|canamucan|estaca|buluang)\b/i,
     label: 'Compostela, Cebu',
     direction: 'south',
     timeEn: '45 minutes to 1 hour',
-    stepsEn: 'Ride any northbound Ceres bus or mini-bus along the national highway heading past Danao and Carmen to **Barangay Binongkalan, Catmon**.',
+    stepsEn: 'Ride any northbound Ceres bus or mini-bus along the national highway heading past Danao and Carmen to **Barangay Binongkalan, Catmon** (Rañola Beach is the first beach reached).',
     timeCeb: '45 minutos hangtod 1 ka oras',
-    stepsCeb: 'Sakay og bus o mini-bus pa-Norte subay sa highway agi sa Danao ug Carmen padulong sa **Barangay Binongkalan, Catmon**.',
+    stepsCeb: 'Sakay og bus o mini-bus pa-Norte subay sa highway agi sa Danao ug Carmen padulong sa **Barangay Binongkalan, Catmon** (Rañola Beach ang unang maagian).',
   },
   {
     pattern: /\b(liloan|yati|jubay|cotcot|catarman liloan|calero|cabadiangan)\b/i,
     label: 'Liloan, Cebu',
     direction: 'south',
     timeEn: '50 minutes to 1 hour 10 minutes',
-    stepsEn: 'Wait along the national highway in Liloan and board any northbound Ceres bus or mini-bus bound for Sogod, Bogo, or Maya, then drop off at **Barangay Binongkalan, Catmon**.',
+    stepsEn: '1. **Where to wait in Liloan:** Wait along the Cebu North National Highway anywhere in Liloan (such as Yati, Jubay, Cotcot, or in front of Gaisano Grand Mall Liloan).\n2. **What to ride:** Board any northbound Ceres bus (aircon or non-aircon) or mini-bus with a signboard for **Sogod, Bogo, San Remigio, Medellin, or Maya**.\n3. **Drop-off instruction:** Tell the conductor to drop you off at **Barangay Binongkalan, Catmon** (or specify: **Rañola Beach, Lite Bay Resort, Majestique Beach, or Hinagdan Beach**).\n4. **Travel route:** The bus travels along Compostela, Danao City, Carmen, and Catmon Town Proper, then immediately enters Barangay Binongkalan.\n5. **First beach reached:** Coming from Liloan (South), the first beach on your right along the highway is **Rañola Beach (Raniola)**, followed by **Lite Bay Resort**, **Majestique Beach**, and **Hinagdan Beach**.',
     timeCeb: '50 minutos hangtod 1 ka oras ug 10 minutos',
-    stepsCeb: 'Atang sa highway sa Liloan ug sakay og bus pa-Norte (padulong Sogod, Bogo, o Maya) ug manaog sa **Barangay Binongkalan, Catmon**.',
+    stepsCeb: '1. **Hain Moatang sa Liloan:** Atang daplin sa Cebu North National Highway sa Liloan (sama sa Yati, Jubay, Cotcot, o atbang sa Gaisano Grand Mall Liloan).\n2. **Unsay Sakyan:** Sakay og Ceres bus (aircon o ordinary) o mini-bus pa-Norte nga may karatula nga **Sogod, Bogo, San Remigio, Medellin, o Maya**.\n3. **Pahibalo sa Konduktor:** Ingna ang konduktor nga manaog ka sa **Barangay Binongkalan, Catmon** (o isulti ang specific nga beach: **Rañola Beach, Lite Bay Resort, Majestique Beach, o Hinagdan Beach**).\n4. **Agianan sa Byahe:** Moagi ang bus subay sa Compostela, Danao City, Carmen, ug Catmon Town Proper sa dili pa mosulod sa Barangay Binongkalan.\n5. **Unang Maagian:** Gikan sa Liloan (South), ang pinakaunang maagian sa daplin sa highway kay ang **Rañola Beach (Raniola)**, gisundan dayon sa **Lite Bay Resort**, **Majestique Beach**, ug **Hinagdan Beach**.',
   },
   {
     pattern: /\b(consolacion|cansaga|pitogo|lamac|tugbungan|nangka|tayud|casili)\b/i,
     label: 'Consolacion, Cebu',
     direction: 'south',
     timeEn: '1 hour to 1 hour 15 minutes',
-    stepsEn: 'Wait along the Cebu North National Highway in Consolacion and ride any northbound bus or mini-bus to **Barangay Binongkalan, Catmon**.',
+    stepsEn: 'Wait along the Cebu North National Highway in Consolacion and ride any northbound bus or mini-bus to **Barangay Binongkalan, Catmon** (Rañola Beach is reached first).',
     timeCeb: '1 ka oras hangtod 1 ka oras ug 15 minutos',
-    stepsCeb: 'Atang sa highway sa Consolacion ug sakay og bus o mini-bus pa-Norte diretso sa **Barangay Binongkalan, Catmon**.',
+    stepsCeb: 'Atang sa highway sa Consolacion ug sakay og bus o mini-bus pa-Norte diretso sa **Barangay Binongkalan, Catmon** (Rañola Beach ang unang maagian).',
   },
   {
     pattern: /\b(borbon|tabogon|cadaruhan|ilihan|muabog)\b/i,
     label: 'Borbon / Tabogon, Cebu',
     direction: 'north',
     timeEn: '25 to 45 minutes',
-    stepsEn: 'Ride any southbound (Cebu City-bound) bus passing through Sogod and drop off at **Barangay Binongkalan, Catmon**.',
+    stepsEn: 'Ride any southbound (Cebu City-bound) bus passing through Sogod and drop off at **Barangay Binongkalan, Catmon** (Hinagdan Beach is reached first).',
     timeCeb: '25 hangtod 45 minutos',
-    stepsCeb: 'Sakay og bus pa-Cebu City (pa-South) agi sa Sogod ug manaog sa **Barangay Binongkalan, Catmon**.',
+    stepsCeb: 'Sakay og bus pa-Cebu City (pa-South) agi sa Sogod ug manaog sa **Barangay Binongkalan, Catmon** (Hinagdan Beach ang unang maabot).',
   },
   {
     pattern: /\b(bogo|san remigio|gairan|dakit|taytayan|polambato|hagnaya|tambongon)\b/i,
     label: 'Bogo City / San Remigio',
     direction: 'north',
     timeEn: '1 hour to 1 hour 20 minutes',
-    stepsEn: 'Ride any southbound (Cebu City-bound) Ceres bus along the national highway and ask the conductor to drop you off at **Barangay Binongkalan, Catmon** (just after Sogod).',
+    stepsEn: 'Ride any southbound (Cebu City-bound) Ceres bus along the national highway and ask the conductor to drop you off at **Barangay Binongkalan, Catmon** (just after Sogod; Hinagdan Beach is the first beach reached).',
     timeCeb: '1 ka oras hangtod 1 ka oras ug 20 minutos',
-    stepsCeb: 'Sakay og Ceres bus pa-Cebu City (pa-South) ug ingna ang konduktor nga manaog ka sa **Barangay Binongkalan, Catmon** (human sa Sogod).',
+    stepsCeb: 'Sakay og Ceres bus pa-Cebu City (pa-South) ug ingna ang konduktor nga manaog ka sa **Barangay Binongkalan, Catmon** (human sa Sogod; Hinagdan Beach ang unang maabot).',
   },
   {
     pattern: /\b(medellin|daanbantayan|maya|kawit|tindog|dayhagon|agujo|paypay|tapilon|malbago)\b/i,
     label: 'Medellin / Daanbantayan (Maya)',
     direction: 'north',
     timeEn: '1.5 to 2.5 hours',
-    stepsEn: 'Ride a southbound (Cebu City-bound) Ceres bus passing through Bogo and Sogod, and drop off right along the highway at **Barangay Binongkalan, Catmon**.',
+    stepsEn: 'Ride a southbound (Cebu City-bound) Ceres bus passing through Bogo and Sogod, and drop off right along the highway at **Barangay Binongkalan, Catmon** (Hinagdan Beach is reached first).',
     timeCeb: '1.5 hangtod 2.5 ka oras',
-    stepsCeb: 'Sakay og Ceres bus pa-Cebu City (pa-South) agi sa Bogo ug Sogod, ug manaog mismo sa highway sa **Barangay Binongkalan, Catmon**.',
+    stepsCeb: 'Sakay og Ceres bus pa-Cebu City (pa-South) agi sa Bogo ug Sogod, ug manaog mismo sa highway sa **Barangay Binongkalan, Catmon** (Hinagdan Beach ang unang maabot).',
   },
 
   // --- MANDAUE CITY & BARANGAYS ---
@@ -601,20 +653,20 @@ const SPECIFIC_CEBU_ORIGINS: SpecificOriginRoute[] = [
     label: 'Mandaue City',
     direction: 'south',
     timeEn: '1 hour 15 minutes to 1 hour 45 minutes',
-    stepsEn: 'Go to the **Mandaue National Highway (MC Briones St. / Pacific Mall / Jagobiao)** or **Cebu North Bus Terminal (SM City Cebu)**, then ride any northbound bus (bound for Sogod, Bogo, or Maya) and drop off at **Barangay Binongkalan, Catmon**.',
+    stepsEn: 'Go to the **Mandaue National Highway (MC Briones St. / Pacific Mall / Jagobiao)** or **Cebu North Bus Terminal (SM City Cebu)**, then ride any northbound bus (bound for Sogod, Bogo, or Maya) and drop off at **Barangay Binongkalan, Catmon** (Rañola Beach is reached first).',
     timeCeb: '1 ka oras ug 15 minutos hangtod 1 ka oras ug 45 minutos',
-    stepsCeb: 'Adto sa **Mandaue Highway (MC Briones St. / Pacific Mall / Jagobiao)** o sa **Cebu North Bus Terminal (SM City Cebu)**, dayon sakay og bus pa-Norte (padulong Sogod, Bogo, o Maya) ug manaog sa **Barangay Binongkalan, Catmon**.',
+    stepsCeb: 'Adto sa **Mandaue Highway (MC Briones St. / Pacific Mall / Jagobiao)** o sa **Cebu North Bus Terminal (SM City Cebu)**, dayon sakay og bus pa-Norte (padulong Sogod, Bogo, o Maya) ug manaog sa **Barangay Binongkalan, Catmon** (Rañola Beach ang unang maagian).',
   },
 
-  // --- LAPU-LAPU CITY (MACTAN) & CORDOVA BARANGAYS ---
+  // --- LAPU-LAPU CITY (MACTAN) & CORDOVA ---
   {
     pattern: /\b(lapu-lapu|lapulapu|lapu lapu|mactan|cordova|airport|mcia|pusok|pajo|ibo|maribago|marigondon|agus|gun-ob|pajac|bankal|buaya|babag|canjulao|punta engaño|punta engano|subabasbas|pilipog|gabi)\b/i,
     label: 'Lapu-Lapu City (Mactan) / Cordova',
     direction: 'south',
     timeEn: '2 to 2.5 hours',
-    stepsEn: '1. Ride a **MyBus** (from Mactan Airport), modern jeepney, or v-hire across the bridge to **SM City Cebu (Cebu North Bus Terminal)** or **Parkmall / Mandaue Highway** (30–45 mins).\n2. Board any northbound bus passing through Catmon and drop off at **Barangay Binongkalan, Catmon** (1.5–2 hours).',
+    stepsEn: '1. Ride a **MyBus** (from Mactan Airport), modern jeepney, or v-hire across the bridge to **SM City Cebu (Cebu North Bus Terminal)** or **Parkmall / Mandaue Highway** (30–45 mins).\n2. Board any northbound bus passing through Catmon and drop off at **Barangay Binongkalan, Catmon** (1.5–2 hours). Rañola Beach is reached first.',
     timeCeb: '2 hangtod 2.5 ka oras',
-    stepsCeb: '1. Sakay og **MyBus**, modern jeep, o v-hire tabok sa tulay padulong sa **SM City Cebu (Cebu North Bus Terminal)** o **Parkmall / Mandaue Highway** (30–45 minutos).\n2. Sakay og bus pa-Norte (padulong Sogod, Bogo, o Maya) ug manaog sa **Barangay Binongkalan, Catmon** (1.5–2 ka oras).',
+    stepsCeb: '1. Sakay og **MyBus**, modern jeep, o v-hire tabok sa tulay padulong sa **SM City Cebu (Cebu North Bus Terminal)** o **Parkmall / Mandaue Highway** (30–45 minutos).\n2. Sakay og bus pa-Norte (padulong Sogod, Bogo, o Maya) ug manaog sa **Barangay Binongkalan, Catmon** (1.5–2 ka oras). Rañola Beach ang unang maagian.',
   },
 
   // --- CEBU CITY SPECIFIC BARANGAYS ---
@@ -623,45 +675,45 @@ const SPECIFIC_CEBU_ORIGINS: SpecificOriginRoute[] = [
     label: 'Barangay Mabolo / SM City Cebu (Cebu North Bus Terminal)',
     direction: 'south',
     timeEn: '1.5 to 2 hours',
-    stepsEn: 'Go directly to the **Cebu North Bus Terminal (at SM City Cebu, Brgy. Mabolo)**, board any northbound Ceres bus or mini-bus (bound for Sogod, Bogo, Medellin, or Maya), and tell the conductor to drop you off at **Barangay Binongkalan, Catmon**.',
+    stepsEn: 'Go directly to the **Cebu North Bus Terminal (at SM City Cebu, Brgy. Mabolo)**, board any northbound Ceres bus or mini-bus (bound for Sogod, Bogo, Medellin, or Maya), and tell the conductor to drop you off at **Barangay Binongkalan, Catmon** (Rañola Beach is the first beach reached).',
     timeCeb: '1.5 hangtod 2 ka oras',
-    stepsCeb: 'Adto diretso sa **Cebu North Bus Terminal (sa SM City Cebu, Brgy. Mabolo)**, sakay og Ceres bus o mini-bus pa-Norte (padulong Sogod, Bogo, o Maya), ug ingna ang konduktor nga manaog ka sa **Barangay Binongkalan, Catmon**.',
+    stepsCeb: 'Adto diretso sa **Cebu North Bus Terminal (sa SM City Cebu, Brgy. Mabolo)**, sakay og Ceres bus o mini-bus pa-Norte (padulong Sogod, Bogo, o Maya), ug ingna ang konduktor nga manaog ka sa **Barangay Binongkalan, Catmon** (Rañola Beach ang unang maagian).',
   },
   {
     pattern: /\b(talamban|pit-os|bacayan|banilad)\b/i,
     label: 'Barangay Talamban / Banilad / Pit-os, Cebu City',
     direction: 'south',
     timeEn: '1.5 to 2 hours',
-    stepsEn: '1. Ride a jeepney (such as 13C or 62B) or taxi to **SM City Cebu (Cebu North Bus Terminal)**, or pass via Pit-os/Consolacion to the North Highway.\n2. Board any northbound bus passing through Catmon and drop off at **Barangay Binongkalan, Catmon**.',
+    stepsEn: '1. Ride a jeepney (such as 13C or 62B) or taxi to **SM City Cebu (Cebu North Bus Terminal)**, or pass via Pit-os/Consolacion to the North Highway.\n2. Board any northbound bus passing through Catmon and drop off at **Barangay Binongkalan, Catmon** (Rañola Beach is reached first).',
     timeCeb: '1.5 hangtod 2 ka oras',
-    stepsCeb: '1. Sakay og jeep (sama sa 13C o 62B) padulong sa **SM City Cebu (Cebu North Bus Terminal)**, o agi sa Pit-os/Consolacion paingon sa highway.\n2. Sakay og bus pa-Norte ug manaog mismo sa **Barangay Binongkalan, Catmon**.',
+    stepsCeb: '1. Sakay og jeep (sama sa 13C o 62B) padulong sa **SM City Cebu (Cebu North Bus Terminal)**, o agi sa Pit-os/Consolacion paingon sa highway.\n2. Sakay og bus pa-Norte ug manaog mismo sa **Barangay Binongkalan, Catmon** (Rañola Beach ang unang maagian).',
   },
   {
     pattern: /\b(lahug|it park|apas|busay|kamputhaw)\b/i,
     label: 'Barangay Lahug (IT Park) / Apas / Busay, Cebu City',
     direction: 'south',
     timeEn: '1 hour 45 minutes to 2 hours',
-    stepsEn: '1. From IT Park or Lahug, ride a **04L jeepney**, modern bus, or taxi to **SM City Cebu (Cebu North Bus Terminal)** (15–25 mins).\n2. Board any northbound bus (bound for Sogod, Bogo, or Maya) and drop off at **Barangay Binongkalan, Catmon** (1.5–2 hours).',
+    stepsEn: '1. From IT Park or Lahug, ride a **04L jeepney**, modern bus, or taxi to **SM City Cebu (Cebu North Bus Terminal)** (15–25 mins).\n2. Board any northbound bus (bound for Sogod, Bogo, or Maya) and drop off at **Barangay Binongkalan, Catmon** (1.5–2 hours). Rañola Beach is reached first.',
     timeCeb: '1 ka oras ug 45 minutos hangtod 2 ka oras',
-    stepsCeb: '1. Gikan sa IT Park o Lahug, sakay og **04L nga jeep**, modern bus, o taxi padulong sa **SM City Cebu (Cebu North Bus Terminal)** (15–25 minutos).\n2. Sakay og bus pa-Norte (padulong Sogod, Bogo, o Maya) ug manaog sa **Barangay Binongkalan, Catmon** (1.5–2 ka oras).',
+    stepsCeb: '1. Gikan sa IT Park o Lahug, sakay og **04L nga jeep**, modern bus, o taxi padulong sa **SM City Cebu (Cebu North Bus Terminal)** (15–25 minutos).\n2. Sakay og bus pa-Norte (padulong Sogod, Bogo, o Maya) ug manaog sa **Barangay Binongkalan, Catmon** (1.5–2 ka oras). Rañola Beach ang unang maagian.',
   },
   {
     pattern: /\b(colon|sto niño|sto. niño|ermita|parian|tinago|pier|capitol|fuente|sambag|guadalupe|zapatera|downtown)\b/i,
     label: 'Downtown / Fuente / Capitol / Guadalupe, Cebu City',
     direction: 'south',
     timeEn: '1 hour 45 minutes to 2 hours 15 minutes',
-    stepsEn: '1. Ride a **01K, 10M, 12I, or 06B jeepney** or taxi to **SM City Cebu (Cebu North Bus Terminal)** (15–30 mins).\n2. Board any northbound bus passing through Catmon and drop off at **Barangay Binongkalan, Catmon** (1.5–2 hours).',
+    stepsEn: '1. Ride a **01K, 10M, 12I, or 06B jeepney** or taxi to **SM City Cebu (Cebu North Bus Terminal)** (15–30 mins).\n2. Board any northbound bus passing through Catmon and drop off at **Barangay Binongkalan, Catmon** (1.5–2 hours). Rañola Beach is reached first.',
     timeCeb: '1 ka oras ug 45 minutos hangtod 2 ka oras ug 15 minutos',
-    stepsCeb: '1. Sakay og **01K, 10M, 12I, o 06B nga jeep** o taxi padulong sa **SM City Cebu (Cebu North Bus Terminal)** (15–30 minutos).\n2. Sakay og bus pa-Norte ug manaog sa **Barangay Binongkalan, Catmon** (1.5–2 ka oras).',
+    stepsCeb: '1. Sakay og **01K, 10M, 12I, o 06B nga jeep** o taxi padulong sa **SM City Cebu (Cebu North Bus Terminal)** (15–30 minutos).\n2. Sakay og bus pa-Norte ug manaog sa **Barangay Binongkalan, Catmon** (1.5–2 ka oras). Rañola Beach ang unang maagian.',
   },
   {
     pattern: /\b(labangon|tisa|punta princesa|mambaling|basak san nicolas|basak pardo|pardo|inayawan|bulacao)\b/i,
     label: 'South Cebu City (Labangon / Tisa / Pardo / Mambaling / Bulacao / Inayawan)',
     direction: 'south',
     timeEn: '2 to 2.5 hours',
-    stepsEn: '1. Ride a **10M / 10H jeepney** or **MyBus** to **SM City Cebu (Cebu North Bus Terminal)** (30–45 mins).\n2. Board any northbound bus passing through Catmon and drop off at **Barangay Binongkalan, Catmon** (1.5–2 hours).',
+    stepsEn: '1. Ride a **10M / 10H jeepney** or **MyBus** to **SM City Cebu (Cebu North Bus Terminal)** (30–45 mins).\n2. Board any northbound bus passing through Catmon and drop off at **Barangay Binongkalan, Catmon** (1.5–2 hours). Rañola Beach is reached first.',
     timeCeb: '2 hangtod 2.5 ka oras',
-    stepsCeb: '1. Sakay og **10M / 10H nga jeep** o **MyBus** padulong sa **SM City Cebu (Cebu North Bus Terminal)** (30–45 minutos).\n2. Sakay og bus pa-Norte ug manaog sa **Barangay Binongkalan, Catmon** (1.5–2 ka oras).',
+    stepsCeb: '1. Sakay og **10M / 10H nga jeep** o **MyBus** padulong sa **SM City Cebu (Cebu North Bus Terminal)** (30–45 minutos).\n2. Sakay og bus pa-Norte ug manaog sa **Barangay Binongkalan, Catmon** (1.5–2 ka oras). Rañola Beach ang unang maagian.',
   },
 
   // --- SOUTH CEBU TOWNS & BARANGAYS ---
@@ -670,27 +722,27 @@ const SPECIFIC_CEBU_ORIGINS: SpecificOriginRoute[] = [
     label: 'Talisay City',
     direction: 'south',
     timeEn: '2 to 2.5 hours',
-    stepsEn: '1. Ride a **MyBus (via SRP)** or bus/jeepney to **SM City Cebu (Cebu North Bus Terminal)**.\n2. Board any northbound bus passing through Catmon and drop off at **Barangay Binongkalan, Catmon**.',
+    stepsEn: '1. Ride a **MyBus (via SRP)** or bus/jeepney to **SM City Cebu (Cebu North Bus Terminal)**.\n2. Board any northbound bus passing through Catmon and drop off at **Barangay Binongkalan, Catmon** (Rañola Beach is reached first).',
     timeCeb: '2 hangtod 2.5 ka oras',
-    stepsCeb: '1. Sakay og **MyBus (agi sa SRP)** o jeep/bus padulong sa **SM City Cebu (Cebu North Bus Terminal)**.\n2. Sakay og bus pa-Norte ug manaog sa **Barangay Binongkalan, Catmon**.',
+    stepsCeb: '1. Sakay og **MyBus (agi sa SRP)** o jeep/bus padulong sa **SM City Cebu (Cebu North Bus Terminal)**.\n2. Sakay og bus pa-Norte ug manaog sa **Barangay Binongkalan, Catmon** (Rañola Beach ang unang maagian).',
   },
   {
     pattern: /\b(minglanilla|linao|lipata|pakigne|tungkil|tulay|calajo-an|tunghaan|naga|inoburan|langtad|tinaan|tuyan|san fernando|pitalo|sangat|carcar|perrelos|valladolid|ocana)\b/i,
     label: 'Minglanilla / Naga City / San Fernando / Carcar City',
     direction: 'south',
     timeEn: '2.5 to 3 hours',
-    stepsEn: '1. Ride a bus to the **Cebu South Bus Terminal (CSBT)** or **MyBus to SM City Cebu**.\n2. Transfer to the **Cebu North Bus Terminal (at SM City Cebu)** via a **01K jeepney**.\n3. Board any northbound bus and drop off at **Barangay Binongkalan, Catmon**.',
+    stepsEn: '1. Ride a bus to the **Cebu South Bus Terminal (CSBT)** or **MyBus to SM City Cebu**.\n2. Transfer to the **Cebu North Bus Terminal (at SM City Cebu)** via a **01K jeepney**.\n3. Board any northbound bus and drop off at **Barangay Binongkalan, Catmon** (Rañola Beach is reached first).',
     timeCeb: '2.5 hangtod 3 ka oras',
-    stepsCeb: '1. Sakay og bus padulong sa **Cebu South Bus Terminal (CSBT)** o **MyBus pa-SM City Cebu**.\n2. Sakay og **01K nga jeep** paingon sa **Cebu North Bus Terminal (SM City Cebu)**.\n3. Sakay og bus pa-Norte ug manaog sa **Barangay Binongkalan, Catmon**.',
+    stepsCeb: '1. Sakay og bus padulong sa **Cebu South Bus Terminal (CSBT)** o **MyBus pa-SM City Cebu**.\n2. Sakay og **01K nga jeep** paingon sa **Cebu North Bus Terminal (SM City Cebu)**.\n3. Sakay og bus pa-Norte ug manaog sa **Barangay Binongkalan, Catmon** (Rañola Beach ang unang maagian).',
   },
   {
     pattern: /\b(sibonga|simala|argao|dalaguete|mantalongon|alcoy|tingko|boljoon|oslob|tan-awan|santander|barili|dumanjug|ronda|alcantara|moalboal|basdiot|saavedra|badian|matutinao|lambug|alegria|malabuyoc|ginatilan|samboan)\b/i,
     label: 'South / Southwest Cebu',
     direction: 'south',
     timeEn: '3.5 to 5 hours',
-    stepsEn: '1. Ride a Cebu City-bound bus to the **Cebu South Bus Terminal (CSBT)**.\n2. Ride a **01K jeepney** or taxi from CSBT to the **Cebu North Bus Terminal (SM City Cebu)** (15–25 mins).\n3. Board any northbound bus passing through Catmon and drop off at **Barangay Binongkalan, Catmon** (1.5–2 hours).',
+    stepsEn: '1. Ride a Cebu City-bound bus to the **Cebu South Bus Terminal (CSBT)**.\n2. Ride a **01K jeepney** or taxi from CSBT to the **Cebu North Bus Terminal (SM City Cebu)** (15–25 mins).\n3. Board any northbound bus passing through Catmon and drop off at **Barangay Binongkalan, Catmon** (1.5–2 hours). Rañola Beach is reached first.',
     timeCeb: '3.5 hangtod 5 ka oras',
-    stepsCeb: '1. Sakay og bus padulong sa **Cebu South Bus Terminal (CSBT)**.\n2. Sakay og **01K nga jeep** o taxi gikan CSBT paingon sa **Cebu North Bus Terminal (SM City Cebu)** (15–25 minutos).\n3. Sakay og bus pa-Norte ug manaog sa **Barangay Binongkalan, Catmon** (1.5–2 ka oras).',
+    stepsCeb: '1. Sakay og bus padulong sa **Cebu South Bus Terminal (CSBT)**.\n2. Sakay og **01K nga jeep** o taxi gikan CSBT paingon sa **Cebu North Bus Terminal (SM City Cebu)** (15–25 minutos).\n3. Sakay og bus pa-Norte ug manaog sa **Barangay Binongkalan, Catmon** (1.5–2 ka oras). Rañola Beach ang unang maagian.',
   },
 
   // --- WEST / MIDWEST CEBU ---
@@ -699,31 +751,31 @@ const SPECIFIC_CEBU_ORIGINS: SpecificOriginRoute[] = [
     label: 'Tabuelan / Tuburan / Asturias',
     direction: 'north',
     timeEn: '45 minutes to 1.5 hours',
-    stepsEn: '1. Ride a bus or jeepney passing through the **Barangay Lugo, Sogod junction**.\n2. From Sogod, ride any southbound (Cebu City-bound) bus for **10–15 minutes** and drop off at **Barangay Binongkalan, Catmon**.',
+    stepsEn: '1. Ride a bus or jeepney passing through the **Barangay Lugo, Sogod junction**.\n2. From Sogod, ride any southbound (Cebu City-bound) bus for **10–15 minutes** and drop off at **Barangay Binongkalan, Catmon** (Hinagdan Beach is reached first).',
     timeCeb: '45 minutos hangtod 1.5 ka oras',
-    stepsCeb: '1. Sakay og bus o jeep agi sa **junction sa Barangay Lugo, Sogod**.\n2. Gikan sa Sogod, sakay og bus pa-Cebu City (pa-South) sulod sa **10–15 minutos** ug manaog sa **Barangay Binongkalan, Catmon**.',
+    stepsCeb: '1. Sakay og bus o jeep agi sa **junction sa Barangay Lugo, Sogod**.\n2. Gikan sa Sogod, sakay og bus pa-Cebu City (pa-South) sulod sa **10–15 minutos** ug manaog sa **Barangay Binongkalan, Catmon** (Hinagdan Beach ang unang maabot).',
   },
   {
     pattern: /\b(toledo|balamban|pinamungajan|aloguinsan|lutopan|sangi|luray|arpili|buanoy|aliwanay|gaas)\b/i,
     label: 'Toledo City / Balamban',
     direction: 'south',
     timeEn: '2.5 to 3.5 hours',
-    stepsEn: '1. Ride a v-hire (via Transcentral Highway) or bus to **Cebu City (Ayala / SM City Cebu)**.\n2. Go to the **Cebu North Bus Terminal (SM City Cebu)** and ride a northbound bus to **Barangay Binongkalan, Catmon** (1.5–2 hours).',
+    stepsEn: '1. Ride a v-hire (via Transcentral Highway) or bus to **Cebu City (Ayala / SM City Cebu)**.\n2. Go to the **Cebu North Bus Terminal (SM City Cebu)** and ride a northbound bus to **Barangay Binongkalan, Catmon** (1.5–2 hours). Rañola Beach is reached first.',
     timeCeb: '2.5 hangtod 3.5 ka oras',
-    stepsCeb: '1. Sakay og v-hire (agi sa Transcentral Highway) o bus padulong sa **Cebu City (Ayala / SM City Cebu)**.\n2. Adto sa **Cebu North Bus Terminal (SM City Cebu)** ug sakay og bus pa-Norte padulong sa **Barangay Binongkalan, Catmon** (1.5–2 ka oras).',
+    stepsCeb: '1. Sakay og v-hire (agi sa Transcentral Highway) o bus padulong sa **Cebu City (Ayala / SM City Cebu)**.\n2. Adto sa **Cebu North Bus Terminal (SM City Cebu)** ug sakay og bus pa-Norte padulong sa **Barangay Binongkalan, Catmon** (1.5–2 ka oras). Rañola Beach ang unang maagian.',
   },
 ];
 
 function isExplicitCommuteText(text: string): boolean {
   const lower = text.toLowerCase();
   return (
-    /\b(commute|travel|byahe|biyahe|sakay|ride|bus|jeep|vhire|v-hire|terminal|north bus|south bus|direction|directions|route|drive|driving|walk|walking|layo|far|distance|kilometer|km|get to|go to|going to|arrive|reach|paano pumunta|unsaon pag adto|unsaon pag commute|unsaon pag-adto|unsaon pag-commute|padulong|paingon|gikan sa|mula sa|from)\b/i.test(
+    /\b(commute|travel|byahe|biyahe|sakay|ride|bus|jeep|vhire|v-hire|terminal|north bus|south bus|direction|directions|route|drive|driving|layo|far|distance|kilometer|km|get to|go to|going to|arrive|reach|paano pumunta|unsaon pag adto|unsaon pag commute|unsaon pag-adto|unsaon pag-commute|padulong|paingon|gikan sa|mula sa)\b/i.test(
       lower
     ) ||
     (/\b(how many hours|how long|pila ka oras|ilang oras|pilay oras|unsa kadugay|gaano katagal)\b/i.test(
       lower
     ) &&
-      !/\b(short-time|short time|shortime|kayak|banana boat|open|close)\b/i.test(lower))
+      !/\b(short-time|short time|shortime|kayak|open|close)\b/i.test(lower))
   );
 }
 
@@ -732,6 +784,61 @@ function isNearestBeachQuery(text: string): boolean {
   return /\b(pinakaduol|pinaka duol|asay duol|unsay duol|asa ang duol|pinakamalapit|nearest|closest|duol nga beach|duol na beach)\b/i.test(
     lower
   );
+}
+
+/**
+ * Checks whether a query is comparative, superlative, multi-beach, or broad,
+ * meaning it should NOT automatically inherit a single beach from conversation history.
+ */
+export function isComparativeOrBroadQuery(lower: string): boolean {
+  // If user explicitly says "this beach", "diri na beach", "ari na beach", "kani na beach", "ni na beach",
+  // they explicitly refer to the single beach currently in context!
+  const refersToSingleContextBeach =
+    /\b(this\s*beach|kani\s*(nga|na)\s*beach|ni\s*(nga|na)\s*beach|ani\s*(nga|na)\s*beach|diri\s*(nga|na)\s*beach|ari\s*(nga|na)\s*beach|sa\s*ini\s*nga\s*beach|sa\s*diri\s*nga\s*beach)\b/i.test(
+      lower
+    );
+  if (refersToSingleContextBeach) {
+    return false;
+  }
+
+  // Superlatives and comparisons
+  if (
+    /\b(pinaka|most|safest|cheapest|nearest|deepest|closest|best|worst|pinakabatoon|pinakasafe|pinakabarato|pinakaduol|pinakamalapit|pinakamura)\b/i.test(
+      lower
+    )
+  ) {
+    return true;
+  }
+
+  // Multi-beach plurals & all
+  if (
+    /\b(all|tanan|tanang|mga\s*beach|beaches|every\s*beach|each\s*beach|any\s*of\s*the\s*beaches|any\s*beach|ang\s*mga\s*beach|sa\s*mga\s*beach)\b/i.test(
+      lower
+    )
+  ) {
+    return true;
+  }
+
+  // Interrogatives asking which beach or comparing beaches:
+  // "which beach", "what beach", "asay", "unsay", "asa na beach", "asa nga beach", "unsa na beach", "unsa nga beach", "hain", "asa man"
+  if (
+    /\b(which(\s+of\s+the)?\s*beach|what\s*beach|asay|unsay|hain|asa\s+(na|nga)\s*beach|unsa\s+(na|nga)\s*beach|asa\s+man)\b/i.test(
+      lower
+    )
+  ) {
+    return true;
+  }
+
+  // Standalone general questions (asking generally without referencing "this beach")
+  if (
+    /^(pwede\s+(ba\s+)?magda(la)?\s+ug\s+pets\??|are\s+pets\s+allowed\??|taob\s+(ba\s+)?(or|o)\s+hunas\??|high\s+tide\s+or\s+low\s+tide\??|is\s+it\s+high\s+tide\s+or\s+low\s+tide\??|naa\s+bay\s+lifeguard\s+ang\s+beach\??|naa\s+bay\s+store\s+or\s+foods\s+ang\s+mga\s+beach\??|naa\s+bay\s+shower\s+ang\s+mga\s+beach\??|accessible\s+ba\s+(ni\s+)?sa\s+mga\s+senior\s+citizen\??|are\s+there\s+any\s+sinkholes?\s+in\s+any\s+of\s+the\s+beaches\??|asa\s+na\s+beaches?\s+ang\s+dali\s+molawm\??)$/i.test(
+      lower.trim()
+    )
+  ) {
+    return true;
+  }
+
+  return false;
 }
 
 function matchSpecificOriginInText(text: string): { origin: SpecificOriginRoute; matchedWord: string } | null {
@@ -745,8 +852,12 @@ function matchSpecificOriginInText(text: string): { origin: SpecificOriginRoute;
 }
 
 /**
- * Specifically answers "Pinakaduol na beach from (location)" by referring directly
- * from the user's (location) to the specific nearest (beach) in Barangay Binongkalan, Catmon!
+ * Specifically answers "Pinakaduol na beach gikan ari sa location (specific)"
+ * and broad "Unsay pinakaduol na beach?"
+ * Rule:
+ * – Ang pinakaduol kay ang Raniola if sa south gikan ang location
+ * – Ang pinakaduol kay ang Hinagdan if sa north magikan ang location
+ * – Broad: Answer all the beaches (if sa north gikan kay raniola if coming from south; if sa north gikan kay hinagdan).
  */
 function matchNearestBeachFromLocation(userQuery: string): string | null {
   const lower = userQuery.toLowerCase();
@@ -757,49 +868,40 @@ function matchNearestBeachFromLocation(userQuery: string): string | null {
 
   const specificOriginMatch = matchSpecificOriginInText(userQuery);
 
-  // If the user specified a location (e.g., "Pinakaduol na beach from Talamban / Danao / Sogod / Brgy. Duyan")
+  // User specified a location
   if (specificOriginMatch) {
     const { origin, matchedWord } = specificOriginMatch;
     const placeName = `${matchedWord.charAt(0).toUpperCase()}${matchedWord.slice(1)}`;
-    const firstBeachesCeb =
-      origin.direction === 'north'
-        ? '**Turtle Point Beach** ug **Lite Bay Resort** (nga gisundan dayon tupad nila sa **Rañola Beach, Majestique Beach, ug Hinagdan Beach 1**)'
-        : '**Hinagdan Beach 1** ug **Majestique Beach** (nga gisundan dayon tupad nila sa **Rañola Beach, Lite Bay Resort, ug Turtle Point Beach**)';
-    const firstBeachesEn =
-      origin.direction === 'north'
-        ? '**Turtle Point Beach** and **Lite Bay Resort** (followed right next door by **Rañola Beach, Majestique Beach, and Hinagdan Beach 1**)'
-        : '**Hinagdan Beach 1** and **Majestique Beach** (followed right next door by **Rañola Beach, Lite Bay Resort, and Turtle Point Beach**)';
 
-    if (isCeb) {
-      return `**Pinakaduol nga beach gikan sa ${placeName} (${origin.label}) padulong sa Barangay Binongkalan, Catmon:**\n• Gikan sa **${placeName}**, ang unang maagian ug **pinakaduol nga beach** sa Barangay Binongkalan kay ang ${firstBeachesCeb}.\n• **Oras sa Byahe gikan sa ${placeName} padulong sa beach:** **${origin.timeCeb}**\n• **Unsaon pag-adto gikan sa ${placeName} padulong sa beach:** ${origin.stepsCeb}`;
+    if (origin.direction === 'north') {
+      if (isCeb) {
+        return `**Pinakaduol nga beach gikan sa ${placeName} (${origin.label}):**\n• Tungod kay gikan ka sa **North**, ang unang maagian ug **pinakaduol nga beach** sa Barangay Binongkalan kay ang **Hinagdan Beach** (gisundan dayon sa **Majestique Beach**, **Lite Bay Resort**, ug **Rañola Beach**).\n• **Oras sa Byahe:** **${origin.timeCeb}**\n• **Unsaon Pag-adto:** ${origin.stepsCeb}`;
+      }
+      return `**Nearest beach from ${placeName} (${origin.label}):**\n• Since you are coming from the **North**, the first and **nearest beach** you reach in Barangay Binongkalan is **Hinagdan Beach** (followed immediately by **Majestique Beach**, **Lite Bay Resort**, and **Rañola Beach**).\n• **Travel Time:** **${origin.timeEn}**\n• **How to Commute:** ${origin.stepsEn}`;
     }
 
-    return `**Nearest beach from ${placeName} (${origin.label}) to Barangay Binongkalan, Catmon:**\n• Coming from **${placeName}**, the first and **nearest beach** you reach in Barangay Binongkalan is ${firstBeachesEn}.\n• **Travel Time from ${placeName} to the beach:** **${origin.timeEn}**\n• **How to go from ${placeName} to the beach:** ${origin.stepsEn}`;
-  }
-
-  // If the user asked "Pinakaduol na beach from Cebu City"
-  if (/\bcebu city\b/i.test(lower)) {
+    // South or mountain direction
     if (isCeb) {
-      return `**Pinakaduol nga beach gikan sa Cebu City padulong sa Barangay Binongkalan, Catmon:**\n• Gikan sa **Cebu City**, ang unang maagian ug **pinakaduol nga beach** sa Barangay Binongkalan kay ang **Hinagdan Beach 1** ug **Majestique Beach** (tupad ra sab dayon sa **Rañola Beach, Lite Bay Resort, ug Turtle Point Beach** daplin sa highway).\n• **Oras sa Byahe gikan sa Cebu City padulong sa beach:** **1.5 hangtod 2 ka oras** (sakay og bus pa-Norte gikan sa SM City Cebu North Bus Terminal ug manaog mismo sa beach sa Barangay Binongkalan, Catmon).`;
+      return `**Pinakaduol nga beach gikan sa ${placeName} (${origin.label}):**\n• Tungod kay gikan ka sa **South**, ang unang maagian ug **pinakaduol nga beach** sa Barangay Binongkalan kay ang **Rañola Beach (Raniola)** (gisundan dayon sa **Lite Bay Resort**, **Majestique Beach**, ug **Hinagdan Beach**).\n• **Oras sa Byahe:** **${origin.timeCeb}**\n• **Unsaon Pag-adto:** ${origin.stepsCeb}`;
     }
-    return `**Nearest beach from Cebu City to Barangay Binongkalan, Catmon:**\n• Coming from **Cebu City**, the first and **nearest beach** you reach in Barangay Binongkalan is **Hinagdan Beach 1** and **Majestique Beach** (right beside **Rañola Beach, Lite Bay Resort, and Turtle Point Beach** along the highway).\n• **Travel Time from Cebu City to the beach:** **1.5 to 2 hours** (ride any northbound bus from SM City Cebu North Bus Terminal and drop off right at the beach in Barangay Binongkalan, Catmon).`;
+    return `**Nearest beach from ${placeName} (${origin.label}):**\n• Since you are coming from the **South**, the first and **nearest beach** you reach in Barangay Binongkalan is **Rañola Beach (Raniola)** (followed immediately by **Lite Bay Resort**, **Majestique Beach**, and **Hinagdan Beach**).\n• **Travel Time:** **${origin.timeEn}**\n• **How to Commute:** ${origin.stepsEn}`;
   }
 
-  // General "Unsay pinakaduol?" without a specific location yet
+  // Broad query: "Unsay pinakaduol na beach?"
   if (isCeb) {
-    return `Mao kini ang **pinakaduol nga beach** sa Barangay Binongkalan depende kung asa ka nga lokasyon manukad:\n• **Kung gikan ka sa South (Cebu City, Mandaue, Consolacion, Liloan, Danao, Carmen, o Catmon Proper):** Ang unang maagian ug pinakaduol nga beach kay ang **Hinagdan Beach 1** ug **Majestique Beach**, sunod dayon ang **Rañola Beach, Lite Bay Resort, ug Turtle Point Beach**.\n• **Kung gikan ka sa North (Sogod, Borbon, Bogo, o Daanbantayan):** Ang unang maagian ug pinakaduol nga beach kay ang **Turtle Point Beach** ug **Lite Bay Resort**, sunod dayon ang **Rañola Beach, Majestique Beach, ug Hinagdan Beach 1**.\n\n💡 Ingna ko kung **unsang barangay o lungsod ka gikan** (pananglitan: "Pinakaduol na beach from Talamban" o "Pinakaduol na beach from Danao") aron mahatagan tika sa eksaktong byahe gikan sa imong lokasyon padulong sa beach!`;
+    return `Mao kini ang tubag para sa **pinakaduol nga beach** sa Barangay Binongkalan:\n\n• **Kung gikan ka sa South** (sama sa Cebu City, Mandaue, Consolacion, Liloan, Compostela, Danao, Carmen, o Catmon Proper):\n  ➔ Ang pinakaduol ug unang maagian kay ang **Rañola Beach (Raniola)**.\n  ➔ Pagkasunod-sunod sa mga beach: **Rañola Beach** ➔ **Lite Bay Resort** ➔ **Majestique Beach** ➔ **Hinagdan Beach**.\n\n• **Kung gikan ka sa North** (sama sa Sogod, Borbon, Tabogon, Bogo City, San Remigio, Medellin, o Daanbantayan):\n  ➔ Ang pinakaduol ug unang maagian kay ang **Hinagdan Beach**.\n  ➔ Pagkasunod-sunod sa mga beach: **Hinagdan Beach** ➔ **Majestique Beach** ➔ **Lite Bay Resort** ➔ **Rañola Beach**.\n\n💡 **Tip:** Pwede nimong i-type ang imong eksaktong lokasyon (pananglitan: *"Pinakaduol gikan sa Talamban"* o *"Pinakaduol gikan sa Bogo"*) aron mahatagan tika sa eksaktong oras sa byahe ug commute!`;
   }
 
-  return `Here is the **nearest beach** in Barangay Binongkalan depending on your starting location:\n• **Coming from the South (Cebu City, Mandaue, Liloan, Danao, Carmen, or Catmon Proper):** The first and nearest beach you reach is **Hinagdan Beach 1** and **Majestique Beach**, followed immediately by **Rañola Beach, Lite Bay Resort, and Turtle Point Beach**.\n• **Coming from the North (Sogod, Borbon, Bogo, or Daanbantayan):** The first and nearest beach you reach is **Turtle Point Beach** and **Lite Bay Resort**, followed immediately by **Rañola Beach, Majestique Beach, and Hinagdan Beach 1**.\n\n💡 Tell me **your exact location/barangay** (e.g., "Pinakaduol na beach from Talamban" or "from Danao") and I'll give you the exact travel time and directions from your location to the beach!`;
+  return `Here is the guide for the **nearest beach** in Barangay Binongkalan:\n\n• **If coming from the South** (such as Cebu City, Mandaue, Consolacion, Liloan, Compostela, Danao, Carmen, or Catmon Proper):\n  ➔ The nearest and first beach reached is **Rañola Beach (Raniola)**.\n  ➔ Order of beaches: **Rañola Beach** ➔ **Lite Bay Resort** ➔ **Majestique Beach** ➔ **Hinagdan Beach**.\n\n• **If coming from the North** (such as Sogod, Borbon, Tabogon, Bogo City, San Remigio, Medellin, or Daanbantayan):\n  ➔ The nearest and first beach reached is **Hinagdan Beach**.\n  ➔ Order of beaches: **Hinagdan Beach** ➔ **Majestique Beach** ➔ **Lite Bay Resort** ➔ **Rañola Beach**.\n\n💡 **Tip:** You can ask with your exact starting location (for example: *"Nearest beach from Talamban"* or *"from Bogo"*) to get the exact travel time and step-by-step commute!`;
 }
 
 /**
- * Answers questions about commuting, travel hours, and directions specifically and clearly,
- * including follow-up / branch questions where the user just names another barangay or town!
+ * Commute guide handler (origin-specific and general)
  */
 function matchCebuCommuteAndTravelHours(
   userQuery: string,
-  wasPreviousTurnCommute: boolean = false
+  wasPreviousTurnCommute: boolean = false,
+  contextBeach?: BeachKey
 ): string | null {
   if (isNearestBeachQuery(userQuery)) {
     return matchNearestBeachFromLocation(userQuery);
@@ -814,7 +916,7 @@ function matchCebuCommuteAndTravelHours(
 
   if (!isCommute) return null;
 
-  // 1. Check if the user mentioned a SPECIFIC barangay, town, or city in Cebu
+  // 1. SPECIFIC origin matched
   if (specificOriginMatch) {
     const { origin, matchedWord } = specificOriginMatch;
     const displayPlace =
@@ -828,52 +930,34 @@ function matchCebuCommuteAndTravelHours(
     return `**Commute from ${displayPlace} to Barangay Binongkalan, Catmon:**\n• **Estimated Travel Time:** **${origin.timeEn}**\n• **How to Commute:**\n${origin.stepsEn}`;
   }
 
-  // 2. If the user asked about "Within Catmon Barangays"
-  if (/\bcatmon\b/i.test(lower) && /\b(barangay|barangays|within|sulod)\b/i.test(lower)) {
-    if (lang === 'ceb') {
-      return `**Byahe sulod sa mga Barangay sa Catmon padulong sa Barangay Binongkalan:**\n• **Gikan sa Brgy. Duyan ug Macaas:** **2 – 5 minutos** pa-Norte subay sa highway\n• **Gikan sa Brgy. San Jose Poblacion, Corazon, Flores, ug Catmondaan:** **5 – 8 minutos** pa-Norte sakay og tricycle, multicab, o bus\n• **Gikan sa Brgy. Panalipan:** **8 – 12 minutos** pa-Norte subay sa highway\n• **Gikan sa Bukid / Interior Barangays (Agsuwao, Amancion, Anapog, Bactas, Basak, Bongyas, Cabungaan, Cambangkaya, Can-ibuang, Ginabucan, Tabili, Tinabyonan):** **10 – 25 minutos** sakay og habal-habal paingon sa highway sa Catmon, dayon diretso sa **Barangay Binongkalan**.`;
-    }
-    return `**Commute within Catmon Barangays to Barangay Binongkalan:**\n• **From Brgy. Duyan & Macaas:** **2 to 5 minutes** heading north along the highway\n• **From Brgy. San Jose Poblacion, Corazon, Flores, & Catmondaan:** **5 to 8 minutes** heading north by tricycle, multicab, or bus\n• **From Brgy. Panalipan:** **8 to 12 minutes** heading north along the highway\n• **From Mountain / Interior Barangays (Agsuwao, Amancion, Anapog, Bactas, Basak, Bongyas, Cabungaan, Cambangkaya, Can-ibuang, Ginabucan, Tabili, Tinabyonan):** **10 to 25 minutes** by habal-habal down to the Catmon highway, then to **Barangay Binongkalan**.`;
+  // 2. Specific beach commute inquiry (e.g. "How to commute to Rañola Beach?" or "How to commute to this beach?")
+  let beachesInQuery = detectBeachesInText(userQuery);
+  if (
+    beachesInQuery.length === 0 &&
+    contextBeach &&
+    /\b(this\s*beach|kani\s*(nga|na)\s*beach|ni\s*(nga|na)\s*beach|ani\s*(nga|na)\s*beach|diri\s*(nga|na)\s*beach|ari\s*(nga|na)\s*beach)\b/i.test(lower)
+  ) {
+    beachesInQuery = [contextBeach];
   }
 
-  // 3. If the user only said "Cebu City" generally
-  if (/\bcebu city\b/i.test(lower)) {
+  if (beachesInQuery.length === 1) {
+    const b = BEACH_DATA[beachesInQuery[0]];
     if (lang === 'ceb') {
-      return `**Byahe gikan sa Cebu City padulong sa Barangay Binongkalan, Catmon:**\n• **Oras sa Byahe:** **1.5 hangtod 2 ka oras** (gikan sa Cebu North Bus Terminal sa SM City Cebu, Brgy. Mabolo)\n• **Unsaon Pag-commute:**\n  1. Adto sa **Cebu North Bus Terminal (SM City Cebu)**.\n  2. Sakay og bisan unsang **Ceres bus o mini-bus pa-Norte** (padulong Sogod, Bogo, Medellin, o Maya).\n  3. Ingna ang konduktor nga manaog ka sa **Barangay Binongkalan, Catmon** (naa ra sa kilid sa highway ang tanang 5 ka beach!).`;
+      return `**Unsaon pag-commute padulong sa ${b.name}:**\n1. Adto sa **Cebu North Bus Terminal (sa SM City Cebu, Brgy. Mabolo)**.\n2. Sakay og bisan unsang **Ceres bus o mini-bus pa-Norte** (nga padulong Sogod, Bogo, Medellin, o Maya).\n3. Ingna ang konduktor nga manaog ka sa **${b.name}** sa Barangay Binongkalan, Catmon (subay ra kini sa national highway).\n• **Oras sa Byahe:** Mga **1.5 hangtod 2 ka oras** gikan sa Cebu City.`;
     }
-    return `**Commute from Cebu City to Barangay Binongkalan, Catmon:**\n• **Estimated Travel Time:** **1.5 to 2 hours** (from Cebu North Bus Terminal at SM City Cebu, Brgy. Mabolo)\n• **How to Commute:**\n  1. Go to the **Cebu North Bus Terminal (at SM City Cebu)**.\n  2. Ride any **northbound Ceres bus or mini-bus** (bound for Sogod, Bogo, Medellin, or Maya).\n  3. Tell the conductor to drop you off at **Barangay Binongkalan, Catmon** (all 5 beaches are just a 1–2 minute walk from the highway!).`;
+    return `**How to commute to ${b.name}:**\n1. Go to the **Cebu North Bus Terminal (at SM City Cebu, Brgy. Mabolo)**.\n2. Board any **northbound Ceres bus or mini-bus** (bound for Sogod, Bogo, Medellin, or Maya).\n3. Tell the conductor to drop you off right at **${b.name}** along the national highway in Barangay Binongkalan, Catmon.\n• **Estimated Travel Time:** Around **1.5 to 2 hours** from Cebu City.`;
   }
 
-  // 4. General Commute Summary (clean, concise, and easy to understand!)
+  // 3. General Commute Summary
   if (lang === 'ceb') {
-    return `Mao kini ang **oras sa byahe (commute hours)** padulong sa **Barangay Binongkalan, Catmon**:\n\n• **Gikan sa Cebu City (SM City Cebu North Bus Terminal):** **1.5 – 2 ka oras** (sakay og bus pa-Norte padulong Sogod/Bogo/Maya)\n• **Gikan sa Mandaue City:** **1 hr 15 mins – 1 hr 45 mins** (atang og bus pa-Norte sa MC Briones Highway)\n• **Gikan sa Lapu-Lapu / Mactan:** **2 – 2.5 ka oras** (MyBus/jeep pa-SM City Cebu, dayon bus pa-Norte)\n• **Gikan sa North Cebu:**\n  - **Sogod:** 5–15 mins | **Carmen:** 15–20 mins | **Danao:** 30–40 mins\n  - **Compostela & Liloan:** 45 mins – 1 hr | **Consolacion:** 1 hr – 1 hr 15 mins\n  - **Borbon, Tabogon, Bogo, ug Daanbantayan:** 25 mins – 2.5 ka oras (bus pa-South)\n• **Gikan sa South ug West Cebu (Talisay, Minglanilla, Naga, Carcar, Toledo, Moalboal, Oslob):** **2 – 5 ka oras** (agi sa Cebu City North Bus Terminal)\n• **Sulod ra sa mga Barangay sa Catmon:** **2 – 25 minutos**\n\n💡 **Tip:** Ingna ko kung **unsang barangay o lungsod** ka manukad (pananglitan: "gikan sa Talamban", "gikan sa Talisay", o "gikan sa Brgy. Duyan") aron mahatagan tika sa eksaktong ruta!`;
+    return `Mao kini ang **oras sa byahe ug commute** padulong sa mga beach sa **Barangay Binongkalan, Catmon**:\n\n• **Gikan sa Cebu City (SM City Cebu North Bus Terminal):** **1.5 – 2 ka oras** (sakay og Ceres bus pa-Norte)\n• **Gikan sa Mandaue City:** **1 hr 15 mins – 1 hr 45 mins**\n• **Gikan sa Lapu-Lapu / Mactan:** **2 – 2.5 ka oras**\n• **Gikan sa North Cebu (Sogod, Bogo, Daanbantayan):** **10 mins – 2 ka oras** (sakay og bus pa-South)\n• **Gikan sa South Cebu (Talisay, Minglanilla, Naga, Carcar):** **2.5 – 3.5 ka oras** (transfer sa SM North Bus Terminal)\n\n💡 **Tip:** Isulti ang imong barangay o lungsod (pananglitan: *"Byahe gikan sa Talamban"*) aron mahatagan tika sa step-by-step nga commute!`;
   }
 
-  return `Here is the **commute travel time** to **Barangay Binongkalan, Catmon, Cebu**:\n\n• **From Cebu City (SM City Cebu North Bus Terminal):** **1.5 to 2 hours** (ride any northbound bus bound for Sogod, Bogo, or Maya)\n• **From Mandaue City:** **1 hr 15 mins to 1 hr 45 mins** (catch a northbound bus along MC Briones Highway)\n• **From Lapu-Lapu City / Mactan:** **2 to 2.5 hours** (take a MyBus/jeep to SM City Cebu, then a northbound bus)\n• **From North Cebu:**\n  - **Sogod:** 5–15 mins | **Carmen:** 15–20 mins | **Danao City:** 30–40 mins\n  - **Compostela & Liloan:** 45 mins – 1 hr | **Consolacion:** 1 hr – 1 hr 15 mins\n  - **Borbon, Tabogon, Bogo City, & Daanbantayan:** 25 mins – 2.5 hours (southbound bus)\n• **From South & West Cebu (Talisay, Minglanilla, Naga, Carcar, Toledo, Moalboal, Oslob):** **2 to 5 hours** (transfer via SM City Cebu North Bus Terminal)\n• **Within Catmon Barangays:** **2 to 25 minutes**\n\n💡 **Tip:** Tell me your **specific barangay or town** (for example: "from Talamban", "from Talisay", or "from Brgy. Duyan") and I'll give you the exact travel time and step-by-step ride!`;
+  return `Here is the **commute travel guide** to the beaches in **Barangay Binongkalan, Catmon, Cebu**:\n\n• **From Cebu City (SM City Cebu North Bus Terminal):** **1.5 to 2 hours** (ride any northbound Ceres bus bound for Sogod, Bogo, or Maya)\n• **From Mandaue City:** **1 hr 15 mins to 1 hr 45 mins**\n• **From Lapu-Lapu City / Mactan:** **2 to 2.5 hours**\n• **From North Cebu (Sogod, Bogo, Daanbantayan):** **10 mins to 2 hours** (southbound bus)\n• **From South Cebu (Talisay, Minglanilla, Naga, Carcar):** **2.5 to 3.5 hours** (transfer via SM North Bus Terminal)\n\n💡 **Tip:** Tell me your starting town or barangay (for example: *"Commute from Talamban"*) to get step-by-step directions!`;
 }
 
 /**
- * Polite apology response when a user asks a question unrelated to the beaches
- * or asks something that is not listed / cannot be answered from the verified database.
- */
-export function getBaiApologyFallback(userQuery: string, userName?: string | null): string {
-  const lang = detectLanguage(userQuery);
-  const firstName = userName ? userName.trim().split(/\s+/)[0] : '';
-  const nameSuffix = firstName ? `, **${firstName}**` : '';
-
-  if (lang === 'ceb') {
-    return `**Sorry / Pasensya na${nameSuffix}**, dili ko makatubag ana nga pangutana kay wala na sa among database o dili na konektado sa mga beach diri sa **Barangay Binongkalan, Catmon, Cebu**.\n\nPwede ko nimong pangutan-on bahin sa **Rañola Beach, Lite Bay Resort, Turtle Point Beach, Majestique Beach, o Hinagdan Beach 1**—sama sa entrance fee, cottage, room, tindahan/store, white sand, safety/weather, private booking, discount, o pinakaduol nga beach gikan sa inyong lokasyon!`;
-  }
-
-  if (lang === 'tl') {
-    return `**Sorry / Pasensya na po${nameSuffix}**, hindi ko po masasagot ang tanong na iyan dahil wala po iyan sa aming database o hindi po tungkol sa mga beach dito sa **Barangay Binongkalan, Catmon, Cebu**.\n\nMaaari niyo po akong tanungin tungkol sa **Rañola Beach, Lite Bay Resort, Turtle Point Beach, Majestique Beach, o Hinagdan Beach 1** (entrance fee, cottage, room, tindahan/store, white sand, safety/weather, private booking, discount, o commute hours).`;
-  }
-
-  return `**Sorry${nameSuffix}**, I cannot answer that question because it is not related to the beaches in **Barangay Binongkalan, Catmon, Cebu** or that detail is not listed in our database.\n\nYou can ask me anything about **Rañola Beach, Lite Bay Resort, Turtle Point Beach, Majestique Beach, or Hinagdan Beach 1**—such as entrance fees, cottages, rooms, stores/tindahan, sand type, safety & weather, private booking, event discounts, or the nearest beach from your location!`;
-}
-
-/**
- * Answers a specific question for a single beach with pinpoint accuracy and in the user's language.
+ * Builds specific answers for a single beach
  */
 function buildSpecificSingleBeachAnswer(
   b: StructuredBeachData,
@@ -883,169 +967,118 @@ function buildSpecificSingleBeachAnswer(
 ): string {
   const isCeb = lang === 'ceb';
 
-  // Fine-grained sub-question checks first (for ultra-specific 1-sentence answers!)
+  // Specific single topic checks
+  if (asks.asksBatoon) {
+    return isCeb ? b.batoonCeb : b.batoonEn;
+  }
+
+  if (asks.asksSugba) {
+    return isCeb ? b.sugbaCeb : b.sugbaEn;
+  }
+
+  if (asks.asksSafest || asks.asksSafety) {
+    return isCeb ? b.safeCeb : b.safeEn;
+  }
+
+  if (asks.asksLifeguard) {
+    return isCeb ? b.lifeguardCeb : b.lifeguardEn;
+  }
+
+  if (asks.asksStore) {
+    return isCeb ? b.storeCeb : b.storeEn;
+  }
+
+  if (asks.asksShower) {
+    return isCeb ? b.showerCeb : b.showerEn;
+  }
+
+  if (asks.asksSenior) {
+    return isCeb ? b.seniorCeb : b.seniorEn;
+  }
+
+  if (asks.asksSinkhole) {
+    return isCeb ? b.sinkholeCeb : b.sinkholeEn;
+  }
+
+  if (asks.asksMolawm) {
+    return isCeb ? b.molawmCeb : b.molawmEn;
+  }
+
+  if (asks.asksPets) {
+    return isCeb ? b.petsCeb : b.petsEn;
+  }
+
+  if (asks.asksTide) {
+    return isCeb ? b.tideCeb : b.tideEn;
+  }
+
+  if (asks.asksEntrance) {
+    return isCeb ? `Sa **${b.name}**: ${b.entranceCeb}` : `At **${b.name}**: ${b.entranceEn}`;
+  }
+
+  if (asks.asksCottage) {
+    return isCeb ? `Sa **${b.name}**: ${b.cottagesCeb}` : `At **${b.name}**: ${b.cottagesEn}`;
+  }
+
+  if (asks.asksRoom) {
+    return isCeb ? `Sa **${b.name}**: ${b.roomsCeb}` : `At **${b.name}**: ${b.roomsEn}`;
+  }
+
   if (asks.asksHours) {
-    if (/\b(saturday|sabado)\b/i.test(lower)) {
-      if (b.key === 'litebay') {
-        return isCeb
-          ? `Dili, **SIRADO ang Lite Bay Resort kada Sabado**. Abli sila Dominggo–Huwebes (6:00 AM – 8:00 PM) ug Biyernes (6:00 AM – 5:00 PM).`
-          : `No, **Lite Bay Resort is CLOSED every Saturday**. They are open Sunday–Thursday (6:00 AM – 8:00 PM) and Friday (6:00 AM – 5:00 PM).`;
-      }
-      return isCeb ? b.openDaysCeb : b.openDays;
-    }
-    if (/\b(every\s*day|everyday|daily|kada adlaw)\b/i.test(lower)) {
-      return isCeb ? b.openDaysCeb : b.openDays;
-    }
-    if (/\b(what time.*open|when.*open|unsa oras.*abli|unsa oras.*mangabre)\b/i.test(lower) && !/\b(close|sirado|manirado)\b/i.test(lower)) {
-      return isCeb
-        ? `Ang **${b.name}** mangabre og **${b.openTime}** (${b.hoursCeb}).`
-        : `**${b.name}** opens at **${b.openTime}** (${b.hours}).`;
-    }
-    if (/\b(what time.*close|when.*close|unsa oras.*sirado|unsa oras.*manirado)\b/i.test(lower) && !/\b(open|abli|mangabre)\b/i.test(lower)) {
-      return isCeb
-        ? `Ang **${b.name}** manirado og **${b.closeTime}**.`
-        : `**${b.name}** closes at **${b.closeTime}**.`;
-    }
+    return isCeb ? `Sa **${b.name}**: ${b.hoursCeb}` : `At **${b.name}**: ${b.hoursEn}`;
   }
 
-  if (asks.asksParking && !asks.asksRestroom) {
-    if (b.key === 'ranola') {
-      if (/\b(car|kotse|auto|sakyanan)\b/i.test(lower) && !/\b(motor|motorcycle)\b/i.test(lower)) {
-        return isCeb
-          ? `Sa **Rañola Beach**, **₱50** ang parking fee para sa **sakyanan (car)** (ug ₱20 para sa motor).`
-          : `At **Rañola Beach**, parking for a **car** is **₱50** (and ₱20 for motorcycles).`;
-      }
-      if (/\b(motor|motorcycle)\b/i.test(lower) && !/\b(car|kotse)\b/i.test(lower)) {
-        return isCeb
-          ? `Sa **Rañola Beach**, **₱20** ang parking fee para sa **motor** (ug ₱50 para sa sakyanan/car).`
-          : `At **Rañola Beach**, parking for a **motorcycle** is **₱20** (and ₱50 for cars).`;
-      }
-    }
+  if (asks.asksParking) {
+    return isCeb ? `Sa **${b.name}**: ${b.parkingCeb}` : `At **${b.name}**: ${b.parkingEn}`;
   }
 
-  if (asks.asksCottage && b.key === 'ranola') {
-    if (/\bsmall\b/i.test(lower)) {
-      return isCeb
-        ? `Sa **Rañola Beach**, **₱500** ang **small cottage** (₱2,000 ang middle cottage ug ₱2,500 ang big cottage para sa 30 ka tawo).`
-        : `At **Rañola Beach**, a **small cottage** costs **₱500** (middle cottages are ₱2,000, and the big 30-person cottage is ₱2,500).`;
-    }
-    if (/\b(big|large|30|dako)\b/i.test(lower)) {
-      return isCeb
-        ? `Sa **Rañola Beach**, **₱2,500** ang **dako nga side cottage** nga masulod og hangtod **30 ka tawo** (₱500 ang small ug ₱2,000 ang middle).`
-        : `At **Rañola Beach**, the **big side cottage (good for 30 persons)** costs **₱2,500** (small cottages are ₱500 and middle cottages are ₱2,000).`;
-    }
+  if (asks.asksRestroom) {
+    return isCeb ? `Sa **${b.name}**: ${b.restroomCeb}` : `At **${b.name}**: ${b.restroomEn}`;
   }
 
-  const safetyMsgEn = `**Yes!** **${b.name}** is safe for swimming. Please check the **Weather Update** on our website (temperature, wind speed, and tide schedule) before swimming!`;
-  const safetyMsgCeb = `**Oo, safe!** Luwas maligo sa **${b.name}**. Palihug tan-awa sab ang **Weather Update** diri sa website (temperatura, hangin, ug taob/hunas) sa dili pa maligo!`;
+  if (asks.asksContact) {
+    return isCeb ? `Ang contact number sa **${b.name}** kay: **${b.contact}**.` : `The contact number for **${b.name}** is: **${b.contact}**.`;
+  }
 
-  const privateMsgEn = `**Walay private kay open sya sa tanan** — **${b.name}** cannot be booked privately because it is open to everyone (walk-ins are welcome).`;
-  const privateMsgCeb = `**Walay private kay open sya sa tanan** — dili ma-bookingan og private ang **${b.name}** kay abli kini sa tanan (pwede ra mo-walk in).`;
-
-  const discountMsgEn = `**Wala (No)** — **${b.name}** does not have a discount even if there is an event.`;
-  const discountMsgCeb = `**Wala** — walay discount sa **${b.name}** bisan kung naay event.`;
-
-  const foodMsgEn = `**Yes!** You can bring your own food, drinks, and snacks (*baon*) to **${b.name}** with **no corkage fee**.`;
-  const foodMsgCeb = `**Oo!** Pwede ra kaayo magdala og kaugalingong pagkaon, snacks, ug ilimnon sa **${b.name}** (**walay corkage fee**).`;
-
-  // Standard category answers for the specific beach
-  const parts: string[] = [];
-  if (asks.asksEntrance) parts.push(`• **Entrance Fee:** ${isCeb ? b.entranceCeb : b.entrance}`);
-  if (asks.asksCottage) parts.push(`• **Cottages / Tables:** ${isCeb ? b.cottagesCeb : b.cottages}`);
-  if (asks.asksRoom) parts.push(`• **Rooms / Overnight:** ${isCeb ? b.roomsCeb : b.rooms}`);
-  if (asks.asksStore) parts.push(`• **Store / Tinda:** ${isCeb ? b.storeCeb : b.store}`);
-  if (asks.asksSand) parts.push(`• **Shoreline / Sand:** ${isCeb ? b.sandCeb : b.sand}`);
-  if (asks.asksSafety) parts.push(`• **Safety & Weather:** ${isCeb ? safetyMsgCeb : safetyMsgEn}`);
-  if (asks.asksPrivateBooking) parts.push(`• **Private Booking:** ${isCeb ? privateMsgCeb : privateMsgEn}`);
-  if (asks.asksDiscount) parts.push(`• **Event Discount:** ${isCeb ? discountMsgCeb : discountMsgEn}`);
-  if (asks.asksFoodCorkage) parts.push(`• **Food & Corkage:** ${isCeb ? foodMsgCeb : foodMsgEn}`);
-  if (asks.asksHours) parts.push(`• **Operating Hours:** ${isCeb ? b.hoursCeb : b.hours}`);
-  if (asks.asksContact) parts.push(`• **Contact Number:** ${b.contact}`);
-  if (asks.asksFacebook) parts.push(`• **Facebook Page:** ${b.facebook}`);
-  if (asks.asksEmail) parts.push(`• **Email:** ${b.email}`);
-  if (asks.asksParking) parts.push(`• **Parking Fee:** ${isCeb ? b.parkingCeb : b.parking}`);
-  if (asks.asksRestroom) parts.push(`• **Restroom / Shower Fee:** ${isCeb ? b.restroomCeb : b.restroom}`);
-  if (asks.asksActivities) parts.push(`• **Activities:** ${isCeb ? b.activitiesCeb : b.activities}`);
-  if (asks.asksRentals) parts.push(`• **Rentals:** ${isCeb ? b.rentalsCeb : b.rentals}`);
-
-  if (parts.length === 1) {
-    const singleValue = parts[0].replace(/^•\s*\*\*[^*]+:\*\*\s*/, '');
+  if (asks.asksPrivateBooking) {
     return isCeb
-      ? `Sa **${b.name}**: ${singleValue}`
-      : `At **${b.name}**: ${singleValue}`;
+      ? `**Walay private kay open sya sa tanan** — ang **${b.name}** kay abli para sa tanan ug walk-ins are welcome.`
+      : `**No private booking (open to everyone)** — **${b.name}** cannot be booked exclusively because it is open to all visitors (walk-ins are welcome).`;
   }
 
-  if (parts.length > 1) {
+  if (asks.asksDiscount) {
     return isCeb
-      ? `Mao kini ang imong gipangutana bahin sa **${b.name}**:\n${parts.join('\n')}`
-      : `Here are the details you asked for at **${b.name}**:\n${parts.join('\n')}`;
+      ? `**Wala** — walay discount sa **${b.name}** bisan kung naay event (regular rates apply).`
+      : `**No discounts** — **${b.name}** does not offer special event discounts (regular rates apply).`;
   }
 
-  // User only typed the beach name (e.g., "Rañola Beach" or "Tell me about Lite Bay")
+  // General profile of single beach
   if (isCeb) {
-    return `Mao kini ang kumpletong detalye sa **${b.name}**:\n• **Oras sa Pag-abli:** ${b.hoursCeb}\n• **Entrance Fee:** ${b.entranceCeb}\n• **Cottage / Table:** ${b.cottagesCeb}\n• **Room / Overnight:** ${b.roomsCeb}\n• **Tinda / Store:** ${b.storeCeb}\n• **Parking:** ${b.parkingCeb}\n• **CR / Kaligo:** ${b.restroomCeb}\n• **Activities & Rentals:** ${b.rentalsCeb}\n• **Contact Number:** ${b.contact}`;
+    return `Mao kini ang mga detalye sa **${b.name}**:\n• **Oras sa Pag-abli:** ${b.hoursCeb}\n• **Entrance Fee:** ${b.entranceCeb}\n• **Cottage / Table:** ${b.cottagesCeb}\n• **Kwarto / Overnight:** ${b.roomsCeb}\n• **Batoon ba:** ${b.batoonCeb}\n• **Sugbaanan:** ${b.sugbaCeb}\n• **Senior Citizens:** ${b.seniorCeb}\n• **Sinkhole:** ${b.sinkholeCeb}\n• **Dali molawm:** ${b.molawmCeb}\n• **Pets:** ${b.petsCeb}\n• **Contact:** ${b.contact}`;
   }
 
-  return `Here are the complete details for **${b.name}**:\n• **Operating Hours:** ${b.hours}\n• **Entrance Fee:** ${b.entrance}\n• **Cottages / Tables:** ${b.cottages}\n• **Rooms / Overnight:** ${b.rooms}\n• **Store / Tinda:** ${b.store}\n• **Parking:** ${b.parking}\n• **Restroom / Shower:** ${b.restroom}\n• **Activities & Rentals:** ${b.rentals}\n• **Contact Number:** ${b.contact}`;
+  return `Here are the details for **${b.name}**:\n• **Operating Hours:** ${b.hoursEn}\n• **Entrance Fee:** ${b.entranceEn}\n• **Cottages / Tables:** ${b.cottagesEn}\n• **Rooms / Overnight:** ${b.roomsEn}\n• **Shoreline (Batoon):** ${b.batoonEn}\n• **Grilling (Sugbaanan):** ${b.sugbaEn}\n• **Senior Citizen Accessibility:** ${b.seniorEn}\n• **Sinkhole:** ${b.sinkholeEn}\n• **Depth (Dali molawm):** ${b.molawmEn}\n• **Pets:** ${b.petsEn}\n• **Contact:** ${b.contact}`;
+}
+
+export function getBaiApologyFallback(userQuery: string, userName?: string | null): string {
+  const lang = detectLanguage(userQuery);
+  const firstName = userName ? userName.trim().split(/\s+/)[0] : '';
+  const nameSuffix = firstName ? `, **${firstName}**` : '';
+
+  if (lang === 'ceb') {
+    return `Maayong adlaw${nameSuffix}. Subay sa among opisyal nga database sa **Barangay Binongkalan, Catmon, Cebu**, **wala akoy napalgan nga beripikadong impormasyon** kabahin sa maong pangutana o detalye.\n\nAron mahatagan kamo og tukma ug pormal nga giya, andam ako motubag sa mga beripikadong detalye alang sa 4 ka opisyal nga beach resort (**Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, ug **Hinagdan Beach**) kabahin sa:\n• **Lokasyon ug Byahe:** Pinakaduol nga beach gikan sa inyong lugar ug giya sa commute\n• **Baybayon:** Batoon ba o dili (rocky shoreline), kalawmon sa tubig (dali molawm), ug baybayon\n• **Kaluwasan:** Pinaka-safe nga beach, kondisyon sa dagat, ug kahimtang sa lifeguards\n• **Fasilidad ug Serbisyo:** Sugbaanan, tindahan/pagkaon, shower/himasa, ug senior citizen accessibility\n• **Kondisyon sa Dagat:** Sinkholes, taob ug hunas (live tide schedule), ug pagdala og mga pets\n• **Presyo ug Oras:** Entrance fees, cottages, mga kwarto, ug operating hours\n\nPalihug isulti kon asa niini ang buot ninyong ipangutana.`;
+  }
+
+  if (lang === 'tl') {
+    return `Magandang araw po${nameSuffix}. Ayon sa opisyal na database ng **Barangay Binongkalan, Catmon, Cebu**, **wala po akong natagpuang beripikadong impormasyon** ukol sa inyong katanungan.\n\nUpang mabigyan kayo ng tumpak at pormal na gabay, maaari po ninyo akong tanungin tungkol sa 4 na opisyal na beach resort (**Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, at **Hinagdan Beach**) ukol sa:\n• **Lokasyon at Commute:** Pinakamalapit na beach mula sa inyong pinanggalingan at direksyon sa biyahe\n• **Dalampasigan:** Mabato ba o hindi, lalim ng tubig, at buhangin\n• **Kaligtasan:** Pinakaligtas na beach at lifeguards\n• **Pasilidad:** Sugbaanan/ihawan, tindahan/pagkain, shower, at senior citizen accessibility\n• **Kondisyon ng Dagat:** Sinkholes, taob/hunas (tides), at pagdadala ng pets\n• **Bayarin at Oras:** Entrance fees, cottage rates, mga kwarto, at operating hours\n\nMangyaring sabihin po kung alin sa mga ito ang nais ninyong itanong.`;
+  }
+
+  return `Good day${nameSuffix}. According to the official verified database of **Barangay Binongkalan, Catmon, Cebu**, **I do not have verified information** regarding this specific inquiry.\n\nTo ensure you receive accurate and formal assistance, I can provide verified information for our 4 official beach resorts (**Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, and **Hinagdan Beach**) on the following topics:\n• **Location & Commute:** Nearest beach based on your starting origin and step-by-step commute directions\n• **Shoreline Conditions:** Rocky conditions (batoon ba o dili), water depth (dali molawm), and sandy shores\n• **Safety & Lifeguards:** Safest beach for families/seniors and lifeguard status\n• **Facilities & Amenities:** Grilling areas (sugbaanan), food/stores, showers, and senior citizen accessibility\n• **Marine Conditions:** Sinkhole details, live tides (taob/hunas), and pet policies\n• **Rates & Schedules:** Entrance fees, cottage and table rentals, room accommodations, and operating hours\n\nPlease let me know which of these verified topics you would like to inquire about.`;
 }
 
 /**
- * Extracts conversation context from previous turns to support both:
- * 1. Topic Continuation (User keeps the same beach and asks about a new detail: "How about cottages?")
- * 2. Beach Branching (User keeps the same detail and switches beach: "How about Lite Bay?")
- * 3. Commute / Nearest-Beach Branching (User names a new barangay/town: "What about from Talisay?")
- */
-function extractConversationContext(
-  conversationHistory: { role: 'user' | 'assistant'; text: string }[]
-): {
-  lastSingleBeach: BeachKey | null;
-  lastUserTopics: TopicFlags | null;
-  wasPreviousTurnCommute: boolean;
-  wasPreviousTurnNearest: boolean;
-} {
-  let lastSingleBeach: BeachKey | null = null;
-  let lastUserTopics: TopicFlags | null = null;
-  let wasPreviousTurnCommute = false;
-  let wasPreviousTurnNearest = false;
-
-  for (let i = conversationHistory.length - 1; i >= Math.max(0, conversationHistory.length - 2); i--) {
-    const entry = conversationHistory[i];
-    if (isNearestBeachQuery(entry.text) || entry.text.includes('Pinakaduol nga beach') || entry.text.includes('Nearest beach from')) {
-      wasPreviousTurnNearest = true;
-    }
-    if (
-      isExplicitCommuteText(entry.text) ||
-      entry.text.includes('Estimated Travel Time') ||
-      entry.text.includes('Oras sa Byahe')
-    ) {
-      wasPreviousTurnCommute = true;
-    }
-  }
-
-  for (let i = conversationHistory.length - 1; i >= 0; i--) {
-    const beaches = detectBeachesInText(conversationHistory[i].text);
-    if (beaches.length === 1) {
-      lastSingleBeach = beaches[0];
-      break;
-    }
-  }
-
-  for (let i = conversationHistory.length - 1; i >= 0; i--) {
-    if (conversationHistory[i].role === 'user') {
-      const topics = detectTopicsInText(conversationHistory[i].text);
-      if (hasAnyTopic(topics)) {
-        lastUserTopics = topics;
-        break;
-      }
-    }
-  }
-
-  return { lastSingleBeach, lastUserTopics, wasPreviousTurnCommute, wasPreviousTurnNearest };
-}
-
-/**
- * Specific, context-aware responder that answers ONLY what the user asked,
- * including natural follow-up and branching questions across turns.
+ * Main matching engine: handles specific per-beach questions, broad multi-beach questions,
+ * nearest-beach queries, and context continuation.
  */
 export function matchBaiInstantAnswer(
   userQuery: string,
@@ -1060,19 +1093,13 @@ export function matchBaiInstantAnswer(
   const firstName = userName ? userName.trim().split(/\s+/)[0] : '';
   const nameSuffix = firstName ? `, **${firstName}**` : '';
 
-  // 1. Pure Greetings & Polite Expressions
+  // 1. Greetings
   if (
-    /^(hi+|hello+|hey+|good\s*(morning|afternoon|evening|day)|greetings|yo|sup|hola|hi\s+bai|hello\s+bai|hey\s+bai|good\s*(morning|afternoon|evening|day)\s+bai)$/i.test(
+    /^(hi+|hello+|hey+|good\s*(morning|afternoon|evening|day)|greetings|yo|sup|hola|hi\s+bai|hello\s+bai|hey\s+bai)$/i.test(
       cleanWords
     )
   ) {
-    let timeGreeting = 'Hello';
-    if (cleanWords.includes('morning')) timeGreeting = 'Good morning';
-    else if (cleanWords.includes('afternoon')) timeGreeting = 'Good afternoon';
-    else if (cleanWords.includes('evening')) timeGreeting = 'Good evening';
-    else if (cleanWords.includes('good day')) timeGreeting = 'Good day';
-
-    return `${timeGreeting}${nameSuffix}! Maayong adlaw! 👋 I'm **Bai**, your local guide for **Dagat Ta Bai** in Barangay Binongkalan, Catmon, Cebu. Which beach or detail would you like to ask about today?`;
+    return `Hello${nameSuffix}! Maayong adlaw! 👋 I'm **Bai**, your local beach guide for **Dagat Ta Bai** in Barangay Binongkalan, Catmon, Cebu. Which beach (**Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, or **Hinagdan Beach**) or detail would you like to ask about?`;
   }
 
   if (
@@ -1080,271 +1107,186 @@ export function matchBaiInstantAnswer(
       cleanWords
     )
   ) {
-    return `Maayong adlaw sab kanimo${nameSuffix}! 👋 Ako si **Bai**, ang imong local guide sa **Dagat Ta Bai** diri sa Barangay Binongkalan, Catmon, Cebu. Unsa nga beach o detalye ang gusto nimong mahibaw-an karon?`;
+    return `Maayong adlaw sab kanimo${nameSuffix}! 👋 Ako si **Bai**, ang imong local guide diri sa Barangay Binongkalan, Catmon, Cebu. Makapangutana ka bahin sa **Rañola Beach, Lite Bay Resort, Majestique Beach, o Hinagdan Beach**!`;
   }
 
   if (
-    /^(magandang\s*(umaga|tanghali|hapon|gabi|araw)|kamusta(\s+po)?(\s+bai)?)$/i.test(cleanWords)
-  ) {
-    return `Magandang araw po${nameSuffix}! 👋 Ako si **Bai**, ang inyong local guide sa **Dagat Ta Bai** dito sa Barangay Binongkalan, Catmon, Cebu. Anong beach o detalye po ang gusto ninyong itanong?`;
-  }
-
-  if (
-    /^(how\s+are\s+you(\s+doing|\s+today)?|how\s+is\s+it\s+going|hows\s+it\s+going)(\s+bai)?$/i.test(
+    /^(thank\s*you(\s+so\s+much|\s+very\s+much)?|thanks(\s+a\s+lot|\s+bai)?|ty|tysm|daghang\s+salamat|salamat(\s+kaayo|\s+po|\s+bai)?|maraming\s+salamat)$/i.test(
       cleanWords
     )
   ) {
-    return `I'm doing great${nameSuffix}, thank you for asking! 🌊 Which beach in Barangay Binongkalan can I help you check today?`;
+    return isCeb
+      ? `Walay sapayan${nameSuffix}! 😊 Ingna lang ko kung naa pa kay laing pangutana bahin sa mga beach diri sa Binongkalan.`
+      : `You're very welcome${nameSuffix}! 😊 Let me know if you have any other questions about the beaches here in Binongkalan.`;
   }
 
-  if (
-    /^(thank\s*you(\s+so\s+much|\s+very\s+much)?|thanks(\s+a\s+lot|\s+bai)?|ty|tysm|appreciate\s+it|daghang\s+salamat|salamat(\s+kaayo|\s+po|\s+bai)?|maraming\s+salamat(\s+po)?)$/i.test(
-      cleanWords
-    )
-  ) {
-    if (isCeb) return `Walay sapayan${nameSuffix}! 😊 Ingna lang ko kung naa pa kay laing pangutana.`;
-    if (lang === 'tl') return `Walang anuman po${nameSuffix}! 😊 Sabihin niyo lang po kung may iba pa kayong tanong.`;
-    return `You're very welcome${nameSuffix}! 😊 Let me know if you have any other questions.`;
+  // Find recent beach in conversation history for single-beach follow-ups
+  let contextBeach: BeachKey | undefined = undefined;
+  if (conversationHistory.length > 0) {
+    for (let i = conversationHistory.length - 1; i >= 0; i--) {
+      const prevBeaches = detectBeachesInText(conversationHistory[i].text);
+      if (prevBeaches.length === 1) {
+        contextBeach = prevBeaches[0];
+        break;
+      }
+    }
   }
 
-  if (
-    /^(bye+|goodbye|good\s+bye|see\s+you(\s+later|\s+soon)?|take\s+care|have\s+a\s+(good|great|nice)\s+day|paalam|babay|amping)$/i.test(
-      cleanWords
-    )
-  ) {
-    return `Goodbye and safe travels${nameSuffix}! 🌴🌊 See you in Barangay Binongkalan, Catmon!`;
-  }
-
-  // Extract conversation context for multi-turn continuation & branching
-  const {
-    lastSingleBeach,
-    lastUserTopics,
-    wasPreviousTurnCommute,
-    wasPreviousTurnNearest,
-  } = extractConversationContext(conversationHistory);
-
-  // 2A. Nearest Beach from (Location) ("Pinakaduol na beach from [location]") — including location branching!
-  if (
-    isNearestBeachQuery(q) ||
-    (wasPreviousTurnNearest && Boolean(matchSpecificOriginInText(q)))
-  ) {
-    const nearestReply = matchNearestBeachFromLocation(
-      isNearestBeachQuery(q) ? q : `Pinakaduol na beach from ${q}`
-    );
+  // 2. Nearest Beach from location / Broad Nearest
+  if (isNearestBeachQuery(q)) {
+    const nearestReply = matchNearestBeachFromLocation(q);
     if (nearestReply) return nearestReply;
   }
 
-  // 2B. Check Commute / Travel Time (supports commute origin branching like "How about Talisay?")
-  const commuteReply = matchCebuCommuteAndTravelHours(q, wasPreviousTurnCommute);
-  if (commuteReply) {
-    return commuteReply;
+  // 3. Commute & travel directions
+  if (isExplicitCommuteText(q)) {
+    const commuteReply = matchCebuCommuteAndTravelHours(q, false, contextBeach);
+    if (commuteReply) return commuteReply;
   }
 
-  // 3. Out-of-scope resorts/towns (when asking about beaches in other places rather than commuting from them)
-  if (
-    /\b(mactan|lapu-lapu|moalboal|badian|oslob|bantayan|malapascua|camotes|alcoy|dalaguete|boracay|palawan|siargao|bohol|panglao)\b/i.test(
-      lower
-    )
-  ) {
-    return getBaiApologyFallback(userQuery, userName);
-  }
-
-  // 4. Detect beaches & topics in current query, and apply Continuation / Branching logic
+  // 4. Detect targeted beach(es) and topic(s)
   let targetBeaches = detectBeachesInText(q);
-  let currentTopics = detectTopicsInText(q);
+  const topics = detectTopicsInText(q);
 
-  const asksForAllBeaches =
-    /\b(all|tanan|tanang|every beach|each beach|which beach|what beach|unsa nga beach|asa nga beach|asay|unsay|mga beach|beaches)\b/i.test(
-      lower
-    );
-
-  // BRANCH CASE A: Topic Continuation (User keeps the same beach and branches to a new topic, e.g. "Naa silay tindahan?", "How about cottages?")
-  if (
-    targetBeaches.length === 0 &&
-    lastSingleBeach &&
-    hasAnyTopic(currentTopics) &&
-    !asksForAllBeaches
-  ) {
-    const isFollowUpPhrasing =
-      /\b(their|its|there|they|ila|ilang|didto|nila|doon|what about|how about|unsa man|ug ang|entran|cottage|room|contact|number|open|close|parking|cr|kayak|tent|overnight|store|tinda|tindahan|sand|safe|discount|book)\b/i.test(
-        lower
-      ) || q.split(/\s+/).length <= 6;
-
-    if (isFollowUpPhrasing) {
-      targetBeaches = [lastSingleBeach];
+  // Check multi-turn context continuation only if:
+  // - No beach was explicitly mentioned in the query
+  // - The query is NOT comparative or broad (e.g. NOT "which beach", "most rocky", "asay", "unsay", "all beaches", etc.)
+  // - A previous context beach exists and the user either asks about "this beach" or a specific follow-up topic
+  if (targetBeaches.length === 0 && contextBeach && !isComparativeOrBroadQuery(lower)) {
+    const refersToThis = /\b(this\s*beach|kani\s*(nga|na)\s*beach|ni\s*(nga|na)\s*beach|ani\s*(nga|na)\s*beach|diri\s*(nga|na)\s*beach|ari\s*(nga|na)\s*beach)\b/i.test(lower);
+    if (refersToThis || hasAnyTopic(topics)) {
+      targetBeaches = [contextBeach];
     }
   }
 
-  // BRANCH CASE B: Beach Branching (User switches to a new beach for the same topic, e.g. after asking about store/entrance, asks "How about Lite Bay?" or "Sa Majestique?")
-  const asksForFullOverview = /\b(detail|details|detalye|everything|info|information|about|bahin)\b/i.test(lower);
-  if (
-    targetBeaches.length === 1 &&
-    !hasAnyTopic(currentTopics) &&
-    lastUserTopics &&
-    !asksForFullOverview &&
-    (/\b(what about|how about|unsa man|entran|sa|at|in|for|kung|ug)\b/i.test(lower) ||
-      q.split(/\s+/).length <= 4)
-  ) {
-    currentTopics = lastUserTopics;
-  }
-
-  // 5. If ONE specific beach is targeted, answer specifically for that beach in the user's language!
+  // 5. SPECIFIC BEACH ANSWER: If ONE beach is targeted
   if (targetBeaches.length === 1) {
     const b = BEACH_DATA[targetBeaches[0]];
-    return buildSpecificSingleBeachAnswer(b, lower, lang, currentTopics);
+    return buildSpecificSingleBeachAnswer(b, lower, lang, topics);
   }
 
-  // 5b. If MULTIPLE specific beaches are compared in the same question
-  if (targetBeaches.length > 1) {
-    const lines = targetBeaches.map((key) => {
-      const b = BEACH_DATA[key];
-      const single = buildSpecificSingleBeachAnswer(b, lower, lang, currentTopics);
-      return `• ${single}`;
-    });
-    return lines.join('\n');
-  }
+  // 6. BROAD QUESTIONS (User did NOT specify 1 beach, or asked about "mga beach" / "all beaches"):
 
-  // 6. Specific General Questions (Safety, Store/Tinda, White Sand, Private Booking, Event Discount, Food/Corkage, Cheapest)
-  if (currentTopics.asksSafety) {
+  // 6A. BATOON BA O DILI / MOST ROCKY (Broad)
+  if (topics.asksMostRocky) {
     if (isCeb) {
-      return `**Oo, safe!** Luwas kaligoan ang tanang 5 ka beach sa Barangay Binongkalan (**Rañola Beach, Lite Bay Resort, Turtle Point Beach, Majestique Beach, ug Hinagdan Beach 1**), ug naa say maabangan nga **life jacket ug salbabida**.\n\n🌦️ **Tan-awa ang Weather Update:** Palihug i-check pirmi ang **Live Weather Update** diri sa among website (nga nagpakita sa real-time nga **temperatura, kusog sa hangin, taob/hunas, ug kahimtang sa panahon sa Catmon**) sa dili pa maligo!`;
+      return `Sa mga beach sa Barangay Binongkalan, **walay purong o sobra ka batoon nga beach**, apan ang **Rañola Beach (Raniola)** ug **Lite Bay Resort** ang **batoon gamay** (adunay ginagmay nga bato o pebbles). Samtang ang **Majestique Beach** kay **dili ra batoon**, ug ang **Hinagdan Beach** kay **dili batoon** (balas / sandy shoreline kini).\n\n• **Rañola Beach (Raniola):** Batoon gamay\n• **Lite Bay Resort:** Batoon gamay\n• **Majestique Beach:** Dili ra batoon\n• **Hinagdan Beach:** Dili batoon (balas)`;
     }
-    return `**Yes!** All 5 beaches in Barangay Binongkalan (**Rañola Beach, Lite Bay Resort, Turtle Point Beach, Majestique Beach, and Hinagdan Beach 1**) are **safe for swimming**, and life jackets / floaters (**salbabida**) are available for rent.\n\n🌦️ **Check the Weather Update:** Always refer to the **Live Weather Update** section on our website (showing real-time **temperature, wind speed, tide schedule, and weather conditions in Catmon**) before swimming!`;
+    return `Among the beaches in Barangay Binongkalan, **none of the beaches are excessively or purely rocky**, but **Rañola Beach (Raniola)** and **Lite Bay Resort** are **slightly rocky (batoon gamay)** with small natural pebbles/stones. Meanwhile, **Majestique Beach** is **not rocky (dili ra batoon)**, and **Hinagdan Beach** is **not rocky (dili batoon)** as it has a sandy shoreline.\n\n• **Rañola Beach (Raniola):** Slightly rocky (batoon gamay)\n• **Lite Bay Resort:** Slightly rocky (batoon gamay)\n• **Majestique Beach:** Not rocky (dili ra batoon)\n• **Hinagdan Beach:** Not rocky (dili batoon / sandy)`;
   }
 
-  if (currentTopics.asksStore) {
+  if (topics.asksBatoon) {
     if (isCeb) {
-      return `Mao kini kung **naa bay store / tinda** sa matag beach sa Barangay Binongkalan:\n• **Rañola Beach:** **Naa** (naay tindahan/store)\n• **Lite Bay Resort:** **Wala** (walay tindahan sa sulod)\n• **Hinagdan Beach 1:** **Naa** (naay tindahan/store)\n• **Majestique Beach:** **Naa** (naay tindahan/store)`;
+      return `Mao kini ang kahimtang sa baybayon (kung **batoon o dili**) sa mga beach sa Barangay Binongkalan:\n• **Rañola Beach (Raniola):** **Batoon gamay**\n• **Lite Bay Resort:** **Batoon gamay**\n• **Majestique Beach:** **Dili ra batoon**\n• **Hinagdan Beach:** **Dili batoon** (sand / balas ang baybayon)`;
     }
-    return `Here is the **store / tinda availability** for each beach in Barangay Binongkalan:\n• **Rañola Beach:** **Naa (Yes)** — has a store on-site\n• **Lite Bay Resort:** **Wala (No)** — no store inside\n• **Hinagdan Beach 1:** **Naa (Yes)** — has a store on-site\n• **Majestique Beach:** **Naa (Yes)** — has a store on-site`;
+    return `Here is the shoreline condition (**rocky/batoon or not**) for the beaches in Barangay Binongkalan:\n• **Rañola Beach (Raniola):** **Slightly rocky (batoon gamay)**\n• **Lite Bay Resort:** **Slightly rocky (batoon gamay)**\n• **Majestique Beach:** **Not rocky (dili ra batoon)**\n• **Hinagdan Beach:** **Not rocky (dili batoon)** — has a sandy shoreline (balas)`;
   }
 
-  if (currentTopics.asksSand) {
+  // 6B. SUGBAANAN (Broad)
+  if (topics.asksSugba) {
     if (isCeb) {
-      return `• **Hinagdan Beach 1:** **Sand (Balas)** — ang **Hinagdan Beach 1** maoy **sandy (balas)** nga beach sa Barangay Binongkalan!\n• Ang ubang mga beach (**Rañola, Lite Bay, Turtle Point, ug Majestique**) kay dili purong white sand (natural nga baybayon nga naay sagol nga bato-bato/pebbles).`;
+      return `**Naay sugbaanan ang tanang 4 ka beach** sa Barangay Binongkalan:\n• **Rañola Beach (Raniola):** Naay sugbaanan\n• **Lite Bay Resort:** Naay sugbaanan\n• **Majestique Beach:** Naay sugbaanan\n• **Hinagdan Beach:** Naay sugbaanan\n\n💡 Pwede kaayo mag-ihaw o magsugba sa ilang cottages/tables basta magpabilin lang nga limpyo ang palibot.`;
     }
-    return `• **Hinagdan Beach 1:** **Sand (Balas)** — **Hinagdan Beach 1** is the beach in Barangay Binongkalan with a **sandy shoreline**!\n• The other beaches (**Rañola, Lite Bay, Turtle Point, and Majestique**) are not pure white sand (they have a natural coastal shoreline with pebbles/stones).`;
+    return `**All 4 beaches in Barangay Binongkalan have grilling areas (naay sugbaanan)**:\n• **Rañola Beach (Raniola):** Has grilling area (naay sugbaanan)\n• **Lite Bay Resort:** Has grilling area (naay sugbaanan)\n• **Majestique Beach:** Has grilling area (naay sugbaanan)\n• **Hinagdan Beach:** Has grilling area (naay sugbaanan)\n\n💡 Grilling is permitted at their cottages and tables as long as guests clean up after use.`;
   }
 
-  if (currentTopics.asksPrivateBooking) {
+  // 6C. ASAY PINAKA-SAFE NA BEACH / SAFE BA ANG MGA BEACH (Broad)
+  if (topics.asksSafest || (topics.asksSafety && !topics.asksLifeguard)) {
     if (isCeb) {
-      return `**Walay private kay open siya sa tanan!**\nDili ma-bookingan og exclusive o private ang mga beach sa Barangay Binongkalan (**Rañola, Lite Bay, Turtle Point, Majestique, ug Hinagdan 1**) kay abli kini sa tanan (pwede ra diretso mo-walk in bisan kinsa).`;
+      return `Ang **Rañola Beach (Raniola)** ang **pinaka-safe nga beach**, labi na para sa mga **bata (children) ug senior citizens**, tungod kay accessible kini ug dili dali molawm.\n\nApan ang **tanang 4 ka beach** sa Barangay Binongkalan (**Rañola, Lite Bay, Majestique, ug Hinagdan**) kay luwas ug safe kaligoan! Palihug tan-awa sab pirmi ang **Live Weather & Tide Update** sa among website sa dili pa maligo.`;
     }
-    return `**Walay private kay open sya sa tanan (No private booking — open to everyone)!**\nThe beaches in Barangay Binongkalan (**Rañola, Lite Bay, Turtle Point, Majestique, and Hinagdan 1**) cannot be booked privately or exclusively because they are open to the public (walk-in guests are always welcome).`;
+    return `**Rañola Beach (Raniola)** is considered the **safest beach**, especially for **children and seniors**, because it is easily accessible and does not get deep quickly.\n\nHowever, **all 4 beaches** in Barangay Binongkalan (**Rañola, Lite Bay, Majestique, and Hinagdan**) are safe for swimming! Please also check our **Live Weather & Tide Update** on the website before swimming.`;
   }
 
-  if (currentTopics.asksDiscount) {
+  // 6D. LIFEGUARD (Broad)
+  if (topics.asksLifeguard) {
     if (isCeb) {
-      return `**Wala.** Walay discount sa mga beach sa Barangay Binongkalan bisan kung naay **event** (sama sa birthday, reunion, o team building). Ang regular nga presyo gihapon ang sundon.`;
+      return `**Walay lifeguard ang mga beach** sa Barangay Binongkalan (walay lifeguard sa tanang 4 ka beach: Rañola, Lite Bay, Majestique, ug Hinagdan). Apan naay maabangan nga **life jackets ug salbabida (floaters)** sa mga resort para sa inyong kaluwasan.`;
     }
-    return `**Wala (No).** There are **no discounts** even if there is an event (such as a birthday, reunion, or team building). Regular entrance, cottage, and room rates apply.`;
+    return `There are **no lifeguards at any of the beaches** in Barangay Binongkalan (none of the 4 beaches have lifeguards). However, **life jackets and floaters (salbabida)** are available for rent at the resorts for your safety.`;
   }
 
-  if (currentTopics.asksFoodCorkage) {
+  // 6E. STORE OR FOODS (Broad)
+  if (topics.asksStore) {
     if (isCeb) {
-      return `**Oo!** Pwede ra kaayo mo magdala og kaugalingong **pagkaon, snacks, ilimnon (baon), ug magsugba** sa mga beach sa Barangay Binongkalan nga **walay corkage fee**. Naa say **tinda / store** sa **Rañola, Majestique, ug Hinagdan 1**!`;
+      return `Oo, **naay store ug foods ang tanang mga beach** sa Barangay Binongkalan (**Rañola, Lite Bay, Majestique, ug Hinagdan**) ug naa rasad mga tindahan sa duol daplin sa highway. Apan timan-i nga **walay mga baligya nga karne (meat)** diri, busa pagpalit daan og karne sa merkado kung magplano mo nga magsugba.`;
     }
-    return `**Yes!** You can bring your own **food, drinks, snacks, and grilling (sugba) items** to the beaches in Barangay Binongkalan with **no corkage fee**. **Rañola, Majestique, and Hinagdan 1** also have **stores (tinda)** on-site!`;
+    return `Yes, **there are stores and food at all beaches** in Barangay Binongkalan (**Rañola, Lite Bay, Majestique, and Hinagdan**) as well as nearby stores along the highway. However, **they do not sell raw meat**, so please purchase your meat in advance at the market if you plan to grill.`;
   }
 
-  if (
-    lower.includes('pinakabarato') ||
-    lower.includes('pinaka barato') ||
-    lower.includes('barato') ||
-    lower.includes('pinakamura') ||
-    lower.includes('cheapest') ||
-    lower.includes('lowest') ||
-    lower.includes('most affordable')
-  ) {
-    if (currentTopics.asksEntrance) {
-      return isCeb
-        ? `Ang **Rañola Beach** maoy pinakabarato og entrance fee sa **₱20 kada tawo** (kung naay cottage) o **₱30** (kung walay cottage), sunod ang **Majestique Beach** ug **Hinagdan Beach 1** (₱30).`
-        : `**Rañola Beach** has the cheapest entrance fee at **₱20 per person** (with a cottage) or **₱30** (without a cottage), followed by **Majestique Beach** and **Hinagdan Beach 1** (with cottage) at **₱30 per person**.`;
-    }
-    if (currentTopics.asksCottage) {
-      return isCeb
-        ? `Sa table ug cottage, ang **Turtle Point Beach** maoy pinakabarato og table sa **₱150** (ug **Lite Bay Resort** sa **₱300**), samtang ang **Rañola Beach** ug **Majestique Beach** maoy pinakabarato og small cottage sa **₱500**.`
-        : `For tables and cottages, **Turtle Point Beach** has the cheapest table at **₱150** (and **Lite Bay Resort** at **₱300**), while **Rañola Beach** and **Majestique Beach** have the lowest small cottage rates starting at **₱500**.`;
-    }
-    if (currentTopics.asksRoom) {
-      return isCeb
-        ? `Ang **Hinagdan Beach 1** maoy pinakabarato og room: **₱250 sa 3 ka oras** (short-time room) ug **₱1,000** sa ordinary room. Pwede sab magdala og kaugalingong **tent** sa **Rañola Beach** nga walay dugang bayad sa room!`
-        : `**Hinagdan Beach 1** has the most affordable room rates: **₱250 for 3 hours** (short-time room) and **₱1,000** for an ordinary room. Or at **Rañola Beach**, you can bring your own **tent** for overnight at no extra room cost!`;
-    }
-    if (isCeb || lower.includes('barato')) {
-      return `Mao kini ang **pinakabarato** sa Barangay Binongkalan:\n• **Pinakabarato og Entrance:** **Rañola Beach** (₱20 kung naay cottage / ₱30 kung wala), sunod ang **Majestique** ug **Hinagdan 1** (₱30)\n• **Pinakabarato og Table / Cottage:** **Turtle Point Beach** (₱150 Table), **Lite Bay Resort** (₱300 Table), ug **Rañola / Majestique** (₱500 Small Cottage)\n• **Pinakabarato og Room / Overnight:** **Hinagdan Beach 1** (₱250 short-time 3 hrs / ₱1,000 Ordinary Room), o mag-tent sa **Rañola Beach**!`;
-    }
-    return `Here are the **cheapest options** in Barangay Binongkalan:\n• **Cheapest Entrance Fee:** **Rañola Beach** (₱20 with cottage / ₱30 without), followed by **Majestique Beach** & **Hinagdan Beach 1** (₱30)\n• **Cheapest Table & Cottage:** **Turtle Point Beach** (₱150 table), **Lite Bay Resort** (₱300 table), and **Rañola / Majestique** (₱500 small cottage)\n• **Cheapest Room / Overnight:** **Hinagdan Beach 1** (₱250 for 3 hours / ₱1,000 ordinary room), or tent camping at **Rañola Beach**!`;
-  }
-
-  if (currentTopics.asksEmail) {
-    return `**Sorry**, none of the 5 beach resorts in Barangay Binongkalan have an email address listed in our database. You can reach them directly by phone:\n• **Rañola Beach:** 0935-724-1824 / 0960-326-7698\n• **Lite Bay Resort:** 0953-411-7454\n• **Majestique Beach:** 0943-622-7972\n• **Hinagdan Beach 1:** 0975-086-2570 / 0963-654-0904 / 0926-234-5373`;
-  }
-
-  if (currentTopics.asksFacebook) {
-    return `Among the 5 beaches in Barangay Binongkalan, **Rañola Beach** and **Majestique Beach** have official Facebook pages. **Lite Bay Resort** does not have a Facebook page, and **Turtle Point Beach** and **Hinagdan Beach 1** do not have Facebook pages listed in our database.`;
-  }
-
-  if (currentTopics.asksEntrance) {
+  // 6F. SHOWER / KALIGOAN (Broad)
+  if (topics.asksShower) {
     if (isCeb) {
-      return `Mao kini ang **entrance fee kada tawo** sa mga beach sa Barangay Binongkalan:\n• **Rañola Beach:** ₱20 (kung naay cottage) | ₱30 (kung walay cottage)\n• **Majestique Beach:** ₱30 kada tawo\n• **Hinagdan Beach 1:** ₱30 (day use nga naay cottage) | ₱50 (walay cottage / overnight)\n• **Lite Bay Resort:** ₱50 kada tawo\n• **Turtle Point Beach:** ₱50 kada tawo`;
+      return `Oo, **naay shower / kaligoan ang mga beach** sa Barangay Binongkalan:\n• **Rañola Beach (Raniola):** Naay shower (₱10 ligo/shower)\n• **Lite Bay Resort:** Naay shower (**LIBRE** / walay bayad)\n• **Majestique Beach:** Naay shower (₱10 himasa/rinse)\n• **Hinagdan Beach:** Naay shower para kaligo ug banlaw`;
     }
-    return `Here are the **entrance fees per person**:\n• **Rañola Beach:** ₱20 (with cottage) | ₱30 (without cottage)\n• **Majestique Beach:** ₱30 per person\n• **Hinagdan Beach 1:** ₱30 (day with cottage) | ₱50 (day without cottage / overnight)\n• **Lite Bay Resort:** ₱50 per person\n• **Turtle Point Beach:** ₱50 per person`;
+    return `Yes, **all beaches in Barangay Binongkalan have shower / rinse facilities**:\n• **Rañola Beach (Raniola):** Has shower (₱10 for shower)\n• **Lite Bay Resort:** Has shower (**FREE** of charge)\n• **Majestique Beach:** Has shower (₱10 for rinse/himasa)\n• **Hinagdan Beach:** Has showers and rinse facilities`;
   }
 
-  if (currentTopics.asksCottage) {
+  // 6G. SENIOR CITIZEN ACCESSIBILITY (Broad)
+  if (topics.asksSenior) {
     if (isCeb) {
-      return `Mao kini ang presyo sa **cottage ug table**:\n• **Rañola Beach:** ₱500 (Small), ₱2,000 (Middle), ₱2,500 (Big cottage para sa 30 ka tawo)\n• **Lite Bay Resort:** ₱300 (Table), ₱800 (Cottage), ₱1,000 (Dako nga space)\n• **Turtle Point Beach:** ₱150 (Table)\n• **Majestique Beach:** ₱500–₱1,000 (Day cottage) | ₱800–₱1,200 (Overnight cottage)\n• **Hinagdan Beach 1:** ₱600 (Day cottage) | ₱700 (Overnight cottage)`;
+      return `• **Rañola Beach (Raniola):** **Yes, accessible sa mga senior citizen** kay patag kini ug dali rang sudlon gikan sa highway nga walay lisod nga mga hagdanan.\n• **Lite Bay Resort, Majestique Beach, ug Hinagdan Beach:** **Dili accessible sa mga senior citizen** tungod kay **daghan ug hagdanan** paubos sa dagat, busa maglisod ang mga senior.`;
     }
-    return `Here are the **cottage and table rates**:\n• **Rañola Beach:** ₱500 (Small), ₱2,000 (Middle), ₱2,500 (Big cottage for 30 persons)\n• **Lite Bay Resort:** ₱300 (Table), ₱800 (Cottage), ₱1,000 (Large space)\n• **Turtle Point Beach:** ₱150 (Table)\n• **Majestique Beach:** ₱500–₱1,000 (Day cottage) | ₱800–₱1,200 (Overnight cottage)\n• **Hinagdan Beach 1:** ₱600 (Day cottage) | ₱700 (Overnight cottage)`;
+    return `• **Rañola Beach (Raniola):** **Yes, accessible for senior citizens** because it is flat and easy to enter from the highway without steep stairs.\n• **Lite Bay Resort, Majestique Beach, and Hinagdan Beach:** **Not accessible for senior citizens** because there are many stairs (daghan ug hagdanan) leading down to the shore, making it difficult for seniors.`;
   }
 
-  if (currentTopics.asksRoom) {
+  // 6H. SINKHOLE (Broad)
+  if (topics.asksSinkhole) {
     if (isCeb) {
-      return `Mao kini ang mga **room ug overnight** sa Barangay Binongkalan:\n• **Hinagdan Beach 1:** ₱250 (3-hr short-time room), ₱1,000 (Ordinary room), ₱2,500 (Aircon room)\n• **Majestique Beach:** ₱2,000 (Regular room), ₱3,500 (Aircon room)\n• **Turtle Point Beach:** ₱10,000 (Whole House / Tibuok balay)\n• **Rañola Beach:** Walay kwarto, pero pwede mag-overnight ug magdala og kaugalingong **tent**\n• **Lite Bay Resort:** Walay room ug walay overnight (day use ra)`;
+      return `Mao kini ang bahin sa sinkhole sa tanang 4 ka beach sa Barangay Binongkalan:\n• **Rañola Beach (Raniola):** Naay sinkhole pero **layo ra** sa swimming area (safe ra maligo sa duol)\n• **Lite Bay Resort:** Naay sinkhole pero **layo ra sad**\n• **Majestique Beach:** **Wala** (walay sinkhole)\n• **Hinagdan Beach:** **Wala** (walay sinkhole)`;
     }
-    return `Here are the **room and overnight options**:\n• **Hinagdan Beach 1:** ₱250 (3-hr short-time room), ₱1,000 (Ordinary room), ₱2,500 (AC room)\n• **Majestique Beach:** ₱2,000 (Regular room), ₱3,500 (AC room)\n• **Turtle Point Beach:** ₱10,000 (Whole House)\n• **Rañola Beach:** No rooms, but overnight tent camping is allowed (same regular rate)\n• **Lite Bay Resort:** No rooms or overnight stays (day use only)`;
+    return `Here is the sinkhole information for all 4 beaches in Barangay Binongkalan:\n• **Rañola Beach (Raniola):** Has a sinkhole, but it is **far out** from the swimming area (safe to swim near the shore)\n• **Lite Bay Resort:** Has a sinkhole, but it is **also far out**\n• **Majestique Beach:** **None (Wala)**\n• **Hinagdan Beach:** **None (Wala)**`;
   }
 
-  if (currentTopics.asksHours) {
+  // 6I. DALI MOLAWM / DEPTH (Broad)
+  if (topics.asksMolawm) {
     if (isCeb) {
-      return `Mao kini ang **oras sa pag-abli ug pagpanirado** sa mga beach:\n• **Rañola Beach:** 6:00 AM – 7:00 PM (Abli kada adlaw)\n• **Lite Bay Resort:** 6:00 AM – 8:00 PM (Dominggo–Huwebes), 6:00 AM – 5:00 PM (Biyernes), **Sirado kada Sabado**\n• **Turtle Point Beach:** 7:00 AM – 7:00 PM (Abli kada adlaw)\n• **Majestique Beach:** 7:00 AM – 5:00 PM (Day) | 6:00 PM – 6:00 AM (Overnight) — Abli kada adlaw\n• **Hinagdan Beach 1:** 6:00 AM – 7:00 PM (Day) | Abli tibuok gabii (Overnight) — Abli kada adlaw`;
+      return `Mao kini ang bahin sa kalawmon sa mga beach sa Barangay Binongkalan:\n• **Lite Bay Resort ug Majestique Beach:** **Dali ra molawm** tungod kay **dili sila mohunas ug pamaayo** bisan kung low tide.\n• **Rañola Beach ug Hinagdan Beach:** **Dili ra dali molawm** (hinay-hinay ra ang paglawm ug mas angay sa mga bata).`;
     }
-    return `Here are the **operating hours**:\n• **Rañola Beach:** 6:00 AM – 7:00 PM (Open every day)\n• **Lite Bay Resort:** 6:00 AM – 8:00 PM (Sun–Thu), 6:00 AM – 5:00 PM (Friday), **Closed on Saturdays**\n• **Turtle Point Beach:** 7:00 AM – 7:00 PM (Open every day)\n• **Majestique Beach:** 7:00 AM – 5:00 PM (Day) | 6:00 PM – 6:00 AM (Overnight) — Open every day\n• **Hinagdan Beach 1:** 6:00 AM – 7:00 PM (Day) | Open whole night (Overnight) — Open every day`;
+    return `Here is the water depth information for the beaches in Barangay Binongkalan:\n• **Lite Bay Resort and Majestique Beach:** **Get deep quickly (dali molawm)** because they do not recede deeply (dili mohunas ug pamaayo) even at low tide.\n• **Rañola Beach and Hinagdan Beach:** **Do not get deep quickly** (they have a gradual slope and are safer for kids).`;
   }
 
-  if (currentTopics.asksContact) {
-    return `Here are the **official contact numbers**:\n• **Rañola Beach:** 0935-724-1824 / 0960-326-7698\n• **Lite Bay Resort:** 0953-411-7454\n• **Majestique Beach:** 0943-622-7972\n• **Hinagdan Beach 1:** 0975-086-2570 / 0963-654-0904 / 0926-234-5373\n• **Turtle Point Beach:** Sorry, not yet listed in our database`;
-  }
-
-  if (currentTopics.asksParking && !currentTopics.asksRestroom) {
+  // 6J. PETS (Broad)
+  if (topics.asksPets) {
     if (isCeb) {
-      return `Mao kini ang **bayad sa parking**:\n• **Lite Bay Resort:** LIBRE (walay bayad)\n• **Majestique Beach:** LIBRE (walay bayad)\n• **Rañola Beach:** ₱50 (Sakyanan / Car) | ₱20 (Motor)\n• **Turtle Point Beach & Hinagdan Beach 1:** Pasensya na, wala pa ma-lista ang bayad sa parking.`;
+      return `Oo, **pwede magdala og pets sa tanang 4 ka beach** sa Barangay Binongkalan (**Rañola Beach, Lite Bay Resort, Majestique Beach, ug Hinagdan Beach**)! Palihug lang og bantay sa inyong mga binuhi ug tipigi ang kalimpyo sa baybayon.`;
     }
-    return `Here are the **parking fees**:\n• **Lite Bay Resort:** FREE\n• **Majestique Beach:** FREE\n• **Rañola Beach:** ₱50 (Car) | ₱20 (Motorcycle)\n• **Turtle Point Beach & Hinagdan Beach 1:** Sorry, parking fees are not yet listed in our database.`;
+    return `Yes, **pets are allowed at all 4 beaches** in Barangay Binongkalan (**Rañola Beach, Lite Bay Resort, Majestique Beach, and Hinagdan Beach**)! Please keep your pets supervised and clean up after them.`;
   }
 
-  if (currentTopics.asksRestroom && !currentTopics.asksParking) {
+  // 6K. TAOB OR HUNAS / TIDES (Broad)
+  if (topics.asksTide) {
     if (isCeb) {
-      return `Mao kini ang **bayad sa CR ug kaligo**:\n• **Lite Bay Resort:** LIBRE (walay bayad)\n• **Majestique Beach:** ₱10 (Himasa / Banlaw)\n• **Rañola Beach:** ₱5 (Ihi) | ₱10 (Kaligo / Libang)\n• **Turtle Point Beach:** ₱5 (Ihi) | ₱10 (Kaligo)\n• **Hinagdan Beach 1:** Pasensya na, wala pa ma-lista ang bayad sa CR.`;
+      return `Ang kahimtang sa taob (high tide) ug hunas (low tide) kay **nag-agad sa Live Tide Schedule sa Weather section** diri sa among website (nga nagpakita sa real-time nga gihabugon sa tubig karong adlawa).\n\n💡 **Timan-i:** Ang **Lite Bay Resort ug Majestique Beach** kay **dili kaayo mohunas ug pamaayo** bisan kung low tide, samtang ang **Rañola Beach ug Hinagdan Beach** kay klaro kaayo ang paghunas.`;
     }
-    return `Here are the **restroom and shower fees**:\n• **Lite Bay Resort:** FREE\n• **Majestique Beach:** ₱10 (Rinse / Himasa)\n• **Rañola Beach:** ₱5 (Urination / Ihi) | ₱10 (Shower / Ligo)\n• **Turtle Point Beach:** ₱5 (Urination / Ihi) | ₱10 (Shower / Ligo)\n• **Hinagdan Beach 1:** Sorry, restroom fees are not yet listed in our database.`;
+    return `Tide conditions (taob or hunas) follow the **Live Tide Schedule in the Weather section** on our website (showing real-time water levels and schedules for today).\n\n💡 **Note:** **Lite Bay Resort and Majestique Beach** do not recede deeply (dili mohunas ug pamaayo) even during low tide, whereas **Rañola Beach and Hinagdan Beach** have noticeably exposed shorelines during low tide.`;
   }
 
-  if (currentTopics.asksParking && currentTopics.asksRestroom) {
+  // 6L. ENTRANCE FEES (Broad)
+  if (topics.asksEntrance) {
     if (isCeb) {
-      return `Mao kini ang **bayad sa parking ug CR**:\n• **Lite Bay Resort:** LIBRE ang parking ug LIBRE ang CR\n• **Majestique Beach:** LIBRE ang parking | ₱10 ang himasa/kaligo\n• **Rañola Beach:** Parking ₱50 (Car) / ₱20 (Motor) | CR ₱5 (Ihi) / ₱10 (Kaligo)\n• **Turtle Point Beach:** CR ₱5 (Ihi) / ₱10 (Kaligo) (wala ma-lista ang parking)\n• **Hinagdan Beach 1:** Pasensya na, wala pa ma-lista ang parking ug CR.`;
+      return `Mao kini ang **entrance fee kada tawo** sa tanang 4 ka beach sa Barangay Binongkalan:\n• **Rañola Beach:** ₱20 (naay cottage) | ₱30 (walay cottage)\n• **Majestique Beach:** ₱30 kada tawo\n• **Hinagdan Beach:** ₱30 (day use naay cottage) | ₱50 (walay cottage / overnight)\n• **Lite Bay Resort:** ₱50 kada tawo`;
     }
-    return `Here are the **parking and restroom fees**:\n• **Lite Bay Resort:** FREE parking & FREE restroom\n• **Majestique Beach:** FREE parking | ₱10 shower/rinse (himasa)\n• **Rañola Beach:** Parking ₱50 (Car) / ₱20 (Motor) | Restroom ₱5 (Ihi) / ₱10 (Ligo)\n• **Turtle Point Beach:** Restroom ₱5 (Ihi) / ₱10 (Ligo) (parking not listed)\n• **Hinagdan Beach 1:** Sorry, parking & restroom fees are not yet listed`;
+    return `Here are the **entrance fees per person** for all 4 beaches in Barangay Binongkalan:\n• **Rañola Beach:** ₱20 (with cottage) | ₱30 (without cottage)\n• **Majestique Beach:** ₱30 per person\n• **Hinagdan Beach:** ₱30 (day with cottage) | ₱50 (without cottage / overnight)\n• **Lite Bay Resort:** ₱50 per person`;
   }
 
-  if (currentTopics.asksActivities || currentTopics.asksRentals) {
+  // 6M. COTTAGES / TABLES (Broad)
+  if (topics.asksCottage) {
     if (isCeb) {
-      return `Mao kini ang mga **activities ug maabangan (rentals)** sa mga beach:\n• **Lite Bay Resort:** Kayak (₱200 sa 2 ka oras), Life Jacket (₱50), Goggles (₱50), Fins (₱50), Snorkel Mouthpiece (₱50)\n• **Turtle Point Beach:** Banana Boat (₱150 sa 15 minutos) ug Kayak\n• **Hinagdan Beach 1:** Salbabida (₱50), Baratohon Life Jacket (₱50), Mahalon Life Jacket (₱100)\n• **Majestique Beach:** Life Jacket (₱50)\n• **Rañola Beach:** Salbabida gikan sa magsuroy-suroy (₱30)`;
+      return `Mao kini ang presyo sa **cottage ug table** sa mga beach sa Barangay Binongkalan:\n• **Lite Bay Resort:** ₱300 (Table) | ₱800 (Cottage) | ₱1,000 (Dako nga space)\n• **Rañola Beach:** ₱500 (Small) | ₱2,000 (Middle) | ₱2,500 (Big cottage for 30 persons)\n• **Majestique Beach:** ₱500–₱1,000 (Day cottage) | ₱800–₱1,200 (Overnight)\n• **Hinagdan Beach:** ₱600 (Day cottage) | ₱700 (Overnight)`;
     }
-    return `Here are the **activities and equipment rentals**:\n• **Lite Bay Resort:** Kayak (₱200 for 2 hrs), Life Jacket (₱50), Goggles (₱50), Fins (₱50), Snorkel Mouthpiece (₱50)\n• **Turtle Point Beach:** Banana Boat (₱150 for 15 mins) & Kayaking\n• **Hinagdan Beach 1:** Floater / Salbabida (₱50), Standard Life Jacket (₱50), Premium Life Jacket (₱100)\n• **Majestique Beach:** Life Jacket (₱50)\n• **Rañola Beach:** Floater / Salbabida from roving vendors (₱30)`;
+    return `Here are the **cottage and table rates** for the 4 beaches in Barangay Binongkalan:\n• **Lite Bay Resort:** ₱300 (Table) | ₱800 (Cottage) | ₱1,000 (Large space)\n• **Rañola Beach:** ₱500 (Small) | ₱2,000 (Middle) | ₱2,500 (Big 30-person cottage)\n• **Majestique Beach:** ₱500–₱1,000 (Day cottage) | ₱800–₱1,200 (Overnight)\n• **Hinagdan Beach:** ₱600 (Day cottage) | ₱700 (Overnight)`;
   }
 
+  // 6N. ROOMS / OVERNIGHT (Broad)
+  if (topics.asksRoom) {
+    if (isCeb) {
+      return `Mao kini ang mga kapilian sa **kwarto ug overnight** sa Barangay Binongkalan:\n• **Hinagdan Beach:** ₱250 (3-hr short-time room), ₱1,000 (Ordinary room), ₱2,500 (Aircon room)\n• **Majestique Beach:** ₱2,000 (Regular room), ₱3,500 (Aircon room)\n• **Rañola Beach:** Walay kwarto, pero pwede mag-overnight tent camping sa regular nga presyo\n• **Lite Bay Resort:** Walay kwarto ug walay overnight (day use ra)`;
+    }
+    return `Here are the **room and overnight options** in Barangay Binongkalan:\n• **Hinagdan Beach:** ₱250 (3-hr short-time room), ₱1,000 (Ordinary room), ₱2,500 (AC room)\n• **Majestique Beach:** ₱2,000 (Regular room), ₱3,500 (AC room)\n• **Rañola Beach:** No rooms, but overnight tent camping is allowed at the regular rate\n• **Lite Bay Resort:** No rooms or overnight stays (day use only)`;
+  }
+
+  // 6O. LIST ALL BEACHES
   if (
     lower.includes('which beach') ||
     lower.includes('what beach') ||
@@ -1353,15 +1295,16 @@ export function matchBaiInstantAnswer(
     lower.includes('unsa nga mga beach') ||
     lower.includes('unsay mga beach')
   ) {
-    return `There are **5 verified beaches** in Barangay Binongkalan, Catmon, Cebu:\n1. **Rañola Beach**\n2. **Lite Bay Resort**\n3. **Turtle Point Beach**\n4. **Majestique Beach**\n5. **Hinagdan Beach 1**\n\nWhich beach or specific detail (entrance fee, cottages, rooms, store/tinda, sand, safety/weather, private booking, discounts, or nearest beach from your location) would you like to know?`;
+    return isCeb
+      ? `Naay **4 ka verified beaches** sa Barangay Binongkalan, Catmon, Cebu:\n1. **Rañola Beach (Raniola)**\n2. **Lite Bay Resort**\n3. **Majestique Beach**\n4. **Hinagdan Beach**\n\nUnsa nga beach o detalye (batoon ba, sugbaanan, safety, lifeguard, tindahan, shower, senior accessibility, sinkhole, dali molawm, pets, o taob/hunas) ang gusto nimong mahibaw-an?`
+      : `There are **4 verified beaches** in Barangay Binongkalan, Catmon, Cebu:\n1. **Rañola Beach (Raniola)**\n2. **Lite Bay Resort**\n3. **Majestique Beach**\n4. **Hinagdan Beach**\n\nWhich beach or question (rocky/batoon, grilling/sugbaanan, safety, lifeguards, store/foods, showers, senior accessibility, sinkholes, depth, pets, or tides) would you like to ask about?`;
   }
 
   return null;
 }
 
 /**
- * Generates contextual follow-up / branch questions based on the latest conversation exchange
- * so the user can effortlessly continue or branch their inquiry with one tap.
+ * Contextual follow-up branch questions
  */
 export function getContextualBranchQuestions(
   lastUserText: string,
@@ -1371,60 +1314,17 @@ export function getContextualBranchQuestions(
   const isCeb = detectLanguage(lastUserText) === 'ceb';
   const topics = detectTopicsInText(combined);
 
-  // 1. If the user just asked about "Pinakaduol na beach from (location)"
-  if (isNearestBeachQuery(lastUserText) || lastAssistantText.includes('Pinakaduol nga beach') || lastAssistantText.includes('Nearest beach from')) {
+  // If asking about nearest
+  if (isNearestBeachQuery(lastUserText)) {
     return [
       { label: 'Pinakaduol from Talamban?', question: 'Pinakaduol na beach from Talamban?' },
       { label: 'Pinakaduol from Danao?', question: 'Pinakaduol na beach from Danao?' },
-      { label: 'Pinakaduol from Talisay?', question: 'Pinakaduol na beach from Talisay?' },
       { label: 'Pinakaduol from Sogod?', question: 'Pinakaduol na beach from Sogod?' },
+      { label: 'Pinakaduol from Bogo?', question: 'Pinakaduol na beach from Bogo?' },
     ];
   }
 
-  // 2. If the user just asked about Safety / Weather, Store, Sand, Private Booking, or Event Discount
-  if (topics.asksSafety || topics.asksStore || topics.asksSand || topics.asksPrivateBooking || topics.asksDiscount) {
-    const branches: QuickPromptQuestion[] = [];
-    if (!topics.asksSafety) {
-      branches.push({ label: 'Safe ba mga beaches?', question: 'Safe ba mga beaches?' });
-    }
-    if (!topics.asksStore) {
-      branches.push({ label: 'Naay store / tinda?', question: 'Naa bay store o tinda sa mga beach?' });
-    }
-    if (!topics.asksSand) {
-      branches.push({ label: 'Whitesand ba o dili?', question: 'Whitesand ba o dili ang mga beach?' });
-    }
-    if (!topics.asksPrivateBooking) {
-      branches.push({ label: 'Ma-bookingan ba (private)?', question: 'Ma bookingan ba ang beaches like private?' });
-    }
-    if (!topics.asksDiscount) {
-      branches.push({ label: 'Naay discount sa event?', question: 'Naa bay discount if naay event?' });
-    }
-    return branches.slice(0, 4);
-  }
-
-  // 3. If the user just asked about commuting / travel time
-  if (
-    isExplicitCommuteText(lastUserText) ||
-    lastAssistantText.includes('Estimated Travel Time') ||
-    lastAssistantText.includes('Oras sa Byahe') ||
-    lastAssistantText.includes('commute travel time')
-  ) {
-    return isCeb
-      ? [
-          { label: 'Gikan sa Talamban / IT Park?', question: 'Pila ka oras byahe gikan sa Talamban o IT Park?' },
-          { label: 'Gikan sa Mandaue / Lapu-Lapu?', question: 'Pila ka oras byahe gikan sa Mandaue o Lapu-Lapu?' },
-          { label: 'Gikan sa Talisay / South?', question: 'Pila ka oras byahe gikan sa Talisay?' },
-          { label: 'Sulod sa Catmon Barangays?', question: 'Pila ka oras byahe gikan sa mga barangay sa Catmon?' },
-        ]
-      : [
-          { label: 'From Talamban / IT Park?', question: 'How many hours to commute from Talamban or IT Park?' },
-          { label: 'From Mandaue / Lapu-Lapu?', question: 'How many hours to commute from Mandaue or Lapu-Lapu?' },
-          { label: 'From Talisay / South Cebu?', question: 'How many hours to commute from Talisay?' },
-          { label: 'Within Catmon Barangays?', question: 'How long to commute from within Catmon barangays?' },
-        ];
-  }
-
-  // 4. If the user is asking about ONE specific beach, offer branch questions for that beach + another beach!
+  // If asking about specific single beach, suggest other topics for that beach + switch to another beach
   const userBeaches = detectBeachesInText(lastUserText);
   const replyBeaches = detectBeachesInText(lastAssistantText);
   const activeBeachKey =
@@ -1438,38 +1338,32 @@ export function getContextualBranchQuestions(
     const b = BEACH_DATA[activeBeachKey];
     const branches: QuickPromptQuestion[] = [];
 
-    if (!topics.asksEntrance) {
+    if (!topics.asksBatoon) {
       branches.push({
-        label: isCeb ? `Entrance sa ${b.name}?` : `${b.name} entrance fee?`,
-        question: isCeb ? `Tagpila ang entrance sa ${b.name}?` : `How much is the entrance fee at ${b.name}?`,
+        label: isCeb ? `Batoon ba sa ${b.name.split(' ')[0]}?` : `Is ${b.name.split(' ')[0]} rocky?`,
+        question: `Batoon ba ni na beach sa ${b.name.split(' ')[0]}?`,
       });
     }
-    if (!topics.asksCottage) {
+    if (!topics.asksSugba) {
       branches.push({
-        label: isCeb ? `Cottage sa ${b.name}?` : `${b.name} cottages?`,
-        question: isCeb ? `Tagpila ang cottage sa ${b.name}?` : `How much are the cottages at ${b.name}?`,
+        label: isCeb ? `Naay sugbaanan?` : `Has sugbaanan?`,
+        question: `Naa bay sugbaanan sa ${b.name}?`,
       });
     }
-    if (!topics.asksStore) {
+    if (!topics.asksSenior) {
       branches.push({
-        label: isCeb ? `Naay tinda sa ${b.name}?` : `Store at ${b.name}?`,
-        question: isCeb ? `Naa bay tinda sa ${b.name}?` : `Is there a store at ${b.name}?`,
+        label: isCeb ? `Senior accessible?` : `Senior accessible?`,
+        question: `Accessible ba ni sa mga senior citizen ang ${b.name}?`,
       });
     }
-    if (!topics.asksRoom) {
+    if (!topics.asksSinkhole) {
       branches.push({
-        label: isCeb ? `Room / Overnight sa ${b.name}?` : `${b.name} rooms / overnight?`,
-        question: isCeb ? `Naa bay room o overnight sa ${b.name}?` : `Are there rooms or overnight stays at ${b.name}?`,
-      });
-    }
-    if (!topics.asksParking && !topics.asksRestroom) {
-      branches.push({
-        label: isCeb ? `Parking ug CR sa ${b.name}?` : `${b.name} parking & CR?`,
-        question: isCeb ? `Pila ang parking ug CR sa ${b.name}?` : `How much is parking and restroom at ${b.name}?`,
+        label: isCeb ? `Naay sinkhole?` : `Is there a sinkhole?`,
+        question: `Is there a sinkhole in ${b.name}?`,
       });
     }
 
-    const nextBeach: BeachKey =
+    const nextBeachKey: BeachKey =
       activeBeachKey === 'ranola'
         ? 'litebay'
         : activeBeachKey === 'litebay'
@@ -1477,19 +1371,20 @@ export function getContextualBranchQuestions(
         : activeBeachKey === 'majestique'
         ? 'hinagdan'
         : 'ranola';
-    const nextBeachName = BEACH_DATA[nextBeach].name;
+    const nextBeach = BEACH_DATA[nextBeachKey];
+
     branches.push({
-      label: isCeb ? `Unsa man sa ${nextBeachName}?` : `What about ${nextBeachName}?`,
-      question: isCeb ? `Unsa man sa ${nextBeachName}?` : `What about ${nextBeachName}?`,
+      label: isCeb ? `Kumusta sa ${nextBeach.name.split(' ')[0]}?` : `What about ${nextBeach.name.split(' ')[0]}?`,
+      question: `Unsa man sa ${nextBeach.name}?`,
     });
 
     return branches.slice(0, 4);
   }
 
   return [
-    { label: 'Safe ba mga beaches?', question: 'Safe ba mga beaches?' },
-    { label: 'Naay store / tinda?', question: 'Naa bay store o tinda sa mga beach?' },
-    { label: 'Whitesand ba o dili?', question: 'Whitesand ba o dili ang mga beach?' },
-    { label: 'Ma-bookingan ba (private)?', question: 'Ma bookingan ba ang beaches like private?' },
+    { label: 'Batoon ba o dili?', question: 'Batoon ba ang mga beach o dili?' },
+    { label: 'Naay sugbaanan?', question: 'Asa na beach ang naay sugbaanan?' },
+    { label: 'Asay pinaka safe?', question: 'Asay pinaka safe na beach?' },
+    { label: 'Senior accessible?', question: 'Accessible ba sa mga senior citizen ang mga beach?' },
   ];
 }

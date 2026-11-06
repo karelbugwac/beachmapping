@@ -47,7 +47,7 @@ export function AiChatWidget() {
     {
       id: 'welcome-1',
       sender: 'assistant',
-      text: "Maayong adlaw! I'm **Bai**, your Dagat Ta Bai local guide for Barangay Binongkalan, Catmon. Tap a question below or ask me about **Rañola Beach**, **Lite Bay Resort**, **Turtle Point Beach**, **Majestique Beach**, or **Hinagdan Beach 1**!",
+      text: "Maayong adlaw! I'm **Bai**, your Dagat Ta Bai local guide for Barangay Binongkalan, Catmon. Tap a question below or ask me about **Rañola Beach (Raniola)**, **Lite Bay Resort**, **Majestique Beach**, or **Hinagdan Beach**!",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -399,7 +399,7 @@ export function AiChatWidget() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about Rañola, Lite Bay, Turtle Point, Majestique, Hinagdan..."
+              placeholder="Ask about Rañola, Lite Bay, Majestique, Hinagdan..."
               className="flex-1 bg-slate-50 dark:bg-[#132035] border border-slate-200 dark:border-slate-800 rounded-none px-3.5 py-2 text-xs text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:border-[#1F3F74] transition-all"
             />
             <button
