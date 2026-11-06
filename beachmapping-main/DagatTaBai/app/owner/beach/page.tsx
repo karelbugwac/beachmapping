@@ -2725,9 +2725,13 @@ export default function ManageInformationPage() {
         <PhotoViewerModal
           item={{
             name: viewingFacility.title,
-            photos: viewingFacility.image_url ? [{ image_url: viewingFacility.image_url }] : [],
+            photos: viewingFacility.photos?.length
+              ? [...viewingFacility.photos].sort((left, right) => (left.sort_order || 0) - (right.sort_order || 0))
+              : viewingFacility.image_url
+                ? [{ image_url: viewingFacility.image_url }]
+                : [],
             description: viewingFacility.description,
-            infoLabel: viewingFacility.category,
+            infoLabel: viewingFacility.category.charAt(0).toUpperCase() + viewingFacility.category.slice(1),
             price: viewingFacility.price || null,
             priceLabel: 'Fee',
             priceUnit: '',

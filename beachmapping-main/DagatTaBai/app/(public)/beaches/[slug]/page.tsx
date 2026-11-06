@@ -27,6 +27,8 @@ import type { BeachRecord } from '@/lib/db/beaches';
 import { VirtualTourModal } from '@/components/virtual-tour-modal';
 import { PhotoViewerModal, type PhotoViewerItem } from '@/components/cottages/cottage-photos-modal';
 import { CottageCard } from '@/components/cottages/cottage-card';
+import { OpeningStatusPill } from '@/components/opening-status-pill';
+import { formatOpeningHoursGroups } from '@/lib/utils/opening-status';
 import { showToast } from '@/components/ui/feedback-toasts';
 
 interface ResortRuleItem {
@@ -433,12 +435,25 @@ export default function BeachProfilePage({
                   <p className="text-[11px] text-slate-500">Day access per guest</p>
                 </div>
 
-                <div className="p-4 rounded-2xl bg-slate-50 dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 space-y-1">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Operating Schedule</span>
-                  <div className="text-base font-extrabold text-[#1F3F74] dark:text-[#4987BA]">
-                    {formatOpeningHoursSummary(beach.opening_hours)}
+                <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950">
+                  <div className="mb-3 flex items-center gap-2.5">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-[#1F3F74] dark:bg-neutral-900 dark:text-[#4987BA]">
+                      <Clock className="h-4 w-4" aria-hidden="true" />
+                    </span>
+                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Operating Schedule</span>
                   </div>
-                  <p className="text-[11px] text-slate-500">Daily beach & swimming hours</p>
+                  <div className="space-y-1.5">
+                    {formatOpeningHoursGroups(beach.opening_hours).map((group) => (
+                      <div key={`${group.days}-${group.hours}`} className="flex flex-col gap-3 rounded-xl bg-slate-50 p-3 dark:bg-neutral-900/60 sm:flex-row sm:items-center sm:justify-between">
+                        <div className="min-w-0">
+                          <span className="block text-[11px] font-medium text-slate-500 dark:text-neutral-400">{group.days}</span>
+                          <span className="block text-base font-extrabold text-[#1F3F74] dark:text-[#4987BA]">{group.hours}</span>
+                        </div>
+                        <OpeningStatusPill hours={beach.opening_hours} />
+                      </div>
+                    ))}
+                  </div>
+                  <p className="mt-2 text-[11px] text-slate-500">Daily beach & swimming hours</p>
                 </div>
               </div>
 
@@ -626,6 +641,7 @@ export default function BeachProfilePage({
                         key={facility.id}
                         name={facility.name}
                         imageUrl={facility.image_url}
+                        photoCount={facility.photos?.length || 0}
                         price={facility.price}
                         description={facility.description}
                         onView={() => {
@@ -637,7 +653,9 @@ export default function BeachProfilePage({
                                 ? [{ image_url: facility.image_url }]
                                 : [],
                             description: facility.description,
-                            infoLabel: facility.category || undefined,
+                            infoLabel: facility.category
+                              ? facility.category.charAt(0).toUpperCase() + facility.category.slice(1)
+                              : undefined,
                             price: facility.price,
                             priceLabel: 'Fee',
                             priceUnit: facility.category.toLowerCase() === 'room' ? 'night' : '',
