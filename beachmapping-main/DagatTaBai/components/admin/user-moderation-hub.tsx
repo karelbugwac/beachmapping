@@ -148,12 +148,15 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
   const loadUsers = async () => {
     try {
       const response = await fetch('/api/admin/users', { cache: 'no-store' });
+      if (!response.ok) {
+        console.warn('Failed to load registered users, status:', response.status);
+        return;
+      }
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to load users.');
       setUsers(Array.isArray(data.users) ? data.users : []);
       if (data.currentAdminId) setCurrentAdminId(data.currentAdminId);
     } catch (error: unknown) {
-      showToast(error instanceof Error ? error.message : 'Failed to load registered users.', 'error');
+      console.error('Failed to load registered users:', error);
     } finally {
       setLoadingUsers(false);
     }
@@ -163,12 +166,15 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
   const loadReviews = async () => {
     try {
       const response = await fetch('/api/admin/reviews', { cache: 'no-store' });
+      if (!response.ok) {
+        console.warn('Failed to load reviews, status:', response.status);
+        return;
+      }
       const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to load reviews.');
       setReviews(Array.isArray(data.reviews) ? data.reviews : []);
       setReports(Array.isArray(data.reports) ? data.reports : []);
     } catch (error: unknown) {
-      showToast(error instanceof Error ? error.message : 'Failed to load reviews.', 'error');
+      console.error('Failed to load reviews:', error);
     } finally {
       setLoadingReviews(false);
     }

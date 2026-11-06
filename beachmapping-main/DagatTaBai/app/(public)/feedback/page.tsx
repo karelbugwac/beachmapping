@@ -184,55 +184,44 @@ export default function PlatformFeedbackPage() {
         </p>
       )}
 
-      {/* Recent Feedback Section */}
-      <section className="space-y-5" aria-label="Recent platform feedback">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-white">
-            Recent feedback ({reviews.length})
-          </h2>
+      {/* Platform Feedback Categories & Feed */}
+      <section className="space-y-6" aria-label="Platform feedback list">
+        {/* Expanded Equal Sectioning Category Filter Pills (Responsive on Mobile and Desktop) */}
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 w-full">
+          {(['all', 5, 4, 3, 2, 1] as const).map((cat) => {
+            const count = cat === 'all'
+              ? reviews.length
+              : reviews.filter((r) => Math.round(r.rating) === cat).length;
+            const isSelected = activeCategory === cat;
 
-          {/* Category Filter Pills: All, 5 Stars, 4 Stars, 3 Stars, 2 Stars, 1 Star */}
-          <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar py-1">
-            {(['all', 5, 4, 3, 2, 1] as const).map((cat) => {
-              const count = cat === 'all'
-                ? reviews.length
-                : reviews.filter((r) => Math.round(r.rating) === cat).length;
-              const isSelected = activeCategory === cat;
-
-              return (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setActiveCategory(cat)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer flex items-center gap-1 ${
-                    isSelected
-                      ? 'bg-[#1F3F74] text-white shadow-2xs'
-                      : 'bg-slate-100 dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 hover:bg-slate-200 dark:hover:bg-neutral-800'
-                  }`}
-                >
-                  <span>{cat === 'all' ? 'All' : `${cat} Star${cat > 1 ? 's' : ''}`}</span>
-                  <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
-                    isSelected ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300'
-                  }`}>
-                    {count}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
+            return (
+              <button
+                key={cat}
+                type="button"
+                onClick={() => setActiveCategory(cat)}
+                className={`w-full py-2.5 px-3 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs ${
+                  isSelected
+                    ? 'bg-[#1F3F74] text-white'
+                    : 'bg-slate-100 dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 hover:bg-slate-200 dark:hover:bg-neutral-800'
+                }`}
+              >
+                <span>{cat === 'all' ? 'All' : `${cat} Star${cat > 1 ? 's' : ''}`}</span>
+                <span className={`px-1.5 py-0.2 rounded-full text-[10px] ${
+                  isSelected ? 'bg-white/20 text-white' : 'bg-slate-200 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300'
+                }`}>
+                  {count}
+                </span>
+              </button>
+            );
+          })}
         </div>
 
-        {/* Feedback List or Empty State */}
+        {/* Feedback List or Frameless Empty State (No card box, no subtitle) */}
         {filteredReviews.length === 0 ? (
-          <div className="py-12 flex flex-col items-center justify-center text-center space-y-2 rounded-2xl border border-dashed border-slate-200 dark:border-neutral-800 bg-slate-50/50 dark:bg-neutral-900/30 p-6">
-            <Star className="w-8 h-8 text-slate-300 dark:text-neutral-700" />
+          <div className="py-14 flex flex-col items-center justify-center text-center space-y-2">
+            <Star className="w-8 h-8 text-slate-300 dark:text-neutral-700 stroke-1" />
             <p className="text-sm font-bold text-slate-700 dark:text-neutral-300">
               No ratings yet
-            </p>
-            <p className="text-xs text-slate-400 dark:text-neutral-500">
-              {activeCategory === 'all'
-                ? 'Be the first to share your thoughts on Dagat Ta Bai!'
-                : `No ${activeCategory}-star reviews submitted yet.`}
             </p>
           </div>
         ) : (

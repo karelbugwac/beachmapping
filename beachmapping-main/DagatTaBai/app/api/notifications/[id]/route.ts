@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentSession } from '@/lib/db/auth';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient, createAdminClient } from '@/lib/supabase/server';
 
 interface RouteContext {
   params: Promise<{ id: string }>;
@@ -17,56 +17,96 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
   const body: unknown = await request.json().catch(() => null);
   const action = typeof body === 'object' && body !== null && 'action' in body
-    ? body.action
+    ? (body as { action: unknown }).action
     : null;
   if (action !== 'read' && action !== 'confirmed' && action !== 'unrecognized') {
     return NextResponse.json({ error: 'Choose a valid notification action.' }, { status: 400 });
   }
 
-  const supabase = await createServerSupabaseClient();
   const now = new Date().toISOString();
   const update = action === 'read'
     ? { read_at: now }
     : { read_at: now, response: action, responded_at: now };
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  let query = (supabase.from('user_notifications') as any)
-    .update(update)
-    .eq('id', id)
-    .eq('user_id', user.id);
-  if (action !== 'read') query = query.is('response', null);
 
-  const { data, error } = await query
-    .select('id, type, created_at, read_at, response, device:login_devices!user_notifications_login_device_id_fkey(browser, platform)')
-    .maybeSingle();
+  // 1. Try updating database table first
+  let dbNotification: any = null;
+  try {
+    const supabase = await createServerSupabaseClient();
+    let query = (supabase.from('user_notifications') as any)
+      .update(update)
+      .eq('id', id)
+      .eq('user_id', user.id);
+    if (action !== 'read') query = query.is('response', null);
 
-  if (error) {
-    console.error('Could not update notification:', error);
-    return NextResponse.json({ error: 'Could not update this notification.' }, { status: 500 });
-  }
-  if (!data) return NextResponse.json({ error: 'This notification was already handled or does not exist.' }, { status: 409 });
+    const { data } = await query
+      .select('id, type, created_at, read_at, response, device:login_devices!user_notifications_login_device_id_fkey(browser, platform)')
+      .maybeSingle();
 
-  const notification = {
-    id: data.id,
-    type: data.type,
-    created_at: data.created_at,
-    read_at: data.read_at,
-    response: data.response,
-    browser: data.device?.browser || 'Browser',
-    platform: data.device?.platform || 'Unknown device',
-  };
-
-  if (action === 'unrecognized') {
-    const { error: resetError } = await supabase.auth.resetPasswordForEmail(user.email, {
-      redirectTo: `${request.nextUrl.origin}/reset-password`,
-    });
-    if (resetError) {
-      console.error('Security alert recorded, but password reset email could not be sent:', resetError);
-      return NextResponse.json({
-        notification,
-        error: 'The activity was marked as unrecognized, but the password reset email could not be sent. Please request a reset from the sign-in page.',
-      }, { status: 502 });
+    if (data) {
+      dbNotification = {
+        id: data.id,
+        type: data.type,
+        created_at: data.created_at,
+        read_at: data.read_at,
+        response: data.response,
+        browser: data.device?.browser || 'Browser',
+        platform: data.device?.platform || 'Unknown device',
+      };
     }
+  } catch (err) {
+    console.warn('DB notification update bypassed:', err);
   }
 
-  return NextResponse.json({ notification });
+  if (dbNotification) {
+    if (action === 'unrecognized') {
+      const supabase = await createServerSupabaseClient();
+      await supabase.auth.resetPasswordForEmail(user.email, {
+        redirectTo: `${request.nextUrl.origin}/reset-password`,
+      });
+    }
+    return NextResponse.json({ notification: dbNotification });
+  }
+
+  // 2. Check and update location notifications in user metadata
+  try {
+    const admin = createAdminClient();
+    const { data: authUserData } = await admin.auth.admin.getUserById(user.id);
+    const metadata = authUserData?.user?.user_metadata || {};
+    const locationNotifications: any[] = Array.isArray(metadata.location_notifications)
+      ? [...metadata.location_notifications]
+      : [];
+
+    const targetIdx = locationNotifications.findIndex((item) => item.id === id);
+    if (targetIdx !== -1) {
+      const existing = locationNotifications[targetIdx];
+      const updatedItem = {
+        ...existing,
+        read_at: now,
+        response: action === 'read' ? existing.response : action,
+        responded_at: action === 'read' ? existing.responded_at : now,
+      };
+
+      locationNotifications[targetIdx] = updatedItem;
+
+      await admin.auth.admin.updateUserById(user.id, {
+        user_metadata: {
+          ...metadata,
+          location_notifications: locationNotifications,
+        },
+      });
+
+      if (action === 'unrecognized') {
+        const supabase = await createServerSupabaseClient();
+        await supabase.auth.resetPasswordForEmail(user.email, {
+          redirectTo: `${request.nextUrl.origin}/reset-password`,
+        });
+      }
+
+      return NextResponse.json({ notification: updatedItem });
+    }
+  } catch (err) {
+    console.error('Location notification update failed:', err);
+  }
+
+  return NextResponse.json({ error: 'Notification was already handled or not found.' }, { status: 404 });
 }

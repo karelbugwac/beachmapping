@@ -206,8 +206,8 @@ export default function MapPage() {
 
   return (
     <div className="relative w-full h-[calc(100vh-64px)] sm:h-[calc(100vh-72px)] overflow-hidden flex flex-col bg-slate-100 dark:bg-black">
-      {/* 1. TOP FLOATING SEARCH & ACTION BAR (OBLONG / ROUNDED-FULL) */}
-      <div className="absolute top-3 sm:top-4 left-3 right-3 sm:left-6 sm:right-6 z-30 pointer-events-none">
+      {/* 1. TOP FLOATING SEARCH & ACTION BAR (OBLONG / ROUNDED-FULL, Shifts smoothly on desktop when Sidebar docks) */}
+      <div className={`absolute top-3 sm:top-4 left-3 right-3 transition-all duration-300 ${selectedBeach && !routeActive ? 'sm:left-[445px]' : 'sm:left-6'} sm:right-6 z-30 pointer-events-none`}>
         <div className="max-w-2xl mx-auto flex items-center gap-2">
           {/* Oblong Search Input Box */}
           <div className="relative flex-1 pointer-events-auto bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md rounded-full shadow-md border border-slate-200 dark:border-neutral-800 flex items-center px-4 py-2.5">
@@ -314,13 +314,40 @@ export default function MapPage() {
         />
       </div>
 
-      {/* 4. REDESIGNED FLOATING BEACH CARD (Flat Corners Container, Minimalist Layout, 360 Virtual Tour Preview) */}
+      {/* 4. DOCKED SIDEBAR (Desktop) & BOTTOM-SHEET DRAWER (Mobile) FOR BEACH DETAILS */}
       {selectedBeach && !routeActive && (
-        <div className="absolute bottom-4 left-3 right-3 sm:left-6 sm:right-auto sm:w-[380px] z-30 pointer-events-auto">
-          {/* Outer Container: Strictly flat / non-rounded corners (rounded-none) as requested */}
-          <div className="bg-white/98 dark:bg-[#0c1424]/98 backdrop-blur-md rounded-none overflow-hidden shadow-2xl border border-slate-300 dark:border-neutral-800 space-y-3">
-            {/* 360 Virtual Tour / Cover Image Preview Banner */}
-            <div className="relative w-full h-44 overflow-hidden bg-slate-900">
+        <aside
+          aria-label={`${selectedBeach.name} beach details`}
+          className="fixed inset-x-0 bottom-0 z-40 max-h-[85vh] rounded-t-3xl bg-white/98 dark:bg-[#0c1424]/98 backdrop-blur-xl border-t border-slate-200/90 dark:border-neutral-800 shadow-2xl flex flex-col pointer-events-auto animate-in slide-in-from-bottom duration-300 overflow-hidden sm:fixed-none sm:absolute sm:inset-auto sm:top-0 sm:left-0 sm:bottom-0 sm:h-full sm:max-h-full sm:w-[410px] md:w-[430px] sm:rounded-none sm:border-t-0 sm:border-r sm:slide-in-from-left"
+        >
+          {/* Mobile Drag Indicator Handle */}
+          <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-neutral-700 mx-auto mt-2.5 mb-1 sm:hidden flex-shrink-0" />
+
+          {/* Sidebar Top Header: Title, Location & Close Action */}
+          <div className="px-4 py-3 sm:px-5 sm:py-3.5 border-b border-slate-100 dark:border-neutral-800/80 flex items-start justify-between gap-3 flex-shrink-0 bg-white/80 dark:bg-[#0c1424]/80 backdrop-blur-md">
+            <div className="min-w-0 flex-1">
+              <h3 className="font-extrabold text-lg sm:text-xl text-[#1F3F74] dark:text-[#38BDF8] font-sans truncate tracking-tight">
+                {selectedBeach.name}
+              </h3>
+              <p className="text-xs text-slate-500 dark:text-neutral-400 flex items-center gap-1 mt-0.5 truncate">
+                <Navigation className="w-3 h-3 text-[#1F3F74] dark:text-[#38BDF8] flex-shrink-0" />
+                <span>{selectedBeach.location || 'Binongkalan, Catmon, Cebu'}</span>
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setSelectedBeach(null)}
+              className="h-8 w-8 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-white cursor-pointer transition-colors shrink-0"
+              aria-label="Close details"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+
+          {/* Scrollable Body: Virtual Tour Preview, Entrance Fee, Hours, Travel Mode, Description */}
+          <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 no-scrollbar">
+            {/* 360 Virtual Tour / Cover Image Preview Banner (Flat corners / rounded-none as requested) */}
+            <div className="relative w-full h-48 sm:h-52 rounded-none overflow-hidden bg-slate-950 shadow-md border border-slate-200/80 dark:border-neutral-800 flex-shrink-0">
               {selectedBeach.virtual_tour_url ? (
                 <div className="relative w-full h-full">
                   <iframe
@@ -330,11 +357,6 @@ export default function MapPage() {
                     allow="accelerometer; gyroscope; magnetometer; fullscreen"
                     loading="lazy"
                   />
-                  {/* Floating 360 Tour Pill Badge */}
-                  <div className="absolute top-3 left-3 bg-[#1F3F74]/95 text-white px-2.5 py-1 text-[11px] font-bold flex items-center gap-1.5 shadow-md pointer-events-none border border-white/20">
-                    <span className="w-2 h-2 rounded-full bg-emerald-400 animate-pulse" />
-                    <span>360° Virtual Tour</span>
-                  </div>
                 </div>
               ) : selectedBeach.cover_image || selectedBeach.images?.[0]?.photo_url ? (
                 <div className="relative w-full h-full">
@@ -343,7 +365,7 @@ export default function MapPage() {
                     alt={selectedBeach.name}
                     fill
                     className="object-cover"
-                    sizes="380px"
+                    sizes="430px"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent" />
                 </div>
@@ -356,58 +378,46 @@ export default function MapPage() {
                   </span>
                 </div>
               )}
+
               {/* Floating Rating Pill Top-Right */}
               {selectedBeach.average_rating > 0 && (
-                <div className="absolute top-3 right-3 bg-black/70 backdrop-blur-md text-white px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-white/10 shadow-sm z-10 pointer-events-none">
+                <div className="absolute top-3 right-3 bg-black/75 backdrop-blur-md text-white px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-white/10 shadow-sm z-10 pointer-events-none">
                   <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
                   <span>{selectedBeach.average_rating.toFixed(1)}</span>
                 </div>
               )}
             </div>
 
-            <div className="p-4 pt-1 space-y-3">
-              {/* Title & Close Header */}
-              <div className="flex items-start justify-between gap-3">
-                <h3 className="font-extrabold text-lg text-[#1F3F74] dark:text-[#4987BA] font-sans flex-1 leading-snug">
-                  {selectedBeach.name}
-                </h3>
-                <button
-                  type="button"
-                  onClick={() => setSelectedBeach(null)}
-                  className="text-slate-400 hover:text-slate-900 dark:hover:text-white p-1 cursor-pointer transition-colors"
-                  aria-label="Close preview"
-                >
-                  <X className="w-4 h-4" />
-                </button>
-              </div>
-
-              {/* Clean Details Info Grid (Organized, Modern Typography, No Clunky Blobs) */}
-              <div className="space-y-1.5 text-xs">
-                {selectedBeach.entrance_fee && (
-                  <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-lg">
-                    <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                      <Coins className="w-3.5 h-3.5 text-[#1F3F74] dark:text-[#4987BA]" />
-                      <span>Entrance Fee</span>
-                    </span>
-                    <span className="font-bold text-[#1F3F74] dark:text-[#4987BA]">
-                      {parseEntranceFee(selectedBeach.entrance_fee, selectedBeach.entrance_fee_adults, selectedBeach.entrance_fee_children)}
-                    </span>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between py-2 px-3 bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-lg">
-                  <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                    <Clock className="w-3.5 h-3.5 text-[#1F3F74] dark:text-[#4987BA]" />
-                    <span>Operating Hours</span>
+            {/* Structured Info Cards: Entrance Fee & Operating Hours */}
+            <div className="space-y-2 text-xs">
+              {selectedBeach.entrance_fee && (
+                <div className="flex items-center justify-between py-2.5 px-3.5 bg-slate-50 dark:bg-neutral-900/80 border border-slate-200/90 dark:border-neutral-800 rounded-xl">
+                  <span className="font-semibold text-slate-700 dark:text-slate-300">
+                    Entrance Fee
                   </span>
-                  <span className="text-slate-600 dark:text-slate-400 font-medium">
-                    {parseOpeningHoursSummary(selectedBeach.opening_hours)}
+                  <span className="font-extrabold text-[#1F3F74] dark:text-[#38BDF8]">
+                    {parseEntranceFee(selectedBeach.entrance_fee, selectedBeach.entrance_fee_adults, selectedBeach.entrance_fee_children)}
                   </span>
                 </div>
-              </div>
+              )}
 
-              {/* Travel mode selection: Clean vector buttons (NO EMOJIS, DOES NOT AUTO-CALCULATE) */}
-              <div className="flex items-center gap-2 pt-1" role="group" aria-label="Travel mode">
+              <div className="flex items-center justify-between py-2.5 px-3.5 bg-slate-50 dark:bg-neutral-900/80 border border-slate-200/90 dark:border-neutral-800 rounded-xl">
+                <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                  <Clock className="w-4 h-4 text-[#1F3F74] dark:text-[#38BDF8]" />
+                  <span>Operating Hours</span>
+                </span>
+                <span className="text-slate-600 dark:text-slate-400 font-medium">
+                  {parseOpeningHoursSummary(selectedBeach.opening_hours)}
+                </span>
+              </div>
+            </div>
+
+            {/* Travel Mode Vector Selector (Car, Motorcycle, Walking) */}
+            <div className="space-y-1.5 pt-1">
+              <span className="block text-[11px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider">
+                Travel Mode
+              </span>
+              <div className="flex items-center gap-2" role="group" aria-label="Travel mode">
                 <button
                   type="button"
                   onClick={() => setTravelMode('car')}
@@ -448,36 +458,48 @@ export default function MapPage() {
                   <span>Walking</span>
                 </button>
               </div>
-
-              {/* Action row with Oblong (rounded-full) buttons in Dive Blue */}
-              <div className="flex items-center gap-2 pt-2">
-                {/* View Details button (Oblong secondary) */}
-                <Link
-                  href={`/beaches/${selectedBeach.slug}`}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-4 border-2 border-[#1F3F74] dark:border-[#4987BA] bg-transparent hover:bg-slate-50 dark:hover:bg-neutral-900 text-[#1F3F74] dark:text-[#4987BA] text-xs font-bold rounded-full transition-colors text-center cursor-pointer"
-                >
-                  <span>View Details</span>
-                  <ArrowRight className="w-3.5 h-3.5" />
-                </Link>
-
-                {/* Calculate Route button (Oblong primary Dive Blue - ONLY calculates when clicked!) */}
-                <button
-                  type="button"
-                  onClick={handleCalculateRoute}
-                  disabled={routingLoading}
-                  className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-4 bg-[#1F3F74] hover:bg-[#285091] dark:bg-[#1F3F74] dark:hover:bg-[#285091] disabled:opacity-50 text-white text-xs font-bold rounded-full transition-colors shadow-sm cursor-pointer"
-                >
-                  {routingLoading ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <SeaRoute size={14} />
-                  )}
-                  <span>{routingLoading ? 'Calculating...' : 'Calculate Route'}</span>
-                </button>
-              </div>
             </div>
+
+            {/* Description Snippet if available */}
+            {selectedBeach.description && (
+              <div className="pt-1">
+                <span className="block text-[11px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider mb-1">
+                  About
+                </span>
+                <p className="text-xs text-slate-600 dark:text-neutral-300 leading-relaxed line-clamp-3">
+                  {selectedBeach.description}
+                </p>
+              </div>
+            )}
           </div>
-        </div>
+
+          {/* Sticky Bottom Action Bar: View Details & Calculate Route */}
+          <div className="p-4 sm:p-5 bg-white/95 dark:bg-[#0c1424]/95 border-t border-slate-100 dark:border-neutral-800/80 flex items-center gap-2.5 flex-shrink-0">
+            {/* View Details button (Oblong secondary) */}
+            <Link
+              href={`/beaches/${selectedBeach.slug}`}
+              className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-4 border-2 border-[#1F3F74] dark:border-[#38BDF8] bg-transparent hover:bg-slate-50 dark:hover:bg-neutral-900 text-[#1F3F74] dark:text-[#38BDF8] text-xs font-bold rounded-full transition-colors text-center cursor-pointer"
+            >
+              <span>View Details</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+
+            {/* Calculate Route button (Oblong primary Dive Blue) */}
+            <button
+              type="button"
+              onClick={handleCalculateRoute}
+              disabled={routingLoading}
+              className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-4 bg-[#1F3F74] hover:bg-[#285091] dark:bg-[#1F3F74] dark:hover:bg-[#285091] disabled:opacity-50 text-white text-xs font-bold rounded-full transition-colors shadow-md cursor-pointer"
+            >
+              {routingLoading ? (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              ) : (
+                <SeaRoute size={14} />
+              )}
+              <span>{routingLoading ? 'Calculating...' : 'Calculate Route'}</span>
+            </button>
+          </div>
+        </aside>
       )}
     </div>
   );

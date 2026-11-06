@@ -607,7 +607,7 @@ export default function ProfilePage() {
         </div>
 
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1F3F74] dark:text-[#4987BA]">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1F3F74] dark:text-white">
             {user.name}
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -618,38 +618,47 @@ export default function ProfilePage() {
       </div>
 
       {activeCategory ? (
-        <div className="flex items-center gap-2 pt-2">
+        <div className="mx-auto max-w-2xl flex items-center gap-3 pt-2 pb-2 border-b border-slate-100 dark:border-neutral-800">
           <button
             type="button"
             onClick={() => setActiveCategory(null)}
             aria-label="Back to profile settings"
-            className="inline-flex shrink-0 items-center text-slate-600 transition hover:text-[#1F3F74] dark:text-slate-300 dark:hover:text-[#4987BA]"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-[#1F3F74] dark:text-white transition-all cursor-pointer shadow-2xs"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
-          <h2 className="text-xl font-bold text-slate-900 dark:text-white">
-            {profileCategories.find((category) => category.id === activeCategory)?.label}
-          </h2>
+          <div>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-[#1F3F74] dark:text-white tracking-tight">
+              {profileCategories.find((category) => category.id === activeCategory)?.label}
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {profileCategories.find((category) => category.id === activeCategory)?.description}
+            </p>
+          </div>
         </div>
       ) : (
-        <nav aria-label="Profile settings" className="mx-auto max-w-2xl space-y-3 pt-3 sm:space-y-4">
+        <nav aria-label="Profile settings" className="mx-auto max-w-2xl space-y-3.5 pt-3 sm:space-y-4">
           {profileCategories.map(({ id, label, description, icon: Icon }) => (
             <button
               key={id}
               type="button"
               onClick={() => setActiveCategory(id)}
-              className="group flex w-full items-center justify-between gap-4 rounded-2xl border border-slate-200/90 bg-white px-4 py-4 text-left shadow-sm transition duration-200 hover:-translate-y-0.5 hover:border-[#1F3F74]/35 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74] focus-visible:ring-offset-2 dark:border-neutral-800 dark:bg-neutral-950 dark:hover:border-[#4987BA]/50 dark:focus-visible:ring-[#4987BA] dark:focus-visible:ring-offset-neutral-950 sm:px-5 sm:py-5"
+              className="group flex w-full items-center justify-between gap-4 rounded-2xl sm:rounded-3xl border border-slate-200/90 bg-white px-4 py-4.5 text-left shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:border-[#1F3F74]/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74] focus-visible:ring-offset-2 dark:border-neutral-800 dark:bg-neutral-900/90 dark:hover:border-[#38BDF8]/40 dark:focus-visible:ring-[#38BDF8] dark:focus-visible:ring-offset-neutral-950 sm:px-6 sm:py-5 cursor-pointer"
             >
-              <span className="flex min-w-0 items-center gap-4">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-[#1F3F74]/[0.07] text-[#1F3F74] transition-colors group-hover:bg-[#1F3F74]/[0.12] dark:bg-[#4987BA]/10 dark:text-[#70A9D6] dark:group-hover:bg-[#4987BA]/20">
-                  <Icon className="h-[18px] w-[18px]" />
+              <span className="flex min-w-0 items-center gap-4 sm:gap-4.5">
+                <span className="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-2xl bg-[#1F3F74]/[0.08] text-[#1F3F74] transition-all duration-200 group-hover:bg-[#1F3F74] group-hover:text-white dark:bg-sky-950/60 dark:text-[#38BDF8] dark:group-hover:bg-[#38BDF8] dark:group-hover:text-neutral-950 shadow-2xs">
+                  <Icon className="h-5 w-5 sm:h-5.5 sm:w-5.5" />
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-sm font-bold text-slate-900 dark:text-slate-100">{label}</span>
-                  <span className="mt-1 block text-xs leading-relaxed text-slate-500 dark:text-slate-400">{description}</span>
+                  <span className="block text-base sm:text-lg font-extrabold text-[#1F3F74] dark:text-[#38BDF8] tracking-tight group-hover:translate-x-0.5 transition-transform duration-200">
+                    {label}
+                  </span>
+                  <span className="mt-0.5 sm:mt-1 block text-xs sm:text-xs leading-relaxed text-slate-500 dark:text-neutral-400">
+                    {description}
+                  </span>
                 </span>
               </span>
-              <ChevronRight className="h-5 w-5 shrink-0 text-slate-400 transition-transform group-hover:translate-x-0.5 group-hover:text-[#1F3F74] dark:group-hover:text-[#70A9D6]" />
+              <ChevronRight className="h-5 w-5 shrink-0 text-slate-400 transition-all duration-200 group-hover:translate-x-1 group-hover:text-[#1F3F74] dark:text-neutral-500 dark:group-hover:text-[#38BDF8]" />
             </button>
           ))}
         </nav>
@@ -660,179 +669,227 @@ export default function ProfilePage() {
       {/* ========================================================================= */}
       <div className="pt-4 pb-12">
         {/* ===================================================================== */}
-        {/* CATEGORY 1: PERSONAL INFORMATION (Seamless, Form-First, No Cards)     */}
+        {/* CATEGORY 1: PERSONAL INFORMATION (Clean, Senior Designer Layout)       */}
         {/* ===================================================================== */}
         {activeCategory === 'personal' && (
-          <div id="personal-settings" role="tabpanel" aria-labelledby="personal-tab" className="space-y-6">
-            <div className="border-b border-slate-200 pb-4 dark:border-neutral-800">
+          <div id="personal-settings" role="tabpanel" aria-labelledby="personal-tab" className="max-w-2xl space-y-8">
+            {/* Header & Auto-Save Badge */}
+            <div className="border-b border-slate-200 pb-4 dark:border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
-                <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-[#4987BA]">
+                <h2 className="text-lg font-bold text-[#1F3F74] dark:text-white tracking-tight">
                   Basic Info
                 </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Some info may be visible to other people using Dagat Ta Bai services.
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Manage your personal details and public profile display on Dagat Ta Bai.
                 </p>
+              </div>
+
+              <div aria-live="polite" className="text-[11px] font-medium shrink-0">
+                {profileSaveState === 'saving' && (
+                  <span className="inline-flex items-center gap-1.5 text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/50 px-2.5 py-1 rounded-full">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Saving...
+                  </span>
+                )}
+                {profileSaveState === 'saved' && (
+                  <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-1 rounded-full">
+                    <Check className="w-3 h-3" />
+                    Changes saved
+                  </span>
+                )}
+                {profileSaveState === 'error' && (
+                  <span className="text-rose-500 bg-rose-50 dark:bg-rose-950/50 px-2.5 py-1 rounded-full">
+                    Could not save
+                  </span>
+                )}
               </div>
             </div>
 
-            <div className="space-y-5 pt-2">
-              <div>
-                <label className="block text-xs font-bold text-[#1F3F74] dark:text-[#4987BA] mb-1.5">
-                  Display Name
-                </label>
-                <div className="relative">
-                  <User className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    required
-                    minLength={2}
-                    maxLength={120}
-                    value={name}
-                    onChange={(e) => {
-                      setName(e.target.value);
-                      setProfileSaveState('idle');
-                    }}
-                    className="w-full pl-11 pr-5 py-3 text-xs bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-full focus:outline-none focus:ring-2 focus:ring-[#1F3F74] text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400"
-                    placeholder="Your display name"
-                  />
+            {/* Profile Input Fields (Responsive Form Layout) */}
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                    Display Name
+                  </label>
+                  <div className="relative">
+                    <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      required
+                      minLength={2}
+                      maxLength={120}
+                      value={name}
+                      onChange={(e) => {
+                        setName(e.target.value);
+                        setProfileSaveState('idle');
+                      }}
+                      className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1F3F74] text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 transition"
+                      placeholder="Your display name"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                    Location
+                  </label>
+                  <div className="relative">
+                    <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      maxLength={160}
+                      value={userLocation}
+                      onChange={(e) => {
+                        setUserLocation(e.target.value);
+                        setProfileSaveState('idle');
+                      }}
+                      className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1F3F74] text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 transition"
+                      placeholder={isFetchingLocation ? 'Detecting your location...' : 'Your town or city'}
+                    />
+                  </div>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#1F3F74] dark:text-[#4987BA] mb-1.5">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
                   Email Address
                 </label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="email"
                     disabled
                     value={email}
-                    className="w-full pl-11 pr-5 py-3 text-xs bg-slate-100 dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 rounded-full text-slate-500 dark:text-slate-400 cursor-not-allowed"
+                    className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-100 dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 rounded-xl text-slate-500 dark:text-slate-400 cursor-not-allowed"
                   />
                 </div>
-                <p className="text-[11px] text-slate-400 mt-1 pl-3">
+                <p className="text-[11px] text-slate-400 mt-1 pl-1">
                   Email is linked to your authentication provider.
                 </p>
               </div>
-
-              <div>
-                <label className="block text-xs font-bold text-[#1F3F74] dark:text-[#4987BA] mb-1.5">
-                  Location
-                </label>
-                <div className="relative">
-                  <MapPin className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    maxLength={160}
-                    value={userLocation}
-                    onChange={(e) => {
-                      setUserLocation(e.target.value);
-                      setProfileSaveState('idle');
-                    }}
-                    className="w-full pl-11 pr-5 py-3 text-xs bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-full focus:outline-none focus:ring-2 focus:ring-[#1F3F74] text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400"
-                    placeholder={isFetchingLocation ? 'Detecting your location...' : 'Your town or city'}
-                  />
-                </div>
-              </div>
-
-              <p aria-live="polite" className="min-h-4 text-[11px] text-slate-500 dark:text-slate-400">
-                {profileSaveState === 'saving' && 'Saving changes...'}
-                {profileSaveState === 'saved' && 'Changes saved automatically.'}
-                {profileSaveState === 'error' && 'Could not save. Edit a field to try again.'}
-              </p>
             </div>
 
+            {/* Account Status for Owners/Managers */}
             {(user.role === 'beach_owner' || user.role === 'beach_manager') && (
-              <section className="border-t border-slate-200 pt-5 dark:border-neutral-800" aria-label="Account status">
-                <h3 className="text-sm font-bold text-[#1F3F74] dark:text-[#4987BA]">Account Status</h3>
-                <div className="mt-3 flex items-center justify-between gap-3 rounded-lg bg-slate-50 px-4 py-3 dark:bg-neutral-900">
-                  <span className="text-xs text-slate-600 dark:text-slate-300">
+              <section className="border-t border-slate-200 pt-6 dark:border-neutral-800" aria-label="Account status">
+                <h3 className="text-sm font-bold text-slate-800 dark:text-white">Account Status</h3>
+                <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-4 py-3 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800">
+                  <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
                     {user.role === 'beach_owner' ? 'Beach Owner' : 'Beach Manager'}
                   </span>
-                  <span className="inline-flex items-center gap-2 text-xs font-semibold text-emerald-700 dark:text-emerald-400">
+                  <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
                     <span className="h-2 w-2 rounded-full bg-emerald-500" />
-                    Active
+                    Active &amp; Verified
                   </span>
                 </div>
               </section>
             )}
 
-            <section className="space-y-5 border-t border-slate-200 pt-6 dark:border-neutral-800" aria-label="Account access and deletion">
+            {/* Account Security (Reset Password) */}
+            <section className="border-t border-slate-200 pt-6 dark:border-neutral-800 space-y-3" aria-label="Account security">
               <div>
-                <h3 className="text-sm font-bold text-[#1F3F74] dark:text-[#4987BA]">Reset Password</h3>
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                <h3 className="text-sm font-bold text-slate-800 dark:text-white">Account Password</h3>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
                   We&apos;ll email you a secure link to choose a new password.
                 </p>
-                <button
-                  type="button"
-                  onClick={handleSendPasswordResetEmail}
-                  disabled={isSendingReset}
-                  className="mt-3 inline-flex min-h-10 items-center justify-center gap-2 rounded-full bg-[#1F3F74] px-5 py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#285091] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-offset-neutral-950"
-                >
-                  {isSendingReset && <Loader2 className="h-4 w-4 animate-spin" />}
-                  <span>Reset Password</span>
-                </button>
               </div>
+              <button
+                type="button"
+                onClick={handleSendPasswordResetEmail}
+                disabled={isSendingReset}
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-[#1F3F74] px-5 py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#285091] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-offset-neutral-950 shadow-2xs"
+              >
+                {isSendingReset && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                <span>Reset Password</span>
+              </button>
+            </section>
 
-              <div className="border-t border-slate-100 pt-5 dark:border-neutral-900">
+            {/* Danger Zone */}
+            <section className="border-t border-slate-200 pt-6 dark:border-neutral-800 space-y-3" aria-label="Account deletion">
+              <div>
                 <h3 className="text-xs font-bold uppercase tracking-wider text-red-600 dark:text-red-400">
                   Danger Zone
                 </h3>
-                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
-                  Permanently delete your Dagat Ta Bai account.
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                  Permanently delete your Dagat Ta Bai account and associated preferences.
                 </p>
-                <Link
-                  href="/contact?subject=Account%20Deletion%20Request"
-                  className="mt-3 inline-flex min-h-10 items-center justify-center rounded-full bg-red-600 px-5 py-2.5 text-xs font-bold text-white shadow-sm transition-colors hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-950"
-                >
-                  Request Account Deletion
-                </Link>
               </div>
+              <Link
+                href="/contact?subject=Account%20Deletion%20Request"
+                className="inline-flex items-center justify-center rounded-full bg-red-600 px-5 py-2.5 text-xs font-bold text-white shadow-2xs transition-colors hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-950"
+              >
+                Request Account Deletion
+              </Link>
             </section>
           </div>
         )}
 
         {/* ===================================================================== */}
-        {/* CATEGORY 2: PREFERENCES (NO CARDS / SEAMLESS)                         */}
+        {/* CATEGORY 2: PREFERENCES (Senior UI Design, Smooth Toggle Cards)       */}
         {/* ===================================================================== */}
         {activeCategory === 'appearance' && (
-          <div id="appearance-settings" role="tabpanel" aria-labelledby="appearance-tab" className="space-y-6">
+          <div id="appearance-settings" role="tabpanel" aria-labelledby="appearance-tab" className="max-w-2xl space-y-6">
             <div className="border-b border-slate-200 pb-4 dark:border-neutral-800">
-              <h3 className="text-sm font-bold text-[#1F3F74] dark:text-[#4987BA]">Theme mode</h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Choose the appearance that feels comfortable for you.
+              <h3 className="text-base font-bold text-[#1F3F74] dark:text-white">Theme Mode</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Choose the visual appearance that feels comfortable for your coastal exploration.
               </p>
             </div>
 
             <fieldset className="space-y-3">
               <legend className="sr-only">Theme mode</legend>
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 <button
                   type="button"
                   aria-pressed={theme === 'light'}
                   onClick={() => setTheme('light')}
-                  className={`inline-flex min-h-12 items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74] focus-visible:ring-offset-2 dark:focus-visible:ring-[#4987BA] dark:focus-visible:ring-offset-neutral-950 ${
+                  className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all cursor-pointer ${
                     theme === 'light'
-                      ? 'border-[#1F3F74] bg-[#1F3F74]/[0.06] text-[#1F3F74] dark:border-[#4987BA] dark:bg-[#4987BA]/10 dark:text-[#70A9D6]'
-                      : 'border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-neutral-800 dark:text-slate-200 dark:hover:bg-neutral-900'
+                      ? 'border-[#1F3F74] bg-[#1F3F74]/[0.06] shadow-sm ring-1 ring-[#1F3F74]'
+                      : 'border-slate-200 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700 bg-white dark:bg-neutral-900'
                   }`}
                 >
-                  <span className="inline-flex items-center gap-2"><Sun className="h-4 w-4" />Light</span>
-                  {theme === 'light' && <Check className="h-4 w-4" />}
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2.5 rounded-xl ${theme === 'light' ? 'bg-[#1F3F74] text-white' : 'bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400'}`}>
+                      <Sun className="h-5 w-5" />
+                    </div>
+                    <div className="text-left">
+                      <span className="block text-sm font-bold text-slate-900 dark:text-white">Light Mode</span>
+                      <span className="block text-[11px] text-slate-500 dark:text-neutral-400">Crisp coastal daylight</span>
+                    </div>
+                  </div>
+                  {theme === 'light' && (
+                    <span className="h-6 w-6 rounded-full bg-[#1F3F74] text-white flex items-center justify-center shrink-0">
+                      <Check className="h-3.5 w-3.5" />
+                    </span>
+                  )}
                 </button>
+
                 <button
                   type="button"
                   aria-pressed={theme === 'dark'}
                   onClick={() => setTheme('dark')}
-                  className={`inline-flex min-h-12 items-center justify-between gap-3 rounded-xl border px-4 py-3 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74] focus-visible:ring-offset-2 dark:focus-visible:ring-[#4987BA] dark:focus-visible:ring-offset-neutral-950 ${
+                  className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all cursor-pointer ${
                     theme === 'dark'
-                      ? 'border-[#4987BA] bg-[#4987BA]/10 text-[#1F3F74] dark:text-[#70A9D6]'
-                      : 'border-slate-200 text-slate-700 hover:border-slate-300 hover:bg-slate-50 dark:border-neutral-800 dark:text-slate-200 dark:hover:bg-neutral-900'
+                      ? 'border-[#38BDF8] bg-sky-950/40 shadow-sm ring-1 ring-[#38BDF8]'
+                      : 'border-slate-200 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700 bg-white dark:bg-neutral-900'
                   }`}
                 >
-                  <span className="inline-flex items-center gap-2"><Moon className="h-4 w-4" />Dark</span>
-                  {theme === 'dark' && <Check className="h-4 w-4" />}
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2.5 rounded-xl ${theme === 'dark' ? 'bg-[#38BDF8] text-neutral-950' : 'bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400'}`}>
+                      <Moon className="h-5 w-5" />
+                    </div>
+                    <div className="text-left">
+                      <span className="block text-sm font-bold text-slate-900 dark:text-white">Dark Mode</span>
+                      <span className="block text-[11px] text-slate-500 dark:text-neutral-400">Deep night ocean ambience</span>
+                    </div>
+                  </div>
+                  {theme === 'dark' && (
+                    <span className="h-6 w-6 rounded-full bg-[#38BDF8] text-neutral-950 flex items-center justify-center shrink-0">
+                      <Check className="h-3.5 w-3.5" />
+                    </span>
+                  )}
                 </button>
               </div>
             </fieldset>
@@ -841,65 +898,77 @@ export default function ProfilePage() {
         )}
 
         {activeCategory === 'reviews' && (
-          <section id="reviews-settings" className="space-y-5">
+          <section id="reviews-settings" className="max-w-2xl space-y-5">
+            <div className="border-b border-slate-200 pb-4 dark:border-neutral-800">
+              <h3 className="text-base font-bold text-[#1F3F74] dark:text-white">My Reviews &amp; Feedback</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Reviews and community feedback submitted under your account.
+              </p>
+            </div>
+
             {reviewsLoading ? (
               <div className="flex items-center justify-center gap-2 py-12 text-slate-500">
-                <Loader2 className="h-5 w-5 animate-spin text-[#1F3F74] dark:text-[#4987BA]" />
-                <span className="text-sm">Loading reviews...</span>
+                <Loader2 className="h-5 w-5 animate-spin text-[#1F3F74] dark:text-[#38BDF8]" />
+                <span className="text-xs font-semibold">Loading reviews...</span>
               </div>
             ) : reviews.length === 0 ? (
-              <div className="flex flex-col items-center justify-center gap-3 py-12 text-center">
-                <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-50 text-[#1F3F74] dark:bg-neutral-900 dark:text-[#4987BA]">
+              <div className="flex flex-col items-center justify-center gap-3 py-14 text-center">
+                <div className="flex h-13 w-13 items-center justify-center rounded-2xl bg-[#1F3F74]/[0.08] text-[#1F3F74] dark:bg-sky-950/60 dark:text-[#38BDF8]">
                   <MessageSquare className="h-6 w-6" />
                 </div>
-                <p className="text-sm text-slate-500 dark:text-slate-400">
-                  You haven&apos;t posted any reviews yet.
+                <h4 className="text-sm font-bold text-slate-800 dark:text-white">No reviews yet</h4>
+                <p className="text-xs text-slate-500 dark:text-neutral-400 max-w-sm">
+                  You haven&apos;t shared any beach reviews or platform feedback yet. Explore beaches and share your experience!
                 </p>
               </div>
             ) : (
-              reviews.map((review) => (
-                <article
-                  key={review.id}
-                  className="flex items-start justify-between gap-4 border-b border-slate-200 py-4 dark:border-neutral-800"
-                >
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2 flex-wrap">
-                      <h3 className="text-sm font-bold text-[#1F3F74] dark:text-[#4987BA]">
-                        {review.beach_name || 'Beach'}
-                      </h3>
-                      {review.review_type === 'platform' && (
-                        <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-sky-100 text-[#1F3F74] dark:bg-sky-950/60 dark:text-sky-300">
-                          Platform Feedback
-                        </span>
-                      )}
-                    </div>
-                    <div className="flex items-center gap-1" aria-label={`${review.rating} out of 5 stars`}>
-                      {Array.from({ length: 5 }, (_, index) => (
-                        <Star
-                          key={index}
-                          className={`h-4 w-4 ${
-                            index < review.rating
-                              ? 'fill-amber-400 text-amber-400'
-                              : 'text-slate-300 dark:text-neutral-700'
-                          }`}
-                        />
-                      ))}
-                      <time className="ml-2 text-xs text-slate-500" dateTime={review.created_at}>
-                        {new Date(review.created_at).toLocaleDateString()}
-                      </time>
-                    </div>
-                    <p className="text-sm text-slate-700 dark:text-slate-300">{review.comment}</p>
-                  </div>
-                  <button
-                    type="button"
-                    onClick={() => void handleDeleteReview(review.id)}
-                    aria-label={`Delete review for ${review.beach_name || 'beach'}`}
-                    className="rounded-full p-2 text-slate-400 transition hover:bg-rose-50 hover:text-rose-600 dark:hover:bg-rose-950/30 dark:hover:text-rose-400"
+              <div className="space-y-3">
+                {reviews.map((review) => (
+                  <article
+                    key={review.id}
+                    className="flex items-start justify-between gap-4 p-4 rounded-2xl border border-slate-200/90 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 shadow-2xs"
                   >
-                    <Trash className="h-4 w-4" />
-                  </button>
-                </article>
-              ))
+                    <div className="space-y-1.5 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="text-sm font-extrabold text-[#1F3F74] dark:text-white">
+                          {review.beach_name || 'Beach Resort'}
+                        </h4>
+                        {review.review_type === 'platform' && (
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-sky-100 text-[#1F3F74] dark:bg-sky-950/70 dark:text-sky-300">
+                            Platform Feedback
+                          </span>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-1" aria-label={`${review.rating} out of 5 stars`}>
+                        {Array.from({ length: 5 }, (_, index) => (
+                          <Star
+                            key={index}
+                            className={`h-3.5 w-3.5 ${
+                              index < review.rating
+                                ? 'fill-amber-400 text-amber-400'
+                                : 'text-slate-300 dark:text-neutral-700'
+                            }`}
+                          />
+                        ))}
+                        <time className="ml-2 text-xs text-slate-500" dateTime={review.created_at}>
+                          {new Date(review.created_at).toLocaleDateString()}
+                        </time>
+                      </div>
+                      <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed pt-1">
+                        {review.comment}
+                      </p>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => void handleDeleteReview(review.id)}
+                      aria-label={`Delete review for ${review.beach_name || 'beach'}`}
+                      className="rounded-full p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 transition-colors shrink-0 cursor-pointer"
+                    >
+                      <Trash className="h-4 w-4" />
+                    </button>
+                  </article>
+                ))}
+              </div>
             )}
           </section>
         )}

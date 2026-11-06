@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
       (adminClient.from('beaches') as any)
         .select('id, name, owner_id'),
       (adminClient.from('beach_reviews') as any)
-        .select('id, beach_id, user_id, rating, comment, created_at, beaches:beach_id(name)'),
+        .select('id, beach_id, user_id, rating, comment, created_at'),
       (adminClient.from('platform_reviews') as any)
         .select('id, user_id, rating, comment, created_at'),
     ]);
@@ -50,6 +50,11 @@ export async function GET(request: NextRequest) {
     const profileMap = new Map<string, any>();
     (profilesData || []).forEach((p: any) => {
       profileMap.set(p.id, p);
+    });
+
+    const beachNameMap = new Map<string, string>();
+    (beachesData || []).forEach((b: any) => {
+      if (b.id && b.name) beachNameMap.set(b.id, b.name);
     });
 
     const beachesByOwner = new Map<string, Array<{ id: string; name: string }>>();
@@ -68,7 +73,7 @@ export async function GET(request: NextRequest) {
         list.push({
           id: r.id,
           beach_id: r.beach_id,
-          beach_name: r.beaches?.name || 'Beach',
+          beach_name: beachNameMap.get(r.beach_id) || 'Beach',
           rating: Number(r.rating),
           comment: r.comment,
           created_at: r.created_at,

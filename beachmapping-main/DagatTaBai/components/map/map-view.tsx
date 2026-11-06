@@ -29,16 +29,17 @@ const ZoomControl = dynamic(
   { ssr: false }
 );
 
-// Curated Coastal Palette: strictly alternating so adjacent pins never share the same color
+// Curated Coastal Palette: strictly brand-aligned (Dive Blue, Sky Blue, Golden Amber, Sea Teal)
+// Strictly NO purple!
 export const PIN_PALETTE = [
   '#1F3F74', // Signature Dive Blue
-  '#F59E0B', // Sunburst Amber
-  '#E11D48', // Coral Crimson
-  '#059669', // Tropical Emerald
-  '#7C3AED', // Royal Amethyst
-  '#0284C7', // Ocean Cerulean
-  '#F97316', // Sunset Tangerine
+  '#0284C7', // Ocean Sky Blue
+  '#EAB308', // Sunburst Amber Gold
   '#0D9488', // Deep Lagoon Teal
+  '#2563EB', // Vibrant Coastal Blue
+  '#0891B2', // Tropical Cyan
+  '#16A34A', // Coastal Palm Emerald
+  '#0369A1', // Deep Marina Blue
 ];
 
 export function getBeachPinColorByIndex(index: number): string {
@@ -58,36 +59,54 @@ export function getBeachPinColor(id: string, beaches?: BeachRecord[]): string {
   return PIN_PALETTE[Math.abs(hash) % PIN_PALETTE.length];
 }
 
-// Unmistakable, prominent Tropical Palm Tree Teardrop Pin
+// Senior Frontend Custom SVG Marker: Ultra-crisp, elegant coastal palm teardrop with micro-elevation & selection pulse
 function createTeardropPinSvg(color: string, isSelected: boolean): string {
-  const scale = isSelected ? 1.18 : 1.0;
+  const scale = isSelected ? 1.16 : 1.0;
   const width = Math.round(36 * scale);
-  const height = Math.round(46 * scale);
+  const height = Math.round(48 * scale);
 
   return `
-    <svg width="${width}" height="${height}" viewBox="0 0 34 44" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0px 3px 6px rgba(0,0,0,0.38)); overflow: visible;">
-      <!-- Teardrop Pin Body -->
-      <path d="M17 0C7.61116 0 0 7.61116 0 17C0 27.5 14.5 42 16.2 43.6C16.65 44.05 17.35 44.05 17.8 43.6C19.5 42 34 27.5 34 17C34 7.61116 26.3888 0 17 0Z" fill="${color}" stroke="#FFFFFF" stroke-width="2.4" stroke-linejoin="round"/>
-      <!-- Inner White Background Disc -->
-      <circle cx="17" cy="17" r="8.8" fill="#FFFFFF"/>
-      <!-- Bold Prominent Tropical Palm Tree Silhouette -->
+    <svg width="${width}" height="${height}" viewBox="0 0 36 48" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0px 5px 10px rgba(15,23,42,0.36)); overflow: visible;">
+      ${
+        isSelected
+          ? `
+        <!-- Dynamic Pulse Halo Ring on Selection -->
+        <circle cx="18" cy="17" r="19" fill="${color}" fill-opacity="0.22">
+          <animate attributeName="r" values="17;22;17" dur="2.2s" repeatCount="indefinite" />
+          <animate attributeName="fill-opacity" values="0.28;0.05;0.28" dur="2.2s" repeatCount="indefinite" />
+        </circle>
+        <circle cx="18" cy="17" r="18" stroke="${color}" stroke-width="1.5" stroke-dasharray="3 3" opacity="0.6"/>
+      `
+          : ''
+      }
+
+      <!-- Teardrop Pin Silhouette with Pure White Bezel -->
+      <path d="M18 1.5C9.49 1.5 2.5 8.49 2.5 17C2.5 28.2 16.5 45.2 17.3 46.2C17.7 46.7 18.3 46.7 18.7 46.2C19.5 45.2 33.5 28.2 33.5 17C33.5 8.49 26.51 1.5 18 1.5Z" 
+            fill="${color}" 
+            stroke="#FFFFFF" 
+            stroke-width="2.4" 
+            stroke-linejoin="round" />
+
+      <!-- Inner Crisp White Disc Badge -->
+      <circle cx="18" cy="17" r="9.3" fill="#FFFFFF" />
+
+      <!-- High-Fidelity Coastal Palm Tree Silhouette -->
       <g fill="${color}">
-        <!-- Palm Trunk -->
-        <path d="M15.4 23.5H18.6L17.5 15.8H16.2L15.4 23.5Z" />
-        <path d="M15.4 23.5C15.4 23.5 16.8 24 18.6 23.5" stroke="#FFFFFF" stroke-width="0.6"/>
-        <!-- Top Palm Frond -->
-        <path d="M16.8 15.8C16.8 13.5 17.5 10 20 9.2C18.8 12 17.8 13.8 16.8 15.8Z" />
-        <!-- Top-Left Frond -->
-        <path d="M16.8 15.8C14.5 13 12.2 10.5 9.5 11.8C12 13.5 14.5 14.8 16.8 15.8Z" />
-        <!-- Lower-Left Frond -->
-        <path d="M16.8 15.8C13.5 15 10.5 15.8 9.2 18.5C11.8 17.8 14.5 17 16.8 15.8Z" />
-        <!-- Top-Right Frond -->
-        <path d="M16.8 15.8C19.5 13 22 11 24.5 12.5C22 14.2 19.5 15 16.8 15.8Z" />
-        <!-- Lower-Right Frond -->
-        <path d="M16.8 15.8C20 15.2 23 16 24.8 18.8C22.2 18 19.5 17.2 16.8 15.8Z" />
+        <!-- Gentle Curved Trunk -->
+        <path d="M17.2 23.5H18.9C18.6 19.8 18.3 17.5 18 15.8H17.2C17 17.5 16.9 19.8 17.2 23.5Z" />
+        <!-- Top Center Frond -->
+        <path d="M17.6 15.8C17.6 12.8 19 10.5 21.2 9.8C20 11.8 19.2 13.8 17.6 15.8Z" />
+        <!-- Top Left Frond -->
+        <path d="M17.6 15.8C15.6 13.2 13.5 11.2 11 12.2C13 13.8 15.2 15 17.6 15.8Z" />
+        <!-- Bottom Left Frond -->
+        <path d="M17.6 16C15 15.2 12.4 16 11.2 18.2C13.5 17.6 15.8 17 17.6 16Z" />
+        <!-- Top Right Frond -->
+        <path d="M18 15.8C20.2 13.2 22.5 11.5 25 12.5C23 14 20.8 15.2 18 15.8Z" />
+        <!-- Bottom Right Frond -->
+        <path d="M18 16C20.5 15.2 23.2 16.2 24.5 18.5C22.2 17.8 19.8 17.2 18 16Z" />
         <!-- Coconuts at crown -->
-        <circle cx="15.8" cy="15.2" r="1.1" fill="${color}" stroke="#FFFFFF" stroke-width="0.4"/>
-        <circle cx="17.8" cy="15.4" r="1.1" fill="${color}" stroke="#FFFFFF" stroke-width="0.4"/>
+        <circle cx="16.9" cy="16.2" r="1" fill="${color}" stroke="#FFFFFF" stroke-width="0.3"/>
+        <circle cx="18.9" cy="16.2" r="1" fill="${color}" stroke="#FFFFFF" stroke-width="0.3"/>
       </g>
     </svg>
   `;
@@ -224,13 +243,22 @@ export function MapView({
       const customIcon = L.divIcon({
         className: 'beach-pin-marker',
         html: iconHtml,
-        iconSize: isSelected ? [42, 54] : [36, 46],
-        iconAnchor: isSelected ? [21, 54] : [18, 46],
+        iconSize: isSelected ? [42, 56] : [36, 48],
+        iconAnchor: isSelected ? [21, 56] : [18, 48],
       });
       const labelDirection: 'right' | 'left' = index % 2 === 0 ? 'right' : 'left';
       return { beach, pinColor, customIcon, labelDirection };
     });
   }, [L, visibleBeaches, selectedBeachId]);
+
+  // Smoothly center the map view when destination beach changes
+  useEffect(() => {
+    if (mapRef.current && center) {
+      try {
+        mapRef.current.flyTo(center, zoom, { duration: 0.8 });
+      } catch {}
+    }
+  }, [center, zoom]);
 
   if (!isClient || !L) {
     return (
