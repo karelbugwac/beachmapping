@@ -2,6 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import { getBeachBySlug } from '@/lib/db/beaches';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 
+type BeachPhotoRow = {
+  id: string;
+  image_url: string;
+  storage_path: string | null;
+  sort_order: number | null;
+};
+
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ slug: string }> }
@@ -51,8 +58,8 @@ export async function GET(
       cottages: (cottagesResult.data || []).map((item: any) => {
         const photos = Array.isArray(item.photos) && item.photos.length
           ? item.photos
-            .sort((left, right) => Number(left.sort_order || 0) - Number(right.sort_order || 0))
-            .map((photo) => ({
+            .sort((left: BeachPhotoRow, right: BeachPhotoRow) => Number(left.sort_order || 0) - Number(right.sort_order || 0))
+            .map((photo: BeachPhotoRow) => ({
               id: photo.id,
               image_url: /^https?:\/\//i.test(photo.image_url)
                 ? photo.image_url

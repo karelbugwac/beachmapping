@@ -1136,7 +1136,7 @@ export default function AdminBeachesPage() {
                             type="button"
                             onClick={() => {
                               setResortPosts((prev) => prev.filter((p) => p.id !== post.id));
-                              showToast('Post removed from feed.', 'success');
+                              showToast('Post removed from feed.', 'destructive');
                             }}
                             className="text-[11px] font-bold text-rose-600 hover:underline cursor-pointer"
                           >
@@ -1268,7 +1268,7 @@ export default function AdminBeachesPage() {
                           type="button"
                           onClick={() => {
                             setResortRules((prev) => prev.filter((r) => r.id !== rule.id));
-                            showToast('Guideline removed.', 'success');
+                            showToast('Guideline removed.', 'destructive');
                           }}
                           className="text-slate-400 hover:text-rose-600 transition p-1 cursor-pointer"
                           title="Remove rule"

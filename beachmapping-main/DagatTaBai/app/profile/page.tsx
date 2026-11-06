@@ -4,27 +4,23 @@ import React, { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
+  ChevronLeft,
+  ChevronRight,
   User,
   Mail,
-  Lock,
-  Star,
   Palette,
+  Star,
+  MessageSquare,
   Loader2,
-  Save,
   LogOut,
   MapPin,
-  Calendar,
   Camera,
   Trash2,
-  Upload,
   Sun,
   Moon,
   Check,
-  CheckCircle2,
-  MessageSquare,
-  Send,
   Trash,
-  ShieldCheck,
+  X,
 } from 'lucide-react';
 import { useTheme } from '@/components/theme-provider';
 import { showToast } from '@/components/ui/feedback-toasts';
@@ -35,6 +31,7 @@ interface ProfileData {
   email: string;
   role: 'user' | 'beach_owner' | 'beach_manager' | 'admin';
   picture?: string | null;
+  location?: string | null;
   created_at?: string;
 }
 
@@ -43,10 +40,76 @@ interface UserReview {
   beach_id: string;
   beach_name?: string;
   beach_slug?: string;
+  review_type?: 'beach' | 'platform';
   rating: number;
   comment: string;
   created_at: string;
 }
+
+const AVATAR_PREVIEW_SIZE = 192;
+
+function cropAvatarImage(
+  imageUrl: string,
+  zoom: number,
+  offsetX: number,
+  offsetY: number
+): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const image = new Image();
+    image.onload = () => {
+      const cropSize = Math.min(image.naturalWidth, image.naturalHeight) / zoom;
+      const maxOffsetX = (image.naturalWidth - cropSize) / 2;
+      const maxOffsetY = (image.naturalHeight - cropSize) / 2;
+      const centerX = image.naturalWidth / 2 + offsetX * maxOffsetX;
+      const centerY = image.naturalHeight / 2 + offsetY * maxOffsetY;
+      const canvas = document.createElement('canvas');
+      canvas.width = 512;
+      canvas.height = 512;
+
+      const context = canvas.getContext('2d');
+      if (!context) {
+        reject(new Error('Could not prepare the selected photo.'));
+        return;
+      }
+
+      context.drawImage(
+        image,
+        centerX - cropSize / 2,
+        centerY - cropSize / 2,
+        cropSize,
+        cropSize,
+        0,
+        0,
+        canvas.width,
+        canvas.height
+      );
+      resolve(canvas.toDataURL('image/jpeg', 0.9));
+    };
+    image.onerror = () => reject(new Error('Could not load the selected photo.'));
+    image.src = imageUrl;
+  });
+}
+
+const profileCategories = [
+  {
+    id: 'personal',
+    label: 'Account Settings',
+    description: 'Manage your personal details and account access.',
+    icon: User,
+  },
+  {
+    id: 'appearance',
+    label: 'Preferences',
+    description: 'Choose your preferred theme mode.',
+    icon: Palette,
+  },
+  {
+    id: 'reviews',
+    label: 'My Reviews',
+    description: 'View and manage the reviews you have shared.',
+    icon: Star,
+  },
+] as const;
 
 export default function ProfilePage() {
   const router = useRouter();
@@ -55,46 +118,37 @@ export default function ProfilePage() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState<ProfileData | null>(null);
 
-  // Google-Style Categories: 'personal' | 'appearance' | 'security' | 'reviews'
-  const [activeCategory, setActiveCategory] = useState<'personal' | 'appearance' | 'security' | 'reviews'>('personal');
+  const [activeCategory, setActiveCategory] = useState<'personal' | 'appearance' | 'reviews' | null>(null);
 
   // Personal Info Edit State
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
-  const [isSavingProfile, setIsSavingProfile] = useState(false);
+  const [profileSaveState, setProfileSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const savedProfileRef = useRef<{ name: string; location: string } | null>(null);
+  const locationLookupStartedRef = useRef(false);
 
-  // Avatar Upload State
+  // Avatar selection and confirmation state
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [avatarUploading, setAvatarUploading] = useState(false);
+  const [avatarEditorOpen, setAvatarEditorOpen] = useState(false);
+  const [avatarDraft, setAvatarDraft] = useState<string | null>(null);
+  const [avatarZoom, setAvatarZoom] = useState(1);
+  const [avatarOffsetX, setAvatarOffsetX] = useState(0);
+  const [avatarOffsetY, setAvatarOffsetY] = useState(0);
+  const [avatarImageSize, setAvatarImageSize] = useState<{ width: number; height: number } | null>(null);
+  const avatarPreviewImageRef = useRef<HTMLImageElement>(null);
+  const avatarDragRef = useRef<{ pointerId: number; x: number; y: number } | null>(null);
 
-  // Location display (No refresh button)
-  const [userLocation, setUserLocation] = useState<string>('Binongkalan, Catmon, Cebu');
+  const [userLocation, setUserLocation] = useState('');
 
-  // Password Reset Link State
-  const [isSendingReset, setIsSendingReset] = useState(false);
-
-  // Reviews State
   const [reviews, setReviews] = useState<UserReview[]>([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
 
-  // Measurement Units
-  const [tempUnit, setTempUnit] = useState<'C' | 'F'>('C');
-  const [distanceUnit, setDistanceUnit] = useState<'km' | 'mi'>('km');
+  // Password Reset Link State
+  const [isSendingReset, setIsSendingReset] = useState(false);
+  const [isFetchingLocation, setIsFetchingLocation] = useState(false);
 
-  // Load preferences from localStorage on mount
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      try {
-        const savedTemp = localStorage.getItem('dtb_pref_temp');
-        if (savedTemp === 'C' || savedTemp === 'F') setTempUnit(savedTemp);
-
-        const savedDist = localStorage.getItem('dtb_pref_dist');
-        if (savedDist === 'km' || savedDist === 'mi') setDistanceUnit(savedDist);
-      } catch {}
-    }
-  }, []);
-
-  // Fetch session user
+  // Fetch session user.
   useEffect(() => {
     let isMounted = true;
 
@@ -110,11 +164,14 @@ export default function ProfilePage() {
             email: data.user.email || '',
             role: data.user.role || 'user',
             picture: data.user.profile_image_url || null,
+            location: data.user.location || '',
             created_at: data.user.created_at,
           };
+          savedProfileRef.current = { name: profileUser.name, location: profileUser.location || '' };
           setUser(profileUser);
           setName(profileUser.name);
           setEmail(profileUser.email);
+          setUserLocation(profileUser.location || '');
           return;
         }
 
@@ -139,11 +196,14 @@ export default function ProfilePage() {
               sbUser.user_metadata?.avatar_url ||
               sbUser.user_metadata?.picture ||
               null,
+            location: typeof sbUser.user_metadata?.location === 'string' ? sbUser.user_metadata.location : '',
             created_at: sbUser.created_at,
           };
+          savedProfileRef.current = { name: fallbackUser.name, location: fallbackUser.location || '' };
           setUser(fallbackUser);
           setName(fallbackUser.name);
           setEmail(fallbackUser.email);
+          setUserLocation(fallbackUser.location || '');
           return;
         }
 
@@ -163,11 +223,14 @@ export default function ProfilePage() {
               sbData.user.user_metadata?.avatar_url ||
               sbData.user.user_metadata?.picture ||
               null,
+            location: typeof sbData.user.user_metadata?.location === 'string' ? sbData.user.user_metadata.location : '',
             created_at: sbData.user.created_at,
           };
+          savedProfileRef.current = { name: fallbackUser.name, location: fallbackUser.location || '' };
           setUser(fallbackUser);
           setName(fallbackUser.name);
           setEmail(fallbackUser.email);
+          setUserLocation(fallbackUser.location || '');
           return;
         }
 
@@ -183,65 +246,170 @@ export default function ProfilePage() {
 
     loadUser();
 
-    // Geolocation detection (pure display)
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        async (position) => {
-          if (!isMounted) return;
-          try {
-            const lat = position.coords.latitude;
-            const lng = position.coords.longitude;
-            const geoRes = await fetch(
-              `https://nominatim.openstreetmap.org/reverse?lat=${lat}&lon=${lng}&format=json`,
-              { headers: { 'User-Agent': 'DagatTaBai-App' } }
-            );
-            if (geoRes.ok) {
-              const geoData = await geoRes.json();
-              const town =
-                geoData.address?.town ||
-                geoData.address?.municipality ||
-                geoData.address?.city ||
-                'Catmon';
-              const region = geoData.address?.state || 'Cebu';
-              setUserLocation(`${town}, ${region}`);
-            }
-          } catch {}
-        },
-        () => {},
-        { enableHighAccuracy: true, timeout: 8000 }
-      );
-    }
-
     return () => {
       isMounted = false;
     };
   }, [router]);
 
-  // Load reviews when 'reviews' tab is opened
   useEffect(() => {
-    if (activeCategory === 'reviews' && user?.id) {
-      setReviewsLoading(true);
-      fetch(`/api/profile/reviews?userId=${encodeURIComponent(user.id)}`)
-        .then((res) => (res.ok ? res.json() : []))
-        .then((data) => {
-          if (Array.isArray(data)) setReviews(data);
-        })
-        .catch(() => setReviews([]))
-        .finally(() => setReviewsLoading(false));
+    if (
+      !user ||
+      user.location ||
+      userLocation.trim() ||
+      locationLookupStartedRef.current ||
+      !navigator.geolocation
+    ) {
+      return;
     }
+
+    let isMounted = true;
+    locationLookupStartedRef.current = true;
+    setIsFetchingLocation(true);
+    navigator.geolocation.getCurrentPosition(
+      async ({ coords }) => {
+        try {
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${coords.latitude}&lon=${coords.longitude}&format=json`
+          );
+          if (!response.ok) throw new Error(`Location lookup failed (${response.status}).`);
+          const result = await response.json();
+          const address = result.address || {};
+          const town =
+            address.town ||
+            address.municipality ||
+            address.city ||
+            address.village ||
+            address.county;
+          const region = address.state || address.region;
+          const detectedLocation = [town, region].filter(Boolean).join(', ');
+          if (isMounted && detectedLocation) setUserLocation(detectedLocation);
+        } catch (error: unknown) {
+          console.error('Could not detect profile location:', error);
+        } finally {
+          if (isMounted) setIsFetchingLocation(false);
+        }
+      },
+      () => {
+        if (isMounted) setIsFetchingLocation(false);
+      },
+      { enableHighAccuracy: false, timeout: 10000, maximumAge: 300000 }
+    );
+
+    return () => {
+      isMounted = false;
+    };
+  }, [user, userLocation]);
+
+  useEffect(() => {
+    if (!user || !savedProfileRef.current) return;
+
+    const pendingProfile = { name: name.trim(), location: userLocation.trim() };
+    if (
+      pendingProfile.name.length < 2 ||
+      (pendingProfile.name === savedProfileRef.current.name &&
+        pendingProfile.location === savedProfileRef.current.location)
+    ) {
+      return;
+    }
+
+    const timer = window.setTimeout(async () => {
+      setProfileSaveState('saving');
+      try {
+        const response = await fetch('/api/auth/profile', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            full_name: pendingProfile.name,
+            location: pendingProfile.location,
+          }),
+        });
+        const data = await response.json().catch(() => null);
+        if (!response.ok || !data?.user) {
+          throw new Error(data?.error || `Could not save your profile (HTTP ${response.status}).`);
+        }
+
+        savedProfileRef.current = pendingProfile;
+        setUser((previous) =>
+          previous
+            ? { ...previous, name: data.user.full_name, location: data.user.location || '' }
+            : null
+        );
+        window.dispatchEvent(
+          new CustomEvent('dtb_user_updated', {
+            detail: { full_name: data.user.full_name },
+          })
+        );
+        setProfileSaveState('saved');
+      } catch (error: unknown) {
+        setProfileSaveState('error');
+        showToast(error instanceof Error ? error.message : 'Could not save your profile.', 'error');
+      }
+    }, 650);
+
+    return () => window.clearTimeout(timer);
+  }, [name, user, userLocation]);
+
+  useEffect(() => {
+    if (activeCategory !== 'reviews' || !user?.id) return;
+
+    let isMounted = true;
+    setReviewsLoading(true);
+    fetch(`/api/profile/reviews?userId=${encodeURIComponent(user.id)}`, { cache: 'no-store' })
+      .then(async (response) => {
+        const result = await response.json();
+        if (!response.ok) throw new Error(result.error || 'Could not load your reviews.');
+        return result;
+      })
+      .then((result: unknown) => {
+        if (isMounted && Array.isArray(result)) setReviews(result as UserReview[]);
+      })
+      .catch((error: unknown) => {
+        if (isMounted) {
+          setReviews([]);
+          showToast(error instanceof Error ? error.message : 'Could not load your reviews.', 'error');
+        }
+      })
+      .finally(() => {
+        if (isMounted) setReviewsLoading(false);
+      });
+
+    return () => {
+      isMounted = false;
+    };
   }, [activeCategory, user?.id]);
 
-  // Handle Avatar Change
+  const handleDeleteReview = async (reviewId: string) => {
+    try {
+      const response = await fetch(`/api/profile/reviews?id=${encodeURIComponent(reviewId)}`, {
+        method: 'DELETE',
+      });
+      const result = await response.json();
+      if (!response.ok || !result.success) {
+        throw new Error(result.error || 'Could not delete your review.');
+      }
+      setReviews((previous) => previous.filter((review) => review.id !== reviewId));
+      showToast('Review removed.', 'destructive');
+    } catch (error: unknown) {
+      showToast(error instanceof Error ? error.message : 'Could not delete your review.', 'error');
+    }
+  };
+
+  // Select a photo first; it is only applied after the user confirms the crop.
   const handleAvatarFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 3 * 1024 * 1024) {
-      showToast('Selected image exceeds 3MB limit. Please choose a smaller photo.', 'error');
+    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+      showToast('Choose a JPG, PNG, or WebP image.', 'error');
+      e.target.value = '';
       return;
     }
 
-    setAvatarUploading(true);
+    if (file.size > 3 * 1024 * 1024) {
+      showToast('Selected image exceeds 3MB limit. Please choose a smaller photo.', 'error');
+      e.target.value = '';
+      return;
+    }
 
     try {
       const base64Data = await new Promise<string>((resolve, reject) => {
@@ -253,11 +421,33 @@ export default function ProfilePage() {
         reader.onerror = () => reject(reader.error || new Error('Could not read the selected image.'));
         reader.readAsDataURL(file);
       });
+      setAvatarDraft(base64Data);
+      setAvatarImageSize(null);
+      setAvatarZoom(1);
+      setAvatarOffsetX(0);
+      setAvatarOffsetY(0);
+      setAvatarEditorOpen(true);
+    } catch (error: unknown) {
+      showToast(error instanceof Error ? error.message : 'Could not read the selected photo.', 'error');
+    } finally {
+      e.target.value = '';
+    }
+  };
 
+  const handleApplyAvatar = async () => {
+    if (!avatarDraft) return;
+    setAvatarUploading(true);
+    try {
+      const croppedImage = await cropAvatarImage(
+        avatarDraft,
+        avatarZoom,
+        avatarOffsetX,
+        avatarOffsetY
+      );
       const res = await fetch('/api/auth/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profile_image_url: base64Data }),
+        body: JSON.stringify({ profile_image_url: croppedImage }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
@@ -271,16 +461,18 @@ export default function ProfilePage() {
           detail: { profile_image_url: data.user.profile_image_url },
         })
       );
-      showToast('Profile picture updated successfully!', 'success');
+      showToast('Profile photo updated.', 'success');
+      setAvatarEditorOpen(false);
+      setAvatarDraft(null);
     } catch (err: unknown) {
-      showToast(err instanceof Error ? err.message : 'Failed to upload photo', 'error');
+      showToast(err instanceof Error ? err.message : 'Could not update your photo.', 'error');
     } finally {
       setAvatarUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = '';
     }
   };
 
   const handleRemoveAvatar = async () => {
+    if (!user?.picture) return;
     setAvatarUploading(true);
     try {
       const res = await fetch('/api/auth/profile', {
@@ -300,48 +492,13 @@ export default function ProfilePage() {
           detail: { profile_image_url: null },
         })
       );
-      showToast('Profile photo removed.', 'success');
+      setAvatarEditorOpen(false);
+      setAvatarDraft(null);
+      showToast('Profile photo removed.', 'destructive');
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Failed to remove picture', 'error');
     } finally {
       setAvatarUploading(false);
-    }
-  };
-
-  // Update Display Name & Location
-  const handleUpdateProfile = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!name.trim()) {
-      showToast('Please enter your display name.', 'error');
-      return;
-    }
-
-    setIsSavingProfile(true);
-
-    try {
-      const trimmedName = name.trim();
-      const res = await fetch('/api/auth/profile', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ full_name: trimmedName }),
-      });
-      const data = await res.json().catch(() => null);
-      if (!res.ok) {
-        throw new Error(data?.error || `Could not save your profile (HTTP ${res.status}).`);
-      }
-      if (!data?.user?.full_name) throw new Error('The server did not confirm the profile update.');
-
-      setUser((prev) => (prev ? { ...prev, name: data.user.full_name } : null));
-      window.dispatchEvent(
-        new CustomEvent('dtb_user_updated', {
-          detail: { full_name: data.user.full_name },
-        })
-      );
-      showToast('Profile details updated successfully!', 'success');
-    } catch (err: unknown) {
-      showToast(err instanceof Error ? err.message : 'Failed to update profile.', 'error');
-    } finally {
-      setIsSavingProfile(false);
     }
   };
 
@@ -372,19 +529,6 @@ export default function ProfilePage() {
   };
 
   // Delete User Review
-  const handleDeleteReview = async (reviewId: string) => {
-    try {
-      const res = await fetch(`/api/profile/reviews?id=${encodeURIComponent(reviewId)}`, {
-        method: 'DELETE',
-      });
-      if (!res.ok) throw new Error('Failed to delete review');
-      setReviews((prev) => prev.filter((r) => r.id !== reviewId));
-      showToast('Review removed successfully.', 'success');
-    } catch (err: any) {
-      showToast(err.message || 'Failed to delete review.', 'error');
-    }
-  };
-
   const handleSignOut = async () => {
     try {
       const { createClient } = await import('@/lib/supabase/client');
@@ -446,9 +590,12 @@ export default function ProfilePage() {
 
           <button
             type="button"
-            onClick={() => fileInputRef.current?.click()}
+            onClick={() => {
+              setAvatarDraft(null);
+              setAvatarEditorOpen(true);
+            }}
             disabled={avatarUploading}
-            aria-label="Change photo"
+            aria-label="Manage profile photo"
             className="absolute bottom-0 right-0 p-2 bg-[#1F3F74] hover:bg-[#285091] text-white rounded-full shadow-md transition-transform group-hover:scale-110 cursor-pointer"
           >
             {avatarUploading ? (
@@ -460,7 +607,7 @@ export default function ProfilePage() {
         </div>
 
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1F3F74] dark:text-[#4987BA]">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1F3F74] dark:text-white">
             {user.name}
           </h1>
           <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -468,566 +615,575 @@ export default function ProfilePage() {
           </p>
         </div>
 
-        <p className="text-xs text-slate-600 dark:text-slate-400 max-w-md mx-auto">
-          Manage your personal information, privacy, appearance, and account preferences.
-        </p>
       </div>
 
-      {/* ========================================================================= */}
-      {/* 2. GOOGLE-STYLE HORIZONTAL CATEGORY NAVIGATION BAR                         */}
-      {/* ========================================================================= */}
-      <div className="flex items-center justify-center border-b border-slate-200 dark:border-neutral-800 overflow-x-auto no-scrollbar gap-2 sm:gap-6 pt-2">
-        <button
-          type="button"
-          onClick={() => setActiveCategory('personal')}
-          className={`flex items-center gap-2 pb-3.5 px-3 text-xs font-bold transition-colors cursor-pointer border-b-2 whitespace-nowrap ${
-            activeCategory === 'personal'
-              ? 'border-[#1F3F74] text-[#1F3F74] dark:border-[#4987BA] dark:text-[#4987BA]'
-              : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-          }`}
-        >
-          <User className="w-4 h-4" />
-          <span>Personal Information</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveCategory('appearance')}
-          className={`flex items-center gap-2 pb-3.5 px-3 text-xs font-bold transition-colors cursor-pointer border-b-2 whitespace-nowrap ${
-            activeCategory === 'appearance'
-              ? 'border-[#1F3F74] text-[#1F3F74] dark:border-[#4987BA] dark:text-[#4987BA]'
-              : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-          }`}
-        >
-          <Palette className="w-4 h-4" />
-          <span>Preferences</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveCategory('security')}
-          className={`flex items-center gap-2 pb-3.5 px-3 text-xs font-bold transition-colors cursor-pointer border-b-2 whitespace-nowrap ${
-            activeCategory === 'security'
-              ? 'border-[#1F3F74] text-[#1F3F74] dark:border-[#4987BA] dark:text-[#4987BA]'
-              : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-          }`}
-        >
-          <Lock className="w-4 h-4" />
-          <span>Security & Password</span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setActiveCategory('reviews')}
-          className={`flex items-center gap-2 pb-3.5 px-3 text-xs font-bold transition-colors cursor-pointer border-b-2 whitespace-nowrap ${
-            activeCategory === 'reviews'
-              ? 'border-[#1F3F74] text-[#1F3F74] dark:border-[#4987BA] dark:text-[#4987BA]'
-              : 'border-transparent text-slate-600 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white'
-          }`}
-        >
-          <Star className="w-4 h-4 text-amber-500" />
-          <span>My Reviews</span>
-        </button>
-      </div>
+      {activeCategory ? (
+        <div className="mx-auto max-w-2xl flex items-center gap-3 pt-2 pb-2 border-b border-slate-100 dark:border-neutral-800">
+          <button
+            type="button"
+            onClick={() => setActiveCategory(null)}
+            aria-label="Back to profile settings"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-[#1F3F74] dark:text-white transition-all cursor-pointer shadow-2xs"
+          >
+            <ChevronLeft className="h-5 w-5" />
+          </button>
+          <div>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-[#1F3F74] dark:text-white tracking-tight">
+              {profileCategories.find((category) => category.id === activeCategory)?.label}
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              {profileCategories.find((category) => category.id === activeCategory)?.description}
+            </p>
+          </div>
+        </div>
+      ) : (
+        <nav aria-label="Profile settings" className="mx-auto max-w-2xl space-y-3.5 pt-3 sm:space-y-4">
+          {profileCategories.map(({ id, label, description, icon: Icon }) => (
+            <button
+              key={id}
+              type="button"
+              onClick={() => setActiveCategory(id)}
+              className="group flex w-full items-center justify-between gap-4 rounded-2xl sm:rounded-3xl border border-slate-200/90 bg-white px-4 py-4.5 text-left shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:border-[#1F3F74]/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74] focus-visible:ring-offset-2 dark:border-neutral-800 dark:bg-neutral-900/90 dark:hover:border-[#38BDF8]/40 dark:focus-visible:ring-[#38BDF8] dark:focus-visible:ring-offset-neutral-950 sm:px-6 sm:py-5 cursor-pointer"
+            >
+              <span className="flex min-w-0 items-center gap-4 sm:gap-4.5">
+                <span className="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-2xl bg-[#1F3F74]/[0.08] text-[#1F3F74] transition-all duration-200 group-hover:bg-[#1F3F74] group-hover:text-white dark:bg-sky-950/60 dark:text-[#38BDF8] dark:group-hover:bg-[#38BDF8] dark:group-hover:text-neutral-950 shadow-2xs">
+                  <Icon className="h-5 w-5 sm:h-5.5 sm:w-5.5" />
+                </span>
+                <span className="min-w-0">
+                  <span className="block text-base sm:text-lg font-extrabold text-[#1F3F74] dark:text-[#38BDF8] tracking-tight group-hover:translate-x-0.5 transition-transform duration-200">
+                    {label}
+                  </span>
+                  <span className="mt-0.5 sm:mt-1 block text-xs sm:text-xs leading-relaxed text-slate-500 dark:text-neutral-400">
+                    {description}
+                  </span>
+                </span>
+              </span>
+              <ChevronRight className="h-5 w-5 shrink-0 text-slate-400 transition-all duration-200 group-hover:translate-x-1 group-hover:text-[#1F3F74] dark:text-neutral-500 dark:group-hover:text-[#38BDF8]" />
+            </button>
+          ))}
+        </nav>
+      )}
 
       {/* ========================================================================= */}
       {/* 3. CATEGORY CONTENT SECTION (Seamless / No Box Enclosures)                 */}
       {/* ========================================================================= */}
       <div className="pt-4 pb-12">
         {/* ===================================================================== */}
-        {/* CATEGORY 1: PERSONAL INFORMATION (Seamless, Form-First, No Cards)     */}
+        {/* CATEGORY 1: PERSONAL INFORMATION (Clean, Senior Designer Layout)       */}
         {/* ===================================================================== */}
         {activeCategory === 'personal' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-neutral-800 pb-4">
+          <div id="personal-settings" role="tabpanel" aria-labelledby="personal-tab" className="max-w-2xl space-y-8">
+            {/* Header & Auto-Save Badge */}
+            <div className="border-b border-slate-200 pb-4 dark:border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
-                <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-[#4987BA]">
+                <h2 className="text-lg font-bold text-[#1F3F74] dark:text-white tracking-tight">
                   Basic Info
                 </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Some info may be visible to other people using Dagat Ta Bai services.
+                <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                  Manage your personal details and public profile display on Dagat Ta Bai.
                 </p>
               </div>
-              <span className="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-slate-100 dark:bg-neutral-900 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-neutral-800">
-                {user.role}
-              </span>
-            </div>
 
-            {/* Photo Row */}
-            <div className="flex items-center justify-between py-2 border-b border-slate-100 dark:border-neutral-900">
-              <div>
-                <div className="text-xs font-bold text-slate-800 dark:text-slate-200">Profile Photo</div>
-                <div className="text-[11px] text-slate-500">A photo helps personalize your account</div>
-              </div>
-              <div className="flex items-center gap-3">
-                <div className="w-12 h-12 rounded-full overflow-hidden bg-slate-100 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 flex items-center justify-center font-bold text-[#1F3F74] dark:text-[#4987BA]">
-                  {user.picture ? (
-                    // eslint-disable-next-line @next/next/no-img-element
-                    <img src={user.picture} alt={user.name} className="w-full h-full object-cover" />
-                  ) : (
-                    user.name.charAt(0).toUpperCase()
-                  )}
-                </div>
-                <button
-                  type="button"
-                  onClick={() => fileInputRef.current?.click()}
-                  disabled={avatarUploading}
-                  className="px-4 py-2 bg-slate-100 hover:bg-slate-200 dark:bg-neutral-900 dark:hover:bg-neutral-800 text-slate-800 dark:text-slate-200 text-xs font-bold rounded-full transition cursor-pointer"
-                >
-                  Change
-                </button>
-                {user.picture && (
-                  <button
-                    type="button"
-                    onClick={handleRemoveAvatar}
-                    disabled={avatarUploading}
-                    className="p-2 text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-full transition cursor-pointer"
-                    title="Remove photo"
-                  >
-                    <Trash2 className="w-4 h-4" />
-                  </button>
+              <div aria-live="polite" className="text-[11px] font-medium shrink-0">
+                {profileSaveState === 'saving' && (
+                  <span className="inline-flex items-center gap-1.5 text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/50 px-2.5 py-1 rounded-full">
+                    <Loader2 className="w-3 h-3 animate-spin" />
+                    Saving...
+                  </span>
+                )}
+                {profileSaveState === 'saved' && (
+                  <span className="inline-flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/50 px-2.5 py-1 rounded-full">
+                    <Check className="w-3 h-3" />
+                    Changes saved
+                  </span>
+                )}
+                {profileSaveState === 'error' && (
+                  <span className="text-rose-500 bg-rose-50 dark:bg-rose-950/50 px-2.5 py-1 rounded-full">
+                    Could not save
+                  </span>
                 )}
               </div>
             </div>
 
-            {/* Form: Oblong fields with italic placeholders (Name -> Email -> Location) */}
-            <form onSubmit={handleUpdateProfile} className="space-y-5 pt-2">
-              <div>
-                <label className="block text-xs font-bold text-[#1F3F74] dark:text-[#4987BA] mb-1.5">
-                  Display Name
-                </label>
-                <div className="relative">
-                  <User className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    required
-                    value={name}
-                    onChange={(e) => setName(e.target.value)}
-                    className="w-full pl-11 pr-5 py-3 text-xs bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-full focus:outline-none focus:ring-2 focus:ring-[#1F3F74] text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400"
-                    placeholder="Your display name"
-                  />
+            {/* Profile Input Fields (Responsive Form Layout) */}
+            <div className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                    Display Name
+                  </label>
+                  <div className="relative">
+                    <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      required
+                      minLength={2}
+                      maxLength={120}
+                      value={name}
+                      onChange={(e) => {
+                        setName(e.target.value);
+                        setProfileSaveState('idle');
+                      }}
+                      className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1F3F74] text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 transition"
+                      placeholder="Your display name"
+                    />
+                  </div>
+                </div>
+
+                <div>
+                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                    Location
+                  </label>
+                  <div className="relative">
+                    <MapPin className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
+                    <input
+                      type="text"
+                      maxLength={160}
+                      value={userLocation}
+                      onChange={(e) => {
+                        setUserLocation(e.target.value);
+                        setProfileSaveState('idle');
+                      }}
+                      className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1F3F74] text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 transition"
+                      placeholder={isFetchingLocation ? 'Detecting your location...' : 'Your town or city'}
+                    />
+                  </div>
                 </div>
               </div>
 
               <div>
-                <label className="block text-xs font-bold text-[#1F3F74] dark:text-[#4987BA] mb-1.5">
+                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
                   Email Address
                 </label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
+                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                   <input
                     type="email"
                     disabled
                     value={email}
-                    className="w-full pl-11 pr-5 py-3 text-xs bg-slate-100 dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 rounded-full text-slate-500 dark:text-slate-400 cursor-not-allowed"
+                    className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-100 dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 rounded-xl text-slate-500 dark:text-slate-400 cursor-not-allowed"
                   />
                 </div>
-                <p className="text-[11px] text-slate-400 mt-1 pl-3">
+                <p className="text-[11px] text-slate-400 mt-1 pl-1">
                   Email is linked to your authentication provider.
                 </p>
               </div>
+            </div>
 
-              <div>
-                <label className="block text-xs font-bold text-[#1F3F74] dark:text-[#4987BA] mb-1.5">
-                  Location
-                </label>
-                <div className="relative">
-                  <MapPin className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="text"
-                    value={userLocation}
-                    onChange={(e) => setUserLocation(e.target.value)}
-                    className="w-full pl-11 pr-5 py-3 text-xs bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-full focus:outline-none focus:ring-2 focus:ring-[#1F3F74] text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400"
-                    placeholder="Your location (e.g. Lilo-an, Cebu)"
-                  />
+            {/* Account Status for Owners/Managers */}
+            {(user.role === 'beach_owner' || user.role === 'beach_manager') && (
+              <section className="border-t border-slate-200 pt-6 dark:border-neutral-800" aria-label="Account status">
+                <h3 className="text-sm font-bold text-slate-800 dark:text-white">Account Status</h3>
+                <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-4 py-3 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800">
+                  <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
+                    {user.role === 'beach_owner' ? 'Beach Owner' : 'Beach Manager'}
+                  </span>
+                  <span className="inline-flex items-center gap-1.5 text-xs font-bold text-emerald-600 dark:text-emerald-400">
+                    <span className="h-2 w-2 rounded-full bg-emerald-500" />
+                    Active &amp; Verified
+                  </span>
                 </div>
-                <p className="text-[11px] text-slate-400 mt-1 pl-3">
-                  Realtime detected or personalized locality.
+              </section>
+            )}
+
+            {/* Account Security (Reset Password) */}
+            <section className="border-t border-slate-200 pt-6 dark:border-neutral-800 space-y-3" aria-label="Account security">
+              <div>
+                <h3 className="text-sm font-bold text-slate-800 dark:text-white">Account Password</h3>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                  We&apos;ll email you a secure link to choose a new password.
                 </p>
               </div>
-
-              {/* Submit Button (Oblong, NO disk icon) */}
-              <div className="pt-2">
-                <button
-                  type="submit"
-                  disabled={isSavingProfile}
-                  className="inline-flex items-center justify-center px-8 py-3 bg-[#1F3F74] hover:bg-[#285091] dark:bg-[#1F3F74] dark:hover:bg-[#285091] text-white text-xs font-bold rounded-full transition shadow-md disabled:opacity-50 cursor-pointer"
-                >
-                  {isSavingProfile ? (
-                    <Loader2 className="w-4 h-4 animate-spin mr-2" />
-                  ) : null}
-                  <span>Save Changes</span>
-                </button>
-              </div>
-            </form>
-          </div>
-        )}
-
-        {/* ===================================================================== */}
-        {/* CATEGORY 2: PREFERENCES (NO CARDS / SEAMLESS)                         */}
-        {/* ===================================================================== */}
-        {activeCategory === 'appearance' && (
-          <div className="space-y-6">
-            <div className="border-b border-slate-200 dark:border-neutral-800 pb-4">
-              <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-[#4987BA]">
-                Preferences
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Select your preferred interface mode and measuring units. Transitions happen silently and instantly.
-              </p>
-            </div>
-
-            {/* Theme Previews matching Beach Owner & Admin (SILENT - NO TOAST MESSAGE) */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {/* Light Mode Preview */}
               <button
                 type="button"
-                onClick={() => setTheme('light')}
-                className={`group text-left rounded-2xl p-4 border transition-all duration-200 cursor-pointer ${
-                  theme === 'light'
-                    ? 'border-[#1F3F74] bg-blue-50/50 ring-2 ring-[#1F3F74]/20'
-                    : 'border-slate-200 dark:border-neutral-900 hover:border-slate-300 dark:hover:border-neutral-800 bg-slate-50/40 dark:bg-neutral-950'
-                }`}
+                onClick={handleSendPasswordResetEmail}
+                disabled={isSendingReset}
+                className="inline-flex items-center justify-center gap-2 rounded-full bg-[#1F3F74] px-5 py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#285091] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-offset-neutral-950 shadow-2xs"
               >
-                <div className="w-full aspect-[16/9] rounded-xl bg-white border border-slate-200 p-2.5 flex flex-col gap-1.5 overflow-hidden shadow-xs">
-                  <div className="flex items-center justify-between pb-1.5 border-b border-slate-100">
-                    <div className="flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-rose-400" />
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-400" />
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                    </div>
-                    <div className="w-16 h-1.5 rounded-full bg-slate-200" />
-                  </div>
-                  <div className="flex gap-2 flex-1 pt-0.5">
-                    <div className="w-8 rounded-md bg-slate-50 border border-slate-200 p-1 flex flex-col gap-1">
-                      <div className="w-full h-1 rounded-full bg-[#1F3F74]" />
-                      <div className="w-4 h-1 rounded-full bg-slate-200" />
-                      <div className="w-5 h-1 rounded-full bg-slate-200" />
-                    </div>
-                    <div className="flex-1 flex flex-col gap-1.5">
-                      <div className="w-2/3 h-1.5 rounded-full bg-slate-300" />
-                      <div className="flex-1 rounded-lg bg-slate-50 border border-slate-200 p-1.5 flex gap-1.5 items-center">
-                        <div className="w-5 h-5 rounded bg-blue-100 text-[#1F3F74] flex items-center justify-center text-[8px] font-bold">
-                          🌊
-                        </div>
-                        <div className="flex-1 space-y-1">
-                          <div className="w-3/4 h-1 rounded-full bg-slate-300" />
-                          <div className="w-1/2 h-1 rounded-full bg-slate-200" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-amber-100 text-amber-600 flex items-center justify-center">
-                      <Sun className="w-3.5 h-3.5" />
-                    </div>
-                    <div>
-                      <div className="text-xs font-bold text-slate-900 dark:text-white">Light Mode</div>
-                      <div className="text-[10px] text-slate-500">Crisp coastal sunlight theme</div>
-                    </div>
-                  </div>
-                  <div
-                    className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${
-                      theme === 'light' ? 'bg-[#1F3F74] text-white' : 'border-2 border-slate-300 dark:border-neutral-700'
-                    }`}
-                  >
-                    {theme === 'light' && <Check className="w-3 h-3 stroke-[3]" />}
-                  </div>
-                </div>
+                {isSendingReset && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
+                <span>Reset Password</span>
               </button>
+            </section>
 
-              {/* Dark Mode Preview (Pure Black) */}
-              <button
-                type="button"
-                onClick={() => setTheme('dark')}
-                className={`group text-left rounded-2xl p-4 border transition-all duration-200 cursor-pointer ${
-                  theme === 'dark'
-                    ? 'border-[#4987BA] bg-neutral-900 ring-2 ring-[#4987BA]/20'
-                    : 'border-slate-200 dark:border-neutral-900 hover:border-slate-300 dark:hover:border-neutral-800 bg-slate-50/40 dark:bg-neutral-950'
-                }`}
-              >
-                <div className="w-full aspect-[16/9] rounded-xl bg-black border border-neutral-800 p-2.5 flex flex-col gap-1.5 overflow-hidden shadow-xs">
-                  <div className="flex items-center justify-between pb-1.5 border-b border-neutral-900">
-                    <div className="flex items-center gap-1">
-                      <span className="w-1.5 h-1.5 rounded-full bg-rose-500/80" />
-                      <span className="w-1.5 h-1.5 rounded-full bg-amber-500/80" />
-                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500/80" />
-                    </div>
-                    <div className="w-16 h-1.5 rounded-full bg-neutral-800" />
-                  </div>
-                  <div className="flex gap-2 flex-1 pt-0.5">
-                    <div className="w-8 rounded-md bg-neutral-950 border border-neutral-800 p-1 flex flex-col gap-1">
-                      <div className="w-full h-1 rounded-full bg-[#4987BA]" />
-                      <div className="w-4 h-1 rounded-full bg-neutral-800" />
-                      <div className="w-5 h-1 rounded-full bg-neutral-800" />
-                    </div>
-                    <div className="flex-1 flex flex-col gap-1.5">
-                      <div className="w-2/3 h-1.5 rounded-full bg-neutral-700" />
-                      <div className="flex-1 rounded-lg bg-neutral-950 border border-neutral-800 p-1.5 flex gap-1.5 items-center">
-                        <div className="w-5 h-5 rounded bg-blue-950 text-[#4987BA] flex items-center justify-center text-[8px] font-bold">
-                          🌊
-                        </div>
-                        <div className="flex-1 space-y-1">
-                          <div className="w-3/4 h-1 rounded-full bg-neutral-700" />
-                          <div className="w-1/2 h-1 rounded-full bg-neutral-800" />
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <div className="w-6 h-6 rounded-lg bg-neutral-800 text-[#4987BA] flex items-center justify-center">
-                      <Moon className="w-3.5 h-3.5" />
-                    </div>
-                    <div>
-                      <div className="text-xs font-bold text-slate-900 dark:text-white">Dark Mode</div>
-                      <div className="text-[10px] text-slate-500 dark:text-slate-400">Pure black, OLED optimized</div>
-                    </div>
-                  </div>
-                  <div
-                    className={`w-5 h-5 rounded-full flex items-center justify-center transition-colors ${
-                      theme === 'dark' ? 'bg-[#4987BA] text-white' : 'border-2 border-slate-300 dark:border-neutral-700'
-                    }`}
-                  >
-                    {theme === 'dark' && <Check className="w-3 h-3 stroke-[3]" />}
-                  </div>
-                </div>
-              </button>
-            </div>
-
-            {/* Units */}
-            <div className="pt-4 border-t border-slate-100 dark:border-neutral-900">
-              <h3 className="text-xs font-bold uppercase tracking-wider text-[#1F3F74] dark:text-[#4987BA] mb-3">
-                Measurement Units
-              </h3>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="p-4 rounded-2xl border border-slate-200 dark:border-neutral-900 bg-slate-50/40 dark:bg-neutral-900/40 space-y-2">
-                  <div className="text-xs font-bold text-slate-900 dark:text-white">Temperature Format</div>
-                  <div className="grid grid-cols-2 p-1 bg-slate-200/70 dark:bg-neutral-800 rounded-full text-xs font-semibold gap-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setTempUnit('C');
-                        localStorage.setItem('dtb_pref_temp', 'C');
-                      }}
-                      className={`py-1.5 rounded-full transition-all cursor-pointer ${
-                        tempUnit === 'C'
-                          ? 'bg-white dark:bg-neutral-900 text-slate-900 dark:text-white font-bold shadow-xs'
-                          : 'text-slate-600 dark:text-slate-400'
-                      }`}
-                    >
-                      °C (Celsius)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setTempUnit('F');
-                        localStorage.setItem('dtb_pref_temp', 'F');
-                      }}
-                      className={`py-1.5 rounded-full transition-all cursor-pointer ${
-                        tempUnit === 'F'
-                          ? 'bg-white dark:bg-neutral-900 text-slate-900 dark:text-white font-bold shadow-xs'
-                          : 'text-slate-600 dark:text-slate-400'
-                      }`}
-                    >
-                      °F (Fahrenheit)
-                    </button>
-                  </div>
-                </div>
-
-                <div className="p-4 rounded-2xl border border-slate-200 dark:border-neutral-900 bg-slate-50/40 dark:bg-neutral-900/40 space-y-2">
-                  <div className="text-xs font-bold text-slate-900 dark:text-white">Distance Format</div>
-                  <div className="grid grid-cols-2 p-1 bg-slate-200/70 dark:bg-neutral-800 rounded-full text-xs font-semibold gap-1">
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDistanceUnit('km');
-                        localStorage.setItem('dtb_pref_dist', 'km');
-                      }}
-                      className={`py-1.5 rounded-full transition-all cursor-pointer ${
-                        distanceUnit === 'km'
-                          ? 'bg-white dark:bg-neutral-900 text-slate-900 dark:text-white font-bold shadow-xs'
-                          : 'text-slate-600 dark:text-slate-400'
-                      }`}
-                    >
-                      Kilometers (km)
-                    </button>
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setDistanceUnit('mi');
-                        localStorage.setItem('dtb_pref_dist', 'mi');
-                      }}
-                      className={`py-1.5 rounded-full transition-all cursor-pointer ${
-                        distanceUnit === 'mi'
-                          ? 'bg-white dark:bg-neutral-900 text-slate-900 dark:text-white font-bold shadow-xs'
-                          : 'text-slate-600 dark:text-slate-400'
-                      }`}
-                    >
-                      Miles (mi)
-                    </button>
-                  </div>
-                </div>
+            {/* Danger Zone */}
+            <section className="border-t border-slate-200 pt-6 dark:border-neutral-800 space-y-3" aria-label="Account deletion">
+              <div>
+                <h3 className="text-xs font-bold uppercase tracking-wider text-red-600 dark:text-red-400">
+                  Danger Zone
+                </h3>
+                <p className="mt-0.5 text-xs text-slate-500 dark:text-slate-400">
+                  Permanently delete your Dagat Ta Bai account and associated preferences.
+                </p>
               </div>
-            </div>
-          </div>
-        )}
-
-        {/* ===================================================================== */}
-        {/* CATEGORY 3: SECURITY & PASSWORD (NO CARDS / SEAMLESS)                 */}
-        {/* ===================================================================== */}
-        {activeCategory === 'security' && (
-          <div className="space-y-6">
-            <div className="border-b border-slate-200 dark:border-neutral-800 pb-4">
-              <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-[#4987BA]">
-                Password & Security
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Manage your credentials and sign-in verification via official Supabase authentication.
-              </p>
-            </div>
-
-            {/* Password Reset Action Box */}
-            <div className="p-5 rounded-2xl border border-slate-200 dark:border-neutral-900 bg-slate-50/60 dark:bg-neutral-900/40 space-y-3">
-              <div className="flex items-center gap-3">
-                <div className="w-10 h-10 rounded-full bg-blue-100 dark:bg-neutral-900 text-[#1F3F74] dark:text-[#4987BA] flex items-center justify-center flex-shrink-0">
-                  <Lock className="w-5 h-5" />
-                </div>
-                <div>
-                  <h3 className="text-xs font-bold text-slate-900 dark:text-white">
-                    Reset Password Link
-                  </h3>
-                  <p className="text-[11px] text-slate-500 dark:text-slate-400">
-                    We will dispatch an authentication reset link to your verified email (<strong className="text-slate-800 dark:text-slate-200">{user.email}</strong>).
-                  </p>
-                </div>
-              </div>
-
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={handleSendPasswordResetEmail}
-                  disabled={isSendingReset}
-                  className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#1F3F74] hover:bg-[#285091] text-white text-xs font-bold rounded-full transition shadow-xs disabled:opacity-50 cursor-pointer"
-                >
-                  {isSendingReset ? (
-                    <Loader2 className="w-4 h-4 animate-spin" />
-                  ) : (
-                    <Send className="w-3.5 h-3.5" />
-                  )}
-                  <span>Send Password Reset Link to Email</span>
-                </button>
-              </div>
-            </div>
-
-            {/* Account Deletion */}
-            <div className="pt-4 border-t border-slate-100 dark:border-neutral-900">
-              <h3 className="text-xs font-bold text-red-600 dark:text-red-400 uppercase tracking-wider mb-1">
-                Danger Zone
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-slate-400 mb-3">
-                Permanently delete your Dagat Ta Bai account and remove all posted reviews.
-              </p>
               <Link
                 href="/contact?subject=Account%20Deletion%20Request"
-                className="inline-flex items-center justify-center px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-bold rounded-full text-xs shadow-md transition-colors"
+                className="inline-flex items-center justify-center rounded-full bg-red-600 px-5 py-2.5 text-xs font-bold text-white shadow-2xs transition-colors hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-950"
               >
                 Request Account Deletion
               </Link>
-            </div>
+            </section>
           </div>
         )}
 
         {/* ===================================================================== */}
-        {/* CATEGORY 4: MY REVIEWS (NO CARDS / SEAMLESS)                           */}
+        {/* CATEGORY 2: PREFERENCES (Senior UI Design, Smooth Toggle Cards)       */}
         {/* ===================================================================== */}
-        {activeCategory === 'reviews' && (
-          <div className="space-y-6">
-            <div className="flex items-center justify-between border-b border-slate-200 dark:border-neutral-800 pb-4">
-              <div>
-                <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-[#4987BA]">
-                  My Posted Reviews
-                </h2>
-                <p className="text-xs text-slate-500 dark:text-slate-400">
-                  Manage and review ratings you published for Catmon beaches.
-                </p>
+        {activeCategory === 'appearance' && (
+          <div id="appearance-settings" role="tabpanel" aria-labelledby="appearance-tab" className="max-w-2xl space-y-6">
+            <div className="border-b border-slate-200 pb-4 dark:border-neutral-800">
+              <h3 className="text-base font-bold text-[#1F3F74] dark:text-white">Theme Mode</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Choose the visual appearance that feels comfortable for your coastal exploration.
+              </p>
+            </div>
+
+            <fieldset className="space-y-3">
+              <legend className="sr-only">Theme mode</legend>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
+                <button
+                  type="button"
+                  aria-pressed={theme === 'light'}
+                  onClick={() => setTheme('light')}
+                  className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all cursor-pointer ${
+                    theme === 'light'
+                      ? 'border-[#1F3F74] bg-[#1F3F74]/[0.06] shadow-sm ring-1 ring-[#1F3F74]'
+                      : 'border-slate-200 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700 bg-white dark:bg-neutral-900'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2.5 rounded-xl ${theme === 'light' ? 'bg-[#1F3F74] text-white' : 'bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400'}`}>
+                      <Sun className="h-5 w-5" />
+                    </div>
+                    <div className="text-left">
+                      <span className="block text-sm font-bold text-slate-900 dark:text-white">Light Mode</span>
+                      <span className="block text-[11px] text-slate-500 dark:text-neutral-400">Crisp coastal daylight</span>
+                    </div>
+                  </div>
+                  {theme === 'light' && (
+                    <span className="h-6 w-6 rounded-full bg-[#1F3F74] text-white flex items-center justify-center shrink-0">
+                      <Check className="h-3.5 w-3.5" />
+                    </span>
+                  )}
+                </button>
+
+                <button
+                  type="button"
+                  aria-pressed={theme === 'dark'}
+                  onClick={() => setTheme('dark')}
+                  className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all cursor-pointer ${
+                    theme === 'dark'
+                      ? 'border-[#38BDF8] bg-sky-950/40 shadow-sm ring-1 ring-[#38BDF8]'
+                      : 'border-slate-200 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700 bg-white dark:bg-neutral-900'
+                  }`}
+                >
+                  <div className="flex items-center gap-3">
+                    <div className={`p-2.5 rounded-xl ${theme === 'dark' ? 'bg-[#38BDF8] text-neutral-950' : 'bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400'}`}>
+                      <Moon className="h-5 w-5" />
+                    </div>
+                    <div className="text-left">
+                      <span className="block text-sm font-bold text-slate-900 dark:text-white">Dark Mode</span>
+                      <span className="block text-[11px] text-slate-500 dark:text-neutral-400">Deep night ocean ambience</span>
+                    </div>
+                  </div>
+                  {theme === 'dark' && (
+                    <span className="h-6 w-6 rounded-full bg-[#38BDF8] text-neutral-950 flex items-center justify-center shrink-0">
+                      <Check className="h-3.5 w-3.5" />
+                    </span>
+                  )}
+                </button>
               </div>
-              <span className="text-xs font-bold px-3 py-1 rounded-full bg-blue-100 dark:bg-neutral-900 text-[#1F3F74] dark:text-[#4987BA] border border-blue-200 dark:border-neutral-800">
-                {reviews.length} {reviews.length === 1 ? 'Review' : 'Reviews'}
-              </span>
+            </fieldset>
+
+          </div>
+        )}
+
+        {activeCategory === 'reviews' && (
+          <section id="reviews-settings" className="max-w-2xl space-y-5">
+            <div className="border-b border-slate-200 pb-4 dark:border-neutral-800">
+              <h3 className="text-base font-bold text-[#1F3F74] dark:text-white">My Reviews &amp; Feedback</h3>
+              <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                Reviews and community feedback submitted under your account.
+              </p>
             </div>
 
             {reviewsLoading ? (
-              <div className="py-12 flex flex-col items-center justify-center gap-2 text-slate-500">
-                <Loader2 className="w-6 h-6 animate-spin text-[#1F3F74] dark:text-[#4987BA]" />
-                <span className="text-xs">Loading reviews...</span>
+              <div className="flex items-center justify-center gap-2 py-12 text-slate-500">
+                <Loader2 className="h-5 w-5 animate-spin text-[#1F3F74] dark:text-[#38BDF8]" />
+                <span className="text-xs font-semibold">Loading reviews...</span>
               </div>
             ) : reviews.length === 0 ? (
-              <div className="py-12 text-center space-y-3 p-6 border border-dashed border-slate-200 dark:border-neutral-800 rounded-2xl">
-                <MessageSquare className="w-8 h-8 mx-auto text-slate-400 opacity-60" />
-                <p className="text-xs text-slate-500 dark:text-slate-400">You haven&apos;t posted any reviews yet.</p>
-                <Link
-                  href="/map"
-                  className="inline-block px-5 py-2 bg-[#1F3F74] text-white rounded-full text-xs font-bold hover:bg-[#285091] transition"
-                >
-                  Explore Catmon Beaches
-                </Link>
+              <div className="flex flex-col items-center justify-center gap-3 py-14 text-center">
+                <div className="flex h-13 w-13 items-center justify-center rounded-2xl bg-[#1F3F74]/[0.08] text-[#1F3F74] dark:bg-sky-950/60 dark:text-[#38BDF8]">
+                  <MessageSquare className="h-6 w-6" />
+                </div>
+                <h4 className="text-sm font-bold text-slate-800 dark:text-white">No reviews yet</h4>
+                <p className="text-xs text-slate-500 dark:text-neutral-400 max-w-sm">
+                  You haven&apos;t shared any beach reviews or platform feedback yet. Explore beaches and share your experience!
+                </p>
               </div>
             ) : (
               <div className="space-y-3">
-                {reviews.map((rev) => (
-                  <div
-                    key={rev.id}
-                    className="p-4 rounded-2xl border border-slate-200 dark:border-neutral-900 bg-slate-50/50 dark:bg-neutral-900/40 space-y-2"
+                {reviews.map((review) => (
+                  <article
+                    key={review.id}
+                    className="flex items-start justify-between gap-4 p-4 rounded-2xl border border-slate-200/90 dark:border-neutral-800 bg-white dark:bg-neutral-900/60 shadow-2xs"
                   >
-                    <div className="flex items-start justify-between gap-3">
-                      <div>
-                        <div className="text-xs font-bold text-[#1F3F74] dark:text-[#4987BA]">
-                          {rev.beach_name || 'Beach Resort'}
-                        </div>
-                        <div className="flex items-center gap-1 mt-0.5">
-                          {Array.from({ length: 5 }).map((_, i) => (
-                            <Star
-                              key={i}
-                              className={`w-3 h-3 ${
-                                i < rev.rating
-                                  ? 'fill-amber-400 text-amber-400'
-                                  : 'text-slate-300 dark:text-neutral-700'
-                              }`}
-                            />
-                          ))}
-                          <span className="text-[10px] text-slate-400 ml-1.5">
-                            {new Date(rev.created_at).toLocaleDateString()}
+                    <div className="space-y-1.5 min-w-0">
+                      <div className="flex items-center gap-2 flex-wrap">
+                        <h4 className="text-sm font-extrabold text-[#1F3F74] dark:text-white">
+                          {review.beach_name || 'Beach Resort'}
+                        </h4>
+                        {review.review_type === 'platform' && (
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-sky-100 text-[#1F3F74] dark:bg-sky-950/70 dark:text-sky-300">
+                            Platform Feedback
                           </span>
-                        </div>
+                        )}
                       </div>
-
-                      <button
-                        type="button"
-                        onClick={() => handleDeleteReview(rev.id)}
-                        className="p-1.5 text-slate-400 hover:text-rose-600 dark:hover:text-rose-400 transition cursor-pointer"
-                        title="Delete review"
-                      >
-                        <Trash className="w-3.5 h-3.5" />
-                      </button>
+                      <div className="flex items-center gap-1" aria-label={`${review.rating} out of 5 stars`}>
+                        {Array.from({ length: 5 }, (_, index) => (
+                          <Star
+                            key={index}
+                            className={`h-3.5 w-3.5 ${
+                              index < review.rating
+                                ? 'fill-amber-400 text-amber-400'
+                                : 'text-slate-300 dark:text-neutral-700'
+                            }`}
+                          />
+                        ))}
+                        <time className="ml-2 text-xs text-slate-500" dateTime={review.created_at}>
+                          {new Date(review.created_at).toLocaleDateString()}
+                        </time>
+                      </div>
+                      <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed pt-1">
+                        {review.comment}
+                      </p>
                     </div>
-
-                    <p className="text-xs text-slate-700 dark:text-slate-200 leading-relaxed">
-                      {rev.comment}
-                    </p>
-                  </div>
+                    <button
+                      type="button"
+                      onClick={() => void handleDeleteReview(review.id)}
+                      aria-label={`Delete review for ${review.beach_name || 'beach'}`}
+                      className="rounded-full p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 transition-colors shrink-0 cursor-pointer"
+                    >
+                      <Trash className="h-4 w-4" />
+                    </button>
+                  </article>
                 ))}
               </div>
             )}
-          </div>
+          </section>
         )}
+
       </div>
+
+      {avatarEditorOpen && (
+        <div
+          className="fixed inset-0 z-[70] flex items-center justify-center bg-black/70 p-4"
+          onMouseDown={(event) => {
+            if (event.target === event.currentTarget && !avatarUploading) {
+              setAvatarEditorOpen(false);
+              setAvatarDraft(null);
+            }
+          }}
+        >
+          <section
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="avatar-editor-title"
+            className="w-full max-w-md space-y-5 rounded-2xl border border-slate-200 bg-white p-5 shadow-2xl dark:border-neutral-800 dark:bg-neutral-950"
+          >
+            <header className="flex items-start justify-between gap-4">
+              <div>
+                <h2 id="avatar-editor-title" className="text-base font-bold text-slate-900 dark:text-white">
+                  Profile photo
+                </h2>
+                <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+                  Adjust the framing, then apply your changes.
+                </p>
+              </div>
+              <button
+                type="button"
+                aria-label="Close photo editor"
+                disabled={avatarUploading}
+                onClick={() => {
+                  setAvatarEditorOpen(false);
+                  setAvatarDraft(null);
+                }}
+                className="rounded-full p-1.5 text-slate-500 hover:bg-slate-100 disabled:opacity-50 dark:hover:bg-neutral-800"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </header>
+
+            <div
+              className={`relative mx-auto flex h-48 w-48 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-5xl font-bold text-[#1F3F74] dark:bg-neutral-900 dark:text-[#4987BA] ${
+                avatarDraft ? 'cursor-grab touch-none active:cursor-grabbing' : ''
+              }`}
+              role={avatarDraft ? 'group' : undefined}
+              aria-label={avatarDraft ? 'Photo framing. Drag the image to reposition it.' : undefined}
+              tabIndex={avatarDraft ? 0 : undefined}
+              onPointerDown={(event) => {
+                if (!avatarDraft) return;
+                event.preventDefault();
+                event.currentTarget.setPointerCapture(event.pointerId);
+                avatarDragRef.current = {
+                  pointerId: event.pointerId,
+                  x: event.clientX,
+                  y: event.clientY,
+                };
+              }}
+              onPointerMove={(event) => {
+                const drag = avatarDragRef.current;
+                const image = avatarPreviewImageRef.current;
+                if (!avatarDraft || !drag || drag.pointerId !== event.pointerId || !image?.naturalWidth) return;
+
+                const deltaX = event.clientX - drag.x;
+                const deltaY = event.clientY - drag.y;
+                drag.x = event.clientX;
+                drag.y = event.clientY;
+
+                const shortestSide = Math.min(image.naturalWidth, image.naturalHeight);
+                const maxOffsetX = Math.max(
+                  0,
+                  (AVATAR_PREVIEW_SIZE * (image.naturalWidth / shortestSide) * avatarZoom - AVATAR_PREVIEW_SIZE) / 2
+                );
+                const maxOffsetY = Math.max(
+                  0,
+                  (AVATAR_PREVIEW_SIZE * (image.naturalHeight / shortestSide) * avatarZoom - AVATAR_PREVIEW_SIZE) / 2
+                );
+                if (maxOffsetX > 0) {
+                  setAvatarOffsetX((offset) => Math.max(-1, Math.min(1, offset - deltaX / maxOffsetX)));
+                }
+                if (maxOffsetY > 0) {
+                  setAvatarOffsetY((offset) => Math.max(-1, Math.min(1, offset - deltaY / maxOffsetY)));
+                }
+              }}
+              onPointerUp={(event) => {
+                if (avatarDragRef.current?.pointerId === event.pointerId) avatarDragRef.current = null;
+              }}
+              onPointerCancel={() => {
+                avatarDragRef.current = null;
+              }}
+              onKeyDown={(event) => {
+                const step = event.shiftKey ? 0.1 : 0.03;
+                if (event.key === 'ArrowLeft' || event.key === 'ArrowRight') {
+                  event.preventDefault();
+                  const direction = event.key === 'ArrowLeft' ? -1 : 1;
+                  setAvatarOffsetX((offset) => Math.max(-1, Math.min(1, offset + direction * step)));
+                } else if (event.key === 'ArrowUp' || event.key === 'ArrowDown') {
+                  event.preventDefault();
+                  const direction = event.key === 'ArrowUp' ? -1 : 1;
+                  setAvatarOffsetY((offset) => Math.max(-1, Math.min(1, offset + direction * step)));
+                }
+              }}
+            >
+              {avatarDraft || user.picture ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  ref={avatarPreviewImageRef}
+                  src={avatarDraft || user.picture || ''}
+                  alt="Profile photo preview"
+                  draggable={false}
+                  onLoad={(event) => {
+                    if (avatarDraft) {
+                      setAvatarImageSize({
+                        width: event.currentTarget.naturalWidth,
+                        height: event.currentTarget.naturalHeight,
+                      });
+                    }
+                  }}
+                  className={`absolute left-1/2 top-1/2 max-w-none ${
+                    avatarDraft ? '' : 'h-full w-full object-cover'
+                  }`}
+                  style={avatarDraft && avatarImageSize
+                    ? {
+                        width: `${AVATAR_PREVIEW_SIZE * (avatarImageSize.width / Math.min(avatarImageSize.width, avatarImageSize.height)) * avatarZoom}px`,
+                        height: `${AVATAR_PREVIEW_SIZE * (avatarImageSize.height / Math.min(avatarImageSize.width, avatarImageSize.height)) * avatarZoom}px`,
+                        transform: `translate(calc(-50% - ${avatarOffsetX * Math.max(0, (AVATAR_PREVIEW_SIZE * (avatarImageSize.width / Math.min(avatarImageSize.width, avatarImageSize.height)) * avatarZoom - AVATAR_PREVIEW_SIZE) / 2)}px), calc(-50% - ${avatarOffsetY * Math.max(0, (AVATAR_PREVIEW_SIZE * (avatarImageSize.height / Math.min(avatarImageSize.width, avatarImageSize.height)) * avatarZoom - AVATAR_PREVIEW_SIZE) / 2)}px))`,
+                      }
+                    : avatarDraft
+                      ? { width: '100%', height: '100%', objectFit: 'cover' }
+                      : undefined}
+                />
+              ) : (
+                user.name.charAt(0).toUpperCase()
+              )}
+            </div>
+
+            <div className="space-y-4">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                disabled={avatarUploading}
+                className="w-full rounded-full border border-slate-300 px-4 py-2.5 text-xs font-bold text-slate-700 hover:bg-slate-50 disabled:opacity-50 dark:border-neutral-700 dark:text-slate-200 dark:hover:bg-neutral-900"
+              >
+                {avatarDraft || user.picture ? 'Choose a different photo' : 'Choose a photo'}
+              </button>
+
+              {avatarDraft && (
+                <div className="space-y-3">
+                  <p className="text-center text-xs text-slate-500 dark:text-slate-400">
+                    Drag the photo to reposition it. Use the arrow keys when the preview is focused.
+                  </p>
+                  <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
+                    Zoom
+                    <input
+                      type="range"
+                      min="1"
+                      max="3"
+                      step="0.01"
+                      value={avatarZoom}
+                      onChange={(event) => {
+                        setAvatarZoom(Number(event.target.value));
+                        setAvatarOffsetX((offset) => Math.max(-1, Math.min(1, offset)));
+                        setAvatarOffsetY((offset) => Math.max(-1, Math.min(1, offset)));
+                      }}
+                      className="mt-2 block w-full accent-[#1F3F74]"
+                    />
+                  </label>
+                </div>
+              )}
+            </div>
+
+            <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-slate-100 pt-4 dark:border-neutral-800">
+              {user.picture ? (
+                <button
+                  type="button"
+                  onClick={handleRemoveAvatar}
+                  disabled={avatarUploading}
+                  aria-busy={avatarUploading}
+                  className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 disabled:opacity-50 dark:hover:bg-rose-950/30"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Remove photo
+                </button>
+              ) : (
+                <span />
+              )}
+              {avatarDraft ? (
+                <button
+                  type="button"
+                  onClick={handleApplyAvatar}
+                  disabled={avatarUploading}
+                  aria-busy={avatarUploading}
+                  className="inline-flex items-center gap-2 rounded-full bg-[#1F3F74] px-5 py-2.5 text-xs font-bold text-white hover:bg-[#285091] disabled:opacity-50"
+                >
+                  {avatarUploading && <Loader2 className="h-4 w-4 animate-spin" />}
+                  {avatarUploading ? 'Applying...' : 'Apply photo'}
+                </button>
+              ) : (
+                <button
+                  type="button"
+                  onClick={() => setAvatarEditorOpen(false)}
+                  disabled={avatarUploading}
+                  className="rounded-full bg-[#1F3F74] px-5 py-2.5 text-xs font-bold text-white hover:bg-[#285091] disabled:opacity-50"
+                >
+                  Done
+                </button>
+              )}
+            </footer>
+          </section>
+        </div>
+      )}
     </div>
   );
 }

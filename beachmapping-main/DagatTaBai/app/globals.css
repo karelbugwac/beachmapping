@@ -46,7 +46,7 @@
   }
 
   html {
-    scroll-behavior: smooth;
+    scroll-behavior: auto;
     overflow-x: hidden;
     width: 100%;
     max-width: 100vw;
@@ -182,6 +182,5 @@
 .beach-map-label::before {
   display: none !important;
 }
-
 
 

@@ -40,6 +40,29 @@ interface ResortRuleItem {
   category: string;
 }
 
+// Mask user names: e.g. "Bugwac, Karel" -> "B*** K***"
+function maskUserName(name?: string | null): string {
+  if (!name || name.trim() === '' || name.toLowerCase().includes('dagat ta bai user')) {
+    return 'Community visitor';
+  }
+  const parts = name.trim().replace(/,/g, '').split(/\s+/);
+  if (parts.length === 1) {
+    const p = parts[0];
+    return p.length > 1 ? `${p[0]}***` : `${p}***`;
+  }
+  const first = parts[0];
+  const last = parts[parts.length - 1];
+  return `${first[0]}*** ${last[0]}***`;
+}
+
+const RATING_LABELS: Record<number, string> = {
+  1: 'Needs Improvement',
+  2: 'Fair',
+  3: 'Good',
+  4: 'Very Good',
+  5: 'Excellent',
+};
+
 function parseResortRules(value: string | null): ResortRuleItem[] {
   if (!value) return [];
 
@@ -136,6 +159,16 @@ export default function BeachProfilePage({
   const [showTourModal, setShowTourModal] = useState(false);
   const [selectedDetail, setSelectedDetail] = useState<PhotoViewerItem | null>(null);
 
+  // Review System State (Matches Feedback Page Architecture)
+  const [beachReviews, setBeachReviews] = useState<any[]>([]);
+  const [reviewsLoading, setReviewsLoading] = useState(false);
+  const [userRating, setUserRating] = useState<number>(5);
+  const [hoverRating, setHoverRating] = useState<number | null>(null);
+  const [reviewComment, setReviewComment] = useState('');
+  const [submittingReview, setSubmittingReview] = useState(false);
+  const [signedIn, setSignedIn] = useState(false);
+  const [reviewCategory, setReviewCategory] = useState<'all' | 5 | 4 | 3 | 2 | 1>('all');
+
   useEffect(() => {
     setLoading(true);
     fetch(`/api/beaches/${encodeURIComponent(slug)}`, { cache: 'no-store' })
@@ -155,6 +188,26 @@ export default function BeachProfilePage({
       });
   }, [slug]);
 
+  // Load reviews and user authentication state
+  useEffect(() => {
+    fetch(`/api/beaches/${encodeURIComponent(slug)}/reviews`, { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (Array.isArray(data)) {
+          setBeachReviews(data);
+          setReviewCount(data.length);
+        }
+      })
+      .catch(() => {});
+
+    fetch('/api/auth/session', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((sessionData) => {
+        setSignedIn(Boolean(sessionData?.user));
+      })
+      .catch(() => {});
+  }, [slug]);
+
   const handleShare = async () => {
     if (typeof navigator !== 'undefined' && navigator.share && beach) {
       try {
@@ -170,11 +223,11 @@ export default function BeachProfilePage({
     }
   };
 
+  // 1st Image Requirement: Spinning indicator only (no text)
   if (loading) {
     return (
-      <div className="min-h-[70vh] flex flex-col items-center justify-center gap-3 bg-white dark:bg-black text-[#1F3F74] dark:text-[#4987BA]">
+      <div className="min-h-[70vh] flex items-center justify-center bg-white dark:bg-black text-[#1F3F74] dark:text-[#4987BA]">
         <div className="animate-spin rounded-full h-9 w-9 border-3 border-[#1F3F74] dark:border-[#4987BA] border-t-transparent" />
-        <p className="text-xs font-bold tracking-wide">Loading beach profile...</p>
       </div>
     );
   }
@@ -348,14 +401,6 @@ export default function BeachProfilePage({
                 <ExternalLink className="w-3 h-3" />
               </a>
             )}
-
-            <Link
-              href={`/map?beach=${beach.id}`}
-              className="inline-flex items-center gap-1.5 px-4 py-1.5 bg-[#1F3F74] hover:bg-[#285091] text-white text-xs font-bold rounded-full transition shadow-xs sm:ml-auto"
-            >
-              <Navigation className="w-3 h-3" />
-              <span>Navigate in Map</span>
-            </Link>
           </div>
         </div>
       </div>
@@ -366,8 +411,8 @@ export default function BeachProfilePage({
           {[
             { id: 'general', label: 'General Info', icon: Info },
             { id: 'posts', label: 'Posts', icon: Images },
-            { id: 'cottages', label: 'Cottages', icon: Home },
-            { id: 'facilities', label: 'Facilities & Rooms', icon: ShieldCheck },
+            { id: 'cottages', label: 'Cottage', icon: Home },
+            { id: 'facilities', label: 'Facilities', icon: ShieldCheck },
             { id: 'dos', label: "Do's & Don'ts", icon: AlertTriangle },
             { id: 'reviews', label: `Reviews (${reviewCount})`, icon: MessageSquare },
           ].map((tab) => {
@@ -580,12 +625,12 @@ export default function BeachProfilePage({
               </div>
             )}
 
-            {/* ── TAB 3: COTTAGES ── */}
+            {/* ── TAB 3: COTTAGE ── */}
             {activeTab === 'cottages' && (
               <div className="space-y-6">
                 <div>
                   <h2 className="text-lg font-extrabold text-[#1F3F74] dark:text-[#4987BA]">
-                    Cottages &amp; Rates
+                    Cottage
                   </h2>
                   <p className="text-xs text-slate-500 dark:text-neutral-400">
                     Day-use shoreline shade and cottage options available at {beach.name}.
@@ -650,12 +695,12 @@ export default function BeachProfilePage({
               </div>
             )}
 
-            {/* ── TAB 4: FACILITIES & ROOMS ── */}
+            {/* ── TAB 4: FACILITIES ── */}
             {activeTab === 'facilities' && (
               <div className="space-y-6">
                 <div>
                   <h2 className="text-lg font-extrabold text-[#1F3F74] dark:text-[#4987BA]">
-                    Facilities &amp; Rooms
+                    Facilities
                   </h2>
                   <p className="text-xs text-slate-500 dark:text-neutral-400">
                     Verified guest accommodations, on-site parking, and resort amenities.
@@ -699,7 +744,7 @@ export default function BeachProfilePage({
                     </div>
                     <div className="space-y-1">
                       <h3 className="text-sm font-bold text-slate-800 dark:text-neutral-200">
-                        No facilities or rooms listed yet
+                        No facilities listed yet
                       </h3>
                       <p className="text-xs text-slate-500 dark:text-neutral-400 max-w-sm mx-auto">
                         Guest room accommodations, visitor parking areas, and shoreline amenities will be published here once added.
@@ -770,16 +815,16 @@ export default function BeachProfilePage({
               </div>
             )}
 
-            {/* ── TAB 6: REVIEWS (No hardcoded reviews; clean empty state with icon) ── */}
+            {/* ── TAB 6: REVIEWS (Feedback Page Architecture with Review Form & 6 Rating Categories) ── */}
             {activeTab === 'reviews' && (
-              <div className="space-y-6">
+              <div className="space-y-8">
                 <div className="flex items-center justify-between">
                   <div>
                     <h2 className="text-lg font-extrabold text-[#1F3F74] dark:text-[#4987BA]">
                       Guest Community Reviews
                     </h2>
                     <p className="text-xs text-slate-500 dark:text-neutral-400">
-                      Ratings and feedback from tourists who visited {beach.name}.
+                      Share your experience and browse authentic visitor feedback for {beach.name}.
                     </p>
                   </div>
                   {Number(beach.average_rating) > 0 && (
@@ -790,29 +835,223 @@ export default function BeachProfilePage({
                   )}
                 </div>
 
-                {/* Clean, authentic empty state with icon */}
-                <div className="py-14 text-center rounded-2xl border border-dashed border-slate-200 dark:border-neutral-800 bg-slate-50/50 dark:bg-neutral-900/30 p-6 space-y-3">
-                  <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-neutral-800 text-[#1F3F74] dark:text-[#4987BA] flex items-center justify-center mx-auto">
-                    <MessageSquare className="w-6 h-6" />
-                  </div>
-                  <div className="space-y-1">
-                    <h3 className="text-sm font-bold text-slate-800 dark:text-neutral-200">
-                      No reviews yet
-                    </h3>
-                    <p className="text-xs text-slate-500 dark:text-neutral-400 max-w-sm mx-auto">
-                      Be the first visitor to share your beach experience and cottage rating for {beach.name}!
-                    </p>
-                  </div>
-                  <div className="pt-2">
-                    <Link
-                      href="/map"
-                      className="inline-flex items-center gap-1.5 px-6 py-2.5 bg-[#1F3F74] hover:bg-[#285091] text-white text-xs font-bold rounded-full transition shadow-md"
+                {/* Interactive Review Drop Form (Same as Feedback Page) */}
+                {signedIn ? (
+                  <form
+                    onSubmit={async (e) => {
+                      e.preventDefault();
+                      if (!reviewComment.trim()) {
+                        showToast('Please enter your review text.', 'error');
+                        return;
+                      }
+                      setSubmittingReview(true);
+                      try {
+                        const res = await fetch(`/api/beaches/${encodeURIComponent(slug)}/reviews`, {
+                          method: 'POST',
+                          headers: { 'Content-Type': 'application/json' },
+                          body: JSON.stringify({ rating: userRating, comment: reviewComment }),
+                        });
+                        const data = await res.json();
+                        if (!res.ok) throw new Error(data.error || 'Failed to submit review.');
+                        setBeachReviews((prev) => [data, ...prev]);
+                        setReviewCount((prev) => prev + 1);
+                        setReviewComment('');
+                        showToast('Thank you! Your review has been posted.', 'success');
+                      } catch (err: unknown) {
+                        showToast(err instanceof Error ? err.message : 'Could not submit review.', 'error');
+                      } finally {
+                        setSubmittingReview(false);
+                      }
+                    }}
+                    className="space-y-4 border-y border-slate-200 dark:border-neutral-800 py-6"
+                  >
+                    <div>
+                      <div className="flex items-center gap-3 mb-2">
+                        <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
+                          Your rating
+                        </span>
+                        <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
+                          {hoverRating !== null ? hoverRating : userRating} {(hoverRating !== null ? hoverRating : userRating) === 1 ? 'Star' : 'Stars'} &bull; {RATING_LABELS[hoverRating !== null ? hoverRating : userRating]}
+                        </span>
+                      </div>
+
+                      {/* Interactive Stars with toggle & hover */}
+                      <div
+                        className="flex items-center gap-1.5"
+                        role="radiogroup"
+                        aria-label="Beach rating"
+                        onMouseLeave={() => setHoverRating(null)}
+                      >
+                        {[1, 2, 3, 4, 5].map((value) => {
+                          const currentVal = hoverRating !== null ? hoverRating : userRating;
+                          const isLit = value <= currentVal;
+                          return (
+                            <button
+                              key={value}
+                              type="button"
+                              role="radio"
+                              aria-checked={userRating === value}
+                              aria-label={`${value} stars`}
+                              onClick={() => {
+                                if (userRating === value) {
+                                  setUserRating(Math.max(1, value - 1));
+                                } else {
+                                  setUserRating(value);
+                                }
+                              }}
+                              onMouseEnter={() => setHoverRating(value)}
+                              className="p-1 -m-1 text-slate-300 transition-transform hover:scale-110 cursor-pointer focus:outline-none"
+                              title={`Rate ${value} star${value > 1 ? 's' : ''}`}
+                            >
+                              <Star
+                                className={`h-7 w-7 transition-colors duration-150 ${
+                                  isLit ? 'fill-amber-400 text-amber-500' : 'text-slate-300 dark:text-neutral-700'
+                                }`}
+                              />
+                            </button>
+                          );
+                        })}
+                      </div>
+                    </div>
+
+                    <div>
+                      <label htmlFor="beach-review-comment" className="block text-xs sm:text-sm font-bold text-slate-900 dark:text-white mb-1.5">
+                        Your review
+                      </label>
+                      <textarea
+                        id="beach-review-comment"
+                        rows={3}
+                        required
+                        minLength={5}
+                        maxLength={1000}
+                        value={reviewComment}
+                        onChange={(e) => setReviewComment(e.target.value)}
+                        placeholder={`Share your experience with cottages, beach swimming, and facilities at ${beach.name}...`}
+                        className="w-full rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-[#1F3F74] dark:focus:border-[#4987BA] focus:outline-none focus:ring-1 focus:ring-[#1F3F74] dark:focus:ring-[#4987BA] transition"
+                      />
+                    </div>
+
+                    <button
+                      type="submit"
+                      disabled={submittingReview}
+                      className="px-6 py-2.5 bg-[#1F3F74] hover:bg-[#285091] dark:bg-[#1F3F74] dark:hover:bg-[#285091] disabled:opacity-50 text-white text-xs sm:text-sm font-bold rounded-xl transition-colors shadow-sm cursor-pointer"
                     >
-                      <Navigation className="w-3.5 h-3.5" />
-                      <span>Explore in Map</span>
+                      {submittingReview ? 'Submitting review...' : 'Submit review'}
+                    </button>
+                  </form>
+                ) : (
+                  <div className="py-5 px-6 rounded-2xl bg-slate-50 dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">Have you visited {beach.name}?</h3>
+                      <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">Sign in to drop your verified rating and review.</p>
+                    </div>
+                    <Link
+                      href="/auth/signin"
+                      className="inline-flex items-center justify-center px-5 py-2 bg-[#1F3F74] hover:bg-[#285091] text-white text-xs font-bold rounded-full transition shadow-xs shrink-0"
+                    >
+                      Sign In to Review
                     </Link>
                   </div>
+                )}
+
+                {/* Rating Filter Categories: Equal Width across 6 columns (Matches Feedback Page) */}
+                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 w-full pt-2">
+                  {(
+                    [
+                      { id: 'all', label: 'All' },
+                      { id: 5, label: '5 Stars' },
+                      { id: 4, label: '4 Stars' },
+                      { id: 3, label: '3 Stars' },
+                      { id: 2, label: '2 Stars' },
+                      { id: 1, label: '1 Star' },
+                    ] as const
+                  ).map((category) => {
+                    const count =
+                      category.id === 'all'
+                        ? beachReviews.length
+                        : beachReviews.filter((r) => Math.round(Number(r.rating)) === category.id).length;
+                    const isActive = reviewCategory === category.id;
+
+                    return (
+                      <button
+                        key={category.id}
+                        type="button"
+                        onClick={() => setReviewCategory(category.id)}
+                        className={`w-full py-2 px-3 text-xs font-bold rounded-full flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                          isActive
+                            ? 'bg-[#1F3F74] text-white shadow-xs'
+                            : 'bg-slate-100 hover:bg-slate-200 dark:bg-neutral-900 dark:hover:bg-neutral-800 text-slate-700 dark:text-slate-300'
+                        }`}
+                      >
+                        <span>{category.label}</span>
+                        <span
+                          className={`text-[11px] px-1.5 py-0.2 rounded-full ${
+                            isActive
+                              ? 'bg-white/20 text-white'
+                              : 'bg-slate-200 dark:bg-neutral-800 text-slate-600 dark:text-slate-400'
+                          }`}
+                        >
+                          {count}
+                        </span>
+                      </button>
+                    );
+                  })}
                 </div>
+
+                {/* Reviews List or Clean Frameless Empty State (NO CARD CONTAINER) */}
+                {(() => {
+                  const filtered =
+                    reviewCategory === 'all'
+                      ? beachReviews
+                      : beachReviews.filter((r) => Math.round(Number(r.rating)) === reviewCategory);
+
+                  if (filtered.length === 0) {
+                    return (
+                      <div className="flex flex-col items-center justify-center py-14 text-center">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400 dark:bg-neutral-800 dark:text-neutral-500 mb-2">
+                          <Star className="h-6 w-6 stroke-[1.5]" />
+                        </div>
+                        <p className="text-sm font-semibold text-slate-700 dark:text-neutral-300">
+                          No ratings yet
+                        </p>
+                      </div>
+                    );
+                  }
+
+                  return (
+                    <div className="divide-y divide-slate-200 dark:divide-neutral-800">
+                      {filtered.map((rev) => (
+                        <article key={rev.id} className="py-5 space-y-2">
+                          <div className="flex items-center justify-between gap-4">
+                            <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
+                              {maskUserName(rev.user_name || rev.userName)}
+                            </span>
+                            <div className="flex items-center gap-1" aria-label={`${rev.rating} out of 5 stars`}>
+                              {Array.from({ length: 5 }, (_, index) => (
+                                <Star
+                                  key={index}
+                                  className={`h-3.5 w-3.5 ${
+                                    index < Number(rev.rating)
+                                      ? 'fill-amber-400 text-amber-500'
+                                      : 'text-slate-300 dark:text-neutral-700'
+                                  }`}
+                                />
+                              ))}
+                            </div>
+                          </div>
+                          <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
+                            {rev.comment}
+                          </p>
+                          {rev.created_at && (
+                            <time className="block text-[11px] text-slate-400">
+                              {new Date(rev.created_at).toLocaleDateString()}
+                            </time>
+                          )}
+                        </article>
+                      ))}
+                    </div>
+                  );
+                })()}
               </div>
             )}
         </div>

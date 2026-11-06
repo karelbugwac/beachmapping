@@ -6,6 +6,7 @@ export interface AuthUser {
   email: string;
   role: 'user' | 'beach_owner' | 'beach_manager' | 'admin';
   profile_image_url?: string | null;
+  location?: string | null;
   created_at?: string;
 }
 
@@ -18,7 +19,7 @@ export async function getCurrentSession(): Promise<AuthUser | null> {
     let profile: any = null;
     try {
       const { data: profData, error: profileError } = await (supabase.from('profiles') as any)
-        .select('id, full_name, email, role, profile_image_url, created_at')
+        .select('id, full_name, email, role, profile_image_url, location, created_at')
         .eq('id', data.user.id)
         .maybeSingle();
       if (!profileError && profData) {
@@ -52,6 +53,7 @@ export async function getCurrentSession(): Promise<AuthUser | null> {
       email: email,
       role: role,
       profile_image_url: profileImageUrl,
+      location: profile?.location || null,
       created_at: profile?.created_at || data.user.created_at,
     };
   } catch {
@@ -71,6 +73,7 @@ export async function destroySession(): Promise<void> {
 export async function updateSessionUser(updates: {
   full_name?: string;
   profile_image_url?: string | null;
+  location?: string | null;
 }): Promise<AuthUser | null> {
   const current = await getCurrentSession();
   if (!current) return null;
@@ -80,7 +83,7 @@ export async function updateSessionUser(updates: {
     const { data: profile, error: profileError } = await (supabase.from('profiles') as any)
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', current.id)
-      .select('id, full_name, email, role, profile_image_url, created_at')
+      .select('id, full_name, email, role, profile_image_url, location, created_at')
       .maybeSingle();
     if (profileError || !profile) {
       console.error('Profile database update failed:', profileError);
@@ -93,6 +96,7 @@ export async function updateSessionUser(updates: {
       email: profile.email || current.email,
       role: profile.role,
       profile_image_url: profile.profile_image_url,
+      location: profile.location,
       created_at: profile.created_at,
     };
   } catch (error: unknown) {

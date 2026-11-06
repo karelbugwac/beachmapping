@@ -172,11 +172,30 @@ export function getOpeningStatus(hours: OpeningHours, now: Date): OpeningStatus 
 
   const todayIndex = DAY_KEYS.indexOf(localTime.weekday);
   if (todayIndex < 0) return status('unknown', '', '');
+
+  const previousDayIndex = (todayIndex + DAY_KEYS.length - 1) % DAY_KEYS.length;
+  const previousOvernightRange = parseRanges(hoursForDay(schedule, DAY_KEYS[previousDayIndex]))
+    .find((range) => range.closes <= range.opens && range.closes > localTime.minutes);
+  if (previousOvernightRange) {
+    const remainingMinutes = previousOvernightRange.closes - localTime.minutes;
+    const closingTime = formatClockTime(
+      Math.floor(previousOvernightRange.closes / 60) % 24,
+      previousOvernightRange.closes % 60
+    );
+    return remainingMinutes <= 60
+      ? status('closing_soon', 'Closing soon', `Closes at ${closingTime}`)
+      : status('open', 'Open now', `Closes at ${closingTime}`);
+  }
+
   const todayHours = hoursForDay(schedule, DAY_KEYS[todayIndex]);
   const todayRanges = parseRanges(todayHours);
 
   for (const range of todayRanges) {
     const fullDay = range.opens === 0 && range.closes >= 23 * 60 + 59;
+    if (fullDay) {
+      const closingTime = formatClockTime(Math.floor(range.closes / 60) % 24, range.closes % 60);
+      return status('open', 'Open now', `Closes at ${closingTime}`);
+    }
     const overnight = range.closes <= range.opens && !fullDay;
     const isOpen = fullDay
       || (overnight

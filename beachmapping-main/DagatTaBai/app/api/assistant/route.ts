@@ -1,5 +1,6 @@
 import { NextRequest } from 'next/server';
 import { askGeminiAssistantStream } from '@/lib/services/gemini';
+import { matchBaiInstantAnswer, getBaiApologyFallback } from '@/lib/services/baiKnowledgeBase';
 import { getCurrentSession } from '@/lib/db/auth';
 import { createAdminClient } from '@/lib/supabase/server';
 
@@ -25,13 +26,17 @@ export async function POST(req: NextRequest) {
     let history: { role: 'user' | 'assistant'; text: string }[] = [];
     const adminClient = user ? createAdminClient() : null;
     if (user && adminClient) {
-      const { data: previousMessages, error } = await (adminClient.from('ai_chat_messages') as any)
+      const { data: previousMessages } = await (adminClient.from('ai_chat_messages') as any)
         .select('role, content')
         .eq('user_id', user.id)
         .order('created_at', { ascending: false })
         .limit(10);
-      if (error) throw error;
       history = (previousMessages || []).reverse().map((entry: any) => ({ role: entry.role, text: entry.content }));
+    } else if (Array.isArray(body.history)) {
+      history = body.history
+        .slice(-10)
+        .filter((entry: any) => entry && (entry.role === 'user' || entry.role === 'assistant') && typeof entry.text === 'string')
+        .map((entry: any) => ({ role: entry.role, text: entry.text.slice(0, 500) }));
     }
 
     const stream = await askGeminiAssistantStream(message, userLocation, history, user?.full_name);
@@ -39,7 +44,7 @@ export async function POST(req: NextRequest) {
     // Collect the full response for saving to database
     let fullReply = '';
     const encoder = new TextEncoder();
-    
+
     const readableStream = new ReadableStream({
       async start(controller) {
         try {
@@ -48,19 +53,27 @@ export async function POST(req: NextRequest) {
             fullReply += text;
             controller.enqueue(encoder.encode(text));
           }
-          
+        } catch {
+          if (!fullReply) {
+            const fallback =
+              matchBaiInstantAnswer(message, user?.full_name, history) ||
+              getBaiApologyFallback(message, user?.full_name);
+            fullReply = fallback;
+            controller.enqueue(encoder.encode(fallback));
+          }
+        } finally {
           // Save to database after stream completes
           if (user && adminClient && fullReply) {
-            await (adminClient.from('ai_chat_messages') as any).insert([
-              { user_id: user.id, role: 'user', content: message.trim().slice(0, 500) },
-              { user_id: user.id, role: 'assistant', content: fullReply.slice(0, 8000) },
-            ]);
+            try {
+              await (adminClient.from('ai_chat_messages') as any).insert([
+                { user_id: user.id, role: 'user', content: message.trim().slice(0, 500) },
+                { user_id: user.id, role: 'assistant', content: fullReply.slice(0, 8000) },
+              ]);
+            } catch {
+              // Non-blocking history save
+            }
           }
-          
           controller.close();
-        } catch (error) {
-          console.error('Streaming error:', error);
-          controller.error(error);
         }
       },
     });

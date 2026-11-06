@@ -4,8 +4,6 @@ import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import dynamic from 'next/dynamic';
 import {
-  TrafficCone,
-  Wrench,
   Star,
   Map,
   CloudSun,
@@ -16,6 +14,8 @@ import { ScrollReveal } from '@/components/ui/scroll-reveal';
 interface SystemTestimonial {
   id: string;
   user_name: string;
+  profile_image_url?: string | null;
+  user_role?: string;
   rating: number;
   comment: string;
   created_at: string;
@@ -34,7 +34,7 @@ const HeroMapSection = dynamic(
 // Helper function to mask user name: e.g. "Charisse Villamor" -> "C*** V***"
 function maskUserName(name: string): string {
   if (!name || name.trim() === '' || name.toLowerCase().includes('dagat ta bai user')) {
-    return 'C*** V***';
+    return 'Community member';
   }
   const parts = name.trim().split(/\s+/);
   if (parts.length === 1) {
@@ -44,6 +44,16 @@ function maskUserName(name: string): string {
   const first = parts[0];
   const last = parts[parts.length - 1];
   return `${first[0]}*** ${last[0]}***`;
+}
+
+function formatRole(role: string | undefined): string {
+  const labels: Record<string, string> = {
+    user: 'User',
+    beach_owner: 'Beach owner',
+    beach_manager: 'Beach manager',
+    admin: 'Admin',
+  };
+  return role ? labels[role] || 'User' : 'User';
 }
 
 export default function HomePage() {
@@ -272,21 +282,32 @@ export default function HomePage() {
                   className="w-[82vw] max-w-[320px] flex-shrink-0 snap-center sm:w-auto sm:max-w-none sm:flex-shrink"
                 >
                   <ScrollReveal direction="up" delay={index * 100} duration={600} className="h-full">
-                    <div className="h-full p-6 sm:p-7 rounded-3xl bg-slate-50 dark:bg-neutral-900/90 border border-slate-200/80 dark:border-neutral-800 shadow-sm flex flex-col justify-between space-y-4 hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                    <div className="h-full min-h-[220px] min-w-0 p-6 sm:p-7 rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-sm flex flex-col justify-between gap-5 hover:border-[#1F3F74]/30 hover:shadow-md transition-all duration-200">
                       <div className="space-y-3.5">
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="w-8 h-8 rounded-full bg-blue-50 dark:bg-blue-950/60 text-[#1F3F74] dark:text-[#4987BA] font-bold text-xs flex items-center justify-center flex-shrink-0">
-                              {item.user_name && item.user_name.trim().length > 0
-                                ? item.user_name.trim()[0].toUpperCase()
-                                : 'U'}
+                            <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#edf3fa] text-sm font-bold text-[#1F3F74] dark:bg-blue-950/60 dark:text-[#9fc8ee]">
+                              <span>{item.user_name?.trim().charAt(0).toUpperCase() || 'U'}</span>
+                              {item.profile_image_url ? (
+                                // eslint-disable-next-line @next/next/no-img-element
+                                <img
+                                  src={item.profile_image_url}
+                                  alt={`${maskUserName(item.user_name)} profile`}
+                                  className="absolute inset-0 h-full w-full object-cover"
+                                  onError={(event) => {
+                                    event.currentTarget.style.display = 'none';
+                                  }}
+                                />
+                              ) : (
+                                item.user_name?.trim().charAt(0).toUpperCase() || 'U'
+                              )}
                             </div>
                             <div className="min-w-0">
-                              <div className="font-bold text-xs text-slate-900 dark:text-white truncate">
+                              <div className="font-semibold text-sm text-slate-900 dark:text-white truncate">
                                 {maskUserName(item.user_name)}
                               </div>
-                              <div className="text-[10px] text-slate-400 dark:text-slate-500 font-medium">
-                                Verified Reviewer
+                              <div className="text-xs text-slate-500 dark:text-slate-400">
+                                {formatRole(item.user_role)}
                               </div>
                             </div>
                           </div>
@@ -306,10 +327,13 @@ export default function HomePage() {
                           </div>
                         </div>
 
-                        <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed italic pt-1">
+                        <p className="break-words text-sm text-slate-600 dark:text-slate-300 leading-relaxed pt-1 [overflow-wrap:anywhere]">
                           &ldquo;{item.comment}&rdquo;
                         </p>
                       </div>
+                      <time className="text-xs text-slate-400 dark:text-slate-500" dateTime={item.created_at}>
+                        {new Date(item.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                      </time>
                     </div>
                   </ScrollReveal>
                 </div>
@@ -317,21 +341,14 @@ export default function HomePage() {
             </div>
           ) : (
             <ScrollReveal direction="up" duration={600}>
-              <div className="py-8 sm:py-10 text-center max-w-xl mx-auto space-y-4 bg-slate-50/80 dark:bg-neutral-900/80 border border-slate-200 dark:border-neutral-800 rounded-3xl p-8 backdrop-blur-md">
-                <div className="relative inline-flex items-center justify-center">
-                  <TrafficCone className="w-12 h-12 sm:w-16 sm:h-16 text-amber-500 stroke-[1.8]" />
-                  <div className="absolute -bottom-1 -right-1 w-6 h-6 sm:w-7 sm:h-7 rounded-full bg-white dark:bg-neutral-950 border border-amber-300 flex items-center justify-center text-amber-500 shadow-xs">
-                    <Wrench className="w-3 h-3 sm:w-4 sm:h-4 stroke-[2.2]" />
-                  </div>
-                </div>
-
-                <div className="text-amber-600 dark:text-amber-400 font-bold text-xs sm:text-sm tracking-wide uppercase">
-                  Under Maintenance
-                </div>
-
-                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-lg mx-auto">
-                  Platform testimonials from Dagat Ta Bai users will appear here once our system feedback verification is activated. We only publish authentic user experiences regarding platform usability and features.
+              <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-slate-50 px-6 py-10 text-center dark:border-neutral-800 dark:bg-neutral-900">
+                <h3 className="text-base font-semibold text-slate-900 dark:text-white">No community feedback yet</h3>
+                <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-600 dark:text-slate-400">
+                  Share how Dagat Ta Bai has helped you plan your next beach visit.
                 </p>
+                <Link href="/feedback" className="mt-4 inline-flex text-sm font-semibold text-[#1F3F74] hover:underline dark:text-sky-300">
+                  Leave feedback
+                </Link>
               </div>
             </ScrollReveal>
           )}

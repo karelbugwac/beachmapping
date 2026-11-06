@@ -33,13 +33,13 @@ const FAQS_DATA: FaqItem[] = [
   },
   {
     category: 'Tides',
-    q: 'How accurate is the astronomical tide status and weather forecast?',
-    a: 'Our tide telemetry uses an anchored astronomical harmonic model calibrated specifically to Catmon coastal coordinates (10.68° N, 124.01° E), while marine weather data is synchronized directly with meteorological APIs to provide real-time wave heights, wind speed, and sea advisories.',
+    q: 'How accurate is the tide status and weather forecast?',
+    a: 'Our tide telemetry uses an anchored astronomical harmonic model calibrated specifically to  Binongkalan, Catmon coordinates, while marine weather data is synchronized directly with third-party provider to provide real-time wave heights, wind speed, and sea advisories.',
   },
   {
     category: 'Owners',
     q: 'How can beach owners register their resorts on Dagat Ta Bai?',
-    a: 'Beach owners and caretakers can apply via our Registration Portal (/apply). After submitting your personal details, establishment info, municipal business permit, and completing the live KYC selfie verification, our team reviews the submission within 1 to 3 business days.',
+    a: 'Beach owners and caretakers can apply via our Apply page. After submitting your personal details, establishment info, municipal business permit, and completing the live KYC selfie verification, our team reviews the submission within 1 to 3 business days.',
   },
   {
     category: 'Owners',
@@ -59,12 +59,12 @@ const FAQS_DATA: FaqItem[] = [
   {
     category: 'General',
     q: 'How can I report inaccurate rates, closed roads, or changed beach rules?',
-    a: 'You can submit feedback immediately via our Contact Page (/contact) under "Report Inaccurate Info." Our local research team will verify the information on the ground and update the listing promptly.',
+    a: 'You can submit feedback immediately via our Contact Page. Our team will verify the information on the ground and update the listing promptly.',
   },
   {
     category: 'Visitors',
-    q: 'Can I book cottages or pay entrance fees online through the website?',
-    a: 'Dagat Ta Bai operates as an honest discovery and navigational guide rather than a commercial middleman. We display verified contact numbers and rates so you can communicate directly with the local resort caretakers.',
+    q: 'Can I book cottages or pay entrance fees online through this website?',
+    a: 'Dagat Ta Bai operates as an informational and navigational guide rather than a commercial middleman. We display verified contact numbers and rates so you can communicate directly with the local resort caretakers.',
   },
 ];
 
@@ -186,7 +186,7 @@ export default function FaqPage() {
                   </button>
 
                   {isOpen && (
-                    <div className="mt-3 text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed pl-0.5 animate-in fade-in duration-200">
+                    <div className="mt-3 text-justify text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed pl-0.5 animate-in fade-in duration-200">
                       {faq.a}
                     </div>
                   )}

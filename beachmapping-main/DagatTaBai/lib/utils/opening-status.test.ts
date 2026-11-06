@@ -38,7 +38,7 @@ test('closes at the exact closing minute and after closing', () => {
 });
 
 test('uses the previous day range for an overnight opening', () => {
-  const overnightHours: OpeningHours = { Mon: '10:00 PM - 2:00 AM' };
+  const overnightHours: OpeningHours = { Mon: '10:00 PM - 4:00 AM' };
   assert.equal(getOpeningStatus(overnightHours, manilaTime('2024-06-03T17:00:00Z')).state, 'open');
 });
 

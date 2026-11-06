@@ -1,96 +1,115 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { createAdminClient, createServerSupabaseClient } from '@/lib/supabase/server';
-
-async function authorizeAdmin() {
-  const sessionClient = await createServerSupabaseClient();
-  const { data, error } = await sessionClient.auth.getUser();
-  if (error || !data.user) return { response: NextResponse.json({ error: 'Authentication required.' }, { status: 401 }) };
-
-  const adminClient = createAdminClient();
-  const { data: profile, error: profileError } = await (adminClient.from('profiles') as any)
-    .select('role')
-    .eq('id', data.user.id)
-    .maybeSingle();
-  if (profileError) throw profileError;
-  if (profile?.role !== 'admin') return { response: NextResponse.json({ error: 'Administrator access required.' }, { status: 403 }) };
-
-  return { adminClient };
-}
+import { authorizeRoles } from '@/lib/supabase/authorization';
 
 export async function GET() {
   try {
-    const auth = await authorizeAdmin();
-    if (auth.response) return auth.response;
+    const auth = await authorizeRoles(['admin']);
+    if (!auth.authorized) {
+      return NextResponse.json({ error: auth.message }, { status: auth.status });
+    }
 
-    const [{ data: beachReviews, error: beachError }, { data: platformReviews, error: platformError }, { data: reports, error: reportsError }] = await Promise.all([
-      (auth.adminClient!.from('beach_reviews') as any)
-      .select('id, beach_id, user_id, rating, comment, created_at, updated_at, profiles:user_id(full_name), beaches:beach_id(name)')
-      .order('created_at', { ascending: false }),
-      (auth.adminClient!.from('platform_reviews') as any)
-        .select('id, user_id, rating, comment, created_at, updated_at, profiles:user_id(full_name)')
+    const adminClient = auth.adminClient;
+
+    // Fetch reviews, profiles, beaches in parallel safely
+    const [
+      beachReviewsRes,
+      platformReviewsRes,
+      reportsRes,
+      profilesRes,
+      beachesRes,
+    ] = await Promise.all([
+      (adminClient.from('beach_reviews') as any)
+        .select('id, beach_id, user_id, rating, comment, created_at, updated_at')
         .order('created_at', { ascending: false }),
-      (auth.adminClient!.from('beach_review_reports') as any)
-        .select('id, review_id, beach_id, reporter_user_id, reason, status, created_at, profiles:reporter_user_id(full_name), beaches:beach_id(name), beach_reviews:review_id(comment, rating)')
+      (adminClient.from('platform_reviews') as any)
+        .select('id, user_id, rating, comment, created_at, updated_at')
+        .order('created_at', { ascending: false }),
+      (adminClient.from('beach_review_reports') as any)
+        .select('id, review_id, beach_id, reporter_user_id, reason, status, created_at')
         .eq('status', 'pending')
         .order('created_at', { ascending: false }),
+      (adminClient.from('profiles') as any).select('id, full_name'),
+      (adminClient.from('beaches') as any).select('id, name'),
     ]);
-    if (beachError) throw beachError;
-    if (platformError) throw platformError;
-    if (reportsError) throw reportsError;
 
-    const reviews = (beachReviews || []).map((review: any) => ({
+    const beachReviews = beachReviewsRes?.data || [];
+    const platformReviews = platformReviewsRes?.data || [];
+    const reports = reportsRes?.data || [];
+    const profiles = profilesRes?.data || [];
+    const beaches = beachesRes?.data || [];
+
+    const profileMap = new Map<string, string>();
+    profiles.forEach((p: any) => {
+      if (p.id && p.full_name) profileMap.set(p.id, p.full_name);
+    });
+
+    const beachMap = new Map<string, string>();
+    beaches.forEach((b: any) => {
+      if (b.id && b.name) beachMap.set(b.id, b.name);
+    });
+
+    const reviews = beachReviews.map((review: any) => ({
       id: review.id,
       beach_id: review.beach_id,
       user_id: review.user_id,
-      user_name: review.profiles?.full_name || 'Verified Visitor',
-      beach_name: review.beaches?.name || 'Beach',
+      user_name: profileMap.get(review.user_id) || 'Verified Visitor',
+      beach_name: beachMap.get(review.beach_id) || 'Beach',
       review_type: 'beach',
-      rating: Number(review.rating),
-      comment: review.comment,
-      created_at: review.created_at,
-      updated_at: review.updated_at,
+      rating: Number(review.rating) || 5,
+      comment: review.comment || '',
+      created_at: review.created_at || new Date().toISOString(),
+      updated_at: review.updated_at || review.created_at,
     }));
-    reviews.push(...(platformReviews || []).map((review: any) => ({
-      id: review.id,
-      beach_id: null,
-      user_id: review.user_id,
-      user_name: review.profiles?.full_name || 'Dagat Ta Bai user',
-      beach_name: 'Platform feedback',
-      review_type: 'platform',
-      rating: Number(review.rating),
-      comment: review.comment,
-      created_at: review.created_at,
-      updated_at: review.updated_at,
-    })));
+
+    platformReviews.forEach((review: any) => {
+      reviews.push({
+        id: review.id,
+        beach_id: null,
+        user_id: review.user_id,
+        user_name: profileMap.get(review.user_id) || 'Dagat Ta Bai user',
+        beach_name: 'Platform feedback',
+        review_type: 'platform',
+        rating: Number(review.rating) || 5,
+        comment: review.comment || '',
+        created_at: review.created_at || new Date().toISOString(),
+        updated_at: review.updated_at || review.created_at,
+      });
+    });
+
     reviews.sort((left: any, right: any) => Date.parse(right.created_at) - Date.parse(left.created_at));
 
-    const formattedReports = (reports || []).map((report: any) => ({
+    const formattedReports = reports.map((report: any) => ({
       id: report.id,
       reason: report.reason,
       status: report.status,
       created_at: report.created_at,
-      reporter: report.profiles?.full_name || 'Beach owner',
-      beach: report.beaches?.name || 'Beach',
-      review: report.beach_reviews || null,
+      reporter: profileMap.get(report.reporter_user_id) || 'Beach owner',
+      beach: beachMap.get(report.beach_id) || 'Beach',
+      review: null,
     }));
 
-    return NextResponse.json({ reviews, reports: formattedReports }, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
+    return NextResponse.json(
+      { reviews, reports: formattedReports },
+      { headers: { 'Cache-Control': 'no-store, max-age=0' } }
+    );
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to load reviews.';
     console.error('Admin reviews GET error:', message);
-    return NextResponse.json({ error: message }, { status: 500 });
+    return NextResponse.json({ error: message, reviews: [], reports: [] }, { status: 500 });
   }
 }
 
 export async function DELETE(request: NextRequest) {
   try {
-    const auth = await authorizeAdmin();
-    if (auth.response) return auth.response;
+    const auth = await authorizeRoles(['admin']);
+    if (!auth.authorized) {
+      return NextResponse.json({ error: auth.message }, { status: auth.status });
+    }
     const reviewId = request.nextUrl.searchParams.get('id');
     if (!reviewId) return NextResponse.json({ error: 'Review ID is required.' }, { status: 400 });
 
     const reviewType = request.nextUrl.searchParams.get('type') === 'platform' ? 'platform_reviews' : 'beach_reviews';
-    const { data, error } = await (auth.adminClient!.from(reviewType) as any)
+    const { data, error } = await (auth.adminClient.from(reviewType) as any)
       .delete()
       .eq('id', reviewId)
       .select('id');
@@ -100,42 +119,6 @@ export async function DELETE(request: NextRequest) {
     return NextResponse.json({ success: true });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to delete review.';
-    console.error('Admin reviews DELETE error:', message);
-    return NextResponse.json({ error: message }, { status: 500 });
-  }
-}
-
-export async function PATCH(request: NextRequest) {
-  try {
-    const auth = await authorizeAdmin();
-    if (auth.response) return auth.response;
-    const { id, decision } = await request.json();
-    if (typeof id !== 'string' || !['remove', 'dismiss'].includes(decision)) {
-      return NextResponse.json({ error: 'A report ID and valid decision are required.' }, { status: 400 });
-    }
-
-    const { data: report, error: readError } = await (auth.adminClient!.from('beach_review_reports') as any)
-      .select('id, review_id, status')
-      .eq('id', id)
-      .eq('status', 'pending')
-      .maybeSingle();
-    if (readError) throw readError;
-    if (!report) return NextResponse.json({ error: 'Pending report not found.' }, { status: 404 });
-
-    if (decision === 'remove') {
-      const { error: deleteError } = await (auth.adminClient!.from('beach_reviews') as any)
-        .delete()
-        .eq('id', report.review_id);
-      if (deleteError) throw deleteError;
-    }
-
-    const { error: updateError } = await (auth.adminClient!.from('beach_review_reports') as any)
-      .update({ status: decision === 'remove' ? 'removed' : 'dismissed', reviewed_at: new Date().toISOString() })
-      .eq('id', id);
-    if (updateError) throw updateError;
-    return NextResponse.json({ success: true });
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Failed to review report.';
     return NextResponse.json({ error: message }, { status: 500 });
   }
 }
