@@ -21,9 +21,14 @@ export async function createServerSupabaseClient() {
         },
         setAll(cookiesToSet: { name: string; value: string; options?: any }[]) {
           try {
-            cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
-            );
+            cookiesToSet.forEach(({ name, value, options }) => {
+              const opts = { ...options };
+              // In local development (HTTP LAN testing), disable `secure` flag so mobile browsers accept the session cookies
+              if (process.env.NODE_ENV !== 'production') {
+                opts.secure = false;
+              }
+              cookieStore.set(name, value, opts);
+            });
           } catch {
             // The `setAll` method was called from a Server Component.
           }

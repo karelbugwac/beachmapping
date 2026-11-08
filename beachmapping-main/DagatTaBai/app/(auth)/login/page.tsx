@@ -17,6 +17,7 @@ function UserLoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const emailConfirmed = searchParams.get('confirmed') === '1';
+  const authError = searchParams.get('error');
 
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -29,7 +30,18 @@ function UserLoginForm() {
       showToast('Email confirmed. You can now sign in.');
       router.replace('/login', { scroll: false });
     }
-  }, [emailConfirmed, router]);
+    if (authError) {
+      const errorMessages: Record<string, string> = {
+        google_auth_failed: 'Google sign in failed. Please check your credentials.',
+        code_exchange_failed: 'Authentication session exchange failed.',
+        no_auth_code: 'No authorization code returned from provider.',
+        oauth_redirect_failed: 'Could not connect to Google sign-in.',
+        oauth_processing_error: 'Error completing account authentication.',
+      };
+      showToast(errorMessages[authError] || `Sign-in error: ${authError}`, 'error');
+      router.replace('/login', { scroll: false });
+    }
+  }, [emailConfirmed, authError, router]);
 
   // ── Validation ──────────────────────────────────────────────
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
