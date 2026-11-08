@@ -1,6 +1,7 @@
 'use client';
 
 import { createClient } from '@/lib/supabase/client';
+import { generateUUID } from '@/lib/utils/uuid';
 
 export const MAX_BEACH_IMAGE_SIZE_BYTES = 20 * 1024 * 1024 * 1024;
 const MAX_COMPRESSED_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
@@ -74,7 +75,7 @@ export async function uploadBeachImageWithPath(
     userData.user.id,
     beachId || 'general',
     folder,
-    `${crypto.randomUUID()}.${compressedFile.type === 'image/webp' ? 'webp' : 'jpg'}`,
+    `${generateUUID()}.${compressedFile.type === 'image/webp' ? 'webp' : 'jpg'}`,
   ].filter(Boolean).join('/');
   if (signal) {
     const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-project.supabase.co';

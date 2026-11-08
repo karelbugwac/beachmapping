@@ -81,6 +81,7 @@ export interface BeachRecord {
   entrance_fee: string | null;
   entrance_fee_adults?: string | null;
   entrance_fee_children?: string | null;
+  entrance_fee_senior?: string | null;
   cottage_fee: string | null;
   rules: string | null;
   status: 'active' | 'suspended';
@@ -190,13 +191,15 @@ export async function getAllBeaches(): Promise<BeachRecord[]> {
           }
         }
 
-        // Split entrance_fee into adults and children
+        // Split entrance_fee into adults, children, and senior
         let entranceFeeAdults = null;
         let entranceFeeChildren = null;
+        let entranceFeeSenior = null;
         if (b.entrance_fee && b.entrance_fee.includes('|')) {
-          const [adults, children] = b.entrance_fee.split('|');
-          entranceFeeAdults = adults;
-          entranceFeeChildren = children;
+          const [adults, children, senior] = b.entrance_fee.split('|');
+          entranceFeeAdults = adults || null;
+          entranceFeeChildren = children || null;
+          entranceFeeSenior = senior || null;
         }
 
         const coordinates = getValidBeachCoordinates(b.latitude, b.longitude);
@@ -223,6 +226,7 @@ export async function getAllBeaches(): Promise<BeachRecord[]> {
           entrance_fee: b.entrance_fee,
           entrance_fee_adults: entranceFeeAdults,
           entrance_fee_children: entranceFeeChildren,
+          entrance_fee_senior: entranceFeeSenior,
           cottage_fee: b.cottage_fee,
           rules: b.rules,
           status: b.status,
@@ -348,13 +352,15 @@ export async function getBeachBySlug(slug: string): Promise<BeachRecord | null> 
         }
       }
 
-      // Split entrance_fee into adults and children
+      // Split entrance_fee into adults, children, and senior
       let entranceFeeAdults = null;
       let entranceFeeChildren = null;
+      let entranceFeeSenior = null;
       if (b.entrance_fee && b.entrance_fee.includes('|')) {
-        const [adults, children] = b.entrance_fee.split('|');
-        entranceFeeAdults = adults;
-        entranceFeeChildren = children;
+        const [adults, children, senior] = b.entrance_fee.split('|');
+        entranceFeeAdults = adults || null;
+        entranceFeeChildren = children || null;
+        entranceFeeSenior = senior || null;
       }
 
       const coordinates = getValidBeachCoordinates(b.latitude, b.longitude);
@@ -381,6 +387,7 @@ export async function getBeachBySlug(slug: string): Promise<BeachRecord | null> 
         entrance_fee: b.entrance_fee,
         entrance_fee_adults: entranceFeeAdults,
         entrance_fee_children: entranceFeeChildren,
+        entrance_fee_senior: entranceFeeSenior,
         cottage_fee: b.cottage_fee,
         rules: b.rules,
         status: b.status,

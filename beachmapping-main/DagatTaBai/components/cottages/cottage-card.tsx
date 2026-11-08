@@ -36,21 +36,21 @@ export function CottageCard({
   const viewButtonClasses = 'group flex min-w-0 flex-1 items-center gap-3 rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74] dark:focus-visible:ring-[#4987BA]';
   const details = (
     <>
-      <div className="flex min-w-0 items-start justify-between gap-2">
-        <h3 className="min-w-0 truncate text-sm font-semibold text-slate-900 dark:text-white">{name}</h3>
+      <div className="flex min-w-0 items-start justify-between gap-1.5 sm:gap-2">
+        <h3 className="min-w-0 truncate text-xs sm:text-sm font-bold text-slate-900 dark:text-white">{name}</h3>
         {price && (
-          <span className="shrink-0 rounded-full bg-slate-100 px-2 py-1 text-[10px] font-bold text-[#1F3F74] dark:bg-neutral-800 dark:text-[#4987BA]">
+          <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[9px] sm:text-[10px] font-bold text-[#1F3F74] dark:bg-neutral-800 dark:text-[#4987BA]">
             ₱{price}{priceSuffix ? ` ${priceSuffix}` : ''}
           </span>
         )}
       </div>
       {capacity && (
-        <p className="mt-1 truncate text-xs font-medium text-emerald-600 dark:text-emerald-400">
+        <p className="mt-0.5 truncate text-[10.5px] sm:text-xs font-medium text-emerald-600 dark:text-emerald-400">
           Capacity: {capacity}
         </p>
       )}
       {description && (
-        <p className="mt-1 line-clamp-2 text-sm text-slate-500 dark:text-neutral-400">
+        <p className="mt-0.5 line-clamp-2 text-[11px] sm:text-xs text-slate-500 dark:text-neutral-400 leading-snug">
           {description}
         </p>
       )}
@@ -58,10 +58,10 @@ export function CottageCard({
   );
 
   return (
-    <article className="group relative flex min-h-[130px] items-center gap-3 rounded-2xl border border-slate-200 bg-white p-3 shadow-none transition hover:border-[#1F3F74]/35 hover:shadow-sm dark:border-neutral-800 dark:bg-neutral-950 dark:hover:border-[#4987BA]/40">
+    <article className="group relative flex min-h-[110px] sm:min-h-[130px] items-center gap-2.5 sm:gap-3 rounded-2xl border border-slate-200 bg-white p-2.5 sm:p-3 shadow-none transition hover:border-[#1F3F74]/35 hover:shadow-sm dark:border-neutral-800 dark:bg-neutral-950 dark:hover:border-[#4987BA]/40">
       {canView ? (
         <button type="button" onClick={onView} aria-label={`View photos of ${name}`} className={viewButtonClasses}>
-          <span className="relative aspect-[4/3] w-28 shrink-0 overflow-hidden rounded-xl sm:w-36">
+          <span className="relative aspect-[4/3] w-20 sm:w-32 shrink-0 overflow-hidden rounded-xl">
             {imageUrl && !imageFailed ? (
               <>
                 <Image
@@ -71,7 +71,7 @@ export function CottageCard({
                   fill
                   unoptimized
                   loading="lazy"
-                  sizes="(max-width: 640px) 112px, 144px"
+                  sizes="(max-width: 640px) 80px, 128px"
                   className="pointer-events-none scale-110 object-cover blur-xl brightness-90"
                 />
                 <Image
@@ -80,29 +80,29 @@ export function CottageCard({
                   fill
                   unoptimized
                   loading="lazy"
-                  sizes="(max-width: 640px) 112px, 144px"
+                  sizes="(max-width: 640px) 80px, 128px"
                   className="relative z-10 object-contain"
                   onError={() => setFailedImageUrl(imageUrl)}
                 />
               </>
             ) : (
               <span className="absolute inset-0 flex items-center justify-center bg-slate-100 text-slate-400 dark:bg-neutral-800">
-                <Camera className="h-7 w-7" />
+                <Camera className="h-5 w-5 sm:h-7 sm:w-7" />
               </span>
             )}
             {photoCount > 1 && (
-              <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/65 px-2 py-0.5 text-[10px] font-semibold text-white">
+              <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/65 px-1.5 py-0.5 text-[9px] font-semibold text-white">
                 {photoCount} photos
               </span>
             )}
           </span>
-          <div className={`flex min-h-[104px] min-w-0 flex-1 flex-col justify-center ${onEdit || onDelete ? 'pb-7' : ''}`}>
+          <div className={`flex min-h-[90px] sm:min-h-[104px] min-w-0 flex-1 flex-col justify-center ${onEdit || onDelete ? 'pb-7' : ''}`}>
             {details}
           </div>
         </button>
       ) : (
         <>
-          <span className="relative aspect-[4/3] w-28 shrink-0 overflow-hidden rounded-xl sm:w-36">
+          <span className="relative aspect-[4/3] w-20 sm:w-32 shrink-0 overflow-hidden rounded-xl">
             {imageUrl && !imageFailed ? (
               <>
                 <Image
@@ -112,7 +112,7 @@ export function CottageCard({
                   fill
                   unoptimized
                   loading="lazy"
-                  sizes="(max-width: 640px) 112px, 144px"
+                  sizes="(max-width: 640px) 80px, 128px"
                   className="pointer-events-none scale-110 object-cover blur-xl brightness-90"
                 />
                 <Image
@@ -121,23 +121,23 @@ export function CottageCard({
                   fill
                   unoptimized
                   loading="lazy"
-                  sizes="(max-width: 640px) 112px, 144px"
+                  sizes="(max-width: 640px) 80px, 128px"
                   className="relative z-10 object-contain"
                   onError={() => setFailedImageUrl(imageUrl)}
                 />
               </>
             ) : (
               <span className="absolute inset-0 flex items-center justify-center bg-slate-100 text-slate-400 dark:bg-neutral-800">
-                <Camera className="h-7 w-7" />
+                <Camera className="h-5 w-5 sm:h-7 sm:w-7" />
               </span>
             )}
             {photoCount > 1 && (
-              <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/65 px-2 py-0.5 text-[10px] font-semibold text-white">
+              <span className="absolute bottom-1.5 left-1.5 rounded-full bg-black/65 px-1.5 py-0.5 text-[9px] font-semibold text-white">
                 {photoCount} photos
               </span>
             )}
           </span>
-          <div className={`flex min-h-[104px] min-w-0 flex-1 flex-col justify-center ${onEdit || onDelete ? 'pb-7' : ''}`}>
+          <div className={`flex min-h-[90px] sm:min-h-[104px] min-w-0 flex-1 flex-col justify-center ${onEdit || onDelete ? 'pb-7' : ''}`}>
             {details}
           </div>
         </>

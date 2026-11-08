@@ -2,20 +2,9 @@
 
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import {
-  MapPin,
-  Crosshair,
-  Search,
-  Check,
   X,
   Loader2,
-  ExternalLink,
-  Navigation,
-  Compass,
-  AlertCircle,
-  HelpCircle,
-  ShieldCheck,
 } from 'lucide-react';
-import Link from 'next/link';
 import { showToast } from '@/components/ui/feedback-toasts';
 import { getValidBeachCoordinates } from '@/lib/utils/beach-coordinates';
 import { matchesBeachSearch } from '@/lib/utils/beach-search';
@@ -501,67 +490,40 @@ export function LocationPickerModal({
     <div className="fixed inset-0 z-50 flex items-center justify-center p-3 sm:p-4 bg-black/60 backdrop-blur-sm animate-in fade-in duration-200">
       <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-2xl border border-gray-200 dark:border-gray-800 w-full max-w-4xl max-h-[92vh] flex flex-col overflow-hidden">
         {/* Modal Header */}
-        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between bg-gray-50/50 dark:bg-gray-800/50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/40 text-blue-600 dark:text-blue-400 flex items-center justify-center">
-              <MapPin size={22} />
-            </div>
-            <div>
-              <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
-                {requireApprovalNotice ? 'Request Coordinates & Map Location Update' : 'Set Beach Map Pin & Coordinates'}
-              </h2>
-              <p className="text-xs text-gray-500 dark:text-gray-400">
-                {requireApprovalNotice
-                  ? 'Position your beach pin on the map. The Admin will review and verify your coordinates.'
-                  : 'Position your beach pin on the interactive map so guests can find you.'}
-              </p>
-            </div>
+        <div className="px-6 py-4 border-b border-gray-200 dark:border-gray-800 flex items-center justify-between">
+          <div>
+            <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-white">
+              {requireApprovalNotice ? 'Request Coordinates & Map Location Update' : 'Set Beach Map Pin & Coordinates'}
+            </h2>
+            <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+              {requireApprovalNotice
+                ? 'Position your beach pin on the map. Coordinates will be sent to the Admin for approval.'
+                : 'Position your beach pin on the interactive map so visitors can find your beach.'}
+            </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="p-1.5 text-gray-400 hover:text-gray-600 dark:hover:text-gray-200 transition-colors"
+            aria-label="Close"
           >
             <X size={20} />
           </button>
         </div>
 
         {/* Modal Scrollable Body */}
-        <div className="flex-1 overflow-y-auto p-5 space-y-5">
-          {requireApprovalNotice && (
-            <div className="bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800/60 rounded-xl p-3.5 flex items-start gap-3">
-              <ShieldCheck className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0 mt-0.5" />
-              <div className="text-xs text-amber-900 dark:text-amber-200 space-y-1">
-                <p className="font-bold">Admin Approval Required for Coordinates</p>
-                <p className="text-amber-700 dark:text-amber-300">
-                  Beach owners cannot directly alter live coordinates or map pin locations. Submitting this form sends a request to the Dagat Ta Bai Admin for approval on <strong>Manage Beaches</strong>.
-                </p>
-              </div>
-            </div>
-          )}
-          {/* Tip Banner */}
-          <div className="bg-blue-50 dark:bg-blue-950/40 border border-blue-200 dark:border-blue-800/60 rounded-xl p-3.5 flex items-start gap-3">
-            <HelpCircle className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
-            <div className="text-xs text-blue-900 dark:text-blue-200 space-y-1">
-              <p className="font-semibold">How to set your beach location:</p>
-              <p className="text-blue-700 dark:text-blue-300">
-                Click anywhere on the map or drag the blue marker to your shoreline. You can also type exact coordinates or click <strong>Use GPS Location</strong> if you are currently at your resort.
-              </p>
-            </div>
-          </div>
-
+        <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {/* Interactive Leaflet Map Box */}
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <div className="flex items-center justify-between text-xs">
-              <span className="font-bold text-gray-700 dark:text-gray-300 flex items-center gap-1.5">
-                <Compass size={14} className="text-blue-600" />
-                Interactive Pin Picker Map
+              <span className="font-semibold text-gray-700 dark:text-gray-300">
+                Map Pin
               </span>
               <span className="text-[11px] text-gray-500 dark:text-gray-400">
-                Click map or drag the blue marker to your actual beach
+                Click map or drag the marker to your shoreline
               </span>
             </div>
-            <div className="relative w-full h-72 sm:h-80 rounded-xl overflow-hidden border-2 border-blue-500/30 dark:border-blue-500/20 shadow-inner bg-gray-100 dark:bg-gray-800">
+            <div className="relative w-full h-72 sm:h-80 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-xs bg-gray-100 dark:bg-gray-800">
               <div ref={mapContainerRef} className="w-full h-full" />
               {!mapLoaded && (
                 <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-xs text-gray-500 gap-2">
@@ -570,45 +532,12 @@ export function LocationPickerModal({
                 </div>
               )}
             </div>
-            <p className="text-[11px] text-gray-500 dark:text-gray-400">
-              {pinConfirmed
-                ? 'The blue pin shows the current coordinates. Check that it marks your actual beach or resort entrance; nearby labels are real OpenStreetMap records.'
-                : 'Map opens at the verified Binongkalan village center. Move the blue pin to your actual beach or resort entrance; nearby labels are real OpenStreetMap records.'}
-            </p>
-            <p className="text-[11px] text-gray-500 dark:text-gray-400" aria-live="polite">
-              {placesStatus === 'loading' && 'Loading nearby mapped beaches, resorts, and landmarks...'}
-              {placesStatus === 'loaded' && nearbyPlaces.length > 0 &&
-                `${nearbyPlaces.length} named OpenStreetMap places shown within about 8 km.`}
-              {placesStatus === 'loaded' && nearbyPlaces.length === 0 &&
-                'No named beach, resort, or landmark records were found nearby in OpenStreetMap. Roads and coastline remain visible on the map.'}
-              {placesStatus === 'unavailable' &&
-                'Nearby place labels are temporarily unavailable. The map and pin picker still work normally.'}
-            </p>
-            {placesStatus === 'loaded' && nearbyPlaces.length > 0 && (
-              <div className="flex flex-wrap gap-x-4 gap-y-1 text-[11px] text-gray-500 dark:text-gray-400">
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-cyan-600" />
-                  Beaches
-                </span>
-                <span className="inline-flex items-center gap-1.5">
-                  <span className="h-2 w-2 rounded-full bg-orange-500" />
-                  Resorts and landmarks
-                </span>
-              </div>
-            )}
-            {databaseBeaches.length > 0 && (
-              <p className="inline-flex items-center gap-1.5 text-[11px] text-gray-600 dark:text-gray-300">
-                <span className="h-2 w-2 rounded-full bg-[#1f3f74]" />
-                {databaseBeaches.length} active Dagat Ta Bai database listing(s) are marked on this map.
-              </p>
-            )}
           </div>
 
-          {/* Coordinates Inputs & Quick Actions */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Latitude input */}
+          {/* Coordinates Inputs */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <div>
-              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                 Latitude (°N)
               </label>
               <div className="relative">
@@ -622,57 +551,16 @@ export function LocationPickerModal({
                     updateMapMarker(e.target.value, tempLng);
                   }}
                   placeholder="e.g. 10.634800"
-                  className="w-full pl-3.5 pr-10 py-2.5 text-xs sm:text-sm font-mono bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-gray-900 dark:text-white"
+                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm font-mono bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1F3F74] text-gray-900 dark:text-white"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-gray-400">
                   LAT
                 </span>
               </div>
-              {tempLocation.trim() && (
-                <div className="mt-2 max-h-36 overflow-y-auto rounded-lg border border-gray-200 bg-white dark:border-gray-700 dark:bg-gray-800">
-                  <p className="sticky top-0 bg-gray-50 px-3 py-2 text-[11px] font-semibold text-gray-600 dark:bg-gray-800 dark:text-gray-300">
-                    {databaseBeachesError
-                      ? `Database listings unavailable: ${databaseBeachesError}`
-                      : `${matchingDatabaseBeaches.length} matching database beach listing(s)`}
-                  </p>
-                  {matchingDatabaseBeaches.map((beach) => {
-                    const coordinates = getValidBeachCoordinates(beach.latitude, beach.longitude);
-                    return (
-                      <button
-                        key={beach.id}
-                        type="button"
-                        disabled={!coordinates}
-                        onClick={() => {
-                          if (!coordinates) return;
-                          leafletMapRef.current?.setView(
-                            [coordinates.latitude, coordinates.longitude],
-                            17,
-                            { animate: true }
-                          );
-                        }}
-                        className="flex w-full items-center justify-between gap-3 px-3 py-2 text-left hover:bg-gray-50 disabled:cursor-default dark:hover:bg-gray-700"
-                      >
-                        <span>
-                          <span className="block text-xs font-semibold text-gray-800 dark:text-gray-100">
-                            {beach.name}
-                          </span>
-                          <span className="block text-[10px] text-gray-500 dark:text-gray-400">
-                            {beach.location || 'Address not provided'}
-                          </span>
-                        </span>
-                        <span className={`shrink-0 text-[10px] font-semibold ${coordinates ? 'text-emerald-700 dark:text-emerald-400' : 'text-amber-700 dark:text-amber-400'}`}>
-                          {coordinates ? 'Verified marker' : 'Coordinates missing'}
-                        </span>
-                      </button>
-                    );
-                  })}
-                </div>
-              )}
             </div>
 
-            {/* Longitude input */}
             <div>
-              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1">
                 Longitude (°E)
               </label>
               <div className="relative">
@@ -686,7 +574,7 @@ export function LocationPickerModal({
                     updateMapMarker(tempLat, e.target.value);
                   }}
                   placeholder="e.g. 124.027500"
-                  className="w-full pl-3.5 pr-10 py-2.5 text-xs sm:text-sm font-mono bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-gray-900 dark:text-white"
+                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm font-mono bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1F3F74] text-gray-900 dark:text-white"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-gray-400">
                   LNG
@@ -695,69 +583,45 @@ export function LocationPickerModal({
             </div>
           </div>
 
-          {/* Location Address input */}
-          <div>
-            <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+          {/* Location Address & Positioning Actions */}
+          <div className="space-y-1.5">
+            <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
               Location Address
             </label>
-            <div className="flex gap-2">
-              <div className="relative flex-1">
-                <input
-                  type="text"
-                  value={tempLocation}
-                  onChange={(e) => setTempLocation(e.target.value)}
-                  placeholder="e.g. Binongkalan, Catmon, Cebu, Philippines"
-                  className="w-full pl-9 pr-3.5 py-2.5 text-xs sm:text-sm bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-600 text-gray-900 dark:text-white"
-                />
-                <MapPin className="w-4 h-4 text-gray-400 absolute left-3 top-1/2 -translate-y-1/2" />
+            <div className="flex flex-col sm:flex-row gap-2">
+              <input
+                type="text"
+                value={tempLocation}
+                onChange={(e) => setTempLocation(e.target.value)}
+                placeholder="e.g. Binongkalan, Catmon, Cebu, Philippines"
+                className="flex-1 px-3.5 py-2.5 text-xs sm:text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1F3F74] text-gray-900 dark:text-white"
+              />
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={handleGeocodeAddress}
+                  disabled={isGeocoding}
+                  className="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-slate-800 dark:text-gray-200 text-xs font-semibold rounded-xl border border-slate-200 dark:border-gray-700 transition-colors flex items-center justify-center gap-1.5 flex-shrink-0 cursor-pointer disabled:opacity-50"
+                >
+                  {isGeocoding && <Loader2 size={13} className="animate-spin" />}
+                  <span>Lookup Address</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={handleUseCurrentGps}
+                  disabled={isLocating}
+                  className="px-4 py-2.5 bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5 flex-shrink-0 cursor-pointer disabled:opacity-50"
+                >
+                  {isLocating && <Loader2 size={13} className="animate-spin" />}
+                  <span>Use GPS Location</span>
+                </button>
               </div>
-              <button
-                type="button"
-                onClick={handleGeocodeAddress}
-                disabled={isGeocoding}
-                className="px-4 py-2.5 bg-gray-100 hover:bg-gray-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-gray-800 dark:text-gray-200 text-xs font-semibold rounded-xl border border-gray-200 dark:border-gray-700 transition-colors flex items-center gap-1.5 flex-shrink-0"
-                title="Search coordinates for this address"
-              >
-                {isGeocoding ? (
-                  <Loader2 size={14} className="animate-spin text-blue-600" />
-                ) : (
-                  <Search size={14} />
-                )}
-                <span>Lookup Address</span>
-              </button>
-            </div>
-          </div>
-
-          {/* Quick Helper Tools */}
-          <div className="bg-gray-50 dark:bg-gray-800/60 rounded-xl p-3.5 border border-gray-200 dark:border-gray-700 space-y-2.5">
-            <p className="text-[11px] font-bold text-gray-700 dark:text-gray-300 uppercase tracking-wider">
-              Quick Positioning Tools
-            </p>
-            <div className="flex flex-wrap items-center gap-2">
-              {/* GPS Button */}
-              <button
-                type="button"
-                onClick={handleUseCurrentGps}
-                disabled={isLocating}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-semibold shadow-sm transition-colors"
-              >
-                {isLocating ? (
-                  <Loader2 size={13} className="animate-spin" />
-                ) : (
-                  <Navigation size={13} />
-                )}
-                <span>🎯 Use My Current GPS Location</span>
-              </button>
-
-              <span className="text-[11px] text-gray-500 dark:text-gray-400 self-center">
-                Use the map, address lookup, or GPS for the exact beach location.
-              </span>
             </div>
           </div>
 
           {requireApprovalNotice && (
-            <div className="pt-2">
-              <label className="block text-xs font-bold text-gray-700 dark:text-gray-300 mb-1.5">
+            <div className="space-y-1 pt-1">
+              <label className="block text-xs font-semibold text-gray-700 dark:text-gray-300">
                 Message / Reason for Admin (Optional)
               </label>
               <textarea
@@ -765,30 +629,19 @@ export function LocationPickerModal({
                 value={requesterNote}
                 onChange={(e) => setRequesterNote(e.target.value)}
                 placeholder="e.g. Moved pin to our main shoreline entrance gate and beachfront parking area."
-                className="w-full px-3 py-2 text-xs bg-gray-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-600 text-gray-900 dark:text-white resize-none"
+                className="w-full px-3.5 py-2 text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1F3F74] text-gray-900 dark:text-white resize-none"
               />
             </div>
           )}
         </div>
 
         {/* Modal Footer */}
-        <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-3 bg-gray-50/50 dark:bg-gray-800/50">
-          <div className="text-xs text-gray-500 dark:text-gray-400 flex items-center gap-1.5">
-            <span>Coordinates:</span>
+        <div className="px-6 py-4 border-t border-gray-200 dark:border-gray-800 flex flex-col sm:flex-row items-center justify-between gap-3">
+          <div className="text-xs text-gray-500 dark:text-gray-400">
+            <span>Coordinates: </span>
             <span className="font-mono font-bold text-gray-800 dark:text-gray-200">
               {tempLat && tempLng ? `${tempLat}, ${tempLng}` : 'No pin selected'}
             </span>
-            {publicMapSlug && (
-              <Link
-                href={`/map?beach=${publicMapSlug}`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="ml-2 text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
-              >
-                <span>Preview on Map</span>
-                <ExternalLink size={12} />
-              </Link>
-            )}
           </div>
 
           <div className="flex items-center gap-2 w-full sm:w-auto justify-end">
@@ -796,7 +649,7 @@ export function LocationPickerModal({
               type="button"
               onClick={onClose}
               disabled={isSaving}
-              className="px-4 py-2 border border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-semibold hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+              className="px-4 py-2 text-gray-700 dark:text-gray-300 rounded-xl text-xs font-semibold hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors cursor-pointer"
             >
               Cancel
             </button>
@@ -804,18 +657,15 @@ export function LocationPickerModal({
               type="button"
               onClick={handleSave}
               disabled={isSaving || !pinConfirmed}
-              className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-xl text-xs font-bold transition-colors shadow-md flex items-center gap-1.5 disabled:opacity-50"
+              className="px-5 py-2.5 bg-[#1F3F74] hover:bg-[#183460] text-white rounded-xl text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
             >
               {isSaving ? (
                 <>
-                  <Loader2 size={14} className="animate-spin" />
-                  <span>{requireApprovalNotice ? 'Submitting Request...' : 'Saving Pin...'}</span>
+                  <Loader2 size={13} className="animate-spin" />
+                  <span>{requireApprovalNotice ? 'Submitting...' : 'Saving...'}</span>
                 </>
               ) : (
-                <>
-                  <Check size={14} />
-                  <span>{submitButtonText || (requireApprovalNotice ? 'Submit for Admin Approval' : 'Save Map Location')}</span>
-                </>
+                <span>{submitButtonText || (requireApprovalNotice ? 'Request Pin Approval' : 'Save Map Location')}</span>
               )}
             </button>
           </div>

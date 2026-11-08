@@ -145,9 +145,6 @@ export default function NotificationsPage() {
                       {isLocationAlert ? (
                         <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
                           Your account was accessed from a new location: <strong className="font-semibold text-slate-800 dark:text-slate-100">{notification.location}</strong>
-                          {notification.previous_location ? (
-                            <> (previous location: <span className="text-slate-500 dark:text-slate-400">{notification.previous_location}</span>)</>
-                          ) : null}
                           {' '}via {notification.browser} on {notification.platform}.
                         </p>
                       ) : (

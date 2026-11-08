@@ -39,6 +39,7 @@ import {
 } from 'lucide-react';
 import { StarRating } from '@/components/star-rating';
 import { showToast } from '@/components/ui/feedback-toasts';
+import { confirmAction } from '@/components/ui/confirm-dialog';
 
 export interface AdminUser {
   id: string;
@@ -498,7 +499,7 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
 
   // Review Actions
   const handleDeleteReview = async (review: AdminReview) => {
-    if (!confirm(`Are you sure you want to delete this review by "${review.user_name}"?`)) return;
+    if (!await confirmAction({ title: 'Delete Review', message: `Are you sure you want to delete this review by "${review.user_name}"?` })) return;
 
     try {
       const response = await fetch(

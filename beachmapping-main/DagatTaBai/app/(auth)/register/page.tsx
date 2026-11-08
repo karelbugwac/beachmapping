@@ -100,7 +100,7 @@ export default function UserRegisterPage() {
         );
         router.push('/login');
       } else {
-        showToast('Your account was created successfully.');
+        showToast('Account created!');
         router.push('/');
       }
       router.refresh();

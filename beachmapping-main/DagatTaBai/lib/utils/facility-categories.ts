@@ -1,7 +1,7 @@
 export const FACILITY_CATEGORY_CONFIG = {
   comfort_room: { label: 'Comfort Rooms & Showers', className: 'bg-sky-100 text-sky-800' },
   parking: { label: 'Parking', className: 'bg-amber-100 text-amber-800' },
-  cottages: { label: 'Cottages', className: 'bg-violet-100 text-violet-800' },
+  cottages: { label: 'Cottages', className: 'bg-violet-100 text-violet-800', selectable: false },
   amenity: { label: 'Amenity', className: 'bg-green-100 text-green-800', selectable: false },
   room: { label: 'Room', className: 'bg-violet-100 text-violet-800' },
   grilling_area: { label: 'Grilling Area', className: 'bg-orange-100 text-orange-800' },

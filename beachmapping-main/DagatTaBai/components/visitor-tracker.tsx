@@ -2,6 +2,7 @@
 
 import { useEffect } from 'react';
 import { usePathname } from 'next/navigation';
+import { generateUUID } from '@/lib/utils/uuid';
 
 const SESSION_STORAGE_KEY = 'dagattabai_visitor_session';
 
@@ -12,7 +13,7 @@ export function VisitorTracker() {
     try {
       let sessionId = sessionStorage.getItem(SESSION_STORAGE_KEY);
       if (!sessionId) {
-        sessionId = crypto.randomUUID();
+        sessionId = generateUUID();
         sessionStorage.setItem(SESSION_STORAGE_KEY, sessionId);
       }
 
