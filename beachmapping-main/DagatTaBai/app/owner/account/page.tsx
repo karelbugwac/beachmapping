@@ -4,30 +4,16 @@ import React, { useEffect, useState } from 'react';
 import {
   CheckCircle2,
   AlertCircle,
-  Loader2,
-  Trash2,
-  Plus,
   ChevronDown,
 } from 'lucide-react';
 import { useTheme } from '@/components/theme-provider';
 import { createClient } from '@/lib/supabase/client';
-
-interface CaretakerMember {
-  id: string;
-  name: string;
-  contact: string;
-  role: string;
-  permissions: string[];
-  added_at: string;
-  status: string;
-}
 
 export default function OwnerSettingsPage() {
   const { theme, setTheme } = useTheme();
 
   const [email, setEmail] = useState('');
   const [beachName, setBeachName] = useState('');
-  const [beachId, setBeachId] = useState('');
   const [loading, setLoading] = useState(true);
   const [sendingReset, setSendingReset] = useState(false);
   const [resetSent, setResetSent] = useState(false);
@@ -41,23 +27,6 @@ export default function OwnerSettingsPage() {
       return () => clearTimeout(timer);
     }
   }, [toast]);
-
-  // Caretakers State
-  const [caretakers, setCaretakers] = useState<CaretakerMember[]>([]);
-  const [showAddCaretaker, setShowAddCaretaker] = useState(false);
-  const [newCaretaker, setNewCaretaker] = useState({
-    name: '',
-    contact: '',
-    role: 'Caretaker & Front Desk',
-    permissions: [
-      'Manage Cottages & Facilities',
-      'View & Respond to Reviews',
-      'Update Operating Hours',
-      'Upload Resort Photos',
-    ],
-  });
-  const [caretakerError, setCaretakerError] = useState('');
-  const [addingCaretaker, setAddingCaretaker] = useState(false);
 
   // Contact Admin Form State
   const [adminCategory, setAdminCategory] = useState('Listing Verification & Permits');
@@ -77,7 +46,6 @@ export default function OwnerSettingsPage() {
         }
         if (Array.isArray(beachData) && beachData.length > 0) {
           setBeachName(beachData[0].name || '');
-          setBeachId(beachData[0].id || '');
         }
       })
       .catch((error: unknown) => {
@@ -87,21 +55,6 @@ export default function OwnerSettingsPage() {
         setLoading(false);
       });
   }, []);
-
-  useEffect(() => {
-    if (!beachId) return;
-    fetch(`/api/owner/caretakers?beach_id=${encodeURIComponent(beachId)}`, { cache: 'no-store' })
-      .then(async (response) => {
-        const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'Failed to load caretaker invitations.');
-        setCaretakers(Array.isArray(data.items) ? data.items : []);
-      })
-      .catch((error: unknown) => {
-        const message = error instanceof Error ? error.message : 'Failed to load caretaker invitations.';
-        console.error('Caretaker invitation load error:', message);
-        setToast({ type: 'error', message });
-      });
-  }, [beachId]);
 
   // 1. Password Reset Link Request (Powered by Supabase Auth)
   const handleRequestPasswordReset = async () => {
@@ -135,83 +88,7 @@ export default function OwnerSettingsPage() {
     }
   };
 
-  // 2. Add Caretaker Submission with Gmail dispatch
-  const handleAddCaretaker = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newCaretaker.name.trim() || !newCaretaker.contact.trim()) {
-      setCaretakerError('Caretaker full name and email address are required.');
-      return;
-    }
-
-    if (!newCaretaker.contact.includes('@')) {
-      setCaretakerError('Please enter a valid Gmail or email address (must include "@").');
-      return;
-    }
-
-    setAddingCaretaker(true);
-    setCaretakerError('');
-
-    try {
-      const res = await fetch('/api/owner/caretakers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          name: newCaretaker.name.trim(),
-          email: newCaretaker.contact.trim(),
-          contact: newCaretaker.contact.trim(),
-          role: newCaretaker.role,
-          permissions: newCaretaker.permissions,
-          beachName,
-          beach_id: beachId,
-        }),
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Failed to dispatch caretaker invitation.');
-      }
-
-      const item = data.item as CaretakerMember;
-      setCaretakers((prev) => [item, ...prev]);
-      setShowAddCaretaker(false);
-      setNewCaretaker({
-        name: '',
-        contact: '',
-        role: 'Caretaker & Front Desk',
-        permissions: [
-          'Manage Cottages & Facilities',
-          'View & Respond to Reviews',
-          'Update Operating Hours',
-          'Upload Resort Photos',
-        ],
-      });
-      setToast({
-        type: 'success',
-        message: data.message,
-      });
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to add caretaker.';
-      setCaretakerError(msg);
-      setToast({ type: 'error', message: msg });
-    } finally {
-      setAddingCaretaker(false);
-    }
-  };
-
-  const handleRemoveCaretaker = async (id: string, name: string) => {
-    try {
-      const params = new URLSearchParams({ id, beach_id: beachId });
-      const response = await fetch(`/api/owner/caretakers?${params}`, { method: 'DELETE' });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to revoke caretaker invitation.');
-      setCaretakers((prev) => prev.filter((caretaker) => caretaker.id !== id));
-      setToast({ type: 'success', message: `Revoked the invitation for ${name}.` });
-    } catch (error) {
-      setToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to revoke caretaker invitation.' });
-    }
-  };
-
-  // 3. Contact Admin Submission
+  // Contact Admin Submission
   const handleSendAdminMessage = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!adminSubject.trim() || !adminMessage.trim()) {
@@ -292,7 +169,7 @@ export default function OwnerSettingsPage() {
           Settings
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 dark:text-neutral-400 mt-1 font-medium">
-          Manage system preferences, authorized caretakers, administrator support, and credentials.
+          Manage system preferences, administrator support, and credentials.
         </p>
       </div>
 
@@ -401,119 +278,14 @@ export default function OwnerSettingsPage() {
         </div>
       </div>
 
-      {/* ── SECTION 2: AUTHORIZED CARETAKERS & STAFF ACCESS (Frameless, Flat layout) ── */}
-      <div className="space-y-4 pb-10 border-b border-slate-200 dark:border-neutral-800">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-          <div>
-            <h2 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
-              Caretaker Invitations
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
-              Record caretaker invitations for your resort. This invitation list does not create portal accounts or grant access.
-            </p>
-          </div>
-
-          <button
-            type="button"
-            onClick={() => setShowAddCaretaker(true)}
-            className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-bold shadow-xs cursor-pointer transition-all self-start sm:self-auto"
-          >
-            <Plus className="w-3.5 h-3.5" />
-            <span>Add Caretaker</span>
-          </button>
-        </div>
-
-        {/* Security Rule Note */}
-        <div className="p-3.5 rounded-2xl bg-amber-50/80 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-900/40 text-[11.5px] text-amber-800 dark:text-amber-300 leading-relaxed">
-          <strong>Invitation status:</strong> Saving a caretaker here records an invitation only. It does not create an account or grant portal access; the assigned permissions are informational until access provisioning is implemented.
-        </div>
-
-        {/* Caretaker List (Frameless, clean rows with dividers) */}
-        <div className="divide-y divide-slate-200 dark:divide-neutral-800">
-          {/* Primary Owner Account */}
-          <div className="py-4 flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <div className="w-9 h-9 rounded-full bg-[#1F3F74] text-white flex items-center justify-center text-xs font-bold shadow-2xs">
-                PO
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                    Primary Owner Account
-                  </span>
-                  <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-100 dark:bg-blue-950 text-[#1F3F74] dark:text-[#4987BA]">
-                    Master Admin
-                  </span>
-                </div>
-                <span className="text-xs text-slate-500 dark:text-neutral-400 font-mono">
-                  {email || 'Loading owner email...'}
-                </span>
-              </div>
-            </div>
-            <span className="text-[11px] text-emerald-600 dark:text-emerald-400 font-bold px-3 py-1 rounded-full bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800">
-              Active
-            </span>
-          </div>
-
-          {/* Caretakers */}
-          {caretakers.map((c) => (
-            <div key={c.id} className="py-4 flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-full bg-slate-200 dark:bg-neutral-800 text-[#1F3F74] dark:text-[#4987BA] flex items-center justify-center text-xs font-bold">
-                  {c.name.charAt(0)}
-                </div>
-                <div>
-                  <div className="flex items-center gap-2">
-                    <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                      {c.name}
-                    </span>
-                    <span className="text-[10px] font-semibold text-slate-500 dark:text-neutral-400">
-                      &bull; {c.role}
-                    </span>
-                  </div>
-                  <span className="text-xs text-slate-500 dark:text-neutral-400">
-                    {c.contact} &bull; Invited on {new Date(c.added_at).toLocaleDateString()}
-                  </span>
-                  <span className="block text-[10px] font-semibold text-amber-700 dark:text-amber-400">
-                    Invitation only — portal access not granted
-                  </span>
-                  {c.permissions && c.permissions.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mt-1">
-                      {c.permissions.map((p, idx) => (
-                        <span
-                          key={idx}
-                          className="text-[9.5px] font-medium bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300 px-2 py-0.5 rounded-full"
-                        >
-                          {p}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              <button
-                type="button"
-                onClick={() => handleRemoveCaretaker(c.id, c.name)}
-                className="text-xs text-rose-500 hover:text-rose-700 font-bold inline-flex items-center gap-1 cursor-pointer p-2 rounded-full hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
-                title="Revoke caretaker invitation"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span className="hidden sm:inline">Revoke Invite</span>
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* ── SECTION 3: CONTACT MUNICIPAL TOURISM ADMIN (Frameless, Flat layout) ── */}
+      {/* ── SECTION 2: CONTACT ── */}
       <div className="space-y-4 pb-10 border-b border-slate-200 dark:border-neutral-800">
         <div>
           <h2 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
-            Contact Municipal Tourism Admin
+            Contact
           </h2>
           <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
-            Send an official request or technical inquiry directly to the Dagat Ta Bai local government team.
+            Send an official request or technical inquiry directly to the Dagat Ta Bai team
           </p>
         </div>
 
@@ -575,7 +347,7 @@ export default function OwnerSettingsPage() {
             )}
           </div>
 
-          <div className="flex justify-end pt-2">
+          <div className="flex justify-center pt-2">
             <button
               type="submit"
               disabled={sendingAdminMsg}
@@ -598,7 +370,7 @@ export default function OwnerSettingsPage() {
           </p>
         </div>
 
-        {/* Registered Email Display (Clean Read-only with Verified Badge, update email removed) */}
+        {/* Registered Email Display */}
         <div className="py-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-200 dark:border-neutral-800">
           <div>
             <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-0.5">
@@ -613,9 +385,6 @@ export default function OwnerSettingsPage() {
               </span>
             </div>
           </div>
-          <span className="text-[11px] text-slate-400 italic">
-            Primary email tied to municipal resort permit
-          </span>
         </div>
 
         {/* Password Reset Action */}
@@ -639,133 +408,6 @@ export default function OwnerSettingsPage() {
           </button>
         </div>
       </div>
-
-      {/* ── MODAL: ADD CARETAKER WITH PERMISSIONS & EMAIL NOTIFICATION ── */}
-      {showAddCaretaker && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-6 sm:p-8 max-w-lg w-full space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <div>
-              <h3 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
-                Add Authorized Caretaker
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1">
-                Grant staff access to manage listings and guest reviews. An automated email invitation will be dispatched to their Gmail address.
-              </p>
-            </div>
-
-            <form onSubmit={handleAddCaretaker} className="space-y-4">
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
-                  Full Legal Name <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="text"
-                  required
-                  value={newCaretaker.name}
-                  onChange={(e) => setNewCaretaker({ ...newCaretaker, name: e.target.value })}
-                  placeholder="e.g. Juan Dela Cruz"
-                  className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs text-slate-900 dark:text-white placeholder:italic focus:outline-none focus:border-[#1F3F74]"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
-                  Caretaker Gmail / Email Address <span className="text-red-500">*</span>
-                </label>
-                <input
-                  type="email"
-                  required
-                  value={newCaretaker.contact}
-                  onChange={(e) => setNewCaretaker({ ...newCaretaker, contact: e.target.value })}
-                  placeholder="e.g. juan.delacruz@gmail.com"
-                  className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs text-slate-900 dark:text-white placeholder:italic focus:outline-none focus:border-[#1F3F74]"
-                />
-              </div>
-
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
-                  Role Title
-                </label>
-                <div className="relative">
-                  <select
-                    value={newCaretaker.role}
-                    onChange={(e) => setNewCaretaker({ ...newCaretaker, role: e.target.value })}
-                    className="w-full appearance-none rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 pl-4 pr-10 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#1F3F74]"
-                  >
-                    <option value="Caretaker & Front Desk">Caretaker &amp; Front Desk</option>
-                    <option value="Assistant Resort Manager">Assistant Resort Manager</option>
-                    <option value="Booking & Operations Staff">Booking &amp; Operations Staff</option>
-                  </select>
-                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                </div>
-              </div>
-
-              {/* Specific Access Permissions */}
-              <div className="space-y-2 pt-1">
-                <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
-                  Allowed Operations
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs">
-                  {[
-                    'Manage Cottages & Facilities',
-                    'View & Respond to Reviews',
-                    'Update Operating Hours',
-                    'Upload Resort Photos',
-                  ].map((perm) => (
-                    <label key={perm} className="flex items-center gap-2 cursor-pointer select-none">
-                      <input
-                        type="checkbox"
-                        checked={newCaretaker.permissions.includes(perm)}
-                        onChange={(e) => {
-                          if (e.target.checked) {
-                            setNewCaretaker({
-                              ...newCaretaker,
-                              permissions: [...newCaretaker.permissions, perm],
-                            });
-                          } else {
-                            setNewCaretaker({
-                              ...newCaretaker,
-                              permissions: newCaretaker.permissions.filter((p) => p !== perm),
-                            });
-                          }
-                        }}
-                        className="w-3.5 h-3.5 rounded border-slate-300 text-[#1F3F74] focus:ring-[#1F3F74] accent-[#1F3F74]"
-                      />
-                      <span className="text-slate-700 dark:text-neutral-300 text-[11px]">{perm}</span>
-                    </label>
-                  ))}
-                </div>
-              </div>
-
-              {/* Non-owner rule notice */}
-              <div className="p-3 rounded-xl bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 text-[10.5px] text-slate-500 dark:text-neutral-400">
-                Caretakers cannot alter registered owner credentials or change master account emails.
-              </div>
-
-              {caretakerError && (
-                <p className="text-[11px] text-red-500 font-medium pl-2">{caretakerError}</p>
-              )}
-
-              <div className="flex justify-end gap-2 pt-3">
-                <button
-                  type="button"
-                  onClick={() => setShowAddCaretaker(false)}
-                  className="rounded-full px-5 py-2 text-xs font-bold text-slate-600 dark:text-neutral-400 hover:bg-slate-100 dark:hover:bg-neutral-800 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={addingCaretaker}
-                  className="rounded-full px-6 py-2 bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50"
-                >
-                  {addingCaretaker ? 'Saving invitation...' : 'Save & Send Invitation'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
 
     </div>
   );

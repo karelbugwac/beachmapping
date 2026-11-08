@@ -58,7 +58,7 @@ export function PhotoViewerModal({
     if (!Number.isFinite(amount)) return resolvedRate;
     return `₱${new Intl.NumberFormat('en-PH', { maximumFractionDigits: 2 }).format(amount)}`;
   })();
-  const capacityText = infoLabel?.trim() || (capacity?.trim()
+  const capacityText = capacity?.trim()
     ? (() => {
       const values = capacity.match(/\d[\d,]*/g)?.map((value) => Number(value.replace(/,/g, '')));
       if (values?.length && values.every(Number.isFinite)) {
@@ -66,7 +66,7 @@ export function PhotoViewerModal({
       }
       return `Capacity ${capacity.trim()}`;
     })()
-    : '');
+    : '';
 
   const showPrevious = () => {
     setSelectedIndex((current) => (current - 1 + photos.length) % photos.length);
@@ -132,9 +132,9 @@ export function PhotoViewerModal({
   };
 
   const photoViewer = (
-    <>
+    <div className="flex min-w-0 flex-col overflow-hidden bg-white">
       <div
-        className="relative flex min-h-[260px] max-h-[60vh] aspect-[4/3] w-full items-center justify-center overflow-hidden rounded-none bg-slate-900"
+        className="relative aspect-[4/3] w-full min-w-0 overflow-hidden rounded-none bg-white"
         onTouchStart={(event) => setTouchStartX(event.touches[0]?.clientX ?? null)}
         onTouchEnd={(event) => {
           if (touchStartX === null || !hasMultiplePhotos) return;
@@ -146,7 +146,7 @@ export function PhotoViewerModal({
       >
         {selectedPhoto ? (
           failedPhotos.has(selectedPhotoKey) ? (
-            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm text-slate-300">
+            <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm text-slate-500">
               <Camera className="h-8 w-8" />
               <span>Photo unavailable</span>
             </div>
@@ -154,7 +154,7 @@ export function PhotoViewerModal({
             <>
               {loadedMainPhotoKey !== selectedPhotoKey && (
                 <div
-                  className="absolute inset-0 animate-pulse bg-slate-800 motion-reduce:animate-none"
+                  className="absolute inset-0 animate-pulse bg-white motion-reduce:animate-none"
                   aria-hidden="true"
                 />
               )}
@@ -165,8 +165,8 @@ export function PhotoViewerModal({
                 fill
                 priority
                 unoptimized
-                sizes="(max-width: 768px) 100vw, 560px"
-                className={`rounded-none object-contain transition-opacity duration-200 motion-reduce:transition-none ${
+                sizes="(min-width: 1024px) 50vw, 100vw"
+                className={`block h-full w-full max-w-full rounded-none object-contain transition-opacity duration-200 motion-reduce:transition-none ${
                   loadedMainPhotoKey === selectedPhotoKey ? 'opacity-100' : 'opacity-0'
                 }`}
                 onLoad={() => setLoadedMainPhotoKey(selectedPhotoKey)}
@@ -175,7 +175,7 @@ export function PhotoViewerModal({
             </>
           )
         ) : (
-          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm text-slate-300">
+          <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 text-sm text-slate-500">
             <Camera className="h-8 w-8" />
             <span>No photos yet</span>
           </div>
@@ -187,7 +187,7 @@ export function PhotoViewerModal({
               type="button"
               onClick={showPrevious}
               aria-label="Previous photo"
-              className="absolute left-2 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white/95 text-slate-700 shadow-md hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74]"
+              className="absolute left-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-md hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74]"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -195,11 +195,11 @@ export function PhotoViewerModal({
               type="button"
               onClick={showNext}
               aria-label="Next photo"
-              className="absolute right-2 top-1/2 z-20 flex h-8 w-8 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white/95 text-slate-700 shadow-md hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74]"
+              className="absolute right-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-md hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74]"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
-            <span className="absolute bottom-2 left-2 z-20 rounded-full bg-white/95 px-2.5 py-1 text-xs font-medium text-slate-800 shadow-md">
+            <span className="absolute left-3 top-3 z-20 rounded-full bg-white/90 px-3 py-1.5 text-sm font-medium text-slate-900 shadow-md">
               {selectedIndex + 1} / {photos.length}
             </span>
           </>
@@ -207,7 +207,7 @@ export function PhotoViewerModal({
       </div>
 
       {hasMultiplePhotos && (
-        <div className="flex justify-start gap-0.5 overflow-x-auto bg-slate-900 px-1 pb-1">
+        <div className="flex w-full min-w-0 shrink-0 justify-start gap-2 overflow-x-auto bg-white p-2">
           {photos.map((photo, index) => {
             const photoKey = photo.id || photo.image_url || String(index);
             return (
@@ -218,12 +218,14 @@ export function PhotoViewerModal({
                 onClick={() => setSelectedIndex(index)}
                 aria-label={`Show image ${index + 1}`}
                 aria-current={selectedIndex === index}
-                className={`relative aspect-[4/3] w-16 shrink-0 overflow-hidden rounded-none border-2 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74] ${
-                  selectedIndex === index ? 'border-[#1F3F74] dark:border-[#4987BA]' : 'border-transparent'
+                className={`relative aspect-[4/3] w-[90px] shrink-0 overflow-hidden rounded-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74] ${
+                  selectedIndex === index
+                    ? 'border-2 border-[#1F3F74]'
+                    : 'border border-slate-200'
                 }`}
               >
                 {failedPhotos.has(photoKey) ? (
-                  <span className="absolute inset-0 flex items-center justify-center text-slate-300">
+                  <span className="absolute inset-0 flex items-center justify-center text-slate-500">
                     <Camera className="h-4 w-4" />
                   </span>
                 ) : (
@@ -233,7 +235,7 @@ export function PhotoViewerModal({
                     fill
                     unoptimized
                     loading="lazy"
-                    sizes="64px"
+                    sizes="90px"
                     className="rounded-none object-cover"
                     onError={() => markPhotoFailed(photoKey)}
                   />
@@ -243,12 +245,12 @@ export function PhotoViewerModal({
           })}
         </div>
       )}
-    </>
+    </div>
   );
 
   return (
     <div
-      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-0"
+      className="fixed inset-0 z-[70] flex items-center justify-center bg-black/50 p-4"
       onMouseDown={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -259,7 +261,7 @@ export function PhotoViewerModal({
         role="dialog"
         aria-modal="true"
         aria-label={`${name} photos`}
-        className="relative mx-4 max-h-[85vh] w-[calc(100%-2rem)] max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl outline-none dark:bg-neutral-900"
+        className="relative mx-auto max-h-[90vh] w-full max-w-3xl min-w-0 overflow-hidden rounded-2xl bg-white shadow-2xl outline-none dark:bg-neutral-900"
       >
         <button
           ref={closeButtonRef}
@@ -271,13 +273,16 @@ export function PhotoViewerModal({
           <X className="h-4 w-4" />
         </button>
 
-        <div className="grid max-h-[85vh] grid-cols-1 items-start overflow-y-auto md:grid-cols-[1.1fr_1fr]">
-          <div className="flex min-w-0 flex-col bg-slate-900">
-            {photoViewer}
-          </div>
+        <div className="grid max-h-[90vh] min-w-0 grid-cols-1 overflow-y-auto lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-stretch">
+          {photoViewer}
 
           <div className="flex min-w-0 flex-col gap-4 p-6">
-            <h2 className="pr-10 text-xl font-semibold text-slate-900 dark:text-white">{name}</h2>
+            <h2 className="min-w-0 break-words pr-10 text-xl font-semibold text-slate-900 dark:text-white">{name}</h2>
+            {infoLabel?.trim() && (
+              <span className="inline-flex w-fit rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">
+                {infoLabel}
+              </span>
+            )}
             {capacityText && (
               <div className={`inline-flex items-center gap-1.5 text-xs font-semibold ${capacity ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-600 dark:text-neutral-300'}`}>
                 {capacity ? (
@@ -302,11 +307,11 @@ export function PhotoViewerModal({
                   {feeItems.length === 1 ? 'Fee' : 'Fees'}
                 </div>
                 {feeItems.length === 1 ? (
-                  <div className="mt-1">
+                  <div className="mt-2 rounded-lg bg-slate-50 px-3 py-2 dark:bg-neutral-800">
                     {feeItems[0].label !== 'Fee' && (
                       <div className="text-xs text-slate-500 dark:text-neutral-400">{feeItems[0].label}</div>
                     )}
-                    <span className="text-2xl font-semibold text-[#1F3F74] dark:text-[#4987BA]">
+                    <span className="text-base font-semibold text-[#1F3F74] dark:text-[#4987BA]">
                       {formatFacilityFeeAmount(feeItems[0].amount)}
                     </span>
                   </div>
