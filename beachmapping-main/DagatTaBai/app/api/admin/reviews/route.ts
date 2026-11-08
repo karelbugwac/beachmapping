@@ -78,15 +78,33 @@ export async function GET() {
 
     reviews.sort((left: any, right: any) => Date.parse(right.created_at) - Date.parse(left.created_at));
 
-    const formattedReports = reports.map((report: any) => ({
-      id: report.id,
-      reason: report.reason,
-      status: report.status,
-      created_at: report.created_at,
-      reporter: profileMap.get(report.reporter_user_id) || 'Beach owner',
-      beach: beachMap.get(report.beach_id) || 'Beach',
-      review: null,
-    }));
+    const reviewById = new Map<string, any>();
+    reviews.forEach((r: any) => {
+      if (r.id) reviewById.set(r.id, r);
+    });
+
+    const formattedReports = reports.map((report: any) => {
+      const matchedReview = reviewById.get(report.review_id);
+      return {
+        id: report.id,
+        review_id: report.review_id,
+        beach_id: report.beach_id,
+        reason: report.reason,
+        status: report.status,
+        created_at: report.created_at,
+        reporter: profileMap.get(report.reporter_user_id) || 'Beach owner',
+        beach: beachMap.get(report.beach_id) || 'Beach',
+        review: matchedReview
+          ? {
+              id: matchedReview.id,
+              rating: matchedReview.rating,
+              comment: matchedReview.comment,
+              created_at: matchedReview.created_at,
+              reviewer: matchedReview.user_name,
+            }
+          : null,
+      };
+    });
 
     return NextResponse.json(
       { reviews, reports: formattedReports },

@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { authorizeRoles } from '@/lib/supabase/authorization';
 import { invalidateBeachesCache } from '@/lib/db/beaches';
 
@@ -118,15 +119,126 @@ export async function DELETE(request: NextRequest) {
   try {
     const auth = await authorizeRoles(['admin']);
     if (!auth.authorized) return NextResponse.json({ error: auth.message }, { status: auth.status });
-    const { id } = await request.json();
-    if (typeof id !== 'string') {
+
+    const body = await request.json().catch(() => ({}));
+    const id = body?.id || request.nextUrl.searchParams.get('id');
+    if (typeof id !== 'string' || !id.trim()) {
       return NextResponse.json({ error: 'A beach ID is required.' }, { status: 400 });
     }
-    const { error } = await (auth.adminClient.from('beaches') as any).delete().eq('id', id);
-    if (error) throw error;
+
+    const adminClient = auth.adminClient;
+
+    // 1. Fetch beach details to identify associated beach owner
+    const { data: beach, error: fetchError } = await (adminClient.from('beaches') as any)
+      .select('id, name, owner_id, contact_email')
+      .eq('id', id)
+      .maybeSingle();
+
+    if (fetchError) throw fetchError;
+    if (!beach) {
+      return NextResponse.json({ error: 'Beach listing not found.' }, { status: 404 });
+    }
+
+    let ownerId: string | null = beach.owner_id || null;
+
+    // Fallback: look up owner via owner_applications or profiles if owner_id was not set directly
+    if (!ownerId && beach.contact_email) {
+      const { data: ownerProfile } = await (adminClient.from('profiles') as any)
+        .select('id, role')
+        .ilike('email', beach.contact_email.trim())
+        .maybeSingle();
+      if (
+        ownerProfile?.id &&
+        (ownerProfile.role === 'beach_owner' || ownerProfile.role === 'beach_manager')
+      ) {
+        ownerId = ownerProfile.id;
+      }
+    }
+
+    if (!ownerId && beach.name) {
+      const { data: appMatch } = await (adminClient.from('owner_applications') as any)
+        .select('applicant_user_id, applicant_email')
+        .ilike('beach_name', beach.name.trim())
+        .maybeSingle();
+      if (appMatch?.applicant_user_id) {
+        ownerId = appMatch.applicant_user_id;
+      } else if (appMatch?.applicant_email) {
+        const { data: ownerProfile } = await (adminClient.from('profiles') as any)
+          .select('id, role')
+          .ilike('email', appMatch.applicant_email.trim())
+          .maybeSingle();
+        if (
+          ownerProfile?.id &&
+          (ownerProfile.role === 'beach_owner' || ownerProfile.role === 'beach_manager')
+        ) {
+          ownerId = ownerProfile.id;
+        }
+      }
+    }
+
+    // 2. Clean up child records referencing this beach so foreign keys do not block deletion
+    const childTables = [
+      'beach_review_reports',
+      'beach_reviews',
+      'beach_activities',
+      'beach_facilities',
+      'beach_external_links',
+      'beach_cottages',
+      'beach_posts',
+      'beach_tour_requests',
+      'beach_coordinate_requests',
+    ];
+    await Promise.allSettled(
+      childTables.map((table) =>
+        (adminClient.from(table) as any).delete().eq('beach_id', id)
+      )
+    );
+
+    // 3. Delete the beach record itself
+    const { error: deleteBeachError } = await (adminClient.from('beaches') as any)
+      .delete()
+      .eq('id', id);
+    if (deleteBeachError) throw deleteBeachError;
+
+    // 4. Delete the associated beach owner account & application (unless it is the current admin)
+    let ownerDeleted = false;
+    if (ownerId && ownerId !== auth.user.id) {
+      // Unlink any other beaches or applications before deleting user
+      await Promise.allSettled([
+        (adminClient.from('beaches') as any)
+          .update({ owner_id: null })
+          .eq('owner_id', ownerId),
+        (adminClient.from('owner_applications') as any)
+          .delete()
+          .eq('applicant_user_id', ownerId),
+      ]);
+
+      const { error: deleteAuthError } = await adminClient.auth.admin.deleteUser(ownerId);
+      if (!deleteAuthError) {
+        ownerDeleted = true;
+      }
+
+      await (adminClient.from('profiles') as any)
+        .delete()
+        .eq('id', ownerId);
+    }
+
+    if (beach.name) {
+      await (adminClient.from('owner_applications') as any)
+        .delete()
+        .ilike('beach_name', beach.name.trim());
+    }
 
     invalidateBeachesCache();
-    return NextResponse.json({ success: true, message: 'Beach listing deleted successfully.' });
+    revalidatePath('/', 'layout');
+
+    return NextResponse.json({
+      success: true,
+      ownerDeleted,
+      message: ownerDeleted
+        ? 'Beach listing and beach owner account deleted.'
+        : 'Beach listing deleted.',
+    });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to delete beach listing.';
     return NextResponse.json({ error: message }, { status: 500 });

@@ -40,7 +40,7 @@ export function AnalyticsBarChart({
             {title}
           </h2>
           <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
-            Daily verified tourist visits and discovery traffic to your resort listing.
+            Daily visitor activity.
           </p>
         </div>
 

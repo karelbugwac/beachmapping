@@ -1,51 +1,33 @@
 'use client';
 
 import React, { useState, useEffect, useMemo } from 'react';
-import Link from 'next/link';
-import { useRouter, useSearchParams } from 'next/navigation';
 import {
   Users,
-  MessageSquare,
-  AlertTriangle,
   Search,
   Filter,
   ChevronDown,
   Shield,
   ShieldAlert,
-  ShieldCheck,
   UserCheck,
-  UserX,
   Trash2,
   Edit3,
   Eye,
   KeyRound,
-  RotateCcw,
-  CheckCircle2,
   XCircle,
   Clock,
-  MapPin,
-  Mail,
-  Calendar,
-  Building,
-  ArrowRight,
-  ExternalLink,
   Loader2,
   Copy,
   Check,
   Palmtree,
-  Star,
-  Info,
   RefreshCw,
 } from 'lucide-react';
-import { StarRating } from '@/components/star-rating';
 import { showToast } from '@/components/ui/feedback-toasts';
-import { confirmAction } from '@/components/ui/confirm-dialog';
 
 export interface AdminUser {
   id: string;
   name: string;
   email: string;
-  role: 'user' | 'beach_owner' | 'beach_manager' | 'admin';
+  role: 'user' | 'beach_owner' | 'admin';
   status: 'active' | 'deactivated' | 'suspended';
   status_reason?: string | null;
   status_updated_at?: string | null;
@@ -55,72 +37,23 @@ export interface AdminUser {
   last_sign_in_at?: string | null;
   has_pin: boolean;
   beaches: Array<{ id: string; name: string }>;
-  reviews_count: number;
-  recent_reviews?: Array<{
-    id: string;
-    beach_id: string | null;
-    beach_name: string;
-    rating: number;
-    comment: string;
-    created_at: string;
-    review_type: 'beach' | 'platform';
-  }>;
-}
-
-export interface AdminReview {
-  id: string;
-  beach_id: string | null;
-  user_id: string | null;
-  review_type: 'beach' | 'platform';
-  user_name: string;
-  beach_name: string;
-  rating: number;
-  comment: string;
-  created_at: string;
-  updated_at: string;
-}
-
-export interface ReviewReport {
-  id: string;
-  reason: string;
-  status: string;
-  created_at: string;
-  reporter: string;
-  beach: string;
-  review: { id: string; comment: string; rating: number } | null;
 }
 
 interface UserModerationHubProps {
-  initialTab?: 'users' | 'reviews' | 'reports';
+  initialTab?: string;
 }
 
-export function UserModerationHub({ initialTab = 'users' }: UserModerationHubProps) {
-  const router = useRouter();
-  const searchParams = useSearchParams();
-
-  // Tab State
-  const tabParam = searchParams.get('tab') as 'users' | 'reviews' | 'reports' | null;
-  const [activeTab, setActiveTab] = useState<'users' | 'reviews' | 'reports'>(tabParam || initialTab);
-
+export function UserModerationHub(_props: UserModerationHubProps) {
   // Data States
   const [users, setUsers] = useState<AdminUser[]>([]);
-  const [reviews, setReviews] = useState<AdminReview[]>([]);
-  const [reports, setReports] = useState<ReviewReport[]>([]);
   const [currentAdminId, setCurrentAdminId] = useState<string | null>(null);
   const [loadingUsers, setLoadingUsers] = useState(true);
-  const [loadingReviews, setLoadingReviews] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
 
   // User Filter States
   const [userSearch, setUserSearch] = useState('');
-  const [roleFilter, setRoleFilter] = useState<'all' | 'user' | 'beach_owner' | 'beach_manager' | 'admin'>('all');
+  const [roleFilter, setRoleFilter] = useState<'all' | 'user' | 'beach_owner' | 'admin'>('all');
   const [statusFilter, setStatusFilter] = useState<'all' | 'active' | 'deactivated' | 'suspended'>('all');
-
-  // Review Filter States
-  const [reviewSearch, setReviewSearch] = useState('');
-  const [ratingFilter, setRatingFilter] = useState<number | 'all'>('all');
-  const [reviewTypeFilter, setReviewTypeFilter] = useState<'all' | 'beach' | 'platform'>('all');
-  const [userFilterForReviews, setUserFilterForReviews] = useState<string | null>(null);
 
   // Modal States
   const [selectedUser, setSelectedUser] = useState<AdminUser | null>(null);
@@ -135,7 +68,6 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
   const [newPin, setNewPin] = useState('');
   const [submitting, setSubmitting] = useState(false);
   const [copiedId, setCopiedId] = useState(false);
-  const [actionMenuOpenId, setActionMenuOpenId] = useState<string | null>(null);
 
   // Edit form state
   const [editFormData, setEditFormData] = useState({
@@ -154,7 +86,11 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
         return;
       }
       const data = await response.json();
-      setUsers(Array.isArray(data.users) ? data.users : []);
+      const rawUsers = Array.isArray(data.users) ? data.users : [];
+      // Exclude any legacy beach_manager accounts or normalize them
+      setUsers(
+        rawUsers.filter((u: any) => u.role !== 'beach_manager')
+      );
       if (data.currentAdminId) setCurrentAdminId(data.currentAdminId);
     } catch (error: unknown) {
       console.error('Failed to load registered users:', error);
@@ -163,53 +99,16 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
     }
   };
 
-  // Fetch Reviews & Reports
-  const loadReviews = async () => {
-    try {
-      const response = await fetch('/api/admin/reviews', { cache: 'no-store' });
-      if (!response.ok) {
-        console.warn('Failed to load reviews, status:', response.status);
-        return;
-      }
-      const data = await response.json();
-      setReviews(Array.isArray(data.reviews) ? data.reviews : []);
-      setReports(Array.isArray(data.reports) ? data.reports : []);
-    } catch (error: unknown) {
-      console.error('Failed to load reviews:', error);
-    } finally {
-      setLoadingReviews(false);
-    }
-  };
-
   const refreshAll = async () => {
     setRefreshing(true);
-    await Promise.all([loadUsers(), loadReviews()]);
+    await loadUsers();
     setRefreshing(false);
-    showToast('Admin data refreshed.');
+    showToast('Users refreshed.');
   };
 
   useEffect(() => {
     void loadUsers();
-    void loadReviews();
   }, []);
-
-  // Update tab in URL when changed
-  const handleTabChange = (tab: 'users' | 'reviews' | 'reports') => {
-    setActiveTab(tab);
-    const url = new URL(window.location.href);
-    url.searchParams.set('tab', tab);
-    router.replace(url.pathname + url.search, { scroll: false });
-  };
-
-  // Switch to reviews tab filtered by a specific user
-  const handleViewUserReviews = (user: AdminUser) => {
-    setUserFilterForReviews(user.name);
-    setReviewSearch('');
-    setActiveTab('reviews');
-    const url = new URL(window.location.href);
-    url.searchParams.set('tab', 'reviews');
-    router.replace(url.pathname + url.search, { scroll: false });
-  };
 
   // Copy ID
   const copyToClipboard = (text: string) => {
@@ -236,24 +135,6 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
       return matchesSearch && matchesRole && matchesStatus;
     });
   }, [users, userSearch, roleFilter, statusFilter]);
-
-  // Filter Reviews
-  const filteredReviews = useMemo(() => {
-    return reviews.filter((r) => {
-      const q = reviewSearch.toLowerCase().trim();
-      const matchesSearch =
-        !q ||
-        r.comment.toLowerCase().includes(q) ||
-        r.user_name.toLowerCase().includes(q) ||
-        r.beach_name.toLowerCase().includes(q);
-
-      const matchesRating = ratingFilter === 'all' || Math.round(r.rating) === ratingFilter;
-      const matchesType = reviewTypeFilter === 'all' || r.review_type === reviewTypeFilter;
-      const matchesUser = !userFilterForReviews || r.user_name.toLowerCase() === userFilterForReviews.toLowerCase();
-
-      return matchesSearch && matchesRating && matchesType && matchesUser;
-    });
-  }, [reviews, reviewSearch, ratingFilter, reviewTypeFilter, userFilterForReviews]);
 
   // Open Edit Modal
   const openEditModal = (user: AdminUser) => {
@@ -302,32 +183,31 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
         current.map((u) =>
           u.id === editingUser.id
             ? {
-              ...u,
-              name: editFormData.name.trim(),
-              email: editFormData.email.trim(),
-              role: editFormData.role,
-              location: editFormData.location.trim() || null,
-            }
+                ...u,
+                name: editFormData.name.trim(),
+                email: editFormData.email.trim(),
+                role: editFormData.role,
+                location: editFormData.location.trim() || null,
+              }
             : u
         )
       );
 
-      // If user details modal was open, update it
       if (selectedUser?.id === editingUser.id) {
         setSelectedUser((prev) =>
           prev
             ? {
-              ...prev,
-              name: editFormData.name.trim(),
-              email: editFormData.email.trim(),
-              role: editFormData.role,
-              location: editFormData.location.trim() || null,
-            }
+                ...prev,
+                name: editFormData.name.trim(),
+                email: editFormData.email.trim(),
+                role: editFormData.role,
+                location: editFormData.location.trim() || null,
+              }
             : null
         );
       }
 
-      showToast('User details updated successfully.');
+      showToast('User details updated.');
       setEditingUser(null);
     } catch (error: unknown) {
       showToast(error instanceof Error ? error.message : 'Failed to update user.', 'error');
@@ -375,11 +255,11 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
         current.map((u) =>
           u.id === statusModalUser.id
             ? {
-              ...u,
-              status: newStatus,
-              status_reason: newReason,
-              status_updated_at: new Date().toISOString(),
-            }
+                ...u,
+                status: newStatus,
+                status_reason: newReason,
+                status_updated_at: new Date().toISOString(),
+              }
             : u
         )
       );
@@ -388,16 +268,16 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
         setSelectedUser((prev) =>
           prev
             ? {
-              ...prev,
-              status: newStatus,
-              status_reason: newReason,
-              status_updated_at: new Date().toISOString(),
-            }
+                ...prev,
+                status: newStatus,
+                status_reason: newReason,
+                status_updated_at: new Date().toISOString(),
+              }
             : null
         );
       }
 
-      showToast(`Account successfully updated to ${newStatus}.`);
+      showToast(`Account updated to ${newStatus}.`);
       setStatusModalUser(null);
     } catch (error: unknown) {
       showToast(error instanceof Error ? error.message : 'Failed to update account status.', 'error');
@@ -417,12 +297,12 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
     setDeletePolicyAccepted(false);
   };
 
-  // Submit Delete Account following Policy
+  // Submit Delete Account
   const handleDeleteUser = async () => {
     if (!deleteModalUser) return;
 
     if (!deletePolicyAccepted) {
-      showToast('You must acknowledge the municipal data policy before proceeding.', 'error');
+      showToast('Please acknowledge the deletion policy before proceeding.', 'error');
       return;
     }
 
@@ -430,7 +310,7 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
     const targetEmail = deleteModalUser.email.trim().toLowerCase();
 
     if (trimmedInput !== 'delete' && trimmedInput !== targetEmail) {
-      showToast('Please type the user email or DELETE exactly to confirm.', 'error');
+      showToast('Please type the user email or DELETE to confirm.', 'error');
       return;
     }
 
@@ -464,7 +344,7 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
   const handleResetPin = async () => {
     if (!resetPinUser) return;
     if (!newPin || !/^\d{6}$/.test(newPin)) {
-      showToast('PIN must be exactly 6 numeric digits.', 'error');
+      showToast('PIN must be 6 digits.', 'error');
       return;
     }
 
@@ -487,75 +367,13 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
         current.map((u) => (u.id === resetPinUser.id ? { ...u, has_pin: true } : u))
       );
 
-      showToast('6-digit PIN pass reset successfully.');
+      showToast('6-digit PIN reset.');
       setResetPinUser(null);
       setNewPin('');
     } catch (error: unknown) {
       showToast(error instanceof Error ? error.message : 'Failed to reset PIN.', 'error');
     } finally {
       setSubmitting(false);
-    }
-  };
-
-  // Review Actions
-  const handleDeleteReview = async (review: AdminReview) => {
-    if (!await confirmAction({ title: 'Delete Review', message: `Are you sure you want to delete this review by "${review.user_name}"?` })) return;
-
-    try {
-      const response = await fetch(
-        `/api/admin/reviews?id=${encodeURIComponent(review.id)}&type=${review.review_type}`,
-        { method: 'DELETE' }
-      );
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Failed to delete review.');
-
-      setReviews((current) => current.filter((r) => r.id !== review.id));
-
-      // Also remove from selected user recent reviews if open
-      if (selectedUser) {
-        setSelectedUser((prev) =>
-          prev
-            ? {
-              ...prev,
-              reviews_count: Math.max(0, prev.reviews_count - 1),
-              recent_reviews: prev.recent_reviews?.filter((r) => r.id !== review.id),
-            }
-            : null
-        );
-      }
-
-      showToast('Review removed.', 'destructive');
-    } catch (error: unknown) {
-      showToast(error instanceof Error ? error.message : 'Failed to delete review.', 'error');
-    }
-  };
-
-  // Report Actions
-  const handleReportDecision = async (reportId: string, decision: 'remove' | 'dismiss') => {
-    try {
-      const response = await fetch('/api/admin/reviews', {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: reportId, decision }),
-      });
-      const data = await response.json();
-      if (!response.ok) throw new Error(data.error || 'Could not process report decision.');
-
-      const targetReport = reports.find((r) => r.id === reportId);
-      const reportedReviewId = targetReport?.review?.id;
-
-      setReports((current) => current.filter((r) => r.id !== reportId));
-
-      if (decision === 'remove' && reportedReviewId) {
-        setReviews((current) => current.filter((r) => r.id !== reportedReviewId));
-      }
-
-      showToast(
-        decision === 'remove' ? 'Reported review removed.' : 'Report dismissed.',
-        decision === 'remove' ? 'destructive' : 'success'
-      );
-    } catch (error: unknown) {
-      showToast(error instanceof Error ? error.message : 'Could not process report decision.', 'error');
     }
   };
 
@@ -566,822 +384,370 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
       active: users.filter((u) => u.status === 'active').length,
       deactivated: users.filter((u) => u.status === 'deactivated').length,
       suspended: users.filter((u) => u.status === 'suspended').length,
-      owners: users.filter((u) => u.role === 'beach_owner' || u.role === 'beach_manager').length,
-      reviewsCount: reviews.length,
-      pendingReports: reports.length,
+      owners: users.filter((u) => u.role === 'beach_owner').length,
     };
-  }, [users, reviews, reports]);
+  }, [users]);
+
+  const getRoleLabel = (role: AdminUser['role']) => {
+    switch (role) {
+      case 'admin':
+        return 'Admin';
+      case 'beach_owner':
+        return 'Beach Owner';
+      default:
+        return 'User';
+    }
+  };
 
   return (
-    <div className="py-6 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto space-y-6">
-      {/* Header and Back Link */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-        <div className="space-y-1">
-          <Link
-            href="/admin/dashboard"
-            className="hidden"
-          >
-            <ArrowRight className="w-3.5 h-3.5 rotate-180" />
-            <span className="hidden">Back to Admin Dashboard</span>
-          </Link>
-          <div className="flex items-center gap-3">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight text-[#1F3F74] dark:text-white">
-              User &amp; Review Management Hub
-            </h1>
-            <button
-              type="button"
-              onClick={refreshAll}
-              disabled={refreshing}
-              className="hidden"
-              title="Refresh data"
-            >
-              <RefreshCw className={`w-4 h-4 ${refreshing ? 'animate-spin text-sky-600' : ''}`} />
-            </button>
-          </div>
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-            Unified console to oversee registered citizens, resort staff, account permissions, and community review moderation.
+    <div className="max-w-7xl mx-auto space-y-6 font-sans">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1F3F74] dark:text-white">
+            User Management
+          </h1>
+          <p className="mt-1 text-xs sm:text-sm text-slate-500 dark:text-neutral-400">
+            Manage registered users, beach owners, and account statuses.
           </p>
         </div>
 
-        {/* Global Summary Stats */}
-        <div className="flex flex-wrap items-center gap-2">
-          <div className="px-3.5 py-2 rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-2xs flex items-center gap-2">
-            <Users className="w-4 h-4 text-sky-600" />
-            <span className="text-xs font-bold text-slate-700 dark:text-neutral-200">
-              {stats.total} Users
-            </span>
-          </div>
-          <div className="px-3.5 py-2 rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-2xs flex items-center gap-2">
-            <MessageSquare className="w-4 h-4 text-[#1F3F74] dark:text-[#38BDF8]" />
-            <span className="text-xs font-bold text-slate-700 dark:text-neutral-200">
-              {stats.reviewsCount} Reviews
-            </span>
-          </div>
-          {stats.pendingReports > 0 && (
-            <div className="px-3.5 py-2 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center gap-2 text-amber-600 dark:text-amber-400 animate-pulse">
-              <AlertTriangle className="w-4 h-4" />
-              <span className="text-xs font-bold">
-                {stats.pendingReports} Flagged
-              </span>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Unified 3-Category Selector with Equal Spacing */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3 w-full border-b border-slate-200 dark:border-neutral-800 pb-3">
         <button
           type="button"
-          onClick={() => handleTabChange('users')}
-          className={`w-full flex items-center justify-center gap-2 py-3 px-4 text-xs sm:text-sm font-bold rounded-2xl transition-all cursor-pointer ${
-            activeTab === 'users'
-              ? 'bg-[#1F3F74] text-white shadow-sm dark:bg-sky-500 dark:text-black'
-              : 'bg-slate-100 dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 hover:bg-slate-200 dark:hover:bg-neutral-800 hover:text-slate-900 dark:hover:text-white'
-          }`}
+          onClick={refreshAll}
+          disabled={refreshing}
+          className="inline-flex items-center gap-2 self-start sm:self-auto px-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-xs font-bold text-[#1F3F74] dark:text-[#4987BA] hover:border-[#4987BA] transition-all shadow-2xs cursor-pointer disabled:opacity-50"
         >
-          <Users className="w-4 h-4" />
-          <span>User Accounts</span>
-          <span
-            className={`ml-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold ${
-              activeTab === 'users'
-                ? 'bg-white/20 text-white dark:bg-black/20 dark:text-black'
-                : 'bg-slate-200 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300'
-            }`}
-          >
-            {stats.total}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleTabChange('reviews')}
-          className={`w-full flex items-center justify-center gap-2 py-3 px-4 text-xs sm:text-sm font-bold rounded-2xl transition-all cursor-pointer ${
-            activeTab === 'reviews'
-              ? 'bg-[#1F3F74] text-white shadow-sm dark:bg-sky-500 dark:text-black'
-              : 'bg-slate-100 dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 hover:bg-slate-200 dark:hover:bg-neutral-800 hover:text-slate-900 dark:hover:text-white'
-          }`}
-        >
-          <MessageSquare className="w-4 h-4" />
-          <span>Review Moderation</span>
-          <span
-            className={`ml-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold ${
-              activeTab === 'reviews'
-                ? 'bg-white/20 text-white dark:bg-black/20 dark:text-black'
-                : 'bg-slate-200 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300'
-            }`}
-          >
-            {stats.reviewsCount}
-          </span>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => handleTabChange('reports')}
-          className={`w-full flex items-center justify-center gap-2 py-3 px-4 text-xs sm:text-sm font-bold rounded-2xl transition-all cursor-pointer ${
-            activeTab === 'reports'
-              ? 'bg-[#1F3F74] text-white shadow-sm dark:bg-sky-500 dark:text-black'
-              : 'bg-slate-100 dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 hover:bg-slate-200 dark:hover:bg-neutral-800 hover:text-slate-900 dark:hover:text-white'
-          }`}
-        >
-          <AlertTriangle className="w-4 h-4" />
-          <span>Reported Reviews</span>
-          {stats.pendingReports > 0 ? (
-            <span className="ml-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold bg-amber-500 text-white">
-              {stats.pendingReports}
-            </span>
-          ) : (
-            <span
-              className={`ml-1.5 px-2 py-0.5 rounded-full text-[11px] font-bold ${
-                activeTab === 'reports'
-                  ? 'bg-white/20 text-white dark:bg-black/20 dark:text-black'
-                  : 'bg-slate-200 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300'
-              }`}
-            >
-              0
-            </span>
-          )}
+          <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
+          <span>Refresh</span>
         </button>
       </div>
 
-      {/* ========================================================================= */}
-      {/* TAB 1: USER ACCOUNTS                                                      */}
-      {/* ========================================================================= */}
-      {activeTab === 'users' && (
-        <div className="space-y-6">
-          {/* Quick Metrics Cards (Squares matching Owner Application table style) */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 sm:gap-4">
-            <div className="p-5 rounded-3xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-xs">
-              <span className="text-[11px] uppercase font-bold tracking-wider text-slate-400 dark:text-neutral-400 block">
-                Active Users
-              </span>
-              <div className="mt-1 flex items-baseline gap-2">
-                <span className="text-2xl font-black text-emerald-600 dark:text-emerald-400">
-                  {stats.active}
-                </span>
-                <span className="text-xs text-slate-500 dark:text-neutral-400">accounts</span>
-              </div>
-            </div>
+      {/* KPI Cards Grid */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <button
+          type="button"
+          onClick={() => setStatusFilter(statusFilter === 'active' ? 'all' : 'active')}
+          className={`p-4 rounded-2xl bg-white dark:bg-neutral-900 border text-left transition-all cursor-pointer ${
+            statusFilter === 'active'
+              ? 'border-[#4987BA] bg-sky-50/60 dark:bg-sky-950/20 ring-2 ring-[#4987BA]/20'
+              : 'border-slate-200/80 dark:border-neutral-800 hover:border-slate-300'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 dark:text-neutral-400">
+              Active
+            </span>
+            <UserCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+          </div>
+          <div className="mt-1 text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">
+            {loadingUsers ? '...' : stats.active}
+          </div>
+        </button>
 
-            <div className="p-5 rounded-3xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-xs">
-              <span className="text-[11px] uppercase font-bold tracking-wider text-slate-400 dark:text-neutral-400 block">
-                Deactivated
-              </span>
-              <div className="mt-1 flex items-baseline gap-2">
-                <span className="text-2xl font-black text-slate-600 dark:text-neutral-400">
-                  {stats.deactivated}
-                </span>
-                <span className="text-xs text-slate-500 dark:text-neutral-400">dormant</span>
-              </div>
-            </div>
+        <button
+          type="button"
+          onClick={() => setRoleFilter(roleFilter === 'beach_owner' ? 'all' : 'beach_owner')}
+          className={`p-4 rounded-2xl bg-white dark:bg-neutral-900 border text-left transition-all cursor-pointer ${
+            roleFilter === 'beach_owner'
+              ? 'border-[#4987BA] bg-sky-50/60 dark:bg-sky-950/20 ring-2 ring-[#4987BA]/20'
+              : 'border-slate-200/80 dark:border-neutral-800 hover:border-slate-300'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 dark:text-neutral-400">
+              Beach Owners
+            </span>
+            <Palmtree className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+          </div>
+          <div className="mt-1 text-2xl font-extrabold text-sky-600 dark:text-sky-400">
+            {loadingUsers ? '...' : stats.owners}
+          </div>
+        </button>
 
-            <div className="p-5 rounded-3xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-xs">
-              <span className="text-[11px] uppercase font-bold tracking-wider text-slate-400 dark:text-neutral-400 block">
-                Suspended
-              </span>
-              <div className="mt-1 flex items-baseline gap-2">
-                <span className="text-2xl font-black text-rose-600 dark:text-rose-400">
-                  {stats.suspended}
-                </span>
-                <span className="text-xs text-slate-500 dark:text-neutral-400">penalized</span>
-              </div>
-            </div>
+        <button
+          type="button"
+          onClick={() => setStatusFilter(statusFilter === 'deactivated' ? 'all' : 'deactivated')}
+          className={`p-4 rounded-2xl bg-white dark:bg-neutral-900 border text-left transition-all cursor-pointer ${
+            statusFilter === 'deactivated'
+              ? 'border-[#4987BA] bg-sky-50/60 dark:bg-sky-950/20 ring-2 ring-[#4987BA]/20'
+              : 'border-slate-200/80 dark:border-neutral-800 hover:border-slate-300'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 dark:text-neutral-400">
+              Deactivated
+            </span>
+            <Clock className="w-4 h-4 text-slate-500 dark:text-neutral-400" />
+          </div>
+          <div className="mt-1 text-2xl font-extrabold text-slate-700 dark:text-neutral-300">
+            {loadingUsers ? '...' : stats.deactivated}
+          </div>
+        </button>
 
-            <div className="p-5 rounded-3xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-xs">
-              <span className="text-[11px] uppercase font-bold tracking-wider text-slate-400 dark:text-neutral-400 block">
-                Resort Owners / Staff
-              </span>
-              <div className="mt-1 flex items-baseline gap-2">
-                <span className="text-2xl font-black text-sky-600 dark:text-sky-400">
-                  {stats.owners}
-                </span>
-                <span className="text-xs text-slate-500 dark:text-neutral-400">proprietors</span>
-              </div>
-            </div>
+        <button
+          type="button"
+          onClick={() => setStatusFilter(statusFilter === 'suspended' ? 'all' : 'suspended')}
+          className={`p-4 rounded-2xl bg-white dark:bg-neutral-900 border text-left transition-all cursor-pointer ${
+            statusFilter === 'suspended'
+              ? 'border-[#4987BA] bg-sky-50/60 dark:bg-sky-950/20 ring-2 ring-[#4987BA]/20'
+              : 'border-slate-200/80 dark:border-neutral-800 hover:border-slate-300'
+          }`}
+        >
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-semibold text-slate-500 dark:text-neutral-400">
+              Suspended
+            </span>
+            <ShieldAlert className="w-4 h-4 text-rose-600 dark:text-rose-400" />
+          </div>
+          <div className="mt-1 text-2xl font-extrabold text-rose-600 dark:text-rose-400">
+            {loadingUsers ? '...' : stats.suspended}
+          </div>
+        </button>
+      </div>
+
+      {/* Main Content Container */}
+      <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-slate-200/80 dark:border-neutral-800 shadow-2xs overflow-hidden">
+        {/* Search & Filters Bar */}
+        <div className="p-4 border-b border-slate-100 dark:border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="relative flex-1 max-w-md">
+            <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+            <input
+              type="text"
+              placeholder="Search name or email..."
+              value={userSearch}
+              onChange={(e) => setUserSearch(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 text-xs sm:text-sm rounded-xl border border-slate-200 dark:border-neutral-800 bg-slate-50/70 dark:bg-neutral-950 text-slate-900 dark:text-white focus:outline-none focus:border-[#4987BA] focus:bg-white dark:focus:bg-neutral-900 placeholder:text-slate-400"
+            />
           </div>
 
-          {/* Search & Filters Bar */}
-          {/* Frameless Flat Search & Filters Bar (No box/card container) */}
-          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 py-1">
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Search by name, email, municipality or user ID..."
-                value={userSearch}
-                onChange={(e) => setUserSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 text-xs rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-neutral-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1F3F74]"
-              />
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                <Filter className="w-3.5 h-3.5" />
-                <span className="font-semibold">Role:</span>
-              </div>
+          <div className="flex flex-wrap sm:flex-nowrap items-center gap-2">
+            {/* Role Filter */}
+            <div className="relative">
+              <Shield className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
               <select
                 value={roleFilter}
                 onChange={(e) => setRoleFilter(e.target.value as any)}
                 aria-label="Filter users by role"
-                className="px-3 py-2 text-xs rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-neutral-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1F3F74] cursor-pointer"
+                className="appearance-none pl-8 pr-8 py-2 text-xs font-semibold rounded-xl border border-slate-200 dark:border-neutral-800 bg-slate-50/70 dark:bg-neutral-950 text-slate-700 dark:text-neutral-200 focus:outline-none focus:border-[#4987BA] cursor-pointer"
               >
                 <option value="all">All Roles</option>
-                <option value="user">Regular Tourists (User)</option>
+                <option value="user">Users</option>
                 <option value="beach_owner">Beach Owners</option>
-                <option value="beach_manager">Beach Managers</option>
-                <option value="admin">Administrators</option>
+                <option value="admin">Admins</option>
               </select>
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
+            </div>
 
-              <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 ml-2">
-                <span className="font-semibold">Status:</span>
-              </div>
+            {/* Status Filter */}
+            <div className="relative">
+              <Filter className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value as any)}
                 aria-label="Filter users by account status"
-                className="px-3 py-2 text-xs rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-neutral-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1F3F74] cursor-pointer"
+                className="appearance-none pl-8 pr-8 py-2 text-xs font-semibold rounded-xl border border-slate-200 dark:border-neutral-800 bg-slate-50/70 dark:bg-neutral-950 text-slate-700 dark:text-neutral-200 focus:outline-none focus:border-[#4987BA] cursor-pointer"
               >
                 <option value="all">All Statuses</option>
                 <option value="active">Active</option>
                 <option value="deactivated">Deactivated</option>
                 <option value="suspended">Suspended</option>
               </select>
-
-              {(userSearch || roleFilter !== 'all' || statusFilter !== 'all') && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setUserSearch('');
-                    setRoleFilter('all');
-                    setStatusFilter('all');
-                  }}
-                  className="px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:text-rose-700 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-lg transition-colors"
-                >
-                  Clear Filters
-                </button>
-              )}
+              <ChevronDown className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
             </div>
-          </div>
 
-          {/* User Table (Styled matching Owner Applications table) */}
-          <div className="bg-white dark:bg-neutral-900 rounded-3xl border border-slate-200 dark:border-neutral-800 shadow-xs overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full text-left text-xs">
-                <thead className="bg-slate-50 dark:bg-black/50 border-b border-slate-200 dark:border-neutral-800 text-slate-500 dark:text-neutral-400 uppercase tracking-wider font-bold">
-                  <tr>
-                    <th className="py-4 px-6">User Details</th>
-                    <th className="py-4 px-6">Role</th>
-                    <th className="py-4 px-6">Account Status</th>
-                    <th className="py-4 px-6">Registered Date</th>
-                    <th className="py-4 px-6">Resorts &amp; Reviews</th>
-                    <th className="py-4 px-6 text-right">Admin Actions</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-slate-100 dark:divide-neutral-800 text-slate-700 dark:text-neutral-300">
-                  {loadingUsers && (
-                    <tr>
-                      <td colSpan={6} className="py-16 text-center">
-                        <Loader2 className="mx-auto h-7 w-7 animate-spin text-sky-600" />
-                        <span className="mt-2 block text-xs text-slate-400">Loading registered users...</span>
-                      </td>
-                    </tr>
-                  )}
-
-                  {!loadingUsers && filteredUsers.length === 0 && (
-                    <tr>
-                      <td colSpan={6} className="py-16 text-center text-slate-400">
-                        <Users className="mx-auto h-8 w-8 mb-2 stroke-1 opacity-50" />
-                        <p className="font-semibold text-slate-700 dark:text-slate-300">No registered users found.</p>
-                        <p className="text-xs text-slate-400 mt-1">Try broadening your search query or role filter.</p>
-                      </td>
-                    </tr>
-                  )}
-
-                  {!loadingUsers &&
-                    filteredUsers.map((u) => {
-                      const isSelf = u.id === currentAdminId;
-                      return (
-                        <tr
-                          key={u.id}
-                          className="hover:bg-slate-50 dark:hover:bg-neutral-800/40 transition-colors"
-                        >
-                          {/* Name & Email */}
-                          <td className="py-4 px-6">
-                            <div className="flex items-center gap-3">
-                              <div
-                                className={`w-9 h-9 rounded-full flex items-center justify-center font-bold text-xs uppercase flex-shrink-0 ${u.role === 'admin'
-                                    ? 'bg-[#1F3F74]/15 dark:bg-[#1F3F74]/40 text-[#1F3F74] dark:text-[#38BDF8] border border-[#1F3F74]/30'
-                                    : u.role === 'beach_owner'
-                                      ? 'bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800'
-                                      : u.role === 'beach_manager'
-                                        ? 'bg-teal-100 dark:bg-teal-950 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800'
-                                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-                                  }`}
-                              >
-                                {u.name ? u.name.charAt(0) : 'U'}
-                              </div>
-                              <div className="min-w-0">
-                                <div className="flex items-center gap-2">
-                                  <span className="font-bold text-slate-900 dark:text-white truncate">
-                                    {u.name}
-                                  </span>
-                                  {isSelf && (
-                                    <span className="px-1.5 py-0.2 rounded text-[10px] font-bold bg-sky-100 text-sky-700 dark:bg-sky-900/50 dark:text-sky-300">
-                                      You
-                                    </span>
-                                  )}
-                                </div>
-                                <span className="text-slate-400 text-[11px] block truncate">
-                                  {u.email}
-                                </span>
-                                {u.location && (
-                                  <span className="text-[10px] text-slate-500 dark:text-slate-400 flex items-center gap-1 mt-0.5">
-                                    <MapPin className="w-2.5 h-2.5 text-slate-400" />
-                                    {u.location}
-                                  </span>
-                                )}
-                              </div>
-                            </div>
-                          </td>
-
-                          {/* Role (Pure Text Only - No pill/container) */}
-                          <td className="py-4 px-6">
-                            <span className="font-bold text-xs uppercase tracking-wide text-slate-800 dark:text-neutral-200">
-                              {u.role === 'beach_owner'
-                                ? 'Beach Owner'
-                                : u.role === 'beach_manager'
-                                  ? 'Beach Manager'
-                                  : u.role === 'admin'
-                                    ? 'Admin'
-                                    : 'User'}
-                            </span>
-                          </td>
-
-                          {/* Account Status (Pure Text Only - No pill/container) */}
-                          <td className="py-4 px-6">
-                            <span
-                              className={`font-bold text-xs uppercase tracking-wide ${
-                                u.status === 'active'
-                                  ? 'text-emerald-500'
-                                  : u.status === 'deactivated'
-                                    ? 'text-slate-400'
-                                    : 'text-rose-500'
-                              }`}
-                            >
-                              {u.status}
-                            </span>
-                          </td>
-
-                          {/* Joined Date */}
-                          <td className="py-4 px-6 text-slate-500 dark:text-neutral-400">
-                            <span className="block font-medium">
-                              {new Date(u.joined).toLocaleDateString(undefined, {
-                                year: 'numeric',
-                                month: 'short',
-                                day: 'numeric',
-                              })}
-                            </span>
-                            <span className="text-[10px] text-slate-400 dark:text-neutral-500">
-                              {u.last_sign_in_at
-                                ? `Active ${new Date(u.last_sign_in_at).toLocaleDateString()}`
-                                : 'No logins recorded'}
-                            </span>
-                          </td>
-
-                          {/* Resorts & Reviews */}
-                          <td className="py-4 px-6">
-                            <div className="flex flex-col gap-1 items-start">
-                              {u.beaches.length > 0 && (
-                                <span className="inline-flex items-center gap-1 text-[11px] font-semibold text-sky-700 dark:text-sky-300">
-                                  <Palmtree className="w-3 h-3" />
-                                  {u.beaches.length} beach {u.beaches.length === 1 ? 'resort' : 'resorts'}
-                                </span>
-                              )}
-                              <button
-                                type="button"
-                                onClick={() => handleViewUserReviews(u)}
-                                className="inline-flex items-center gap-1 text-[11px] font-semibold text-slate-600 dark:text-slate-400 hover:text-sky-600 dark:hover:text-sky-400 transition-colors"
-                                title="Inspect user reviews in Review Moderation tab"
-                              >
-                                <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
-                                <span>{u.reviews_count} {u.reviews_count === 1 ? 'review' : 'reviews'}</span>
-                              </button>
-                            </div>
-                          </td>
-
-                          {/* Action Buttons (Clean Manage Dropdown Menu) */}
-                          <td className="py-4 px-6 text-right relative">
-                            <div className="inline-block text-left">
-                              <button
-                                type="button"
-                                onClick={() => setActionMenuOpenId(actionMenuOpenId === u.id ? null : u.id)}
-                                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-bold rounded-full border border-slate-200 dark:border-neutral-800 bg-white dark:bg-black text-slate-700 dark:text-neutral-200 hover:bg-slate-50 dark:hover:bg-neutral-800 transition-colors shadow-2xs cursor-pointer"
-                                aria-haspopup="true"
-                                aria-expanded={actionMenuOpenId === u.id}
-                              >
-                                <span>Manage</span>
-                                <ChevronDown
-                                  className={`w-3.5 h-3.5 text-slate-400 transition-transform ${
-                                    actionMenuOpenId === u.id ? 'rotate-180' : ''
-                                  }`}
-                                />
-                              </button>
-
-                              {actionMenuOpenId === u.id && (
-                                <>
-                                  <div
-                                    className="fixed inset-0 z-20 cursor-default"
-                                    onClick={() => setActionMenuOpenId(null)}
-                                  />
-                                  <div className="absolute right-6 mt-1.5 w-48 rounded-2xl bg-white dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 shadow-xl z-30 py-1.5 divide-y divide-slate-100 dark:divide-neutral-900 text-left">
-                                    <div className="py-1">
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setActionMenuOpenId(null);
-                                          setSelectedUser(u);
-                                        }}
-                                        className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-neutral-200 hover:bg-slate-100 dark:hover:bg-neutral-800/70 transition-colors"
-                                      >
-                                        <Eye className="w-3.5 h-3.5 text-slate-400" />
-                                        <span>View Details</span>
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setActionMenuOpenId(null);
-                                          openEditModal(u);
-                                        }}
-                                        className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-neutral-200 hover:bg-slate-100 dark:hover:bg-neutral-800/70 transition-colors"
-                                      >
-                                        <Edit3 className="w-3.5 h-3.5 text-slate-400" />
-                                        <span>Edit Information</span>
-                                      </button>
-                                      <button
-                                        type="button"
-                                        onClick={() => {
-                                          setActionMenuOpenId(null);
-                                          setResetPinUser(u);
-                                          setNewPin('');
-                                        }}
-                                        className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-neutral-200 hover:bg-slate-100 dark:hover:bg-neutral-800/70 transition-colors"
-                                      >
-                                        <KeyRound className="w-3.5 h-3.5 text-slate-400" />
-                                        <span>Reset 6-digit PIN</span>
-                                      </button>
-                                    </div>
-
-                                    {!isSelf && (
-                                      <div className="py-1">
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            setActionMenuOpenId(null);
-                                            openStatusModal(u);
-                                          }}
-                                          className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-neutral-200 hover:bg-slate-100 dark:hover:bg-neutral-800/70 transition-colors"
-                                        >
-                                          {u.status === 'active' ? (
-                                            <>
-                                              <UserX className="w-3.5 h-3.5 text-amber-500" />
-                                              <span>Change Status</span>
-                                            </>
-                                          ) : (
-                                            <>
-                                              <UserCheck className="w-3.5 h-3.5 text-emerald-500" />
-                                              <span>Activate Account</span>
-                                            </>
-                                          )}
-                                        </button>
-                                        <button
-                                          type="button"
-                                          onClick={() => {
-                                            setActionMenuOpenId(null);
-                                            openDeleteModal(u);
-                                          }}
-                                          className="w-full flex items-center gap-2.5 px-3.5 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/30 transition-colors"
-                                        >
-                                          <Trash2 className="w-3.5 h-3.5 text-rose-500" />
-                                          <span>Delete Account</span>
-                                        </button>
-                                      </div>
-                                    )}
-                                  </div>
-                                </>
-                              )}
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* TAB 2: REVIEW MODERATION                                                  */}
-      {/* ========================================================================= */}
-      {activeTab === 'reviews' && (
-        <div className="space-y-6">
-          {/* Active User Filter Notification Pill */}
-          {userFilterForReviews && (
-            <div className="p-3 bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800 rounded-xl flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs text-sky-800 dark:text-sky-300">
-                <Info className="w-4 h-4 text-sky-600 flex-shrink-0" />
-                <span>
-                  Filtering reviews submitted by <strong>{userFilterForReviews}</strong>
-                </span>
-              </div>
+            {(userSearch || roleFilter !== 'all' || statusFilter !== 'all') && (
               <button
                 type="button"
-                onClick={() => setUserFilterForReviews(null)}
-                className="text-xs font-bold text-sky-600 hover:underline dark:text-sky-400"
+                onClick={() => {
+                  setUserSearch('');
+                  setRoleFilter('all');
+                  setStatusFilter('all');
+                }}
+                className="px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-neutral-800 rounded-xl transition-colors cursor-pointer"
               >
-                Clear user filter
+                Reset
               </button>
-            </div>
-          )}
+            )}
+          </div>
+        </div>
 
-          {/* Search & Review Filters */}
-          {/* Frameless Flat Search & Filters Bar (No box/card container) */}
-          <div className="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-3 py-1">
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2" />
-              <input
-                type="text"
-                placeholder="Search reviews by comment text, reviewer, or beach name..."
-                value={reviewSearch}
-                onChange={(e) => setReviewSearch(e.target.value)}
-                className="w-full pl-9 pr-4 py-2.5 text-xs rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-neutral-900 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1F3F74]"
-              />
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
-                <span className="font-semibold">Rating:</span>
-              </div>
-              <select
-                value={ratingFilter}
-                onChange={(e) => setRatingFilter(e.target.value === 'all' ? 'all' : Number(e.target.value))}
-                aria-label="Filter reviews by rating"
-                className="px-3 py-2 text-xs rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-neutral-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1F3F74] cursor-pointer"
-              >
-                <option value="all">All Stars</option>
-                <option value="5">5 Stars</option>
-                <option value="4">4 Stars</option>
-                <option value="3">3 Stars</option>
-                <option value="2">2 Stars</option>
-                <option value="1">1 Star</option>
-              </select>
-
-              <div className="flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400 ml-2">
-                <span className="font-semibold">Type:</span>
-              </div>
-              <select
-                value={reviewTypeFilter}
-                onChange={(e) => setReviewTypeFilter(e.target.value as any)}
-                aria-label="Filter reviews by review type"
-                className="px-3 py-2 text-xs rounded-full border border-slate-200 dark:border-slate-800 bg-white dark:bg-neutral-900 text-slate-800 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1F3F74] cursor-pointer"
-              >
-                <option value="all">All Submissions</option>
-                <option value="beach">Beach Resort Reviews</option>
-                <option value="platform">Platform Feedback</option>
-              </select>
-
-              {(reviewSearch || ratingFilter !== 'all' || reviewTypeFilter !== 'all' || userFilterForReviews) && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setReviewSearch('');
-                    setRatingFilter('all');
-                    setReviewTypeFilter('all');
-                    setUserFilterForReviews(null);
-                  }}
-                  className="px-2.5 py-1.5 text-xs font-semibold text-rose-600 hover:text-rose-700 dark:text-rose-400 rounded-lg transition-colors"
-                >
-                  Clear Filters
-                </button>
+        {/* User Table */}
+        <div className="overflow-x-auto">
+          <table className="w-full text-left text-xs border-collapse">
+            <thead>
+              <tr className="bg-slate-50/80 dark:bg-neutral-950/60 border-b border-slate-100 dark:border-neutral-800 text-slate-500 dark:text-neutral-400 uppercase tracking-wider font-bold text-[11px]">
+                <th className="py-3.5 px-5">User</th>
+                <th className="py-3.5 px-5 whitespace-nowrap">Role</th>
+                <th className="py-3.5 px-5 whitespace-nowrap">Status</th>
+                <th className="py-3.5 px-5 whitespace-nowrap">Joined</th>
+                <th className="py-3.5 px-5 text-right whitespace-nowrap">Action</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-slate-100 dark:divide-neutral-800/80 text-slate-700 dark:text-neutral-300">
+              {loadingUsers && (
+                <tr>
+                  <td colSpan={5} className="py-16 text-center">
+                    <Loader2 className="mx-auto h-6 w-6 animate-spin text-[#1F3F74] dark:text-[#4987BA]" />
+                  </td>
+                </tr>
               )}
-            </div>
-          </div>
 
-          {/* Reviews List */}
-          {loadingReviews && (
-            <div className="py-16 text-center">
-              <Loader2 className="mx-auto h-7 w-7 animate-spin text-sky-600" />
-              <span className="mt-2 block text-xs text-slate-400">Loading reviews...</span>
-            </div>
-          )}
+              {!loadingUsers && filteredUsers.length === 0 && (
+                <tr>
+                  <td colSpan={5} className="py-16 text-center text-slate-400">
+                    <Users className="mx-auto h-8 w-8 mb-2 text-slate-300 dark:text-neutral-700" />
+                    <p className="text-xs font-semibold text-slate-400">No users found</p>
+                  </td>
+                </tr>
+              )}
 
-          {!loadingReviews && filteredReviews.length === 0 && (
-            <div className="py-16 text-center bg-white dark:bg-neutral-900 rounded-3xl border border-slate-200 dark:border-neutral-800">
-              <MessageSquare className="mx-auto h-8 w-8 mb-2 stroke-1 text-slate-400 opacity-50" />
-              <p className="font-semibold text-slate-700 dark:text-slate-300">No matching reviews found.</p>
-              <p className="text-xs text-slate-400 mt-1">Try resetting the rating or search filters.</p>
-            </div>
-          )}
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {filteredReviews.map((r) => {
-              const matchedUser = users.find((u) => u.id === r.user_id || u.name === r.user_name);
-              return (
-                <div
-                  key={`${r.review_type}:${r.id}`}
-                  className="p-6 bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-3xl shadow-xs space-y-3 flex flex-col justify-between"
-                >
-                  <div className="space-y-3">
-                    <div className="flex items-start justify-between gap-2">
-                      <div className="space-y-1">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-bold text-sm text-slate-900 dark:text-white">
-                            {r.user_name}
-                          </span>
-                          {matchedUser && (
-                            <button
-                              type="button"
-                              onClick={() => setSelectedUser(matchedUser)}
-                              className="text-[11px] font-semibold text-sky-600 dark:text-sky-400 hover:underline inline-flex items-center gap-0.5"
-                            >
-                              <span>View Profile</span>
-                              <ExternalLink className="w-2.5 h-2.5" />
-                            </button>
-                          )}
-                        </div>
-
-                        <div className="flex items-center gap-2 text-xs text-slate-400 flex-wrap">
-                          <span className="inline-flex items-center gap-1 font-semibold text-slate-700 dark:text-slate-300">
-                            {r.review_type === 'beach' ? (
-                              <Palmtree className="w-3.5 h-3.5 text-sky-600" />
-                            ) : (
-                              <MessageSquare className="w-3.5 h-3.5 text-[#1F3F74] dark:text-[#38BDF8]" />
-                            )}
-                            {r.beach_name}
-                          </span>
-                          <span>•</span>
-                          <span>{new Date(r.created_at).toLocaleDateString()}</span>
-                        </div>
-                      </div>
-
-                      <div className="flex items-center gap-2">
-                        <StarRating rating={r.rating} size="sm" />
-                      </div>
-                    </div>
-
-                    <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed bg-slate-50 dark:bg-neutral-800/50 p-3.5 rounded-2xl border border-slate-100 dark:border-neutral-800">
-                      &ldquo;{r.comment}&rdquo;
-                    </p>
-                  </div>
-
-                  <div className="flex items-center justify-between pt-2 border-t border-slate-100 dark:border-neutral-800 text-xs">
-                    <span className="text-[11px] text-slate-400 uppercase tracking-wider font-semibold">
-                      {r.review_type} review
-                    </span>
-
-                    <button
-                      type="button"
-                      onClick={() => handleDeleteReview(r)}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-full transition-colors cursor-pointer"
+              {!loadingUsers &&
+                filteredUsers.map((u) => {
+                  const isSelf = u.id === currentAdminId;
+                  return (
+                    <tr
+                      key={u.id}
+                      className="hover:bg-slate-50/70 dark:hover:bg-neutral-800/30 transition-colors"
                     >
-                      <Trash2 className="w-3.5 h-3.5" />
-                      <span>Delete Review</span>
-                    </button>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
+                      {/* User (Avatar, Name, Email) */}
+                      <td className="py-3.5 px-5">
+                        <div className="flex items-center gap-3">
+                          <div
+                            className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-xs uppercase shrink-0 ${
+                              u.role === 'admin'
+                                ? 'bg-[#1F3F74] text-white'
+                                : u.role === 'beach_owner'
+                                  ? 'bg-sky-100 dark:bg-sky-950/80 text-sky-700 dark:text-sky-300'
+                                  : 'bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300'
+                            }`}
+                          >
+                            {u.name ? u.name.charAt(0) : 'U'}
+                          </div>
+                          <div className="min-w-0">
+                            <div className="flex items-center gap-2">
+                              <span className="font-bold text-xs sm:text-sm text-[#1F3F74] dark:text-white truncate">
+                                {u.name}
+                              </span>
+                              {isSelf && (
+                                <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#1F3F74]/10 text-[#1F3F74] dark:bg-sky-500/20 dark:text-sky-300">
+                                  You
+                                </span>
+                              )}
+                            </div>
+                            <span className="text-[11px] text-slate-400 dark:text-neutral-400 block truncate">
+                              {u.email}
+                            </span>
+                          </div>
+                        </div>
+                      </td>
+
+                      {/* Role */}
+                      <td className="py-3.5 px-5 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold ${
+                            u.role === 'admin'
+                              ? 'bg-[#1F3F74]/10 text-[#1F3F74] dark:bg-[#1F3F74]/40 dark:text-[#38BDF8]'
+                              : u.role === 'beach_owner'
+                                ? 'bg-sky-50 text-sky-700 dark:bg-sky-950/60 dark:text-sky-300'
+                                : 'bg-slate-100 text-slate-600 dark:bg-neutral-800 dark:text-neutral-300'
+                          }`}
+                        >
+                          <span>{getRoleLabel(u.role)}</span>
+                        </span>
+                      </td>
+
+                      {/* Status */}
+                      <td className="py-3.5 px-5 whitespace-nowrap">
+                        <span
+                          className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold capitalize ${
+                            u.status === 'active'
+                              ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400'
+                              : u.status === 'deactivated'
+                                ? 'bg-slate-100 text-slate-600 dark:bg-neutral-800 dark:text-neutral-400'
+                                : 'bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-400'
+                          }`}
+                        >
+                          <span
+                            className={`w-1.5 h-1.5 rounded-full ${
+                              u.status === 'active'
+                                ? 'bg-emerald-500'
+                                : u.status === 'deactivated'
+                                  ? 'bg-slate-400'
+                                  : 'bg-rose-500'
+                            }`}
+                          />
+                          <span>{u.status}</span>
+                        </span>
+                      </td>
+
+                      {/* Joined Date */}
+                      <td className="py-3.5 px-5 whitespace-nowrap text-slate-500 dark:text-neutral-400">
+                        {new Date(u.joined).toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })}
+                      </td>
+
+                      {/* Single View Action Button */}
+                      <td className="py-3.5 px-5 text-right whitespace-nowrap">
+                        <button
+                          type="button"
+                          onClick={() => setSelectedUser(u)}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-1.5 text-xs font-bold text-[#1F3F74] dark:text-white shadow-2xs transition hover:border-[#4987BA] hover:text-[#4987BA] cursor-pointer"
+                        >
+                          <Eye className="w-3.5 h-3.5" />
+                          <span>View</span>
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
+            </tbody>
+          </table>
         </div>
-      )}
-
-      {/* ========================================================================= */}
-      {/* TAB 3: REPORTED REVIEWS                                                   */}
-      {/* ========================================================================= */}
-      {activeTab === 'reports' && (
-        <div className="space-y-4">
-          <div className="bg-amber-50 dark:bg-amber-950/30 p-5 rounded-3xl border border-amber-200 dark:border-amber-800/50 flex items-start gap-3">
-            <AlertTriangle className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0 mt-0.5" />
-            <div className="space-y-1">
-              <h2 className="text-sm font-bold text-amber-900 dark:text-amber-200">
-                Resort Owner Review Moderation Queue ({reports.length})
-              </h2>
-              <p className="text-xs text-amber-800 dark:text-amber-300 leading-relaxed">
-                Beach resort proprietors can flag reviews they suspect violate municipal conduct standards or contain inappropriate statements. Review each case and either remove the review or dismiss the report.
-              </p>
-            </div>
-          </div>
-
-          {loadingReviews && (
-            <div className="py-16 text-center">
-              <Loader2 className="mx-auto h-7 w-7 animate-spin text-amber-600" />
-              <span className="mt-2 block text-xs text-slate-400">Loading flagged reports...</span>
-            </div>
-          )}
-
-          {!loadingReviews && reports.length === 0 && (
-            <div className="py-16 text-center bg-white dark:bg-neutral-900 rounded-3xl border border-slate-200 dark:border-neutral-800">
-              <CheckCircle2 className="mx-auto h-8 w-8 mb-2 text-emerald-500 stroke-1" />
-              <p className="font-semibold text-slate-700 dark:text-slate-300">All clear!</p>
-              <p className="text-xs text-slate-400 mt-1">There are no pending owner reports awaiting moderation.</p>
-            </div>
-          )}
-
-          <div className="space-y-3">
-            {reports.map((report) => (
-              <article
-                key={report.id}
-                className="p-6 bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-3xl shadow-xs space-y-4"
-              >
-                <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
-                  <div className="flex items-center gap-2">
-                    <strong className="text-sm font-bold text-slate-900 dark:text-white">
-                      {report.beach}
-                    </strong>
-                    <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-100 dark:bg-amber-950 text-amber-800 dark:text-amber-300 uppercase">
-                      Pending Review
-                    </span>
-                  </div>
-                  <span className="text-slate-400">
-                    Reported by <strong>{report.reporter}</strong> on{' '}
-                    {new Date(report.created_at).toLocaleDateString()}
-                  </span>
-                </div>
-
-                <div className="space-y-1">
-                  <span className="text-[11px] uppercase tracking-wider font-bold text-slate-400 block">
-                    Reason Given:
-                  </span>
-                  <p className="text-xs sm:text-sm text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-slate-800/60 p-3 rounded-lg border border-slate-100 dark:border-slate-800">
-                    {report.reason}
-                  </p>
-                </div>
-
-                {report.review && (
-                  <div className="space-y-1">
-                    <span className="text-[11px] uppercase tracking-wider font-bold text-slate-400 block">
-                      Target Review Content:
-                    </span>
-                    <blockquote className="border-l-4 border-amber-400 pl-3 py-1 text-xs sm:text-sm text-slate-600 dark:text-slate-300 italic">
-                      &ldquo;{report.review.comment}&rdquo;
-                      <div className="mt-1 flex items-center gap-1 not-italic">
-                        <StarRating rating={report.review.rating} size="sm" />
-                      </div>
-                    </blockquote>
-                  </div>
-                )}
-
-                <div className="flex items-center gap-2 pt-2 border-t border-slate-100 dark:border-slate-800">
-                  <button
-                    type="button"
-                    onClick={() => void handleReportDecision(report.id, 'remove')}
-                    className="px-3.5 py-1.5 rounded-lg bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold transition-colors shadow-xs"
-                  >
-                    Remove Inappropriate Review
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => void handleReportDecision(report.id, 'dismiss')}
-                    className="px-3.5 py-1.5 rounded-lg border border-slate-300 dark:border-slate-700 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 text-xs font-semibold transition-colors"
-                  >
-                    Dismiss Report (Keep Review)
-                  </button>
-                </div>
-              </article>
-            ))}
-          </div>
-        </div>
-      )}
+      </div>
 
       {/* ========================================================================= */}
       {/* MODAL 1: USER DETAILS MODAL                                               */}
       {/* ========================================================================= */}
       {selectedUser && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-neutral-900 rounded-3xl max-w-xl w-full p-6 shadow-2xl border border-slate-200 dark:border-neutral-800 space-y-6 my-8">
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 dark:border-neutral-800 overflow-hidden my-8">
             {/* Modal Header */}
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-4">
+            <div className="px-6 py-4 border-b border-slate-100 dark:border-neutral-800 flex items-start justify-between gap-4">
+              <div className="flex items-center gap-3.5 min-w-0">
                 <div
-                  className={`w-14 h-14 rounded-2xl flex items-center justify-center text-xl font-bold uppercase flex-shrink-0 ${selectedUser.role === 'admin'
-                      ? 'bg-[#1F3F74]/15 dark:bg-[#1F3F74]/40 text-[#1F3F74] dark:text-[#38BDF8]'
+                  className={`w-11 h-11 rounded-xl flex items-center justify-center text-base font-extrabold uppercase shrink-0 ${
+                    selectedUser.role === 'admin'
+                      ? 'bg-[#1F3F74] text-white'
                       : selectedUser.role === 'beach_owner'
                         ? 'bg-sky-100 dark:bg-sky-950 text-sky-700 dark:text-sky-300'
-                        : 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300'
-                    }`}
+                        : 'bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300'
+                  }`}
                 >
                   {selectedUser.name ? selectedUser.name.charAt(0) : 'U'}
                 </div>
-                <div>
-                  <h3 className="text-xl font-bold text-slate-900 dark:text-white">
-                    {selectedUser.name}
-                  </h3>
-                  <div className="flex items-center gap-2 mt-1">
-                    <span className="text-xs text-slate-400">{selectedUser.email}</span>
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <h3 className="text-base font-extrabold text-[#1F3F74] dark:text-white truncate">
+                      {selectedUser.name}
+                    </h3>
+                    {selectedUser.id === currentAdminId && (
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-[#1F3F74]/10 text-[#1F3F74] dark:bg-sky-500/20 dark:text-sky-300">
+                        You
+                      </span>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2 mt-0.5">
+                    <span className="text-xs text-slate-500 dark:text-neutral-400 truncate">
+                      {selectedUser.email}
+                    </span>
                     <button
                       type="button"
                       onClick={() => copyToClipboard(selectedUser.id)}
-                      className="text-slate-400 hover:text-slate-600 dark:hover:text-white"
+                      className="text-slate-400 hover:text-[#1F3F74] dark:hover:text-white transition-colors cursor-pointer"
                       title="Copy User ID"
                     >
                       {copiedId ? <Check className="w-3.5 h-3.5 text-emerald-500" /> : <Copy className="w-3.5 h-3.5" />}
@@ -1393,197 +759,170 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
               <button
                 type="button"
                 onClick={() => setSelectedUser(null)}
-                className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-slate-800"
+                className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+                aria-label="Close modal"
               >
                 <XCircle className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Badges Bar */}
-            <div className="flex flex-wrap items-center gap-2">
-              <span className="px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300">
-                Role: {selectedUser.role.replace('_', ' ')}
-              </span>
-              <span
-                className={`px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider ${selectedUser.status === 'active'
-                    ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                    : selectedUser.status === 'deactivated'
-                      ? 'bg-slate-100 text-slate-800 dark:bg-slate-800 dark:text-slate-300'
-                      : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
+            <div className="p-6 space-y-5">
+              {/* Badges Bar */}
+              <div className="flex flex-wrap items-center gap-2">
+                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold bg-[#1F3F74]/10 text-[#1F3F74] dark:bg-[#1F3F74]/40 dark:text-[#38BDF8]">
+                  <Shield className="w-3.5 h-3.5" />
+                  <span>{getRoleLabel(selectedUser.role)}</span>
+                </span>
+                <span
+                  className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold capitalize ${
+                    selectedUser.status === 'active'
+                      ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-300'
+                      : selectedUser.status === 'deactivated'
+                        ? 'bg-slate-100 text-slate-700 dark:bg-neutral-800 dark:text-neutral-300'
+                        : 'bg-rose-50 text-rose-700 dark:bg-rose-950/60 dark:text-rose-300'
                   }`}
-              >
-                Status: {selectedUser.status}
-              </span>
-              {selectedUser.has_pin && (
-                <span className="px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300">
-                  PIN Configured
+                >
+                  <span
+                    className={`w-1.5 h-1.5 rounded-full ${
+                      selectedUser.status === 'active'
+                        ? 'bg-emerald-500'
+                        : selectedUser.status === 'deactivated'
+                          ? 'bg-slate-400'
+                          : 'bg-rose-500'
+                    }`}
+                  />
+                  <span>{selectedUser.status}</span>
                 </span>
-              )}
-            </div>
-
-            {/* Details Grid */}
-            <div className="grid grid-cols-2 gap-4 text-xs bg-slate-50 dark:bg-slate-800/40 p-4 rounded-xl border border-slate-100 dark:border-slate-800">
-              <div>
-                <span className="text-slate-400 font-semibold block uppercase tracking-wider text-[10px]">
-                  Registered Date
-                </span>
-                <span className="font-bold text-slate-800 dark:text-slate-200 mt-0.5 block">
-                  {new Date(selectedUser.joined).toLocaleString()}
-                </span>
-              </div>
-
-              <div>
-                <span className="text-slate-400 font-semibold block uppercase tracking-wider text-[10px]">
-                  Last Sign In
-                </span>
-                <span className="font-bold text-slate-800 dark:text-slate-200 mt-0.5 block">
-                  {selectedUser.last_sign_in_at
-                    ? new Date(selectedUser.last_sign_in_at).toLocaleString()
-                    : 'Never recorded'}
-                </span>
-              </div>
-
-              <div>
-                <span className="text-slate-400 font-semibold block uppercase tracking-wider text-[10px]">
-                  Municipality / Location
-                </span>
-                <span className="font-bold text-slate-800 dark:text-slate-200 mt-0.5 block">
-                  {selectedUser.location || 'Not specified (Catmon, Cebu)'}
-                </span>
-              </div>
-
-              <div>
-                <span className="text-slate-400 font-semibold block uppercase tracking-wider text-[10px]">
-                  Total Reviews Written
-                </span>
-                <span className="font-bold text-slate-800 dark:text-slate-200 mt-0.5 block">
-                  {selectedUser.reviews_count} submission(s)
-                </span>
-              </div>
-            </div>
-
-            {/* Status Reason Notice if Deactivated or Suspended */}
-            {selectedUser.status !== 'active' && (
-              <div className="p-3 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900 rounded-xl space-y-1">
-                <span className="text-xs font-bold text-rose-800 dark:text-rose-300 block">
-                  Account {selectedUser.status} notice:
-                </span>
-                <p className="text-xs text-rose-700 dark:text-rose-400">
-                  {selectedUser.status_reason || 'No administrative reason recorded.'}
-                </p>
-                {selectedUser.status_updated_at && (
-                  <span className="text-[10px] text-rose-500 block">
-                    Updated on {new Date(selectedUser.status_updated_at).toLocaleString()}
+                {selectedUser.has_pin && (
+                  <span className="inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-bold bg-amber-50 text-amber-700 dark:bg-amber-950/50 dark:text-amber-300">
+                    <KeyRound className="w-3 h-3" />
+                    <span>PIN Active</span>
                   </span>
                 )}
               </div>
-            )}
 
-            {/* Associated Beaches if any */}
-            {selectedUser.beaches.length > 0 && (
-              <div className="space-y-2">
-                <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider block">
-                  Owned Beach Listings ({selectedUser.beaches.length})
-                </span>
-                <div className="flex flex-wrap gap-2">
-                  {selectedUser.beaches.map((b) => (
-                    <span
-                      key={b.id}
-                      className="px-3 py-1 rounded-lg bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 text-xs font-semibold inline-flex items-center gap-1.5"
-                    >
-                      <Palmtree className="w-3.5 h-3.5" />
-                      {b.name}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* Recent Reviews Preview */}
-            {selectedUser.recent_reviews && selectedUser.recent_reviews.length > 0 && (
-              <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <span className="text-xs font-bold text-slate-700 dark:text-slate-300 uppercase tracking-wider">
-                    Recent Reviews by User
+              {/* Details Grid */}
+              <div className="grid grid-cols-3 gap-3.5 text-xs bg-slate-50 dark:bg-neutral-800/40 p-4 rounded-xl border border-slate-100 dark:border-neutral-800">
+                <div>
+                  <span className="text-slate-400 font-bold block uppercase tracking-wider text-[10px]">
+                    Joined
                   </span>
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setSelectedUser(null);
-                      handleViewUserReviews(selectedUser);
-                    }}
-                    className="text-xs text-sky-600 font-semibold hover:underline"
-                  >
-                    View in Moderation Tab →
-                  </button>
+                  <span className="font-bold text-slate-800 dark:text-neutral-200 mt-1 block">
+                    {new Date(selectedUser.joined).toLocaleDateString(undefined, {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    })}
+                  </span>
                 </div>
-                <div className="space-y-2 max-h-40 overflow-y-auto pr-1">
-                  {selectedUser.recent_reviews.map((r) => (
-                    <div
-                      key={r.id}
-                      className="p-2.5 rounded-lg bg-slate-50 dark:bg-slate-800/60 border border-slate-100 dark:border-slate-800 text-xs space-y-1"
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="font-semibold text-slate-800 dark:text-slate-200">
-                          {r.beach_name}
-                        </span>
-                        <StarRating rating={r.rating} size="sm" />
-                      </div>
-                      <p className="text-slate-600 dark:text-slate-400 italic">
-                        &ldquo;{r.comment}&rdquo;
-                      </p>
-                    </div>
-                  ))}
+
+                <div>
+                  <span className="text-slate-400 font-bold block uppercase tracking-wider text-[10px]">
+                    Last Sign In
+                  </span>
+                  <span className="font-bold text-slate-800 dark:text-neutral-200 mt-1 block">
+                    {selectedUser.last_sign_in_at
+                      ? new Date(selectedUser.last_sign_in_at).toLocaleDateString(undefined, {
+                          year: 'numeric',
+                          month: 'short',
+                          day: 'numeric',
+                        })
+                      : 'Never'}
+                  </span>
+                </div>
+
+                <div>
+                  <span className="text-slate-400 font-bold block uppercase tracking-wider text-[10px]">
+                    Location
+                  </span>
+                  <span className="font-bold text-slate-800 dark:text-neutral-200 mt-1 block truncate">
+                    {selectedUser.location || 'Not set'}
+                  </span>
                 </div>
               </div>
-            )}
 
-            {/* Modal Actions */}
-            <div className="flex flex-wrap items-center justify-end gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
-              <button
-                type="button"
-                onClick={() => {
-                  const target = selectedUser;
-                  setSelectedUser(null);
-                  openEditModal(target);
-                }}
-                className="px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg transition-colors inline-flex items-center gap-1.5"
-              >
-                <Edit3 className="w-3.5 h-3.5" />
-                <span>Edit User</span>
-              </button>
+              {/* Status Reason Notice if Deactivated or Suspended */}
+              {selectedUser.status !== 'active' && (
+                <div className="p-3.5 bg-rose-50 dark:bg-rose-950/30 border border-rose-200 dark:border-rose-900 rounded-xl space-y-1">
+                  <span className="text-xs font-bold text-rose-800 dark:text-rose-300 capitalize block">
+                    {selectedUser.status} Reason
+                  </span>
+                  <p className="text-xs text-rose-700 dark:text-rose-400">
+                    {selectedUser.status_reason || 'No reason recorded.'}
+                  </p>
+                </div>
+              )}
 
-              {selectedUser.id !== currentAdminId && (
+              {/* Associated Beaches if any */}
+              {selectedUser.beaches.length > 0 && (
+                <div className="space-y-2">
+                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider block">
+                    Beaches ({selectedUser.beaches.length})
+                  </span>
+                  <div className="flex flex-wrap gap-2">
+                    {selectedUser.beaches.map((b) => (
+                      <span
+                        key={b.id}
+                        className="px-3 py-1 rounded-full bg-sky-50 dark:bg-sky-950/50 text-sky-700 dark:text-sky-300 border border-sky-200 dark:border-sky-800 text-xs font-bold inline-flex items-center gap-1.5"
+                      >
+                        <Palmtree className="w-3.5 h-3.5" />
+                        {b.name}
+                      </span>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Footer Actions */}
+            <div className="px-6 py-4 bg-slate-50/70 dark:bg-black/30 border-t border-slate-100 dark:border-neutral-800 flex flex-wrap items-center justify-between gap-2">
+              <div className="flex flex-wrap items-center gap-2">
                 <button
                   type="button"
                   onClick={() => {
                     const target = selectedUser;
                     setSelectedUser(null);
-                    openStatusModal(target);
+                    openEditModal(target);
                   }}
-                  className={`px-3.5 py-2 text-xs font-semibold rounded-lg transition-colors inline-flex items-center gap-1.5 ${selectedUser.status === 'active'
-                      ? 'bg-rose-50 text-rose-700 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300'
-                      : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300'
-                    }`}
+                  className="px-4 py-2 text-xs font-bold text-white bg-[#1F3F74] hover:bg-[#18325c] dark:bg-sky-600 dark:hover:bg-sky-500 rounded-xl transition-colors inline-flex items-center gap-1.5 shadow-2xs cursor-pointer"
                 >
-                  <ShieldAlert className="w-3.5 h-3.5" />
-                  <span>Change Status</span>
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Edit</span>
                 </button>
-              )}
 
-              <button
-                type="button"
-                onClick={() => {
-                  const target = selectedUser;
-                  setSelectedUser(null);
-                  setResetPinUser(target);
-                  setNewPin('');
-                }}
-                className="px-3.5 py-2 text-xs font-semibold text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-950/50 hover:bg-sky-100 rounded-lg transition-colors inline-flex items-center gap-1.5"
-              >
-                <KeyRound className="w-3.5 h-3.5" />
-                <span>Reset PIN</span>
-              </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    const target = selectedUser;
+                    setSelectedUser(null);
+                    setResetPinUser(target);
+                    setNewPin('');
+                  }}
+                  className="px-3.5 py-2 text-xs font-bold text-slate-700 dark:text-neutral-200 bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 hover:border-sky-500 rounded-xl transition-colors inline-flex items-center gap-1.5 cursor-pointer"
+                >
+                  <KeyRound className="w-3.5 h-3.5 text-sky-600 dark:text-sky-400" />
+                  <span>Reset PIN</span>
+                </button>
+
+                {selectedUser.id !== currentAdminId && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      const target = selectedUser;
+                      setSelectedUser(null);
+                      openStatusModal(target);
+                    }}
+                    className={`px-3.5 py-2 text-xs font-bold rounded-xl transition-colors inline-flex items-center gap-1.5 cursor-pointer ${
+                      selectedUser.status === 'active'
+                        ? 'bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300 border border-amber-200 dark:border-amber-800/60'
+                        : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-800/60'
+                    }`}
+                  >
+                    <ShieldAlert className="w-3.5 h-3.5" />
+                    <span>Status</span>
+                  </button>
+                )}
+              </div>
 
               {selectedUser.id !== currentAdminId && (
                 <button
@@ -1593,7 +932,7 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
                     setSelectedUser(null);
                     openDeleteModal(target);
                   }}
-                  className="px-3.5 py-2 text-xs font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 dark:hover:bg-red-950/30 rounded-lg transition-colors inline-flex items-center gap-1.5"
+                  className="px-3.5 py-2 text-xs font-bold text-rose-600 hover:text-rose-700 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-xl transition-colors inline-flex items-center gap-1.5 cursor-pointer"
                 >
                   <Trash2 className="w-3.5 h-3.5" />
                   <span>Delete</span>
@@ -1609,97 +948,93 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
       {/* ========================================================================= */}
       {editingUser && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-neutral-900 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-neutral-800 space-y-5 my-8">
-            <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                  Edit User Information
-                </h3>
-                <p className="text-xs text-slate-400">
-                  Update personal profile data and role permissions.
-                </p>
-              </div>
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 dark:border-neutral-800 overflow-hidden my-8">
+            <div className="px-6 py-4 border-b border-slate-100 dark:border-neutral-800 flex items-center justify-between">
+              <h3 className="text-base font-extrabold text-[#1F3F74] dark:text-white">
+                Edit User
+              </h3>
               <button
                 type="button"
                 onClick={() => setEditingUser(null)}
-                className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-lg"
+                className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+                aria-label="Close modal"
               >
                 <XCircle className="w-5 h-5" />
               </button>
             </div>
 
-            <form onSubmit={handleSaveUser} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Full Name
+            <form onSubmit={handleSaveUser} className="p-6 space-y-4">
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
+                  Full Name *
                 </label>
                 <input
                   type="text"
                   value={editFormData.name}
                   onChange={(e) => setEditFormData({ ...editFormData, name: e.target.value })}
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-slate-900 dark:text-white focus:outline-none focus:border-[#4987BA]"
                   required
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Email Address
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
+                  Email Address *
                 </label>
                 <input
                   type="email"
                   value={editFormData.email}
                   onChange={(e) => setEditFormData({ ...editFormData, email: e.target.value })}
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-slate-900 dark:text-white focus:outline-none focus:border-[#4987BA]"
                   required
                 />
               </div>
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Platform Role
-                </label>
-                <select
-                  value={editFormData.role}
-                  onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value as any })}
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
-                >
-                  <option value="user">Regular Tourist (user)</option>
-                  <option value="beach_owner">Resort Owner (beach_owner)</option>
-                  <option value="beach_manager">Resort Manager (beach_manager)</option>
-                  <option value="admin">Administrator (admin)</option>
-                </select>
-                <p className="text-[10px] text-slate-400 mt-1">
-                  Note: Elevating to Administrator grants full municipal privileges across all beaches and moderation.
-                </p>
-              </div>
+              {editingUser.role !== 'admin' && (
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
+                    Role
+                  </label>
+                  <div className="relative">
+                    <select
+                      value={editFormData.role}
+                      onChange={(e) => setEditFormData({ ...editFormData, role: e.target.value as any })}
+                      className="w-full appearance-none px-3.5 pr-10 py-2 text-xs font-bold rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-slate-900 dark:text-white focus:outline-none focus:border-[#4987BA] cursor-pointer"
+                    >
+                      <option value="user">User</option>
+                      <option value="beach_owner">Beach Owner</option>
+                    </select>
+                    <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+                  </div>
+                </div>
+              )}
 
-              <div>
-                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1">
-                  Location / Municipality
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
+                  Location
                 </label>
                 <input
                   type="text"
                   placeholder="e.g. Catmon, Cebu"
                   value={editFormData.location}
                   onChange={(e) => setEditFormData({ ...editFormData, location: e.target.value })}
-                  className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                  className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-slate-900 dark:text-white focus:outline-none focus:border-[#4987BA]"
                 />
               </div>
 
-              <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+              <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100 dark:border-neutral-800">
                 <button
                   type="button"
                   onClick={() => setEditingUser(null)}
                   disabled={submitting}
-                  className="px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                  className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 rounded-xl transition-colors cursor-pointer"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={submitting}
-                  className="px-4 py-2 text-xs font-bold text-white bg-sky-600 hover:bg-sky-500 rounded-lg transition-colors flex items-center gap-1.5 shadow-xs"
+                  className="px-5 py-2 text-xs font-bold text-white bg-[#1F3F74] hover:bg-[#18325c] dark:bg-sky-600 dark:hover:bg-sky-500 rounded-xl transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
                 >
                   {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
                   <span>Save Changes</span>
@@ -1715,37 +1050,35 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
       {/* ========================================================================= */}
       {statusModalUser && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-neutral-900 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-slate-200 dark:border-neutral-800 space-y-5 my-8">
-            <div className="flex items-center justify-between">
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl max-w-lg w-full shadow-2xl border border-slate-200 dark:border-neutral-800 overflow-hidden my-8">
+            <div className="px-6 py-4 border-b border-slate-100 dark:border-neutral-800 flex items-center justify-between">
               <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                  Manage Account Status
+                <h3 className="text-base font-extrabold text-[#1F3F74] dark:text-white">
+                  Account Status
                 </h3>
-                <p className="text-xs text-slate-400">
-                  Target: <strong>{statusModalUser.name}</strong> ({statusModalUser.email})
+                <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
+                  {statusModalUser.name} ({statusModalUser.email})
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setStatusModalUser(null)}
-                className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-lg"
+                className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+                aria-label="Close modal"
               >
                 <XCircle className="w-5 h-5" />
               </button>
             </div>
 
-            <div className="space-y-3">
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Choose Desired Account State:
-              </label>
-
+            <div className="p-6 space-y-4">
               <div className="grid grid-cols-1 gap-2.5">
                 {/* Active */}
                 <label
-                  className={`p-3 rounded-xl border flex items-start gap-3 cursor-pointer transition-colors ${targetStatus === 'active'
+                  className={`p-3.5 rounded-xl border flex items-center gap-3 cursor-pointer transition-all ${
+                    targetStatus === 'active'
                       ? 'border-emerald-500 bg-emerald-50/60 dark:bg-emerald-950/30'
-                      : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
-                    }`}
+                      : 'border-slate-200 dark:border-neutral-800 hover:bg-slate-50 dark:hover:bg-neutral-800/60'
+                  }`}
                 >
                   <input
                     type="radio"
@@ -1753,25 +1086,21 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
                     value="active"
                     checked={targetStatus === 'active'}
                     onChange={() => setTargetStatus('active')}
-                    className="mt-0.5 text-emerald-600 focus:ring-emerald-500"
+                    className="text-emerald-600 focus:ring-emerald-500"
                   />
-                  <div>
-                    <div className="flex items-center gap-1.5 font-bold text-xs text-emerald-700 dark:text-emerald-400">
-                      <UserCheck className="w-4 h-4" />
-                      <span>Activate Account</span>
-                    </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                      Account has full access to login, submit reviews, and manage certified beaches.
-                    </p>
+                  <div className="flex items-center gap-1.5 font-bold text-xs text-emerald-700 dark:text-emerald-400">
+                    <UserCheck className="w-4 h-4" />
+                    <span>Active</span>
                   </div>
                 </label>
 
                 {/* Deactivate */}
                 <label
-                  className={`p-3 rounded-xl border flex items-start gap-3 cursor-pointer transition-colors ${targetStatus === 'deactivated'
-                      ? 'border-slate-500 bg-slate-100 dark:bg-slate-800'
-                      : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
-                    }`}
+                  className={`p-3.5 rounded-xl border flex items-center gap-3 cursor-pointer transition-all ${
+                    targetStatus === 'deactivated'
+                      ? 'border-slate-500 bg-slate-100/80 dark:bg-neutral-800'
+                      : 'border-slate-200 dark:border-neutral-800 hover:bg-slate-50 dark:hover:bg-neutral-800/60'
+                  }`}
                 >
                   <input
                     type="radio"
@@ -1779,25 +1108,21 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
                     value="deactivated"
                     checked={targetStatus === 'deactivated'}
                     onChange={() => setTargetStatus('deactivated')}
-                    className="mt-0.5 text-slate-600 focus:ring-slate-500"
+                    className="text-slate-600 focus:ring-slate-500"
                   />
-                  <div>
-                    <div className="flex items-center gap-1.5 font-bold text-xs text-slate-700 dark:text-slate-300">
-                      <Clock className="w-4 h-4" />
-                      <span>Deactivate Account</span>
-                    </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                      Temporarily pause account (e.g. user requested, seasonal hiatus). Does not mark account with violation penalty.
-                    </p>
+                  <div className="flex items-center gap-1.5 font-bold text-xs text-slate-700 dark:text-neutral-200">
+                    <Clock className="w-4 h-4" />
+                    <span>Deactivate</span>
                   </div>
                 </label>
 
                 {/* Suspend */}
                 <label
-                  className={`p-3 rounded-xl border flex items-start gap-3 cursor-pointer transition-colors ${targetStatus === 'suspended'
+                  className={`p-3.5 rounded-xl border flex items-center gap-3 cursor-pointer transition-all ${
+                    targetStatus === 'suspended'
                       ? 'border-rose-500 bg-rose-50/60 dark:bg-rose-950/30'
-                      : 'border-slate-200 dark:border-slate-700 hover:bg-slate-50 dark:hover:bg-slate-800'
-                    }`}
+                      : 'border-slate-200 dark:border-neutral-800 hover:bg-slate-50 dark:hover:bg-neutral-800/60'
+                  }`}
                 >
                   <input
                     type="radio"
@@ -1805,100 +1130,85 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
                     value="suspended"
                     checked={targetStatus === 'suspended'}
                     onChange={() => setTargetStatus('suspended')}
-                    className="mt-0.5 text-rose-600 focus:ring-rose-500"
+                    className="text-rose-600 focus:ring-rose-500"
                   />
-                  <div>
-                    <div className="flex items-center gap-1.5 font-bold text-xs text-rose-700 dark:text-rose-400">
-                      <ShieldAlert className="w-4 h-4" />
-                      <span>Suspend Account (Policy Violation)</span>
-                    </div>
-                    <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">
-                      Bans user from signing in due to terms violation, fraudulent permit filings, or abusive reviews.
-                    </p>
+                  <div className="flex items-center gap-1.5 font-bold text-xs text-rose-700 dark:text-rose-400">
+                    <ShieldAlert className="w-4 h-4" />
+                    <span>Suspend</span>
                   </div>
                 </label>
               </div>
 
               {targetStatus !== 'active' && (
-                <div className="space-y-1 pt-2">
-                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                    Administrative Reason / Moderation Notes <span className="text-rose-500">*</span>
+                <div className="space-y-1.5 pt-1">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
+                    Reason <span className="text-rose-500">*</span>
                   </label>
                   <textarea
                     rows={3}
-                    placeholder="Provide a clear explanation for this moderation action..."
+                    placeholder="Reason..."
                     value={statusReason}
                     onChange={(e) => setStatusReason(e.target.value)}
-                    className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+                    className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-slate-900 dark:text-white focus:outline-none focus:border-[#4987BA]"
                     required
                   />
                 </div>
               )}
-            </div>
 
-            <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
-              <button
-                type="button"
-                onClick={() => setStatusModalUser(null)}
-                disabled={submitting}
-                className="px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={handleSaveStatus}
-                disabled={submitting}
-                className="px-4 py-2 text-xs font-bold text-white bg-sky-600 hover:bg-sky-500 rounded-lg transition-colors flex items-center gap-1.5 shadow-xs"
-              >
-                {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                <span>Apply Status</span>
-              </button>
+              <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100 dark:border-neutral-800">
+                <button
+                  type="button"
+                  onClick={() => setStatusModalUser(null)}
+                  disabled={submitting}
+                  className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 rounded-xl transition-colors cursor-pointer"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveStatus}
+                  disabled={submitting}
+                  className="px-5 py-2 text-xs font-bold text-white bg-[#1F3F74] hover:bg-[#18325c] dark:bg-sky-600 dark:hover:bg-sky-500 rounded-xl transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
+                >
+                  {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                  <span>Apply</span>
+                </button>
+              </div>
             </div>
           </div>
         </div>
       )}
 
       {/* ========================================================================= */}
-      {/* MODAL 4: POLICY-DRIVEN ACCOUNT DELETION MODAL                             */}
+      {/* MODAL 4: ACCOUNT DELETION MODAL                                           */}
       {/* ========================================================================= */}
       {deleteModalUser && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-white dark:bg-neutral-900 rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-rose-200 dark:border-rose-900/60 space-y-5 my-8">
-            <div className="flex items-center gap-3 text-rose-600 dark:text-rose-400">
-              <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-950 flex items-center justify-center flex-shrink-0">
-                <Trash2 className="w-5 h-5" />
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-rose-200 dark:border-rose-900/60 space-y-4 my-8">
+            <div className="flex items-start justify-between gap-3">
+              <div className="flex items-center gap-3 text-rose-600 dark:text-rose-400">
+                <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-950 flex items-center justify-center shrink-0">
+                  <Trash2 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-slate-900 dark:text-white">
+                    Delete Account
+                  </h3>
+                  <p className="text-xs text-rose-600 dark:text-rose-400">
+                    {deleteModalUser.name} ({deleteModalUser.email})
+                  </p>
+                </div>
               </div>
-              <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                  Municipal Account Deletion Policy
-                </h3>
-                <p className="text-xs text-rose-600 dark:text-rose-400">
-                  Target Account: <strong>{deleteModalUser.name}</strong> ({deleteModalUser.email})
-                </p>
-              </div>
+              <button
+                type="button"
+                onClick={() => setDeleteModalUser(null)}
+                className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+              >
+                <XCircle className="w-5 h-5" />
+              </button>
             </div>
 
-            {/* Clear Municipal Policy Box */}
-            <div className="p-4 rounded-xl bg-rose-50/70 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-900 text-xs text-slate-700 dark:text-slate-300 space-y-2">
-              <p className="font-bold text-rose-900 dark:text-rose-300">
-                Please review the data deletion safeguards before proceeding:
-              </p>
-              <ul className="list-disc pl-4 space-y-1 text-slate-600 dark:text-slate-400">
-                <li>
-                  <strong>Permanent Purge:</strong> All authentication credentials, login passes, and user profile metadata will be permanently eradicated.
-                </li>
-                <li>
-                  <strong>Listing Safeguard:</strong> Any beach resort listings owned by this account will be preserved and unassigned to prevent directory disruption.
-                </li>
-                <li>
-                  <strong>Auditing Integrity:</strong> Historical visitor transaction records and submitted permits remain archived for municipal transparency.
-                </li>
-              </ul>
-            </div>
-
-            {/* Policy Checkbox */}
-            <label className="flex items-start gap-2.5 cursor-pointer text-xs text-slate-700 dark:text-slate-300 select-none">
+            <label className="flex items-start gap-2.5 cursor-pointer text-xs text-slate-700 dark:text-neutral-300 select-none">
               <input
                 type="checkbox"
                 checked={deletePolicyAccepted}
@@ -1906,30 +1216,29 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
                 className="mt-0.5 rounded text-rose-600 focus:ring-rose-500"
               />
               <span>
-                I confirm that I have reviewed the municipal account deletion policy and this removal is justified and authorized.
+                I confirm that permanently deleting this account is authorized.
               </span>
             </label>
 
-            {/* Type to Confirm */}
-            <div className="space-y-1">
-              <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">
-                Type <strong>{deleteModalUser.email}</strong> or <strong>DELETE</strong> to confirm:
+            <div className="space-y-1.5">
+              <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
+                Type <strong>DELETE</strong> to confirm:
               </label>
               <input
                 type="text"
-                placeholder="Type here..."
+                placeholder="DELETE"
                 value={deleteConfirmText}
                 onChange={(e) => setDeleteConfirmText(e.target.value)}
-                className="w-full px-3 py-2 text-xs rounded-lg border border-slate-300 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-rose-500"
+                className="w-full px-3.5 py-2 text-xs rounded-xl border border-slate-300 dark:border-neutral-700 bg-white dark:bg-black text-slate-900 dark:text-white focus:outline-none focus:border-rose-500"
               />
             </div>
 
-            <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-neutral-800">
               <button
                 type="button"
                 onClick={() => setDeleteModalUser(null)}
                 disabled={submitting}
-                className="px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 rounded-xl transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -1942,10 +1251,10 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
                   (deleteConfirmText.trim().toLowerCase() !== 'delete' &&
                     deleteConfirmText.trim().toLowerCase() !== deleteModalUser.email.trim().toLowerCase())
                 }
-                className="px-4 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-colors flex items-center gap-1.5 shadow-xs"
+                className="px-5 py-2 text-xs font-bold text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
               >
                 {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                <span>Permanently Delete Account</span>
+                <span>Delete</span>
               </button>
             </div>
           </div>
@@ -1957,44 +1266,46 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
       {/* ========================================================================= */}
       {resetPinUser && (
         <div className="fixed inset-0 bg-black/60 backdrop-blur-xs flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-neutral-900 rounded-3xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-neutral-800 space-y-4">
+          <div className="bg-white dark:bg-neutral-900 rounded-2xl max-w-md w-full p-6 shadow-2xl border border-slate-200 dark:border-neutral-800 space-y-4">
             <div className="flex items-center justify-between">
-              <div>
-                <h3 className="text-lg font-bold text-slate-900 dark:text-white">
-                  Reset 6-Digit PIN Pass
-                </h3>
-                <p className="text-xs text-slate-400">
-                  Target: <strong>{resetPinUser.name}</strong>
-                </p>
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-xl bg-sky-50 dark:bg-sky-950/60 flex items-center justify-center text-sky-600 dark:text-sky-400">
+                  <KeyRound className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="text-base font-extrabold text-[#1F3F74] dark:text-white">
+                    Reset 6-Digit PIN
+                  </h3>
+                  <p className="text-xs text-slate-500 dark:text-neutral-400">
+                    {resetPinUser.name}
+                  </p>
+                </div>
               </div>
               <button
                 type="button"
                 onClick={() => setResetPinUser(null)}
-                className="p-1 text-slate-400 hover:text-slate-600 dark:hover:text-white rounded-lg"
+                className="p-1.5 text-slate-400 hover:text-slate-700 dark:hover:text-white rounded-lg hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
               >
                 <XCircle className="w-5 h-5" />
               </button>
             </div>
 
-            <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
-              Assign a new 6-digit PIN for resort owner or administrative quick sign-in.
-            </p>
-
             <input
               type="text"
+              inputMode="numeric"
               maxLength={6}
               value={newPin}
               onChange={(e) => setNewPin(e.target.value.replace(/\D/g, ''))}
               placeholder="••••••"
-              className="w-full px-4 py-3 border border-slate-300 dark:border-slate-700 rounded-xl text-center text-3xl font-mono tracking-widest bg-slate-50 dark:bg-slate-800 text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-sky-500"
+              className="w-full px-4 py-3 border border-slate-200 dark:border-neutral-700 rounded-xl text-center text-2xl font-mono tracking-[0.4em] bg-slate-50 dark:bg-black text-[#1F3F74] dark:text-white focus:outline-none focus:border-[#4987BA]"
             />
 
-            <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100 dark:border-slate-800">
+            <div className="flex items-center justify-end gap-2 pt-3 border-t border-slate-100 dark:border-neutral-800">
               <button
                 type="button"
                 onClick={() => setResetPinUser(null)}
                 disabled={submitting}
-                className="px-4 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg transition-colors"
+                className="px-4 py-2 text-xs font-bold text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 rounded-xl transition-colors cursor-pointer"
               >
                 Cancel
               </button>
@@ -2002,10 +1313,10 @@ export function UserModerationHub({ initialTab = 'users' }: UserModerationHubPro
                 type="button"
                 onClick={handleResetPin}
                 disabled={submitting || newPin.length !== 6}
-                className="px-4 py-2 text-xs font-bold text-white bg-sky-600 hover:bg-sky-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg transition-colors flex items-center gap-1.5 shadow-xs"
+                className="px-5 py-2 text-xs font-bold text-white bg-[#1F3F74] hover:bg-[#18325c] dark:bg-sky-600 dark:hover:bg-sky-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-xl transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
               >
                 {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                <span>Set New PIN</span>
+                <span>Save PIN</span>
               </button>
             </div>
           </div>

@@ -190,7 +190,20 @@ export async function PATCH(request: NextRequest) {
         return NextResponse.json({ error: 'A valid email address is required.' }, { status: 400 });
       }
 
-      const validRoles = ['user', 'beach_owner', 'beach_manager', 'admin'];
+      const { data: currentProfile } = await (adminClient.from('profiles') as any)
+        .select('role')
+        .eq('id', id)
+        .maybeSingle();
+      const currentRole = currentProfile?.role || existingMeta.role || 'user';
+
+      if (role === 'admin' && currentRole !== 'admin') {
+        return NextResponse.json(
+          { error: 'Cannot set another user as admin.' },
+          { status: 403 }
+        );
+      }
+
+      const validRoles = ['user', 'beach_owner', 'admin'];
       if (!role || !validRoles.includes(role)) {
         return NextResponse.json({ error: 'Invalid user role selected.' }, { status: 400 });
       }
