@@ -2,15 +2,20 @@
  * Cross-platform UUID v4 generator.
  * In modern secure contexts (HTTPS or localhost), uses crypto.randomUUID().
  * In insecure contexts (e.g., HTTP over LAN IP like http://192.168.x.x:3000)
- * or older browsers, falls back to a standard Math.random pseudo-UUID.
+ * or older browsers, falls back safely to Math.random pseudo-UUID without throwing.
  */
 export function generateUUID(): string {
-  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
-    try {
+  try {
+    const isClient = typeof window !== 'undefined';
+    // When accessing over LAN IP (e.g. 192.168.x.x), isSecureContext is false in mobile browsers.
+    // Calling or inspecting crypto.randomUUID in insecure contexts throws an error in some engines.
+    const isSecure = !isClient || (typeof window.isSecureContext === 'boolean' ? window.isSecureContext : false);
+    
+    if (isSecure && typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
       return crypto.randomUUID();
-    } catch {
-      // Fallback if randomUUID fails unexpectedly
     }
+  } catch {
+    // Fallback if randomUUID fails or throws
   }
 
   return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
@@ -19,4 +24,3 @@ export function generateUUID(): string {
     return v.toString(16);
   });
 }
-

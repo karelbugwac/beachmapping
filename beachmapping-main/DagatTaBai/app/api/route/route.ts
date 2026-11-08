@@ -13,7 +13,7 @@ export async function POST(request: NextRequest) {
       !destination ||
       typeof destination.lat !== 'number' || !Number.isFinite(destination.lat) || Math.abs(destination.lat) > 90 ||
       typeof destination.lng !== 'number' || !Number.isFinite(destination.lng) || Math.abs(destination.lng) > 180 ||
-      !['car', 'motorcycle', 'walking'].includes(travelMode)
+      !['car', 'motorcycle', 'commute', 'walking'].includes(travelMode)
     ) {
       return NextResponse.json(
         { error: 'Valid origin, destination, and travel mode are required.' },

@@ -152,8 +152,8 @@ export default function ManageInformationPage() {
   const [, setBeach] = useState<BeachRecord | null>(null);
   const [showLocationPicker, setShowLocationPicker] = useState(false);
 
-  // Floating Toast State (Centered, green for success, red for error, 5s duration, NO "x")
-  const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
+  // Floating Toast State (Centered, green for success, red for error/delete, 5s duration, NO "x")
+  const [toast, setToast] = useState<{ type: 'success' | 'error' | 'delete'; message: string } | null>(null);
 
   useEffect(() => {
     if (toast) {
@@ -182,6 +182,7 @@ export default function ManageInformationPage() {
     best_visiting_time: '',
     entrance_fee_adults: '',
     entrance_fee_children: '',
+    entrance_fee_senior: '',
     cottage_fee: '',
     images: [] as Array<BeachPhoto | string>,
   });
@@ -308,8 +309,8 @@ export default function ManageInformationPage() {
   const [submittingRecapture, setSubmittingRecapture] = useState(false);
   const [showTourPreview, setShowTourPreview] = useState(false);
 
-  // Photos & Gallery Sub-Category: 'branding' | 'posts' | 'gallery'
-  const [photoSubTab, setPhotoSubTab] = useState<'branding' | 'posts' | 'gallery'>('branding');
+  // Photos Sub-Category: 'branding' | 'posts'
+  const [photoSubTab, setPhotoSubTab] = useState<'branding' | 'posts'>('branding');
 
   // Validation Errors
   const [errors, setErrors] = useState<Record<string, string>>({});
@@ -354,13 +355,16 @@ export default function ManageInformationPage() {
 
           let feeAdults = '';
           let feeChildren = '';
+          let feeSenior = '';
           if (b.entrance_fee != null) {
             const parts = String(b.entrance_fee).split('|');
             feeAdults = (parts[0] || '').replace(/[^\d.]/g, '');
             feeChildren = (parts[1] || '').replace(/[^\d.]/g, '');
+            feeSenior = (parts[2] || '').replace(/[^\d.]/g, '');
           }
           if (b.entrance_fee_adults != null) feeAdults = String(b.entrance_fee_adults);
           if (b.entrance_fee_children != null) feeChildren = String(b.entrance_fee_children);
+          if (b.entrance_fee_senior != null) feeSenior = String(b.entrance_fee_senior);
 
           // Strip +63 or non-digits for phone
           let cleanPhone = b.contact_phone || '';
@@ -385,6 +389,7 @@ export default function ManageInformationPage() {
             best_visiting_time: b.best_visiting_time || '',
             entrance_fee_adults: feeAdults,
             entrance_fee_children: feeChildren,
+            entrance_fee_senior: feeSenior,
             cottage_fee: b.cottage_fee || '',
             images: Array.isArray(b.images) ? b.images : [],
           });
@@ -486,10 +491,30 @@ export default function ManageInformationPage() {
     return hours;
   };
 
+  // Silent rule save helper (does NOT trigger main form saving state)
+  const saveRulesSilently = async (rulesToSave: ResortRuleItem[]): Promise<boolean> => {
+    try {
+      const payload = {
+        ...formData,
+        contact_phone: formData.contact_phone ? `+63 ${formData.contact_phone}` : '',
+        opening_hours: formatSchedulePayload(),
+        rules: JSON.stringify(rulesToSave),
+      };
+      const res = await fetch('/api/owner/beach', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+      return res.ok;
+    } catch {
+      return false;
+    }
+  };
+
   // Save changes handler
   const handleSave = async (rulesToSave: ResortRuleItem[] = rules): Promise<boolean> => {
     if (!validateForm()) {
-      setToast({ type: 'error', message: 'Please correct the highlighted form errors before saving.' });
+      setToast({ type: 'error', message: 'Please correct the highlighted errors.' });
       return false;
     }
 
@@ -526,12 +551,15 @@ export default function ManageInformationPage() {
           entrance_fee_children: data.beach.entrance_fee_children == null
             ? ''
             : String(data.beach.entrance_fee_children),
+          entrance_fee_senior: data.beach.entrance_fee_senior == null
+            ? ''
+            : String(data.beach.entrance_fee_senior),
         }));
       }
 
       setToast({
         type: 'success',
-        message: 'Resort information updated successfully!',
+        message: 'Changes saved successfully.',
       });
       return true;
     } catch (err: unknown) {
@@ -1483,9 +1511,10 @@ export default function ManageInformationPage() {
 
   // Photo Delete Handler
   const handleDeletePhoto = (index: number) => {
+    if (!window.confirm('Are you sure you want to delete this photo?')) return;
     const updated = formData.images.filter((_, i) => i !== index);
     setFormData((prev) => ({ ...prev, images: updated }));
-    setToast({ type: 'success', message: 'Photo removed from gallery. Click Save Changes to finalize.' });
+    setToast({ type: 'delete', message: 'Photo deleted.' });
   };
 
   // Recapture Tour Request
@@ -1537,19 +1566,25 @@ export default function ManageInformationPage() {
   return (
     <div className="space-y-5 max-w-5xl mx-auto pb-20">
       
-      {/* ── Floating Message Banner (Centered, solid green/red, white text, 5s duration, NO "x") ── */}
+      {/* ── Floating Message Banner (Centered, slim, standard production level) ── */}
       {toast && (
         <div
-          className={`fixed top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 px-6 py-3.5 rounded-full shadow-2xl max-w-[90vw] animate-in fade-in slide-in-from-top-4 duration-300 text-white font-medium text-xs sm:text-sm tracking-wide ${
-            toast.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'
+          className={`fixed top-5 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2 px-4 py-1.5 sm:px-5 sm:py-2 rounded-full shadow-lg max-w-[90vw] animate-in fade-in slide-in-from-top-3 duration-300 text-white font-semibold text-xs tracking-wide text-center pointer-events-none ${
+            toast.type === 'delete'
+              ? 'bg-rose-600'
+              : toast.type === 'success'
+              ? 'bg-emerald-600'
+              : 'bg-red-600'
           }`}
         >
           {toast.type === 'success' ? (
-            <CheckCircle2 className="w-4 h-4 text-white flex-shrink-0" />
+            <CheckCircle2 className="w-3.5 h-3.5 text-white flex-shrink-0" />
+          ) : toast.type === 'delete' ? (
+            <Trash2 className="w-3.5 h-3.5 text-white flex-shrink-0" />
           ) : (
-            <AlertCircle className="w-4 h-4 text-white flex-shrink-0" />
+            <AlertCircle className="w-3.5 h-3.5 text-white flex-shrink-0" />
           )}
-          <span>{toast.message}</span>
+          <span className="truncate">{toast.message}</span>
         </div>
       )}
 
@@ -1563,14 +1598,14 @@ export default function ManageInformationPage() {
         </p>
       </div>
 
-      {/* ── Oblong Category Tab Pills ── */}
-      <div className="grid grid-cols-2 sm:grid-cols-3 xl:grid-cols-7 gap-1.5 pb-1">
+      {/* ── Horizontally Scrollable Category Tab Pills ── */}
+      <div className="flex items-center gap-1.5 pb-2 overflow-x-auto no-scrollbar flex-nowrap -mx-4 px-4 sm:mx-0 sm:px-0">
         {[
           { key: 'basic', label: 'Basic Info' },
           { key: 'cottages', label: 'Cottages' },
           { key: 'facilities', label: 'Facilities & Parkings' },
           { key: 'hours', label: 'Operating Schedule' },
-          { key: 'photos', label: 'Photos & Updates' },
+          { key: 'photos', label: 'Resort Updates' },
           { key: 'dos', label: "Do's & Don'ts" },
           { key: 'tour', label: '360° Virtual Tour' },
         ].map((tab) => {
@@ -1580,7 +1615,7 @@ export default function ManageInformationPage() {
               key={tab.key}
               type="button"
               onClick={() => setActiveTab(tab.key as typeof activeTab)}
-              className={`w-full min-h-9 px-2 py-1.5 rounded-full text-[11px] sm:text-xs text-center leading-tight font-bold transition-all cursor-pointer ${
+              className={`shrink-0 whitespace-nowrap min-h-9 px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
                 isActive
                   ? 'bg-[#1F3F74] text-white shadow-xs'
                   : 'bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-300 border border-slate-200 dark:border-neutral-800 hover:border-[#1F3F74]/50 hover:text-[#1F3F74] dark:hover:text-white'
@@ -1595,14 +1630,6 @@ export default function ManageInformationPage() {
       {/* ── TAB 1: BASIC INFORMATION (Frameless, Flat layout) ── */}
       {activeTab === 'basic' && (
         <div className="space-y-6">
-          <div>
-            <h2 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
-              Establishment Overview &amp; Social Links
-            </h2>
-            <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
-              Public details displayed to tourists on the Dagat Ta Bai map and listing.
-            </p>
-          </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-5 pt-1">
             {/* Resort Name */}
@@ -1737,19 +1764,14 @@ export default function ManageInformationPage() {
                 }`}
               />
               <p className="pl-3 text-[11px] text-slate-500 dark:text-neutral-400">
-                Include barangay, municipality, and province so tourists and map search can find your beach.
+                For better search results, use a location with barangay, municipality, and province separated by commas.
               </p>
-              {hasLocationAddressWarning && (
-                <p className="pl-3 text-[11px] font-medium text-amber-700 dark:text-amber-400">
-                  For better search results, use a location with barangay, municipality, and province separated by commas.
-                </p>
-              )}
               {errors.location && (
                 <p className="text-[11px] text-red-500 font-medium pl-3">{errors.location}</p>
               )}
             </div>
 
-            <div className="space-y-3 sm:col-span-2 rounded-2xl border border-slate-200 dark:border-neutral-800 bg-slate-50/70 dark:bg-neutral-900/60 p-4">
+            <div className="space-y-3 sm:col-span-2 pt-2">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
                   <h3 className="text-xs font-bold text-slate-800 dark:text-white">Beach Map Coordinates</h3>
@@ -1761,23 +1783,16 @@ export default function ManageInformationPage() {
                 <button
                   type="button"
                   onClick={() => setShowLocationPicker(true)}
-                  className="inline-flex items-center justify-center gap-2 rounded-full bg-[#1F3F74] px-4 py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#183460]"
+                  className="inline-flex items-center justify-center rounded-full bg-[#1F3F74] px-5 py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#183460] cursor-pointer shadow-xs"
                 >
-                  <MapPin className="h-3.5 w-3.5" />
                   {!hasMapPin ? 'Set Map Pin' : formData.id ? 'Request Map Pin Change' : 'Choose on Map'}
                 </button>
               </div>
               {!hasMapPin && (
-                <p className="rounded-xl border border-amber-200 bg-amber-50 px-3 py-2 text-[11px] font-medium text-amber-800 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-300">
+                <p className="text-[11px] text-slate-500 dark:text-neutral-400">
                   Your beach will not appear on the map until you set a pin.
                   {formData.id && ' Your first pin will be sent to an admin for approval.'}
                 </p>
-              )}
-              {hasMapPin && (
-                <span className="inline-flex items-center gap-1 rounded-full bg-emerald-50 px-2.5 py-1 text-[10px] font-bold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400">
-                  <CheckCircle2 className="h-3 w-3" />
-                  Pin verified
-                </span>
               )}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div className="space-y-1">
@@ -1821,12 +1836,9 @@ export default function ManageInformationPage() {
               <h2 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
                 General Admission Rates
               </h2>
-              <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
-                Standard gate entrance fees per visitor.
-              </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
                   Adult Entrance Fee
@@ -1845,7 +1857,7 @@ export default function ManageInformationPage() {
 
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
-                  Children / Senior Citizen Entrance Fee
+                  Children Entrance Fee
                 </label>
                 <div className="relative flex items-center">
                   <span className="absolute left-4 text-sm font-bold text-[#1F3F74] dark:text-[#4987BA]">₱</span>
@@ -1853,6 +1865,22 @@ export default function ManageInformationPage() {
                     type="number"
                     value={formData.entrance_fee_children}
                     onChange={(e) => setFormData({ ...formData, entrance_fee_children: e.target.value })}
+                    placeholder="25"
+                    className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 pl-9 pr-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus:outline-none focus:border-[#1F3F74] focus:ring-2 focus:ring-[#1F3F74]/20 transition-all"
+                  />
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
+                  Senior Citizen Entrance Fee
+                </label>
+                <div className="relative flex items-center">
+                  <span className="absolute left-4 text-sm font-bold text-[#1F3F74] dark:text-[#4987BA]">₱</span>
+                  <input
+                    type="number"
+                    value={formData.entrance_fee_senior}
+                    onChange={(e) => setFormData({ ...formData, entrance_fee_senior: e.target.value })}
                     placeholder="25"
                     className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 pl-9 pr-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus:outline-none focus:border-[#1F3F74] focus:ring-2 focus:ring-[#1F3F74]/20 transition-all"
                   />
@@ -1948,12 +1976,13 @@ export default function ManageInformationPage() {
                     setShowAddCottage(true);
                   }}
                   onDelete={async () => {
+                    if (!window.confirm('Are you sure you want to delete this cottage?')) return;
                     try {
                       await deleteCatalogItem('cottage', item.id);
                       setCottages((current) => current.filter((c) => c.id !== item.id));
-                      setToast({ type: 'success', message: 'Cottage removed.' });
+                      setToast({ type: 'delete', message: 'Cottage deleted.' });
                     } catch (error) {
-                      setToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to remove cottage.' });
+                      setToast({ type: 'error', message: 'Failed to delete cottage.' });
                     }
                   }}
                 />
@@ -2005,12 +2034,13 @@ export default function ManageInformationPage() {
                 onView={() => setViewingFacility(fac)}
                 onEdit={() => startFacilityEditor(fac)}
                 onDelete={async () => {
+                  if (!window.confirm('Are you sure you want to delete this facility?')) return;
                   try {
                     await deleteCatalogItem('facility', fac.id);
                     setFacilities((current) => current.filter((facility) => facility.id !== fac.id));
-                    setToast({ type: 'success', message: 'Facility item removed.' });
+                    setToast({ type: 'delete', message: 'Facility deleted.' });
                   } catch (error) {
-                    setToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to remove facility.' });
+                    setToast({ type: 'error', message: 'Failed to delete facility.' });
                   }
                 }}
               />
@@ -2185,12 +2215,11 @@ export default function ManageInformationPage() {
       {/* ── TAB 5: PHOTOS, UPDATES & FB-STYLE FEED ── */}
       {activeTab === 'photos' && (
         <div className="space-y-6">
-          {/* Sub-Tabs: Profile/Cover, Facebook Style Feed, Shoreline Gallery */}
+          {/* Sub-Tabs: Cover Banner, Resort Updates */}
           <div className="flex items-center gap-2 border-b border-slate-200 dark:border-neutral-800 pb-3">
             {[
-              { key: 'branding', label: 'Profile & Cover Banner' },
-              { key: 'posts', label: 'Resort Updates (Facebook Style)' },
-              { key: 'gallery', label: 'Shoreline Photo Gallery' },
+              { key: 'branding', label: 'Cover Banner' },
+              { key: 'posts', label: 'Resort Updates' },
             ].map((sub) => (
               <button
                 key={sub.key}
@@ -2247,48 +2276,6 @@ export default function ManageInformationPage() {
                     <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-2">
                       <Camera className="w-8 h-8" />
                       <span className="text-xs font-medium">No cover image uploaded yet</span>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Profile Logo */}
-              <div className="space-y-2 pt-4 border-t border-slate-200 dark:border-neutral-800">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                      Resort Profile Logo (Square)
-                    </h3>
-                    <p className="text-xs text-slate-500 dark:text-neutral-400">
-                      Square avatar or logo badge shown next to reviews and search pins. PNG or JPG, up to 20 GB.
-                    </p>
-                  </div>
-
-                  <label className="px-5 py-2 rounded-full bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-bold cursor-pointer transition-all inline-flex items-center gap-1.5">
-                    {uploadingProfile ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
-                    <span>{formData.profile_image ? 'Change Profile' : 'Upload Profile'}</span>
-                    <input
-                      type="file"
-                      accept="image/png, image/jpeg, image/jpg"
-                      onChange={handleProfileUpload}
-                      disabled={uploadingProfile}
-                      className="hidden"
-                    />
-                  </label>
-                </div>
-
-                <div className="relative w-28 h-28 rounded-2xl overflow-hidden bg-slate-100 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800">
-                  {formData.profile_image ? (
-                    <Image
-                      src={formData.profile_image}
-                      alt="Resort Profile Logo"
-                      fill
-                      className="object-cover"
-                    />
-                  ) : (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-slate-400 gap-1">
-                      <Camera className="w-6 h-6" />
-                      <span className="text-[10px]">No Logo</span>
                     </div>
                   )}
                 </div>
@@ -2393,15 +2380,17 @@ export default function ManageInformationPage() {
                       <button
                         type="button"
                         onClick={async () => {
+                          if (!window.confirm('Are you sure you want to delete this post?')) return;
                           try {
                             await deleteCatalogItem('post', post.id);
                             setResortPosts((current) => current.filter((p) => p.id !== post.id));
-                            setToast({ type: 'success', message: 'Post removed from feed.' });
+                            setToast({ type: 'delete', message: 'Post deleted.' });
                           } catch (error) {
-                            setToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to remove post.' });
+                            setToast({ type: 'error', message: 'Failed to delete post.' });
                           }
                         }}
-                        className="text-slate-400 hover:text-rose-600 transition-colors"
+                        className="text-slate-400 hover:text-rose-600 transition-colors p-1"
+                        title="Delete post"
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
@@ -2424,152 +2413,6 @@ export default function ManageInformationPage() {
                   </p>
                 )}
               </div>
-            </div>
-          )}
-
-          {/* 3. Shoreline Photo Gallery */}
-          {photoSubTab === 'gallery' && (
-            <div className="space-y-5">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                    Shoreline Photo Gallery
-                  </h3>
-                  <p className="text-xs text-slate-500 dark:text-neutral-400">
-                    Add photos of your shoreline, sea conditions, or facilities. PNG or JPG, up to 20 GB.
-                  </p>
-                </div>
-              </div>
-
-              <div
-                onDragOver={(event) => {
-                  event.preventDefault();
-                  setIsGalleryDragActive(true);
-                }}
-                onDragLeave={(event) => {
-                  if (!(event.relatedTarget instanceof Node) || !event.currentTarget.contains(event.relatedTarget)) {
-                    setIsGalleryDragActive(false);
-                  }
-                }}
-                onDrop={(event) => {
-                  event.preventDefault();
-                  setIsGalleryDragActive(false);
-                  handleGalleryFileSelection(event.dataTransfer.files[0]);
-                }}
-                className={`rounded-2xl border-2 border-dashed p-4 sm:p-5 transition-colors ${
-                  isGalleryDragActive
-                    ? 'border-[#1F3F74] bg-blue-50 dark:bg-blue-950/30'
-                    : 'border-slate-300 dark:border-neutral-700 bg-slate-50/70 dark:bg-neutral-900/60'
-                }`}
-              >
-                {galleryPreview && galleryFile ? (
-                  <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-                    <div className="relative w-full sm:w-40 h-32 shrink-0 overflow-hidden rounded-xl bg-slate-200 dark:bg-neutral-800">
-                      <Image
-                        src={galleryPreview}
-                        alt="Selected gallery photo preview"
-                        fill
-                        unoptimized
-                        className="object-cover"
-                      />
-                    </div>
-                    <div className="min-w-0 flex-1">
-                      <p className="text-sm font-bold text-slate-800 dark:text-white truncate">{galleryFile.name}</p>
-                      <p className="mt-1 text-xs text-slate-500 dark:text-neutral-400">
-                        {(galleryFile.size / (1024 * 1024)).toFixed(2)} MB · Preview ready
-                      </p>
-                      <div className="mt-4 flex flex-wrap gap-2">
-                        <button
-                          type="button"
-                          onClick={handlePhotoUpload}
-                          disabled={uploadingImage}
-                          className="inline-flex items-center gap-2 rounded-full bg-[#1F3F74] px-5 py-2 text-xs font-bold text-white transition-colors hover:bg-[#183460] disabled:cursor-not-allowed disabled:opacity-60"
-                        >
-                          {uploadingImage ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-                          {uploadingImage ? 'Uploading...' : 'Upload photo'}
-                        </button>
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setGalleryFile(null);
-                            setGalleryPreview('');
-                          }}
-                          disabled={uploadingImage}
-                          className="rounded-full border border-slate-300 px-5 py-2 text-xs font-semibold text-slate-600 hover:bg-white dark:border-neutral-700 dark:text-neutral-300 dark:hover:bg-neutral-800 disabled:opacity-60"
-                        >
-                          Remove
-                        </button>
-                      </div>
-                    </div>
-                  </div>
-                ) : (
-                  <label
-                    htmlFor="gallery-photo-upload"
-                    className="flex cursor-pointer flex-col items-center justify-center gap-2 py-5 text-center"
-                  >
-                    <span className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#1F3F74] shadow-sm dark:bg-neutral-800 dark:text-[#4987BA]">
-                      <Upload className="h-5 w-5" />
-                    </span>
-                    <span className="text-sm font-bold text-slate-800 dark:text-white">
-                      Drop an image here or <span className="text-[#1F3F74] underline dark:text-[#4987BA]">browse files</span>
-                    </span>
-                    <span className="text-xs text-slate-500 dark:text-neutral-400">PNG or JPG · Maximum file size: 20 GB</span>
-                    <input
-                      id="gallery-photo-upload"
-                      type="file"
-                      accept="image/png, image/jpeg, image/jpg"
-                      onChange={(event) => {
-                        handleGalleryFileSelection(event.target.files?.[0]);
-                        event.target.value = '';
-                      }}
-                      disabled={uploadingImage}
-                      className="hidden"
-                    />
-                  </label>
-                )}
-              </div>
-
-              {formData.images.length > 0 ? (
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4">
-                  {formData.images.map((img, i) => {
-                    const url = typeof img === 'string' ? img : ((img as any).photo_url || (img as any).url || '');
-                    return (
-                      <div
-                        key={i}
-                        className="group relative aspect-4/3 rounded-xl overflow-hidden border border-slate-200 dark:border-neutral-800 bg-slate-100 dark:bg-neutral-950"
-                      >
-                        <Image
-                          src={url}
-                          alt={`Resort Photo ${i + 1}`}
-                          fill
-                          className="object-cover group-hover:scale-105 transition-transform duration-300"
-                          sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-                        />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
-                          <button
-                            type="button"
-                            onClick={() => handleDeletePhoto(i)}
-                            className="p-2 rounded-full bg-red-600 text-white hover:bg-red-700 transition-colors shadow-md cursor-pointer"
-                            title="Remove photo"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                          </button>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="py-12 border-2 border-dashed border-slate-200 dark:border-neutral-800 rounded-2xl text-center flex flex-col items-center justify-center gap-2 text-slate-400">
-                  <Camera className="w-8 h-8 text-slate-300 dark:text-neutral-700" />
-                  <p className="text-xs font-semibold text-slate-600 dark:text-neutral-300">
-                    No gallery photos added yet
-                  </p>
-                  <p className="text-[11px] text-slate-400">
-                    Choose an image above to showcase your resort shoreline. PNG or JPG, up to 20 GB.
-                  </p>
-                </div>
-              )}
             </div>
           )}
         </div>
@@ -2647,8 +2490,15 @@ export default function ManageInformationPage() {
                     <button
                       type="button"
                       onClick={async () => {
+                        if (!window.confirm('Are you sure you want to delete this guideline?')) return;
                         const nextRules = rules.filter((r) => r.id !== rule.id);
-                        if (await handleSave(nextRules)) setRules(nextRules);
+                        const ok = await saveRulesSilently(nextRules);
+                        if (ok) {
+                          setRules(nextRules);
+                          setToast({ type: 'delete', message: 'Guideline deleted.' });
+                        } else {
+                          setToast({ type: 'error', message: 'Failed to delete guideline.' });
+                        }
                       }}
                       className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer flex-shrink-0"
                       title="Delete guideline"
@@ -2710,8 +2560,15 @@ export default function ManageInformationPage() {
                     <button
                       type="button"
                       onClick={async () => {
+                        if (!window.confirm('Are you sure you want to delete this restriction?')) return;
                         const nextRules = rules.filter((r) => r.id !== rule.id);
-                        if (await handleSave(nextRules)) setRules(nextRules);
+                        const ok = await saveRulesSilently(nextRules);
+                        if (ok) {
+                          setRules(nextRules);
+                          setToast({ type: 'delete', message: 'Restriction deleted.' });
+                        } else {
+                          setToast({ type: 'error', message: 'Failed to delete restriction.' });
+                        }
                       }}
                       className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer flex-shrink-0"
                       title="Delete restriction"
@@ -2799,7 +2656,7 @@ export default function ManageInformationPage() {
       )}
 
       {/* ── BOTTOM SAVE CHANGES BUTTON (Oblong, Dive Blue, Strictly NO icon inside) ── */}
-      <div className="pt-6 border-t border-slate-200 dark:border-neutral-800 flex justify-end">
+      <div className="pt-6 border-t border-slate-200 dark:border-neutral-800 flex justify-center">
         <button
           type="button"
           onClick={() => handleSave()}

@@ -47,7 +47,7 @@ export function FeedbackToasts() {
 
   return (
     <div
-      className="fixed left-1/2 top-20 z-[9999] flex w-auto max-w-[90vw] -translate-x-1/2 flex-col items-center gap-2 pointer-events-none sm:max-w-md"
+      className="fixed left-1/2 top-5 z-[9999] flex w-auto max-w-[90vw] -translate-x-1/2 flex-col items-center gap-2 pointer-events-none sm:max-w-md"
       aria-live="polite"
     >
       {toasts.map((toast) => {
@@ -62,14 +62,16 @@ export function FeedbackToasts() {
           <div
             key={toast.id}
             role={toast.kind === 'error' ? 'alert' : 'status'}
-            className={`pointer-events-auto flex w-fit max-w-[calc(100vw-2rem)] items-center gap-2.5 rounded-xl border px-3.5 py-2.5 text-left text-xs font-medium leading-snug shadow-lg animate-in fade-in slide-in-from-top-2 duration-200 sm:max-w-sm sm:px-4 ${
-              isSuccess
+            className={`pointer-events-auto flex w-fit max-w-[calc(100vw-2rem)] items-center gap-2 rounded-full border px-4 py-1.5 sm:px-5 sm:py-2 text-center text-xs font-semibold shadow-lg animate-in fade-in slide-in-from-top-3 duration-200 ${
+              isDestructive
+                ? 'border-rose-700 bg-rose-600 text-white shadow-rose-950/25'
+                : isSuccess
                 ? 'border-emerald-700 bg-emerald-600 text-white shadow-emerald-950/20'
                 : 'border-red-700 bg-red-600 text-white shadow-red-950/25'
             }`}
           >
-            <Icon className="h-4 w-4 shrink-0" aria-hidden="true" />
-            <span className="min-w-0 break-words [overflow-wrap:anywhere]">{formattedMsg}</span>
+            <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
+            <span className="min-w-0 truncate">{formattedMsg}</span>
           </div>
         );
       })}

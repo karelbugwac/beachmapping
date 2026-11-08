@@ -19,6 +19,9 @@ import {
   Coins,
   Clock,
   MapPin,
+  Bus,
+  Phone,
+  Mail,
 } from 'lucide-react';
 import { MapView } from '@/components/map/map-view';
 import type { BeachRecord } from '@/lib/db/beaches';
@@ -27,15 +30,30 @@ import { SeaRoute } from '@/components/ui/coastal-icons';
 import { getValidBeachCoordinates } from '@/lib/utils/beach-coordinates';
 import { matchesBeachSearch } from '@/lib/utils/beach-search';
 
-function parseEntranceFee(entranceFee: string | null, adults: string | null | undefined, children: string | null | undefined): string {
-  if (adults && children) {
-    return `Adults ₱${adults} · Children ₱${children}`;
+function parseEntranceFee(
+  entranceFee: string | null,
+  adults?: string | null | undefined,
+  children?: string | null | undefined,
+  senior?: string | null | undefined
+): string {
+  let a = adults;
+  let c = children;
+  let s = senior;
+
+  if (entranceFee && entranceFee.includes('|')) {
+    const parts = entranceFee.split('|');
+    if (!a && parts[0]) a = parts[0];
+    if (!c && parts[1]) c = parts[1];
+    if (!s && parts[2]) s = parts[2];
   }
+
+  const chunks: string[] = [];
+  if (a) chunks.push(`Adults ₱${a}`);
+  if (c) chunks.push(`Children ₱${c}`);
+  if (s) chunks.push(`Senior ₱${s}`);
+
+  if (chunks.length > 0) return chunks.join(' · ');
   if (!entranceFee) return 'Contact resort';
-  if (entranceFee.includes('|')) {
-    const [a, c] = entranceFee.split('|');
-    return `Adults ₱${a} · Children ₱${c}`;
-  }
   return `₱${entranceFee}`;
 }
 
@@ -64,7 +82,8 @@ export default function MapPage() {
   const [beachLoadError, setBeachLoadError] = useState<string | null>(null);
   const [beachReloadTrigger, setBeachReloadTrigger] = useState(0);
   const [searchMapCenter, setSearchMapCenter] = useState<[number, number] | null>(null);
-  const [travelMode, setTravelMode] = useState<'car' | 'motorcycle' | 'walking'>('car');
+  const [travelMode, setTravelMode] = useState<'car' | 'motorcycle' | 'commute' | 'walking'>('car');
+  const [showFullAbout, setShowFullAbout] = useState(false);
 
   // Route calculation states
   const [routeActive, setRouteActive] = useState(false);
@@ -424,6 +443,8 @@ export default function MapPage() {
               <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 flex items-center justify-center flex-shrink-0 text-[#1F3F74] dark:text-[#4987BA] shadow-sm">
                 {travelMode === 'motorcycle' ? (
                   <Bike className="w-5 h-5" />
+                ) : travelMode === 'commute' ? (
+                  <Bus className="w-5 h-5" />
                 ) : travelMode === 'walking' ? (
                   <Footprints className="w-5 h-5" />
                 ) : (
@@ -483,8 +504,8 @@ export default function MapPage() {
           {/* Mobile Drag Indicator Handle */}
           <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-neutral-700 mx-auto mt-2.5 mb-1 sm:hidden flex-shrink-0" />
 
-          {/* Sidebar Top Header: Title, Location & Close Action */}
-          <div className="px-4 py-3 sm:px-5 sm:py-3.5 border-b border-slate-100 dark:border-neutral-800/80 flex items-start justify-between gap-3 flex-shrink-0 bg-white/80 dark:bg-[#0c1424]/80 backdrop-blur-md">
+          {/* Sidebar Top Header: Title, Location & Close Action (No card background, no border-b) */}
+          <div className="px-4 pt-3 pb-2 sm:px-5 sm:pt-4 sm:pb-2.5 flex items-start justify-between gap-3 flex-shrink-0">
             <div className="min-w-0 flex-1">
               <h3 className="font-extrabold text-lg sm:text-xl text-[#1F3F74] dark:text-[#38BDF8] font-sans truncate tracking-tight">
                 {selectedBeach.name}
@@ -497,10 +518,10 @@ export default function MapPage() {
             <button
               type="button"
               onClick={() => setSelectedBeach(null)}
-              className="h-8 w-8 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 flex items-center justify-center text-slate-500 hover:text-slate-900 dark:text-neutral-400 dark:hover:text-white cursor-pointer transition-colors shrink-0"
+              className="p-1 text-slate-400 hover:text-slate-700 dark:text-neutral-400 dark:hover:text-white cursor-pointer transition-colors shrink-0"
               aria-label="Close details"
             >
-              <X className="w-4 h-4" />
+              <X className="w-5 h-5" />
             </button>
           </div>
 
@@ -548,41 +569,82 @@ export default function MapPage() {
               )}
             </div>
 
-            {/* Structured Info Cards: Entrance Fee & Operating Hours */}
-            <div className="space-y-2 text-xs">
-              {selectedBeach.entrance_fee && (
-                <div className="flex items-center justify-between py-2.5 px-3.5 bg-slate-50 dark:bg-neutral-900/80 border border-slate-200/90 dark:border-neutral-800 rounded-xl">
-                  <span className="font-semibold text-slate-700 dark:text-slate-300">
-                    Entrance Fee
-                  </span>
-                  <span className="font-extrabold text-[#1F3F74] dark:text-[#38BDF8]">
-                    {parseEntranceFee(selectedBeach.entrance_fee, selectedBeach.entrance_fee_adults, selectedBeach.entrance_fee_children)}
-                  </span>
-                </div>
-              )}
-
-              <div className="flex items-center justify-between py-2.5 px-3.5 bg-slate-50 dark:bg-neutral-900/80 border border-slate-200/90 dark:border-neutral-800 rounded-xl">
-                <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
-                  <Clock className="w-4 h-4 text-[#1F3F74] dark:text-[#38BDF8]" />
-                  <span>Operating Hours</span>
+            {/* 1. About Description (with See more / See less) */}
+            {selectedBeach.description && (
+              <div className="pt-1">
+                <span className="block text-[11px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider mb-1">
+                  About
                 </span>
-                <span className="text-slate-600 dark:text-slate-400 font-medium">
-                  {parseOpeningHoursSummary(selectedBeach.opening_hours)}
-                </span>
+                <p className={`text-xs text-slate-600 dark:text-neutral-300 leading-relaxed ${showFullAbout ? '' : 'line-clamp-3'}`}>
+                  {selectedBeach.description}
+                </p>
+                {selectedBeach.description.length > 130 && (
+                  <button
+                    type="button"
+                    onClick={() => setShowFullAbout(!showFullAbout)}
+                    className="mt-1 text-[11px] font-bold text-[#1F3F74] dark:text-[#38BDF8] hover:underline cursor-pointer"
+                  >
+                    {showFullAbout ? 'See less' : 'See more'}
+                  </button>
+                )}
               </div>
+            )}
+
+            {/* 2. Official Contact Information */}
+            {(selectedBeach.contact_phone || selectedBeach.contact_email) && (
+              <div className="space-y-1.5 pt-0.5 text-xs">
+                <span className="block text-[11px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider mb-1">
+                  Contact Information
+                </span>
+                {selectedBeach.contact_phone && (
+                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <Phone className="w-3.5 h-3.5 text-[#1F3F74] dark:text-[#38BDF8] shrink-0" />
+                    <span>+63 {selectedBeach.contact_phone}</span>
+                  </div>
+                )}
+                {selectedBeach.contact_email && (
+                  <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
+                    <Mail className="w-3.5 h-3.5 text-[#1F3F74] dark:text-[#38BDF8] shrink-0" />
+                    <span className="truncate">{selectedBeach.contact_email}</span>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* 3. Operating Hours */}
+            <div className="flex items-center justify-between py-2.5 px-3.5 bg-slate-50 dark:bg-neutral-900/80 border border-slate-200/90 dark:border-neutral-800 rounded-xl text-xs">
+              <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
+                <Clock className="w-4 h-4 text-[#1F3F74] dark:text-[#38BDF8]" />
+                <span>Operating Hours</span>
+              </span>
+              <span className="text-slate-600 dark:text-slate-400 font-medium">
+                {parseOpeningHoursSummary(selectedBeach.opening_hours)}
+              </span>
             </div>
 
-            {/* Travel Mode Vector Selector (Car, Motorcycle, Walking) */}
+            {/* 4. Entrance Fee */}
+            {selectedBeach.entrance_fee && (
+              <div className="flex items-center justify-between py-2.5 px-3.5 bg-slate-50 dark:bg-neutral-900/80 border border-slate-200/90 dark:border-neutral-800 rounded-xl text-xs">
+                <span className="font-semibold text-slate-700 dark:text-slate-300">
+                  Entrance Fee
+                </span>
+                <span className="font-extrabold text-[#1F3F74] dark:text-[#38BDF8]">
+                  {parseEntranceFee(selectedBeach.entrance_fee, selectedBeach.entrance_fee_adults, selectedBeach.entrance_fee_children, selectedBeach.entrance_fee_senior)}
+                </span>
+              </div>
+            )}
+
+            {/* 5. Travel Mode Vector Selector (Car, Motorcycle, Commute, Walking) */}
             <div className="space-y-1.5 pt-1">
               <span className="block text-[11px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider">
                 Travel Mode
               </span>
-              <div className="flex items-center gap-2" role="group" aria-label="Travel mode">
+              <div className="grid grid-cols-4 gap-1.5" role="group" aria-label="Travel mode">
                 <button
                   type="button"
                   onClick={() => setTravelMode('car')}
                   aria-pressed={travelMode === 'car'}
-                  className={`flex-1 rounded-full border py-2 px-3 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  className={`rounded-full border py-2 px-1 text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
                     travelMode === 'car'
                       ? 'border-[#1F3F74] bg-[#1F3F74] text-white shadow-xs'
                       : 'border-slate-200 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-neutral-800'
@@ -595,42 +657,44 @@ export default function MapPage() {
                   type="button"
                   onClick={() => setTravelMode('motorcycle')}
                   aria-pressed={travelMode === 'motorcycle'}
-                  className={`flex-1 rounded-full border py-2 px-3 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  className={`rounded-full border py-2 px-1 text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
                     travelMode === 'motorcycle'
                       ? 'border-[#1F3F74] bg-[#1F3F74] text-white shadow-xs'
                       : 'border-slate-200 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-neutral-800'
                   }`}
                 >
                   <Bike className="w-3.5 h-3.5" />
-                  <span>Motorcycle</span>
+                  <span>Motor</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTravelMode('commute')}
+                  aria-pressed={travelMode === 'commute'}
+                  className={`rounded-full border py-2 px-1 text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
+                    travelMode === 'commute'
+                      ? 'border-[#1F3F74] bg-[#1F3F74] text-white shadow-xs'
+                      : 'border-slate-200 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-neutral-800'
+                  }`}
+                >
+                  <Bus className="w-3.5 h-3.5" />
+                  <span>Commute</span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setTravelMode('walking')}
                   aria-pressed={travelMode === 'walking'}
-                  className={`flex-1 rounded-full border py-2 px-3 text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                  className={`rounded-full border py-2 px-1 text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
                     travelMode === 'walking'
                       ? 'border-[#1F3F74] bg-[#1F3F74] text-white shadow-xs'
                       : 'border-slate-200 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-neutral-800'
                   }`}
                 >
                   <Footprints className="w-3.5 h-3.5" />
-                  <span>Walking</span>
+                  <span>Walk</span>
                 </button>
               </div>
             </div>
 
-            {/* Description Snippet if available */}
-            {selectedBeach.description && (
-              <div className="pt-1">
-                <span className="block text-[11px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider mb-1">
-                  About
-                </span>
-                <p className="text-xs text-slate-600 dark:text-neutral-300 leading-relaxed line-clamp-3">
-                  {selectedBeach.description}
-                </p>
-              </div>
-            )}
             {!selectedBeachCoordinates && (
               <div className="rounded-lg border border-amber-300 bg-amber-50 p-3 text-[11px] text-amber-900 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-200">
                 No verified map coordinates are available for this listing, so it is not shown as a marker.
@@ -653,11 +717,6 @@ export default function MapPage() {
                   </div>
                 ))}
               </div>
-            )}
-            {(selectedBeach.activities.length > 0 || selectedBeach.amenities.length > 0) && (
-              <p className="text-[11px] text-slate-500 dark:text-neutral-400">
-                {[...selectedBeach.activities, ...selectedBeach.amenities].join(' · ')}
-              </p>
             )}
           </div>
 

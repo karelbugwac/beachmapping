@@ -8,11 +8,21 @@ import { generateUUID } from '@/lib/utils/uuid';
 const DEVICE_STORAGE_KEY = 'dtb_login_device_id';
 
 function getDeviceId(): string {
-  const savedId = window.localStorage.getItem(DEVICE_STORAGE_KEY);
-  if (savedId) return savedId;
+  try {
+    const savedId = typeof window !== 'undefined' ? window.localStorage.getItem(DEVICE_STORAGE_KEY) : null;
+    if (savedId) return savedId;
+  } catch {
+    // Ignore localStorage access restrictions
+  }
 
   const deviceId = generateUUID();
-  window.localStorage.setItem(DEVICE_STORAGE_KEY, deviceId);
+  try {
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(DEVICE_STORAGE_KEY, deviceId);
+    }
+  } catch {
+    // Ignore localStorage access restrictions
+  }
   return deviceId;
 }
 
@@ -108,7 +118,7 @@ export function LoginDeviceTracker() {
         }
       } catch (error: unknown) {
         trackedUsers.delete(userId);
-        console.error('Login device tracking failed:', error);
+        console.warn('Login device tracking skipped:', error);
       }
     };
 

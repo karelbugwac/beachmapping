@@ -9,6 +9,7 @@ function toOwnerBeach(row: any) {
   const feeParts = typeof row.entrance_fee === 'string' ? row.entrance_fee.split('|') : [];
   const adultFee = row.general_information_fee ?? (feeParts[0] ?? null);
   const childFee = row.child_entrance_fee_value ?? (feeParts[1] ?? null);
+  const seniorFee = row.senior_entrance_fee_value ?? (feeParts[2] ?? null);
   return {
     ...row,
     cover_image: row.cover_image_url || null,
@@ -43,10 +44,10 @@ function toOwnerBeach(row: any) {
         Sun: ''
       };
     })(),
-    entrance_fee: adultFee == null && childFee == null ? null : `${adultFee ?? ''}|${childFee ?? ''}`,
+    entrance_fee: adultFee == null && childFee == null && seniorFee == null ? null : `${adultFee ?? ''}|${childFee ?? ''}|${seniorFee ?? ''}`,
     entrance_fee_adults: adultFee == null ? '' : String(adultFee),
     entrance_fee_children: childFee == null ? '' : String(childFee),
-    entrance_fee_senior: row.senior_entrance_fee_value == null ? '' : String(row.senior_entrance_fee_value),
+    entrance_fee_senior: seniorFee == null ? '' : String(seniorFee),
     cottage_fee: row.cottage_fee || null,
     rules: row.rules || null,
     average_rating: Number(row.average_rating || 0),
@@ -166,15 +167,16 @@ export async function POST(request: Request) {
     };
     const adultFee = parseOptionalFee(body.entrance_fee_adults);
     const childFee = parseOptionalFee(body.entrance_fee_children);
-    if (Number.isNaN(adultFee) || Number.isNaN(childFee)) {
+    const seniorFee = parseOptionalFee(body.entrance_fee_senior);
+    if (Number.isNaN(adultFee) || Number.isNaN(childFee) || Number.isNaN(seniorFee)) {
       return NextResponse.json(
         { error: 'Entrance fees must be empty or a non-negative number.' },
         { status: 400, headers: noStoreHeaders }
       );
     }
-    const formatFeeString = (adult: number | null, child: number | null) => {
-      if (adult == null && child == null) return null;
-      return `${adult ?? ''}|${child ?? ''}`;
+    const formatFeeString = (adult: number | null, child: number | null, senior: number | null) => {
+      if (adult == null && child == null && senior == null) return null;
+      return `${adult ?? ''}|${child ?? ''}|${senior ?? ''}`;
     };
     const slug = typeof body.slug === 'string' && body.slug.trim()
       ? body.slug.trim()
@@ -219,7 +221,7 @@ export async function POST(request: Request) {
         opening_hours: typeof body.opening_hours === 'object'
           ? JSON.stringify(body.opening_hours)
           : (body.opening_hours ?? existing?.opening_hours ?? ''),
-        entrance_fee: formatFeeString(adultFee, childFee),
+        entrance_fee: formatFeeString(adultFee, childFee, seniorFee),
         cottage_fee: body.cottage_fee || null,
         rules: body.rules || null,
         contact_phone: body.contact_phone || null,
@@ -259,7 +261,7 @@ export async function POST(request: Request) {
         virtual_tour_url: auth.role === 'admin' ? (body.virtual_tour_url || null) : null,
         images: Array.isArray(body.images) ? body.images : [],
         opening_hours: typeof body.opening_hours === 'object' ? JSON.stringify(body.opening_hours) : (body.opening_hours || ''),
-        entrance_fee: formatFeeString(adultFee, childFee),
+        entrance_fee: formatFeeString(adultFee, childFee, seniorFee),
         cottage_fee: body.cottage_fee || null,
         rules: body.rules || null,
         contact_phone: body.contact_phone || null,
@@ -295,7 +297,7 @@ export async function POST(request: Request) {
           beach_id: savedBeach.id,
           entrance_fee: adultFee,
           child_entrance_fee: childFee,
-          senior_entrance_fee: childFee,
+          senior_entrance_fee: seniorFee,
           general_information: existingGeneralInformation?.general_information ?? null,
           entrance_fee_notes: existingGeneralInformation?.entrance_fee_notes ?? null,
           updated_at: new Date().toISOString(),
@@ -311,9 +313,9 @@ export async function POST(request: Request) {
         success: true,
         beach: await toOwnerBeachWithFees(adminSupabase, {
           ...savedBeach,
-          entrance_fee: adultFee == null && childFee == null
+          entrance_fee: adultFee == null && childFee == null && seniorFee == null
             ? null
-            : `${adultFee ?? ''}|${childFee ?? ''}`,
+            : `${adultFee ?? ''}|${childFee ?? ''}|${seniorFee ?? ''}`,
         }),
       },
       { headers: noStoreHeaders }

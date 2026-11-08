@@ -1135,8 +1135,9 @@ export default function AdminBeachesPage() {
                           <button
                             type="button"
                             onClick={() => {
+                              if (!window.confirm('Are you sure you want to delete this post?')) return;
                               setResortPosts((prev) => prev.filter((p) => p.id !== post.id));
-                              showToast('Post removed from feed.', 'destructive');
+                              showToast('Post deleted.', 'destructive');
                             }}
                             className="text-[11px] font-bold text-rose-600 hover:underline cursor-pointer"
                           >
@@ -1267,8 +1268,9 @@ export default function AdminBeachesPage() {
                         <button
                           type="button"
                           onClick={() => {
+                            if (!window.confirm('Are you sure you want to delete this rule?')) return;
                             setResortRules((prev) => prev.filter((r) => r.id !== rule.id));
-                            showToast('Guideline removed.', 'destructive');
+                            showToast('Rule deleted.', 'destructive');
                           }}
                           className="text-slate-400 hover:text-rose-600 transition p-1 cursor-pointer"
                           title="Remove rule"

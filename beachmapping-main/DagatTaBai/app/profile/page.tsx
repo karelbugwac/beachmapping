@@ -379,18 +379,19 @@ export default function ProfilePage() {
   }, [activeCategory, user?.id]);
 
   const handleDeleteReview = async (reviewId: string) => {
+    if (!window.confirm('Are you sure you want to delete this review?')) return;
     try {
       const response = await fetch(`/api/profile/reviews?id=${encodeURIComponent(reviewId)}`, {
         method: 'DELETE',
       });
       const result = await response.json();
       if (!response.ok || !result.success) {
-        throw new Error(result.error || 'Could not delete your review.');
+        throw new Error(result.error || 'Failed to delete review.');
       }
       setReviews((previous) => previous.filter((review) => review.id !== reviewId));
-      showToast('Review removed.', 'destructive');
+      showToast('Review deleted.', 'destructive');
     } catch (error: unknown) {
-      showToast(error instanceof Error ? error.message : 'Could not delete your review.', 'error');
+      showToast(error instanceof Error ? error.message : 'Failed to delete review.', 'error');
     }
   };
 
