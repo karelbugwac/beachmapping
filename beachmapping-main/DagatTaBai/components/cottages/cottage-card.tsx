@@ -50,7 +50,7 @@ export function CottageCard({
         </p>
       )}
       {description && (
-        <p className="mt-0.5 line-clamp-2 text-[11px] sm:text-xs text-slate-500 dark:text-neutral-400 leading-snug">
+        <p className="mt-0.5 line-clamp-2 text-justify text-[10px] leading-snug text-slate-500 dark:text-neutral-400 sm:text-[11px]">
           {description}
         </p>
       )}

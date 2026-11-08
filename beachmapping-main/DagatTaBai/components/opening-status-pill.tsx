@@ -4,9 +4,9 @@ import { useEffect, useState } from 'react';
 import { getOpeningStatus, type OpeningHours, type OpeningStatus } from '@/lib/utils/opening-status';
 
 const statusClasses = {
-  open: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300',
-  closing_soon: 'bg-amber-100 text-amber-800 dark:bg-amber-950/50 dark:text-amber-300',
-  closed: 'bg-slate-200 text-slate-700 dark:bg-neutral-700 dark:text-neutral-200',
+  open: 'text-emerald-700 dark:text-emerald-400',
+  closing_soon: 'text-amber-700 dark:text-amber-400',
+  closed: 'text-rose-700 dark:text-rose-400',
 };
 
 export function OpeningStatusPill({ hours }: { hours: OpeningHours }) {
@@ -31,7 +31,7 @@ export function OpeningStatusPill({ hours }: { hours: OpeningHours }) {
 
   return (
     <div aria-live="polite" aria-atomic="true" className="flex min-w-0 flex-col items-start gap-1 transition-colors duration-300 sm:items-end">
-      <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold transition-colors duration-300 ${statusClasses[status.state]}`}>
+      <span className={`text-[11px] font-bold transition-colors duration-300 ${statusClasses[status.state]}`}>
         {status.label}
       </span>
       {status.detail && <span className="text-[11px] text-slate-500 dark:text-neutral-400">{status.detail}</span>}

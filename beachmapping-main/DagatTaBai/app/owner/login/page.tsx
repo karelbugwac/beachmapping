@@ -184,7 +184,7 @@ export default function OwnerLoginPage() {
       // Success floating toast (Center aligned, green background, white text, 5s duration, NO "x")
       setToast({
         type: 'success',
-        message: 'Login successful! Redirecting to Beach Owner Dashboard...',
+        message: 'Login successfully!',
       });
 
       setTimeout(() => {
@@ -205,7 +205,7 @@ export default function OwnerLoginPage() {
       {/* ── Floating Message Banner (Centered, solid green/red, white text, 5s duration, NO "x") ── */}
       {toast && (
         <div
-          className={`fixed top-6 left-1/2 -translate-x-1/2 z-50 flex items-center gap-2.5 px-6 py-3.5 rounded-full shadow-2xl max-w-[90vw] animate-in fade-in slide-in-from-top-4 duration-300 text-white font-medium text-xs sm:text-sm tracking-wide ${
+          className={`fixed top-6 left-1/2 z-50 flex max-w-[90vw] -translate-x-1/2 items-center gap-2 px-4 py-2.5 rounded-full shadow-2xl animate-in fade-in slide-in-from-top-4 duration-300 text-center text-[11px] leading-tight text-white font-medium sm:px-5 sm:py-3 sm:text-xs ${
             toast.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'
           }`}
         >
@@ -214,7 +214,7 @@ export default function OwnerLoginPage() {
           ) : (
             <AlertCircle className="w-4 h-4 text-white flex-shrink-0" />
           )}
-          <span>{toast.message}</span>
+          <span className="min-w-0">{toast.message}</span>
         </div>
       )}
 

@@ -11,6 +11,7 @@ import {
   AlertCircle,
   CheckCircle2,
 } from 'lucide-react';
+import { maskReviewerName } from '@/lib/utils/mask-reviewer-name';
 
 interface OwnerReviewItem {
   id: string;
@@ -373,7 +374,7 @@ export default function OwnerReviewsPage() {
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-bold text-slate-900 dark:text-white">
-                            {r.user_name || 'Verified Visitor'}
+                            {maskReviewerName(r.user_name)}
                           </span>
                           <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 dark:bg-blue-950/40 text-[#1F3F74] dark:text-[#4987BA] border border-blue-200 dark:border-blue-900">
                             Verified Guest

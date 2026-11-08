@@ -3,14 +3,7 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import {
-  HelpCircle,
   ChevronDown,
-  Search,
-  Compass,
-  ShieldCheck,
-  Waves,
-  Mail,
-  CheckCircle2,
 } from 'lucide-react';
 import { ScrollReveal } from '@/components/ui/scroll-reveal';
 
@@ -69,20 +62,14 @@ const FAQS_DATA: FaqItem[] = [
 ];
 
 export default function FaqPage() {
-  const [searchQuery, setSearchQuery] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<string>('All');
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(0);
 
   const categories = ['All', 'Visitors', 'Owners', 'Tides', 'General'];
 
-  const filteredFaqs = FAQS_DATA.filter((faq) => {
-    const matchesCategory =
-      selectedCategory === 'All' || faq.category === selectedCategory;
-    const matchesSearch =
-      faq.q.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      faq.a.toLowerCase().includes(searchQuery.toLowerCase());
-    return matchesCategory && matchesSearch;
-  });
+  const filteredFaqs = FAQS_DATA.filter((faq) =>
+    selectedCategory === 'All' || faq.category === selectedCategory
+  );
 
   const toggleFaq = (index: number) => {
     setOpenFaqIndex(openFaqIndex === index ? null : index);
@@ -105,23 +92,9 @@ export default function FaqPage() {
 
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pb-20 space-y-8 flex-1 w-full">
         
-        {/* ── Search & Filter Bar ──────────────────────────────────── */}
-        <div className="space-y-4">
-          
-          {/* Oblong Search Input */}
-          <div className="relative">
-            <Search className="w-4 h-4 text-slate-400 absolute left-4 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search questions or keywords (e.g. tides, permits, rates)..."
-              className="w-full pl-11 pr-5 py-3 text-xs sm:text-sm bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-full text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus:outline-none focus:border-[#1F3F74] dark:focus:border-[#4987BA] transition-all"
-            />
-          </div>
-
-          {/* Category Filter Pills */}
-          <div className="flex flex-wrap items-center justify-center gap-2 pt-1">
+        {/* ── Scrollable Category Filter Pills ──────────────────────── */}
+        <div className="overflow-x-auto pb-2 [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
+          <div className="flex w-max min-w-full items-center justify-start gap-2 pt-1 sm:justify-center">
             {categories.map((cat) => {
               const isSelected = selectedCategory === cat;
               return (
@@ -129,7 +102,7 @@ export default function FaqPage() {
                   key={cat}
                   type="button"
                   onClick={() => setSelectedCategory(cat)}
-                  className={`px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
+                  className={`shrink-0 whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                     isSelected
                       ? 'bg-[#1F3F74] text-white shadow-xs'
                       : 'bg-slate-100 dark:bg-neutral-900 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-neutral-800'
@@ -148,7 +121,6 @@ export default function FaqPage() {
               );
             })}
           </div>
-
         </div>
 
         {/* ── FAQ Accordion List (Frameless, Clean Divided Rows) ─────── */}
@@ -159,7 +131,7 @@ export default function FaqPage() {
                 No matching questions found
               </p>
               <p className="text-xs text-slate-500 dark:text-slate-400">
-                Try searching with different terms or select &quot;All Questions&quot;.
+                Try another category or select &quot;All Questions&quot;.
               </p>
             </div>
           ) : (

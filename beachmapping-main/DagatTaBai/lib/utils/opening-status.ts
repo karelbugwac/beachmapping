@@ -216,7 +216,7 @@ export function getOpeningStatus(hours: OpeningHours, now: Date): OpeningStatus 
     .filter((range) => range.opens > localTime.minutes)
     .sort((left, right) => left.opens - right.opens)[0];
   if (upcoming) {
-    return status('closed', 'Closed', `Opens today at ${formatClockTime(Math.floor(upcoming.opens / 60), upcoming.opens % 60)}`);
+    return status('closed', 'Closed now', `Opens today at ${formatClockTime(Math.floor(upcoming.opens / 60), upcoming.opens % 60)}`);
   }
 
   for (let offset = 1; offset <= 7; offset += 1) {
@@ -225,8 +225,8 @@ export function getOpeningStatus(hours: OpeningHours, now: Date): OpeningStatus 
       .sort((left, right) => left.opens - right.opens);
     if (!nextRanges.length) continue;
     const dayLabel = offset === 1 ? 'tomorrow' : DAY_NAMES[dayIndex];
-    return status('closed', 'Closed', `Opens ${dayLabel} at ${formatClockTime(Math.floor(nextRanges[0].opens / 60), nextRanges[0].opens % 60)}`);
+    return status('closed', 'Closed now', `Opens ${dayLabel} at ${formatClockTime(Math.floor(nextRanges[0].opens / 60), nextRanges[0].opens % 60)}`);
   }
 
-  return status('closed', 'Closed', '');
+  return status('closed', 'Closed now', '');
 }
