@@ -6,6 +6,7 @@ import {
   CheckCircle2,
   AlertCircle,
   Loader2,
+  Pencil,
   Trash2,
   Plus,
   ExternalLink,
@@ -25,7 +26,9 @@ import { VirtualTourModal } from '@/components/virtual-tour-modal';
 import { PhotoViewerModal, type CottagePhoto } from '@/components/cottages/cottage-photos-modal';
 import { CottageCard } from '@/components/cottages/cottage-card';
 import { FacilityCard, type FacilityCardPhoto } from '@/components/FacilityCard';
-import { FACILITY_CATEGORY_CONFIG, type FacilityCategory, getFacilityCategoryLabel } from '@/lib/utils/facility-categories';
+import { FacilityCategorySelect } from '@/components/owner/FacilityCategorySelect';
+import { PhotoUploadGrid } from '@/components/owner/PhotoUploadGrid';
+import { type FacilityCategory, getFacilityCategoryLabel } from '@/lib/utils/facility-categories';
 import { getFacilityFeeItems } from '@/lib/utils/facility-pricing';
 import { getValidBeachCoordinates } from '@/lib/utils/beach-coordinates';
 import { MAX_BEACH_IMAGE_SIZE_BYTES, removeBeachImageByPath, uploadBeachImage, uploadBeachImageWithPath } from '@/lib/utils/beach-image-upload';
@@ -279,6 +282,7 @@ export default function ManageInformationPage() {
   // Do's & Don'ts Rules State
   const [rules, setRules] = useState<ResortRuleItem[]>([]);
   const [showAddRule, setShowAddRule] = useState(false);
+  const [editingRuleId, setEditingRuleId] = useState<string | null>(null);
   const [newRule, setNewRule] = useState<{
     type: 'do' | 'dont';
     title: string;
@@ -815,6 +819,16 @@ export default function ManageInformationPage() {
     setCottageModalStatus(null);
   };
 
+  const reorderCottagePhotos = (photos: CottagePhotoDraft[]) => {
+    cottageHasChangesRef.current = true;
+    const orderedPhotos = photos.map((photo, sort_order) => ({ ...photo, sort_order }));
+    setCottagePhotos(orderedPhotos);
+    setNewCottage((current) => ({
+      ...current,
+      image_url: orderedPhotos[0]?.image_url || current.image_url,
+    }));
+  };
+
   const retryCottagePhoto = async (photo: CottagePhotoDraft) => {
     if (!photo.file) return;
     setUploadingCottageImage(true);
@@ -867,18 +881,6 @@ export default function ManageInformationPage() {
       cottageUploadCompletionResolveRef.current = null;
       cottageUploadCompletionRef.current = null;
     }
-  };
-
-  const makeCottagePhotoCover = async (photo: CottagePhotoDraft) => {
-    if (!photo.id || !editingCottageId) return;
-    const next = [...cottagePhotos].sort((left, right) =>
-      Number(left.id !== photo.id) - Number(right.id !== photo.id)
-    );
-    cottageHasChangesRef.current = true;
-    const sorted = next.map((item, index) => ({ ...item, sort_order: index }));
-    setCottagePhotos(sorted);
-    setNewCottage((current) => ({ ...current, image_url: sorted[0]?.image_url || '' }));
-    setCottageModalStatus(null);
   };
 
   const resetCottageEditor = () => {
@@ -1338,12 +1340,14 @@ export default function ManageInformationPage() {
     setNewFacility((current) => ({ ...current, image_url: facilityPhotos.filter((item) => item.localId !== photo.localId)[0]?.image_url || '' }));
   };
 
-  const makeFacilityPhotoCover = (photo: FacilityPhotoDraft) => {
+  const reorderFacilityPhotos = (photos: FacilityPhotoDraft[]) => {
     facilityHasChangesRef.current = true;
-    const sorted = [photo, ...facilityPhotos.filter((item) => item.localId !== photo.localId)]
-      .map((item, index) => ({ ...item, sort_order: index }));
-    setFacilityPhotos(sorted);
-    setNewFacility((current) => ({ ...current, image_url: sorted[0]?.image_url || '' }));
+    const orderedPhotos = photos.map((photo, sort_order) => ({ ...photo, sort_order }));
+    setFacilityPhotos(orderedPhotos);
+    setNewFacility((current) => ({
+      ...current,
+      image_url: orderedPhotos[0]?.image_url || current.image_url,
+    }));
   };
 
   const discardFacilityEditor = async () => {
@@ -2028,6 +2032,7 @@ export default function ManageInformationPage() {
                 basePrice={fac.price}
                 rates={fac.rates}
                 editable
+                neutralCategoryBadge
                 onView={() => setViewingFacility(fac)}
                 onEdit={() => startFacilityEditor(fac)}
                 onDelete={async () => {
@@ -2426,6 +2431,7 @@ export default function ManageInformationPage() {
             <button
               type="button"
               onClick={() => {
+                setEditingRuleId(null);
                 setNewRule({ type: 'do', title: '', description: '', category: 'General' });
                 setShowAddRule(true);
               }}
@@ -2473,24 +2479,45 @@ export default function ManageInformationPage() {
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        if (!await confirmAction({ title: 'Delete Guideline', message: `Are you sure you want to delete "${rule.title}"?` })) return;
-                        const nextRules = rules.filter((r) => r.id !== rule.id);
-                        const ok = await saveRulesSilently(nextRules);
-                        if (ok) {
-                          setRules(nextRules);
-                          setToast({ type: 'delete', message: 'Deleted successfully!' });
-                        } else {
-                          setToast({ type: 'error', message: 'Unable to delete item.' });
-                        }
-                      }}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer flex-shrink-0"
-                      title="Delete guideline"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex flex-shrink-0 items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingRuleId(rule.id);
+                          setNewRule({
+                            type: rule.type,
+                            title: rule.title,
+                            description: rule.description,
+                            category: rule.category,
+                          });
+                          setShowAddRule(true);
+                        }}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-[#1F3F74] hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+                        title="Edit guideline"
+                        aria-label={`Edit guideline: ${rule.title}`}
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!await confirmAction({ title: 'Delete Guideline', message: `Are you sure you want to delete "${rule.title}"?` })) return;
+                          const nextRules = rules.filter((r) => r.id !== rule.id);
+                          const ok = await saveRulesSilently(nextRules);
+                          if (ok) {
+                            setRules(nextRules);
+                            setToast({ type: 'delete', message: 'Deleted successfully!' });
+                          } else {
+                            setToast({ type: 'error', message: 'Unable to delete item.' });
+                          }
+                        }}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
+                        title="Delete guideline"
+                        aria-label={`Delete guideline: ${rule.title}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 ))}
 
@@ -2536,24 +2563,45 @@ export default function ManageInformationPage() {
                       </div>
                     </div>
 
-                    <button
-                      type="button"
-                      onClick={async () => {
-                        if (!await confirmAction({ title: 'Delete Restriction', message: `Are you sure you want to delete "${rule.title}"?` })) return;
-                        const nextRules = rules.filter((r) => r.id !== rule.id);
-                        const ok = await saveRulesSilently(nextRules);
-                        if (ok) {
-                          setRules(nextRules);
-                          setToast({ type: 'delete', message: 'Deleted successfully!' });
-                        } else {
-                          setToast({ type: 'error', message: 'Unable to delete item.' });
-                        }
-                      }}
-                      className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer flex-shrink-0"
-                      title="Delete restriction"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
+                    <div className="flex flex-shrink-0 items-center gap-1">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          setEditingRuleId(rule.id);
+                          setNewRule({
+                            type: rule.type,
+                            title: rule.title,
+                            description: rule.description,
+                            category: rule.category,
+                          });
+                          setShowAddRule(true);
+                        }}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-[#1F3F74] hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+                        title="Edit restriction"
+                        aria-label={`Edit restriction: ${rule.title}`}
+                      >
+                        <Pencil className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        type="button"
+                        onClick={async () => {
+                          if (!await confirmAction({ title: 'Delete Restriction', message: `Are you sure you want to delete "${rule.title}"?` })) return;
+                          const nextRules = rules.filter((r) => r.id !== rule.id);
+                          const ok = await saveRulesSilently(nextRules);
+                          if (ok) {
+                            setRules(nextRules);
+                            setToast({ type: 'delete', message: 'Deleted successfully!' });
+                          } else {
+                            setToast({ type: 'error', message: 'Unable to delete item.' });
+                          }
+                        }}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer"
+                        title="Delete restriction"
+                        aria-label={`Delete restriction: ${rule.title}`}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
                   </div>
                 ))}
 
@@ -2571,20 +2619,20 @@ export default function ManageInformationPage() {
       {/* ── TAB 6: 360° VIRTUAL TOUR ── */}
       {activeTab === 'tour' && (
         <div className="space-y-6">
-          <div className="flex justify-end">
-            <button
-              type="button"
-              onClick={() => setShowRecaptureModal(true)}
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-bold shadow-xs cursor-pointer transition-all"
-            >
-              <Compass className="w-3.5 h-3.5" />
-              <span>Request 360° Recapture</span>
-            </button>
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+            <div>
+              <h2 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
+                360° Virtual Tour Panorama
+              </h2>
+              <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
+                Immersive 360° panoramic scan of your resort coastline powered by Panoee.
+              </p>
+            </div>
           </div>
 
           {formData.virtual_tour_url ? (
             <div className="space-y-4">
-              <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between">
+              <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between">
                 <div className="flex items-center gap-2.5">
                   <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
                   <span className="text-xs font-bold text-emerald-900 dark:text-emerald-200">
@@ -2602,7 +2650,7 @@ export default function ManageInformationPage() {
               </div>
 
               {/* Embedded Interactive Viewer */}
-              <div className="relative aspect-16/9 rounded-2xl overflow-hidden border border-slate-200 dark:border-neutral-800 bg-black">
+              <div className="relative aspect-16/9 overflow-hidden border border-slate-200 dark:border-neutral-800 bg-black">
                 <iframe
                   src={formData.virtual_tour_url}
                   title="360 Tour"
@@ -2612,7 +2660,7 @@ export default function ManageInformationPage() {
               </div>
             </div>
           ) : (
-            <div className="py-12 border-2 border-dashed border-slate-200 dark:border-neutral-800 rounded-2xl text-center flex flex-col items-center justify-center gap-2 text-slate-400">
+            <div className="py-12 border-2 border-dashed border-slate-200 dark:border-neutral-800 text-center flex flex-col items-center justify-center gap-2 text-slate-400">
               <Compass className="w-8 h-8 text-slate-300 dark:text-neutral-700" />
               <p className="text-xs font-semibold text-slate-700 dark:text-neutral-200">
                 No 360° virtual tour registered yet
@@ -2622,6 +2670,16 @@ export default function ManageInformationPage() {
               </p>
             </div>
           )}
+
+          <div className="flex justify-center">
+            <button
+              type="button"
+              onClick={() => setShowRecaptureModal(true)}
+              className="px-6 py-2.5 rounded-full bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-bold shadow-xs cursor-pointer transition-all"
+            >
+              Request 360° Recapture
+            </button>
+          </div>
         </div>
       )}
 
@@ -2865,121 +2923,16 @@ export default function ManageInformationPage() {
                 </div>
               </div>
 
-              {/* Persistent cottage image upload */}
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
-                  Cottage Photos
-                </label>
-                <div className="flex flex-wrap justify-center gap-3 pb-2">
-                  {cottagePhotos.map((photo, index) => (
-                    <div key={photo.localId} className="w-24 shrink-0 space-y-1.5">
-                      <div className={`relative aspect-[4/3] overflow-hidden rounded-none border border-slate-200 dark:border-neutral-700 ${
-                        photo.status === 'uploading' ? 'opacity-80' : 'opacity-100'
-                      }`}>
-                        <Image
-                          src={photo.previewUrl || photo.image_url}
-                          alt=""
-                          aria-hidden="true"
-                          fill
-                          unoptimized
-                          className="pointer-events-none scale-110 object-cover blur-xl brightness-90"
-                        />
-                        <Image
-                          src={photo.previewUrl || photo.image_url}
-                          alt={`Cottage photo ${index + 1}`}
-                          fill
-                          unoptimized
-                          className="relative z-10 object-contain"
-                        />
-                        <button
-                          type="button"
-                          aria-label={`Remove photo ${index + 1}`}
-                          disabled={uploadingCottageImage}
-                          onClick={() => void removeCottagePhoto(photo)}
-                          className="absolute right-1 top-1 rounded-full bg-black/70 p-1 text-white disabled:opacity-50"
-                        >
-                          <XCircle className="h-3.5 w-3.5" />
-                        </button>
-                      </div>
-                      {photo.id && photo.sort_order === 0 ? (
-                        <span className="block text-center text-[10px] font-bold text-emerald-700 dark:text-emerald-400">Cover</span>
-                      ) : (
-                        <button
-                          type="button"
-                          disabled={uploadingCottageImage || !photo.id}
-                          onClick={() => void makeCottagePhotoCover(photo)}
-                          className="block w-full text-center text-[10px] font-semibold text-[#1F3F74] disabled:opacity-50 dark:text-[#4987BA]"
-                        >
-                          Make cover
-                        </button>
-                      )}
-                      <div
-                        className="h-1 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-neutral-700"
-                        role="progressbar"
-                        aria-label={`Photo ${index + 1} upload progress`}
-                        aria-valuenow={photo.progress}
-                        aria-valuemin={0}
-                        aria-valuemax={100}
-                      >
-                        <div
-                          className={`h-full transition-[width] duration-200 ${photo.status === 'error' ? 'bg-rose-500' : 'bg-emerald-500'}`}
-                          style={{ width: `${photo.progress}%` }}
-                        />
-                      </div>
-                      {photo.status === 'uploading' && (
-                        <span className="block text-center text-[10px] text-slate-500">Uploading...</span>
-                      )}
-                      {photo.status === 'error' && (
-                        <div className="space-y-1">
-                          <span className="block text-center text-[10px] text-rose-600" role="alert">
-                            {photo.error || 'Upload failed'}
-                          </span>
-                          <button
-                            type="button"
-                            disabled={uploadingCottageImage}
-                            onClick={() => void retryCottagePhoto(photo)}
-                            className="block w-full text-center text-[10px] font-bold text-[#1F3F74] disabled:opacity-50 dark:text-[#4987BA]"
-                          >
-                            Retry
-                          </button>
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-                <div className="flex flex-col items-center gap-1.5">
-                  <label
-                    aria-disabled={cottagePhotos.length >= 10}
-                    className={`px-4 py-2 rounded-full border border-slate-300 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-950 text-xs font-semibold text-slate-700 dark:text-neutral-300 inline-flex items-center gap-1.5 ${
-                      cottagePhotos.length >= 10
-                        ? 'pointer-events-none opacity-50'
-                        : 'hover:bg-slate-100 cursor-pointer'
-                    }`}
-                  >
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>{cottagePhotos.length ? 'Add more photos' : 'Add Photos'}</span>
-                    <span className="text-slate-500">{cottagePhotos.length} / 10</span>
-                    <input
-                      type="file"
-                      accept="image/jpeg, image/png, image/webp"
-                      multiple
-                      disabled={uploadingCottageImage || cottagePhotos.length >= 10}
-                      onChange={(e) => {
-                        const files = Array.from(e.currentTarget.files || []);
-                        void handleCottagePhotoFiles(files);
-                        e.currentTarget.value = '';
-                      }}
-                      className="hidden"
-                    />
-                  </label>
-                  <p className="text-center text-[10px] leading-relaxed text-slate-500 dark:text-neutral-400">
-                    Up to 10 photos; JPG, PNG, or WebP, optimized to 1600px and 5 MB each.
-                  </p>
-                  {cottagePhotos.length >= 10 && (
-                    <span className="text-[10px] text-slate-500">The 10-photo limit has been reached.</span>
-                  )}
-                </div>
-              </div>
+              <PhotoUploadGrid
+                photos={cottagePhotos}
+                removeDisabled={uploadingCottageImage}
+                retryDisabled={uploadingCottageImage}
+                addDisabled={uploadingCottageImage}
+                onRemove={(photo) => void removeCottagePhoto(photo)}
+                onReorder={reorderCottagePhotos}
+                onRetry={(photo) => void retryCottagePhoto(photo)}
+                onFilesSelected={(files) => void handleCottagePhotoFiles(files)}
+              />
 
               <div className="space-y-1">
                 <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
@@ -3195,29 +3148,18 @@ export default function ManageInformationPage() {
               <div className={`grid gap-3 ${newFacility.category === 'comfort_room' || newFacility.category === 'parking' ? 'grid-cols-1' : 'grid-cols-2'}`}>
                 <div className="space-y-1">
                   <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">Category</label>
-                  <div className="relative">
-                    <select
-                      value={newFacility.category}
-                      onChange={(event) => {
-                        const category = event.target.value as FacilityItem['category'];
-                        facilityHasChangesRef.current = true;
-                        if (category !== newFacility.category) {
-                          setFacilityRateAmounts({});
-                          setCustomFacilityRates([]);
-                          setFacilityRateErrors({});
-                        }
-                        setNewFacility({ ...newFacility, category });
-                      }}
-                      className="w-full appearance-none rounded-full border border-slate-300 bg-white py-2.5 pl-4 pr-10 text-xs text-slate-900 focus:border-[#1F3F74] focus:outline-none dark:border-neutral-700 dark:bg-neutral-950 dark:text-white"
-                    >
-                      {Object.entries(FACILITY_CATEGORY_CONFIG)
-                        .filter(([value, option]) => value !== 'cottages' && (!('selectable' in option) || option.selectable !== false))
-                        .map(([value, option]) => (
-                          <option key={value} value={value}>{option.label}</option>
-                        ))}
-                    </select>
-                    <ChevronDown className="pointer-events-none absolute right-3.5 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
-                  </div>
+                  <FacilityCategorySelect
+                    value={newFacility.category ?? 'parking'}
+                    onChange={(category) => {
+                      facilityHasChangesRef.current = true;
+                      if (category !== newFacility.category) {
+                        setFacilityRateAmounts({});
+                        setCustomFacilityRates([]);
+                        setFacilityRateErrors({});
+                      }
+                      setNewFacility({ ...newFacility, category });
+                    }}
+                  />
                 </div>
                 {newFacility.category !== 'comfort_room' && newFacility.category !== 'parking' && (
                   <div className="space-y-1">
@@ -3401,113 +3343,16 @@ export default function ManageInformationPage() {
                 </section>
               )}
 
-              <div className="space-y-2">
-                <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
-                  Photos
-                </label>
-                {facilityPhotos.length > 0 && (
-                  <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
-                    {facilityPhotos.map((photo, index) => {
-                      const source = photo.previewUrl || photo.image_url;
-                      return (
-                        <div key={photo.localId} className="min-w-0 space-y-1.5">
-                          <div className="relative aspect-[4/3] overflow-hidden border border-slate-200 bg-slate-100 dark:border-neutral-700 dark:bg-neutral-800">
-                            {source && (
-                              <Image
-                                src={source}
-                                alt={`Facility photo ${index + 1}`}
-                                fill
-                                unoptimized
-                                className="object-contain"
-                              />
-                            )}
-                            <button
-                              type="button"
-                              aria-label={`Remove photo ${index + 1}`}
-                              disabled={savingFacility}
-                              onClick={() => void removeFacilityPhoto(photo)}
-                              className="absolute right-1 top-1 rounded-full bg-black/70 p-1 text-white disabled:opacity-50"
-                            >
-                              <XCircle className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                          {photo.id && photo.sort_order === 0 ? (
-                            <span className="block text-center text-[10px] font-bold text-emerald-700 dark:text-emerald-400">Cover</span>
-                          ) : (
-                            <button
-                              type="button"
-                              disabled={uploadingFacilityPhotos || savingFacility || !photo.id}
-                              onClick={() => makeFacilityPhotoCover(photo)}
-                              className="block w-full text-center text-[10px] font-semibold text-[#1F3F74] disabled:opacity-50 dark:text-[#4987BA]"
-                            >
-                              Make cover
-                            </button>
-                          )}
-                          <div
-                            className="h-1 w-full overflow-hidden rounded-full bg-slate-200 dark:bg-neutral-700"
-                            role="progressbar"
-                            aria-label={`Photo ${index + 1} upload progress`}
-                            aria-valuenow={photo.progress}
-                            aria-valuemin={0}
-                            aria-valuemax={100}
-                          >
-                            <div
-                              className={`h-full transition-[width] duration-200 ${photo.status === 'error' ? 'bg-rose-500' : 'bg-emerald-500'}`}
-                              style={{ width: `${photo.progress}%` }}
-                            />
-                          </div>
-                          {photo.status === 'uploading' && <span className="block text-center text-[10px] text-slate-500">Uploading...</span>}
-                          {photo.status === 'saved' && <span className="block text-center text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">Saved photo</span>}
-                          {photo.status === 'error' && (
-                            <div className="space-y-1">
-                              <span className="block text-center text-[10px] text-rose-600" role="alert">
-                                {photo.error || 'Upload failed'}
-                              </span>
-                              <button
-                                type="button"
-                                disabled={uploadingFacilityPhotos || savingFacility}
-                                onClick={() => void retryFacilityPhoto(photo)}
-                                className="block w-full text-center text-[10px] font-bold text-[#1F3F74] disabled:opacity-50 dark:text-[#4987BA]"
-                              >
-                                Retry
-                              </button>
-                            </div>
-                          )}
-                        </div>
-                      );
-                    })}
-                  </div>
-                )}
-                <div className="flex flex-col items-center gap-1.5">
-                  <label className={`inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-700 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-300 ${
-                    facilityPhotos.length >= 10 || uploadingFacilityPhotos || savingFacility
-                      ? 'pointer-events-none opacity-50'
-                      : 'cursor-pointer hover:bg-slate-100'
-                  }`}>
-                    <Upload className="h-3.5 w-3.5" />
-                    <span>{facilityPhotos.length ? 'Add more photos' : 'Add Photos'}</span>
-                    <span className="text-slate-500">{facilityPhotos.length} / 10</span>
-                    <input
-                      type="file"
-                      accept="image/jpeg, image/png, image/webp"
-                      multiple
-                      disabled={facilityPhotos.length >= 10 || uploadingFacilityPhotos || savingFacility}
-                      onChange={(event) => {
-                        const files = Array.from(event.currentTarget.files || []);
-                        void handleFacilityPhotoFiles(files);
-                        event.currentTarget.value = '';
-                      }}
-                      className="hidden"
-                    />
-                  </label>
-                  <p className="text-center text-[10px] leading-relaxed text-slate-500 dark:text-neutral-400">
-                    Up to 10 photos; JPG, PNG, or WebP, optimized to 1600px and 5 MB each.
-                  </p>
-                  {facilityPhotos.length >= 10 && (
-                    <span className="text-[10px] text-slate-500">The 10-photo limit has been reached.</span>
-                  )}
-                </div>
-              </div>
+              <PhotoUploadGrid
+                photos={facilityPhotos}
+                removeDisabled={savingFacility}
+                retryDisabled={uploadingFacilityPhotos || savingFacility}
+                addDisabled={uploadingFacilityPhotos || savingFacility}
+                onRemove={(photo) => void removeFacilityPhoto(photo)}
+                onReorder={reorderFacilityPhotos}
+                onRetry={(photo) => void retryFacilityPhoto(photo)}
+                onFilesSelected={(files) => void handleFacilityPhotoFiles(files)}
+              />
 
               <div className="space-y-1">
                 <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">Description</label>
@@ -3592,7 +3437,7 @@ export default function ManageInformationPage() {
           <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-4 sm:p-7 max-w-lg w-full space-y-4 sm:space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             <div>
               <h3 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
-                Add Resort Guideline / Policy
+                {editingRuleId ? 'Edit Resort Guideline / Policy' : 'Add Resort Guideline / Policy'}
               </h3>
               <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1">
                 Configure guidelines, safety warnings, and rules for tourists visiting your resort.
@@ -3607,19 +3452,33 @@ export default function ManageInformationPage() {
                   return;
                 }
                 const item: ResortRuleItem = {
-                  id: `rule-${Date.now()}`,
+                  id: editingRuleId ?? `rule-${Date.now()}`,
                   type: newRule.type,
                   title: newRule.title.trim(),
                   description: newRule.description.trim(),
                   category: '',
                 };
-                const nextRules = [...rules, item];
-                if (await handleSave(nextRules)) {
-                  setRules(nextRules);
-                  setShowAddRule(false);
-                  setNewRule({ type: 'do', title: '', description: '', category: '' });
-                  setToast({ type: 'success', message: 'Added successfully!' });
-                }
+                const nextRules = editingRuleId
+                  ? rules.map((rule) => rule.id === editingRuleId ? item : rule)
+                  : [...rules, item];
+                const previousRules = rules;
+                const successMessage = editingRuleId
+                  ? 'Resort rule updated successfully!'
+                  : 'Added successfully!';
+
+                setRules(nextRules);
+                setShowAddRule(false);
+                setEditingRuleId(null);
+                setNewRule({ type: 'do', title: '', description: '', category: '' });
+
+                void saveRulesSilently(nextRules).then((saved) => {
+                  if (saved) {
+                    setToast({ type: 'success', message: successMessage });
+                  } else {
+                    setRules(previousRules);
+                    setToast({ type: 'error', message: 'Unable to save rule.' });
+                  }
+                });
               }}
               className="space-y-4"
             >
@@ -3688,7 +3547,10 @@ export default function ManageInformationPage() {
               <div className="flex justify-end gap-2 pt-3">
                 <button
                   type="button"
-                  onClick={() => setShowAddRule(false)}
+                  onClick={() => {
+                    setShowAddRule(false);
+                    setEditingRuleId(null);
+                  }}
                   className="rounded-full px-5 py-2 text-xs font-bold text-slate-600 dark:text-neutral-400 hover:bg-slate-100 dark:hover:bg-neutral-800 cursor-pointer"
                 >
                   Cancel
@@ -3697,7 +3559,7 @@ export default function ManageInformationPage() {
                   type="submit"
                   className="rounded-full px-6 py-2 bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-bold shadow-xs cursor-pointer"
                 >
-                  Save Guideline
+                  {editingRuleId ? 'Save Changes' : 'Save Guideline'}
                 </button>
               </div>
             </form>

@@ -21,6 +21,7 @@ interface FacilityCardProps {
   basePrice?: string | null;
   rates?: FacilityRate[];
   editable?: boolean;
+  neutralCategoryBadge?: boolean;
   onView: () => void;
   onEdit?: () => void;
   onDelete?: () => void;
@@ -34,6 +35,7 @@ export function FacilityCard({
   basePrice,
   rates = [],
   editable = false,
+  neutralCategoryBadge = false,
   onView,
   onEdit,
   onDelete,
@@ -68,7 +70,11 @@ export function FacilityCard({
             )}
           </span>
           <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5 sm:gap-1">
-            <span className={`max-w-full truncate rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider sm:text-[11px] ${getFacilityCategoryStyle(category)}`}>
+            <span className={`max-w-full truncate rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider sm:text-[11px] ${
+              neutralCategoryBadge
+                ? 'whitespace-nowrap bg-slate-100 text-slate-800 dark:bg-neutral-800 dark:text-neutral-100'
+                : getFacilityCategoryStyle(category)
+            }`}>
               {getFacilityCategoryLabel(category)}
             </span>
             <span className="max-w-full truncate text-xs sm:text-sm font-bold text-slate-900 dark:text-white">

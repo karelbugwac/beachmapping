@@ -6,6 +6,7 @@ export const FACILITY_CATEGORY_CONFIG = {
   room: { label: 'Room', className: 'bg-violet-100 text-violet-800' },
   grilling_area: { label: 'Grilling Area', className: 'bg-orange-100 text-orange-800' },
   equipment: { label: 'Water Equipment / Life Vests', className: 'bg-slate-100 text-slate-800' },
+  water_activities: { label: 'Water Activities', className: 'bg-orange-100 text-orange-800' },
   safety: { label: 'Lifeguard & Safety Station', className: 'bg-rose-100 text-rose-800' },
 } as const;
 
