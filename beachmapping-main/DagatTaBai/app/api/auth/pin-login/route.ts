@@ -151,10 +151,21 @@ export async function POST(request: Request) {
         .eq('id', adminProfile.id);
       if (pinUpdateError) throw pinUpdateError;
 
-      // Always update the password in Supabase auth
+      // Always update the password in Supabase auth (and strip any oversized base64 avatar from user_metadata to prevent Set-Cookie header overflow)
+      const existingMeta = (authUser?.user_metadata || {}) as Record<string, unknown>;
+      const cleanedMeta =
+        typeof existingMeta.profile_image_url === 'string' && existingMeta.profile_image_url.startsWith('data:')
+          ? { ...existingMeta, profile_image_url: null }
+          : undefined;
+
       const { error: passwordSyncError } = await adminSupabase.auth.admin.updateUserById(
         adminProfile.id,
-        { email: adminEmail, email_confirm: true, password: cleanPin }
+        {
+          email: adminEmail,
+          email_confirm: true,
+          password: cleanPin,
+          ...(cleanedMeta ? { user_metadata: cleanedMeta } : {}),
+        }
       );
       if (passwordSyncError) {
         throw new Error(passwordSyncError.message || 'Failed to sync admin sign-in.');
