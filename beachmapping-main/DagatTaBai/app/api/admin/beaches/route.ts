@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { authorizeRoles } from '@/lib/supabase/authorization';
 import { invalidateBeachesCache } from '@/lib/db/beaches';
+import { getTourRequestForBeach, approveTourRequest } from '@/lib/services/tourRequests';
+import { getCoordinateRequestForBeach, approveCoordinateRequest } from '@/lib/services/coordinateRequests';
 
 export async function GET() {
   try {
@@ -106,6 +108,39 @@ export async function PATCH(request: NextRequest) {
       .maybeSingle();
     if (error) throw error;
     if (!data) return NextResponse.json({ error: 'Beach listing not found.' }, { status: 404 });
+
+    // Sync any pending tour or coordinate requests if admin directly updated those fields
+    try {
+      if (virtual_tour_url !== undefined && updates.virtual_tour_url) {
+        const pendingTour = await getTourRequestForBeach(id);
+        if (pendingTour && pendingTour.status === 'pending') {
+          await approveTourRequest({
+            beachId: id,
+            reviewerId: auth.user.id,
+            overrideTourUrl: updates.virtual_tour_url,
+          });
+        }
+      }
+      if (latitude !== undefined && longitude !== undefined) {
+        const pendingCoord = await getCoordinateRequestForBeach(id);
+        if (pendingCoord && pendingCoord.status === 'pending') {
+          await approveCoordinateRequest({
+            beachId: id,
+            reviewerId: auth.user.id,
+          });
+          // Re-apply the admin's exact coordinates in case they differed from the request
+          await (auth.adminClient.from('beaches') as any)
+            .update({
+              latitude: updates.latitude,
+              longitude: updates.longitude,
+              ...(updates.location ? { location: updates.location } : {}),
+            })
+            .eq('id', id);
+        }
+      }
+    } catch {
+      // Non-fatal if request sync fails
+    }
 
     invalidateBeachesCache();
     return NextResponse.json({ success: true, beach: data });

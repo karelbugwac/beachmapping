@@ -20,6 +20,7 @@ import {
   Palmtree,
 } from 'lucide-react';
 import { showToast } from '@/components/ui/feedback-toasts';
+import { notifyRealtimeSync, useRealtimeSync } from '@/lib/realtime-sync';
 
 interface ApplicationItem {
   id: string;
@@ -82,13 +83,11 @@ export default function AdminApplicationsPage() {
 
   useEffect(() => {
     void fetchApplications();
-    const interval = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        void fetchApplications();
-      }
-    }, 60000);
-    return () => clearInterval(interval);
   }, []);
+
+  useRealtimeSync(() => {
+    void fetchApplications();
+  });
 
   const stats = useMemo(() => {
     return {
@@ -174,6 +173,7 @@ export default function AdminApplicationsPage() {
         prev.map((a) => (a.id === selectedApp.id ? { ...a, status: 'approved' } : a))
       );
       setSelectedApp((prev) => (prev ? { ...prev, status: 'approved' } : null));
+      notifyRealtimeSync('all');
       showToast(`Approved! 6-digit PIN emailed to ${selectedApp.applicant_email}.`, 'success');
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Approval failed', 'error');
@@ -208,6 +208,7 @@ export default function AdminApplicationsPage() {
       setSelectedApp((prev) =>
         prev ? { ...prev, status: 'rejected', rejection_reason: reason } : null
       );
+      notifyRealtimeSync('applications');
       showToast('Application rejected.', 'error');
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Rejection failed', 'error');

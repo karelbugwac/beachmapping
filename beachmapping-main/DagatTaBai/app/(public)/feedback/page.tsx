@@ -4,6 +4,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { Star } from 'lucide-react';
 import { showToast } from '@/components/ui/feedback-toasts';
 import { maskReviewerName } from '@/lib/utils/mask-reviewer-name';
+import { notifyRealtimeSync, useRealtimeSync } from '@/lib/realtime-sync';
 
 interface PlatformReview {
   id: string;
@@ -32,8 +33,8 @@ export default function PlatformFeedbackPage() {
   const [submitting, setSubmitting] = useState(false);
   const [activeCategory, setActiveCategory] = useState<'all' | 5 | 4 | 3 | 2 | 1>('all');
 
-  useEffect(() => {
-    const load = async () => {
+  const loadFeedback = async (silent = false) => {
+    try {
       const [reviewsResponse, sessionResponse] = await Promise.all([
         fetch('/api/platform-feedback', { cache: 'no-store' }),
         fetch('/api/auth/session', { cache: 'no-store' }),
@@ -43,11 +44,20 @@ export default function PlatformFeedbackPage() {
       setReviews(Array.isArray(data) ? data : []);
       const session = await sessionResponse.json();
       setSignedIn(Boolean(session.user));
-    };
-    void load().catch((error: unknown) =>
-      showToast(error instanceof Error ? error.message : 'Could not load feedback.', 'error')
-    );
+    } catch (error: unknown) {
+      if (!silent) {
+        showToast(error instanceof Error ? error.message : 'Could not load feedback.', 'error');
+      }
+    }
+  };
+
+  useEffect(() => {
+    void loadFeedback(false);
   }, []);
+
+  useRealtimeSync(() => {
+    void loadFeedback(true);
+  });
 
   // Handle star clicking and toggling:
   // If the user clicks the current rating, it unselects down to value - 1 (min 1 star).
@@ -73,6 +83,7 @@ export default function PlatformFeedbackPage() {
       if (!response.ok) throw new Error(data.error || 'Could not submit feedback.');
       setReviews((current) => [data, ...current]);
       setComment('');
+      notifyRealtimeSync('feedback');
       showToast('Feedback submitted successfully!', 'success');
     } catch (error: unknown) {
       showToast(error instanceof Error ? error.message : 'Could not submit feedback.', 'error');

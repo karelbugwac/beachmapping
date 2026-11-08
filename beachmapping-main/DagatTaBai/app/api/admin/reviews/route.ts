@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authorizeRoles } from '@/lib/supabase/authorization';
+import { syncBeachAverageRating } from '@/lib/db/reviews';
 
 export async function GET() {
   try {
@@ -127,12 +128,19 @@ export async function DELETE(request: NextRequest) {
     if (!reviewId) return NextResponse.json({ error: 'Review ID is required.' }, { status: 400 });
 
     const reviewType = request.nextUrl.searchParams.get('type') === 'platform' ? 'platform_reviews' : 'beach_reviews';
+    if (reviewType === 'beach_reviews') {
+      await (auth.adminClient.from('beach_review_reports') as any).delete().eq('review_id', reviewId);
+    }
     const { data, error } = await (auth.adminClient.from(reviewType) as any)
       .delete()
       .eq('id', reviewId)
-      .select('id');
+      .select(reviewType === 'beach_reviews' ? 'id, beach_id' : 'id');
     if (error) throw error;
     if (!data?.length) return NextResponse.json({ error: 'Review not found.' }, { status: 404 });
+
+    if (reviewType === 'beach_reviews' && data[0]?.beach_id) {
+      await syncBeachAverageRating(data[0].beach_id);
+    }
 
     return NextResponse.json({ success: true });
   } catch (error: unknown) {

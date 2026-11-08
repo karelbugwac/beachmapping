@@ -32,6 +32,7 @@ import { formatOpeningHoursGroups } from '@/lib/utils/opening-status';
 import { getFacilityFeeItems } from '@/lib/utils/facility-pricing';
 import { maskReviewerName } from '@/lib/utils/mask-reviewer-name';
 import { showToast } from '@/components/ui/feedback-toasts';
+import { useRealtimeSync, notifyRealtimeSync } from '@/lib/realtime-sync';
 
 interface ResortRuleItem {
   id: string;
@@ -115,8 +116,8 @@ export default function BeachProfilePage({
   const [signedIn, setSignedIn] = useState(false);
   const [reviewCategory, setReviewCategory] = useState<'all' | 5 | 4 | 3 | 2 | 1>('all');
 
-  useEffect(() => {
-    setLoading(true);
+  const refreshBeachAndReviews = (initialLoad = false) => {
+    if (initialLoad) setLoading(true);
     fetch(`/api/beaches/${encodeURIComponent(slug)}`, { cache: 'no-store' })
       .then((res) => {
         if (!res.ok) throw new Error('Beach not found');
@@ -124,18 +125,16 @@ export default function BeachProfilePage({
       })
       .then((data) => {
         setBeach(data);
+        setNotFound(false);
         setReviewCount(Number(data.review_count) || 0);
       })
       .catch(() => {
         setNotFound(true);
       })
       .finally(() => {
-        setLoading(false);
+        if (initialLoad) setLoading(false);
       });
-  }, [slug]);
 
-  // Load reviews and user authentication state
-  useEffect(() => {
     fetch(`/api/beaches/${encodeURIComponent(slug)}/reviews`, { cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : []))
       .then((data) => {
@@ -145,6 +144,10 @@ export default function BeachProfilePage({
         }
       })
       .catch(() => {});
+  };
+
+  useEffect(() => {
+    refreshBeachAndReviews(true);
 
     fetch('/api/auth/session', { cache: 'no-store' })
       .then((res) => (res.ok ? res.json() : null))
@@ -153,6 +156,10 @@ export default function BeachProfilePage({
       })
       .catch(() => {});
   }, [slug]);
+
+  useRealtimeSync(() => {
+    refreshBeachAndReviews(false);
+  });
 
   // 1st Image Requirement: Spinning indicator only (no text)
   if (loading) {
@@ -742,6 +749,8 @@ export default function BeachProfilePage({
                         setBeachReviews((prev) => [data, ...prev]);
                         setReviewCount((prev) => prev + 1);
                         setReviewComment('');
+                        notifyRealtimeSync('reviews');
+                        refreshBeachAndReviews(false);
                         showToast('Thank you! Your review has been posted.', 'success');
                       } catch (err: unknown) {
                         showToast(err instanceof Error ? err.message : 'Could not submit review.', 'error');
@@ -832,7 +841,7 @@ export default function BeachProfilePage({
                       <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">Sign in to drop your verified rating and review.</p>
                     </div>
                     <Link
-                      href="/auth/signin"
+                      href="/login"
                       className="inline-flex items-center justify-center px-5 py-2 bg-[#1F3F74] hover:bg-[#285091] text-white text-xs font-bold rounded-full transition shadow-xs shrink-0"
                     >
                       Sign In to Review

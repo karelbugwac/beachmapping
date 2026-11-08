@@ -29,6 +29,7 @@ import type { RouteResult } from '@/lib/db/routing';
 import { SeaRoute } from '@/components/ui/coastal-icons';
 import { getValidBeachCoordinates } from '@/lib/utils/beach-coordinates';
 import { matchesBeachSearch } from '@/lib/utils/beach-search';
+import { useRealtimeSync } from '@/lib/realtime-sync';
 
 function parseEntranceFee(
   entranceFee: string | null,
@@ -143,6 +144,10 @@ export default function MapPage() {
       window.removeEventListener('focus', refreshBeaches);
     };
   }, [selectedSlugFromUrl, beachReloadTrigger]);
+
+  useRealtimeSync(() => {
+    setBeachReloadTrigger((prev) => prev + 1);
+  });
 
   useEffect(() => {
     if (!/\b(binongkalan|catmon)\b/i.test(searchQuery)) {

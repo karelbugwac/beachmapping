@@ -31,6 +31,7 @@ import { getValidBeachCoordinates } from '@/lib/utils/beach-coordinates';
 import { MAX_BEACH_IMAGE_SIZE_BYTES, removeBeachImageByPath, uploadBeachImage, uploadBeachImageWithPath } from '@/lib/utils/beach-image-upload';
 import { generateUUID } from '@/lib/utils/uuid';
 import { confirmAction } from '@/components/ui/confirm-dialog';
+import { useRealtimeSync, notifyRealtimeSync } from '@/lib/realtime-sync';
 
 interface CottageItem {
   id: string;
@@ -446,6 +447,24 @@ export default function ManageInformationPage() {
       });
   }, []);
 
+  useRealtimeSync(() => {
+    fetch('/api/owner/beach', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const b = data[0];
+          setBeach(b);
+          setFormData((current) => ({
+            ...current,
+            virtual_tour_url: b.virtual_tour_url || current.virtual_tour_url,
+            latitude: b.latitude != null ? String(b.latitude) : current.latitude,
+            longitude: b.longitude != null ? String(b.longitude) : current.longitude,
+          }));
+        }
+      })
+      .catch(() => {});
+  });
+
   const saveCatalogItem = async <T,>(type: 'cottage' | 'facility' | 'post', item: object): Promise<T> => {
     const response = await fetch('/api/owner/beach/catalog', {
       method: 'POST',
@@ -454,6 +473,7 @@ export default function ManageInformationPage() {
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Failed to save listing.');
+    notifyRealtimeSync('beaches');
     return data.item as T;
   };
 
@@ -462,6 +482,7 @@ export default function ManageInformationPage() {
     const response = await fetch(`/api/owner/beach/catalog?${params}`, { method: 'DELETE' });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Failed to remove listing.');
+    notifyRealtimeSync('beaches');
   };
 
   // Validation
@@ -506,6 +527,7 @@ export default function ManageInformationPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
+      if (res.ok) notifyRealtimeSync('beaches');
       return res.ok;
     } catch {
       return false;
@@ -558,6 +580,7 @@ export default function ManageInformationPage() {
         }));
       }
 
+      notifyRealtimeSync('beaches');
       setToast({
         type: 'success',
         message: 'Changes saved!',
@@ -1531,6 +1554,7 @@ export default function ManageInformationPage() {
         throw new Error(data.error || 'Submission failed.');
       }
 
+      notifyRealtimeSync('requests');
       setToast({
         type: 'success',
         message: 'Submitted successfully!',
@@ -3785,6 +3809,7 @@ export default function ManageInformationPage() {
             if (!response.ok) {
               throw new Error(data.error || 'Failed to submit map location request.');
             }
+            notifyRealtimeSync('requests');
             setToast({ type: 'success', message: data.message || 'Map location request sent for admin approval.' });
             return;
           }

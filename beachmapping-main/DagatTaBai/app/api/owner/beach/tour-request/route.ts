@@ -57,7 +57,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { beach_id, requested_tour_url, requester_note, is_recapture } = body;
+    const { beach_id, requested_tour_url, requester_note, reason, notes, is_recapture } = body;
 
     if (!beach_id || typeof beach_id !== 'string') {
       return NextResponse.json(
@@ -76,6 +76,14 @@ export async function POST(request: NextRequest) {
         { status: 400, headers: noStoreHeaders }
       );
     }
+
+    const combinedNote =
+      typeof requester_note === 'string' && requester_note.trim()
+        ? requester_note.trim()
+        : [reason, notes]
+            .map((part) => (typeof part === 'string' ? part.trim() : ''))
+            .filter(Boolean)
+            .join(' — ') || undefined;
 
     // Verify ownership if not admin
     if (auth.role !== 'admin') {
@@ -96,7 +104,7 @@ export async function POST(request: NextRequest) {
       beachId: beach_id,
       ownerId: auth.user.id,
       requestedUrl: tourUrl,
-      requesterNote: requester_note,
+      requesterNote: combinedNote,
     });
 
     return NextResponse.json(

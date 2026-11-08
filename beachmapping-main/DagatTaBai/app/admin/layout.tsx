@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { showToast } from '@/components/ui/feedback-toasts';
+import { useRealtimeSync } from '@/lib/realtime-sync';
 
 export default function AdminLayout({
   children,
@@ -97,59 +98,58 @@ export default function AdminLayout({
     void checkAuth();
   }, [shouldRenderLogin]);
 
+  const fetchCounts = () => {
+    if (shouldRenderLogin || !isAuthenticated) return;
+
+    fetch('/api/applications', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.applications && Array.isArray(data.applications)) {
+          const count = data.applications.filter((a: any) => a.status === 'pending').length;
+          setPendingCount(count);
+
+          if (!isInitialLoadRef.current) {
+            if (count > previousPendingCountRef.current) {
+              showToast(
+                `New application received! ${count - previousPendingCountRef.current} new pending application(s).`,
+                'success'
+              );
+            }
+          }
+          previousPendingCountRef.current = count;
+          isInitialLoadRef.current = false;
+        }
+      })
+      .catch(() => {});
+
+    fetch('/api/admin/beaches/tour-requests', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (typeof data?.pendingCount === 'number') {
+          setPendingTourCount(data.pendingCount);
+        }
+      })
+      .catch(() => {});
+
+    fetch('/api/admin/beaches/coordinate-requests', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (typeof data?.pendingCount === 'number') {
+          setPendingCoordCount(data.pendingCount);
+        }
+      })
+      .catch(() => {});
+  };
+
   // Periodic automatic counts for sidebar badges (without re-triggering on state change)
   useEffect(() => {
     if (shouldRenderLogin || !isAuthenticated) return;
-
-    const fetchCounts = () => {
-      fetch('/api/applications', { cache: 'no-store' })
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          if (data?.applications && Array.isArray(data.applications)) {
-            const count = data.applications.filter((a: any) => a.status === 'pending').length;
-            setPendingCount(count);
-
-            if (!isInitialLoadRef.current) {
-              if (count > previousPendingCountRef.current) {
-                showToast(
-                  `New application received! ${count - previousPendingCountRef.current} new pending application(s).`,
-                  'success'
-                );
-              }
-            }
-            previousPendingCountRef.current = count;
-            isInitialLoadRef.current = false;
-          }
-        })
-        .catch(() => {});
-
-      fetch('/api/admin/beaches/tour-requests', { cache: 'no-store' })
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          if (typeof data?.pendingCount === 'number') {
-            setPendingTourCount(data.pendingCount);
-          }
-        })
-        .catch(() => {});
-
-      fetch('/api/admin/beaches/coordinate-requests', { cache: 'no-store' })
-        .then((res) => (res.ok ? res.json() : null))
-        .then((data) => {
-          if (typeof data?.pendingCount === 'number') {
-            setPendingCoordCount(data.pendingCount);
-          }
-        })
-        .catch(() => {});
-    };
-
     fetchCounts();
-    const interval = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        fetchCounts();
-      }
-    }, 60000);
-    return () => clearInterval(interval);
   }, [shouldRenderLogin, isAuthenticated]);
+
+  useRealtimeSync(() => {
+    fetchCounts();
+  }, { enabled: !shouldRenderLogin && isAuthenticated });
 
   const handleLogout = async () => {
     try {

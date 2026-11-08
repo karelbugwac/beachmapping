@@ -25,6 +25,7 @@ import { VirtualTourModal, extractTourEmbedUrl } from '@/components/virtual-tour
 import { LocationPickerModal } from '@/components/map/location-picker-modal';
 import type { TourRequestWithBeach } from '@/lib/services/tourRequests';
 import type { CoordinateRequestWithBeach } from '@/lib/services/coordinateRequests';
+import { notifyRealtimeSync, useRealtimeSync } from '@/lib/realtime-sync';
 
 type BeachReviewItem = {
   id: string;
@@ -90,7 +91,7 @@ export default function AdminBeachesPage() {
 
   // Filter & Search state
   const [searchQuery, setSearchQuery] = useState('');
-  const [filterMode, setFilterMode] = useState<'all' | 'active' | 'flagged' | 'suspended'>('all');
+  const [filterMode, setFilterMode] = useState<'all' | 'active' | 'requests' | 'flagged' | 'suspended'>('all');
 
   // Modals state
   const [previewTourUrl, setPreviewTourUrl] = useState<string | null>(null);
@@ -205,15 +206,11 @@ export default function AdminBeachesPage() {
 
   useEffect(() => {
     void refreshAll();
-
-    const interval = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        void refreshAll();
-      }
-    }, 60000);
-
-    return () => clearInterval(interval);
   }, []);
+
+  useRealtimeSync(() => {
+    void refreshAll();
+  });
 
   const pendingTourRequests = useMemo(
     () => tourRequests.filter((r) => r.status === 'pending'),
@@ -224,6 +221,14 @@ export default function AdminBeachesPage() {
     () => coordinateRequests.filter((r) => r.status === 'pending'),
     [coordinateRequests]
   );
+
+  const getBeachTourRequest = (beach: BeachRecord) => {
+    return pendingTourRequests.find((r) => r.beach_id === beach.id) || null;
+  };
+
+  const getBeachCoordRequest = (beach: BeachRecord) => {
+    return pendingCoordRequests.find((r) => r.beach_id === beach.id) || null;
+  };
 
   const getBeachReviews = (beach: BeachRecord) => {
     return reviews.filter(
@@ -262,6 +267,8 @@ export default function AdminBeachesPage() {
       if (!response.ok) throw new Error(data.error || 'Failed to delete review.');
       setReviews((current) => current.filter((item) => item.id !== review.id));
       setReports((current) => current.filter((rep) => rep.review_id !== review.id));
+      notifyRealtimeSync('reviews');
+      void fetchBeaches();
       showToast('Review deleted.', 'destructive');
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Failed to delete review.', 'error');
@@ -290,12 +297,14 @@ export default function AdminBeachesPage() {
           ? true
           : filterMode === 'active'
           ? beach.status === 'active'
+          : filterMode === 'requests'
+          ? Boolean(getBeachTourRequest(beach) || getBeachCoordRequest(beach))
           : filterMode === 'flagged'
           ? getBeachReports(beach).length > 0
           : beach.status !== 'active';
       return matchesSearch && matchesFilter;
     });
-  }, [beaches, searchQuery, filterMode, reports]);
+  }, [beaches, searchQuery, filterMode, reports, pendingTourRequests, pendingCoordRequests]);
 
   const toggleBeachStatus = async (beach: BeachRecord) => {
     const status = beach.status === 'active' ? 'suspended' : 'active';
@@ -319,6 +328,7 @@ export default function AdminBeachesPage() {
       } else {
         showToast(`"${beach.name}" suspended.`, 'error');
       }
+      notifyRealtimeSync('beaches');
     } catch (error: unknown) {
       showToast(error instanceof Error ? error.message : 'Failed to update beach status.', 'error');
     }
@@ -348,6 +358,7 @@ export default function AdminBeachesPage() {
       if (editingBeach?.id === beach.id) {
         setEditingBeach(null);
       }
+      notifyRealtimeSync('all');
       showToast(data.message || `"${beach.name}" and its owner account deleted.`, 'destructive');
     } catch (error: unknown) {
       showToast(error instanceof Error ? error.message : 'Failed to delete beach.', 'error');
@@ -356,7 +367,7 @@ export default function AdminBeachesPage() {
     }
   };
 
-  const handleApproveTour = async (req: TourRequestWithBeach) => {
+  const handleApproveTour = async (req: TourRequestWithBeach, overrideUrl?: string) => {
     try {
       setIsProcessingAction(true);
       const res = await fetch('/api/admin/beaches/tour-requests', {
@@ -365,12 +376,26 @@ export default function AdminBeachesPage() {
         body: JSON.stringify({
           action: 'approve',
           beach_id: req.beach_id,
+          request_id: req.id,
+          virtual_tour_url: overrideUrl?.trim() || undefined,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to approve tour request.');
 
-      showToast(`360° Tour for "${req.beach?.name || 'Beach'}" approved.`, 'success');
+      if (data.tourUrl && data.tourUrl !== 'Recapture Request') {
+        setBeaches((current) =>
+          current.map((b) => (b.id === req.beach_id ? { ...b, virtual_tour_url: data.tourUrl } : b))
+        );
+        if (editingBeach?.id === req.beach_id) {
+          setEditingBeach((prev) => (prev ? { ...prev, virtual_tour_url: data.tourUrl } : null));
+          setEditForm((prev) => ({ ...prev, virtual_tour_url: data.tourUrl }));
+        }
+      }
+
+      showToast(`360° Tour request for "${req.beach?.name || 'Beach'}" approved.`, 'success');
+      notifyRealtimeSync('beaches');
+      notifyRealtimeSync('requests');
       await Promise.all([fetchBeaches(), fetchTourRequests()]);
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Failed to approve tour.', 'error');
@@ -389,6 +414,7 @@ export default function AdminBeachesPage() {
         body: JSON.stringify({
           action: 'reject',
           beach_id: rejectingRequest.beach_id,
+          request_id: rejectingRequest.id,
           rejection_reason: rejectReason.trim() || undefined,
         }),
       });
@@ -398,6 +424,7 @@ export default function AdminBeachesPage() {
       showToast('360° Tour request rejected.', 'error');
       setRejectingRequest(null);
       setRejectReason('');
+      notifyRealtimeSync('requests');
       await fetchTourRequests();
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Failed to reject tour request.', 'error');
@@ -414,13 +441,47 @@ export default function AdminBeachesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'approve',
+          beach_id: req.beach_id,
           request_id: req.id,
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to approve coordinate request.');
 
-      showToast(`Coordinates for "${req.beach?.name || 'Beach'}" approved.`, 'success');
+      setBeaches((current) =>
+        current.map((b) =>
+          b.id === req.beach_id
+            ? {
+                ...b,
+                latitude: req.requested_latitude,
+                longitude: req.requested_longitude,
+                location: req.requested_location || b.location,
+              }
+            : b
+        )
+      );
+      if (editingBeach?.id === req.beach_id) {
+        setEditingBeach((prev) =>
+          prev
+            ? {
+                ...prev,
+                latitude: req.requested_latitude,
+                longitude: req.requested_longitude,
+                location: req.requested_location || prev.location,
+              }
+            : null
+        );
+        setEditForm((prev) => ({
+          ...prev,
+          latitude: String(req.requested_latitude),
+          longitude: String(req.requested_longitude),
+          location: req.requested_location || prev.location,
+        }));
+      }
+
+      showToast(`Pin coordinates for "${req.beach?.name || 'Beach'}" approved.`, 'success');
+      notifyRealtimeSync('beaches');
+      notifyRealtimeSync('requests');
       await Promise.all([fetchBeaches(), fetchCoordinateRequests()]);
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Failed to approve coordinate request.', 'error');
@@ -438,6 +499,7 @@ export default function AdminBeachesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'reject',
+          beach_id: rejectingCoordRequest.beach_id,
           request_id: rejectingCoordRequest.id,
           rejection_reason: coordRejectReason.trim() || undefined,
         }),
@@ -448,6 +510,7 @@ export default function AdminBeachesPage() {
       showToast('Coordinate request rejected.', 'error');
       setRejectingCoordRequest(null);
       setCoordRejectReason('');
+      notifyRealtimeSync('requests');
       await fetchCoordinateRequests();
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Failed to reject coordinate request.', 'error');
@@ -557,7 +620,9 @@ export default function AdminBeachesPage() {
       );
 
       showToast(`"${editForm.name}" updated.`, 'success');
+      notifyRealtimeSync('beaches');
       setEditingBeach(null);
+      void Promise.all([fetchTourRequests(), fetchCoordinateRequests()]);
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Failed to update beach.', 'error');
     } finally {
@@ -610,6 +675,16 @@ export default function AdminBeachesPage() {
   const editingBeachReports = useMemo(
     () => (editingBeach ? getBeachReports(editingBeach) : []),
     [editingBeach, reports]
+  );
+
+  const editingBeachTourReq = useMemo(
+    () => (editingBeach ? getBeachTourRequest(editingBeach) : null),
+    [editingBeach, pendingTourRequests]
+  );
+
+  const editingBeachCoordReq = useMemo(
+    () => (editingBeach ? getBeachCoordRequest(editingBeach) : null),
+    [editingBeach, pendingCoordRequests]
   );
 
   return (
@@ -690,122 +765,6 @@ export default function AdminBeachesPage() {
         </button>
       </div>
 
-      {/* Pending Requests Banners */}
-      {(pendingTourRequests.length > 0 || pendingCoordRequests.length > 0) && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-          {pendingTourRequests.length > 0 && (
-            <div className="bg-amber-50/70 dark:bg-amber-950/20 border border-amber-200/80 dark:border-amber-800 rounded-2xl p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <Compass className="w-4 h-4 text-amber-600 dark:text-amber-400" />
-                <h2 className="text-xs font-bold text-amber-900 dark:text-amber-300">
-                  Pending 360° Tour Requests ({pendingTourRequests.length})
-                </h2>
-              </div>
-
-              <div className="space-y-2">
-                {pendingTourRequests.map((req) => (
-                  <div
-                    key={req.id}
-                    className="bg-white dark:bg-neutral-900 p-3 rounded-xl border border-amber-100 dark:border-amber-900/50 flex items-center justify-between gap-3"
-                  >
-                    <span className="font-bold text-xs text-[#1F3F74] dark:text-white truncate">
-                      {req.beach?.name || 'Beach'}
-                    </span>
-
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      {req.requested_tour_url && (
-                        <button
-                          type="button"
-                          onClick={() => {
-                            setPreviewTourUrl(req.requested_tour_url);
-                            setPreviewTourBeachName(req.beach?.name || 'Beach');
-                            setShowPreviewModal(true);
-                          }}
-                          className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300 hover:bg-slate-200 cursor-pointer"
-                        >
-                          Preview
-                        </button>
-                      )}
-                      <button
-                        type="button"
-                        onClick={() => handleApproveTour(req)}
-                        disabled={isProcessingAction}
-                        className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-emerald-600 hover:bg-emerald-700 text-white cursor-pointer"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setRejectingRequest(req)}
-                        disabled={isProcessingAction}
-                        className="px-2.5 py-1 rounded-lg text-[11px] font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {pendingCoordRequests.length > 0 && (
-            <div className="bg-sky-50/70 dark:bg-sky-950/20 border border-sky-200/80 dark:border-sky-800 rounded-2xl p-4 space-y-3">
-              <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 text-sky-600 dark:text-sky-400" />
-                <h2 className="text-xs font-bold text-sky-900 dark:text-sky-300">
-                  Pending Coordinate Requests ({pendingCoordRequests.length})
-                </h2>
-              </div>
-
-              <div className="space-y-2">
-                {pendingCoordRequests.map((req) => (
-                  <div
-                    key={req.id}
-                    className="bg-white dark:bg-neutral-900 p-3 rounded-xl border border-sky-100 dark:border-sky-900/50 flex items-center justify-between gap-3"
-                  >
-                    <div className="min-w-0">
-                      <p className="font-bold text-xs text-[#1F3F74] dark:text-white truncate">
-                        {req.beach?.name || 'Beach'}
-                      </p>
-                      <p className="text-[11px] font-mono text-slate-500 dark:text-neutral-400">
-                        {req.requested_latitude.toFixed(4)}, {req.requested_longitude.toFixed(4)}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center gap-1.5 shrink-0">
-                      <button
-                        type="button"
-                        onClick={() => setPreviewCoordRequest(req)}
-                        className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300 hover:bg-slate-200 cursor-pointer"
-                      >
-                        Map
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => handleApproveCoord(req)}
-                        disabled={isProcessingCoordAction}
-                        className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-[#1F3F74] hover:bg-[#18325c] text-white cursor-pointer"
-                      >
-                        Approve
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => setRejectingCoordRequest(req)}
-                        disabled={isProcessingCoordAction}
-                        className="px-2.5 py-1 rounded-lg text-[11px] font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
-                      >
-                        Reject
-                      </button>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-      )}
-
       {/* Search & Filter Controls */}
       <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-slate-200/80 dark:border-neutral-800 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
         <div className="relative flex-1 max-w-md">
@@ -827,6 +786,9 @@ export default function AdminBeachesPage() {
           >
             <option value="all">All Beaches</option>
             <option value="active">Active</option>
+            <option value="requests">
+              Pending Requests ({pendingTourRequests.length + pendingCoordRequests.length})
+            </option>
             <option value="flagged">Flagged Reviews</option>
             <option value="suspended">Suspended</option>
           </select>
@@ -865,12 +827,19 @@ export default function AdminBeachesPage() {
             const coverImg = beach.cover_image || (beach as any).cover_image_url;
             const beachReviews = getBeachReviews(beach);
             const beachReports = getBeachReports(beach);
+            const beachTourReq = getBeachTourRequest(beach);
+            const beachCoordReq = getBeachCoordRequest(beach);
+            const hasPendingRequests = Boolean(beachTourReq || beachCoordReq);
             const latestReviews = beachReviews.slice(0, 2);
 
             return (
               <div
                 key={beach.id}
-                className="bg-white dark:bg-neutral-900 rounded-2xl border border-slate-200/80 dark:border-neutral-800 shadow-2xs hover:border-[#4987BA] transition-all overflow-hidden flex flex-col justify-between"
+                className={`bg-white dark:bg-neutral-900 rounded-2xl border shadow-2xs transition-all overflow-hidden flex flex-col justify-between ${
+                  hasPendingRequests
+                    ? 'border-[#4987BA] ring-1 ring-[#4987BA]/30'
+                    : 'border-slate-200/80 dark:border-neutral-800 hover:border-[#4987BA]'
+                }`}
               >
                 <div>
                   {/* Cover Image */}
@@ -900,12 +869,19 @@ export default function AdminBeachesPage() {
                         {isActive ? 'Active' : 'Suspended'}
                       </span>
 
-                      {hasTour && (
-                        <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#1F3F74] text-white shadow-xs">
-                          <Sparkles className="w-3 h-3 text-amber-300" />
-                          <span>360°</span>
-                        </span>
-                      )}
+                      <div className="flex items-center gap-1.5">
+                        {hasPendingRequests && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white shadow-xs">
+                            <span>Request Pending</span>
+                          </span>
+                        )}
+                        {hasTour && (
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#1F3F74] text-white shadow-xs">
+                            <Sparkles className="w-3 h-3 text-amber-300" />
+                            <span>360°</span>
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
 
@@ -927,6 +903,118 @@ export default function AdminBeachesPage() {
                         <span>{beach.average_rating ? Number(beach.average_rating).toFixed(1) : 'New'}</span>
                       </div>
                     </div>
+
+                    {/* Per-Beach Owner Edit Requests (360° Tour & Pin Coordinates) */}
+                    {hasPendingRequests && (
+                      <div className="rounded-xl border border-sky-200/80 dark:border-sky-800/70 bg-sky-50/60 dark:bg-sky-950/25 p-3 space-y-2.5">
+                        {beachTourReq && (
+                          <div className="rounded-lg bg-white dark:bg-neutral-900 p-2.5 border border-slate-200/70 dark:border-neutral-800 space-y-2">
+                            <div className="flex items-start justify-between gap-2">
+                              <div className="min-w-0">
+                                <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#1F3F74] dark:text-[#4987BA]">
+                                  <Compass className="w-3.5 h-3.5 shrink-0" />
+                                  {beachTourReq.requested_tour_url === 'Recapture Request'
+                                    ? '360° Tour Recapture Request'
+                                    : '360° Virtual Tour Request'}
+                                </span>
+                                {beachTourReq.requester_note && (
+                                  <p className="mt-0.5 text-[11px] text-slate-600 dark:text-neutral-400 line-clamp-2">
+                                    {beachTourReq.requester_note}
+                                  </p>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              {beachTourReq.requested_tour_url &&
+                              beachTourReq.requested_tour_url !== 'Recapture Request' ? (
+                                <button
+                                  type="button"
+                                  onClick={() => {
+                                    setPreviewTourUrl(beachTourReq.requested_tour_url);
+                                    setPreviewTourBeachName(beach.name);
+                                    setShowPreviewModal(true);
+                                  }}
+                                  className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300 hover:bg-slate-200 cursor-pointer"
+                                >
+                                  Preview
+                                </button>
+                              ) : (
+                                <button
+                                  type="button"
+                                  onClick={() => openEditModal(beach, 'tour')}
+                                  className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300 hover:bg-slate-200 cursor-pointer"
+                                >
+                                  Set Tour URL
+                                </button>
+                              )}
+                              <button
+                                type="button"
+                                onClick={() => void handleApproveTour(beachTourReq)}
+                                disabled={isProcessingAction}
+                                className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-[#1F3F74] hover:bg-[#18325c] text-white disabled:opacity-50 cursor-pointer"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setRejectingRequest(beachTourReq)}
+                                disabled={isProcessingAction}
+                                className="px-2.5 py-1 rounded-lg text-[11px] font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 disabled:opacity-50 cursor-pointer"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          </div>
+                        )}
+
+                        {beachCoordReq && (
+                          <div className="rounded-lg bg-white dark:bg-neutral-900 p-2.5 border border-slate-200/70 dark:border-neutral-800 space-y-2">
+                            <div className="min-w-0">
+                              <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#1F3F74] dark:text-[#4987BA]">
+                                <MapPin className="w-3.5 h-3.5 shrink-0" />
+                                Pin Coordinates Request
+                              </span>
+                              <p className="mt-0.5 text-[11px] font-mono text-slate-600 dark:text-neutral-300">
+                                {Number(beachCoordReq.requested_latitude).toFixed(5)},{' '}
+                                {Number(beachCoordReq.requested_longitude).toFixed(5)}
+                              </p>
+                              {beachCoordReq.requester_note && (
+                                <p className="mt-0.5 text-[11px] text-slate-500 dark:text-neutral-400 line-clamp-2">
+                                  {beachCoordReq.requester_note}
+                                </p>
+                              )}
+                            </div>
+
+                            <div className="flex flex-wrap items-center gap-1.5">
+                              <button
+                                type="button"
+                                onClick={() => setPreviewCoordRequest(beachCoordReq)}
+                                className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300 hover:bg-slate-200 cursor-pointer"
+                              >
+                                View Pin
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => void handleApproveCoord(beachCoordReq)}
+                                disabled={isProcessingCoordAction}
+                                className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-[#1F3F74] hover:bg-[#18325c] text-white disabled:opacity-50 cursor-pointer"
+                              >
+                                Approve
+                              </button>
+                              <button
+                                type="button"
+                                onClick={() => setRejectingCoordRequest(beachCoordReq)}
+                                disabled={isProcessingCoordAction}
+                                className="px-2.5 py-1 rounded-lg text-[11px] font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 disabled:opacity-50 cursor-pointer"
+                              >
+                                Reject
+                              </button>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    )}
 
                     {/* Per-Beach Reviews Section on Card */}
                     <div className="rounded-xl border border-slate-100 dark:border-neutral-800 bg-slate-50/70 dark:bg-neutral-950/60 p-3 space-y-2">
@@ -1091,8 +1179,14 @@ export default function AdminBeachesPage() {
               {[
                 { id: 'basic', label: 'Details' },
                 { id: 'reviews', label: `Reviews (${editingBeachReviews.length})` },
-                { id: 'tour', label: '360° Tour' },
-                { id: 'coordinates', label: 'Coordinates' },
+                {
+                  id: 'tour',
+                  label: editingBeachTourReq ? '360° Tour (1 Request)' : '360° Tour',
+                },
+                {
+                  id: 'coordinates',
+                  label: editingBeachCoordReq ? 'Coordinates (1 Request)' : 'Coordinates',
+                },
                 { id: 'rates', label: 'Rates' },
                 { id: 'photos', label: 'Photos' },
                 { id: 'posts', label: 'Posts' },
@@ -1283,6 +1377,65 @@ export default function AdminBeachesPage() {
               {/* TAB: 360 VIRTUAL TOUR */}
               {editTab === 'tour' && (
                 <div className="space-y-4">
+                  {editingBeachTourReq && (
+                    <div className="rounded-xl border border-amber-200 dark:border-amber-800 bg-amber-50/70 dark:bg-amber-950/25 p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="space-y-1">
+                          <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-900 dark:text-amber-300">
+                            <Compass className="w-4 h-4" />
+                            {editingBeachTourReq.requested_tour_url === 'Recapture Request'
+                              ? 'Pending 360° Tour Recapture Request'
+                              : 'Pending 360° Virtual Tour Update'}
+                          </span>
+                          {editingBeachTourReq.requester_note && (
+                            <p className="text-xs text-slate-600 dark:text-neutral-300">
+                              Owner note: &ldquo;{editingBeachTourReq.requester_note}&rdquo;
+                            </p>
+                          )}
+                          {editingBeachTourReq.requested_tour_url &&
+                            editingBeachTourReq.requested_tour_url !== 'Recapture Request' && (
+                              <p className="text-[11px] font-mono text-slate-500 dark:text-neutral-400 break-all">
+                                Requested URL: {editingBeachTourReq.requested_tour_url}
+                              </p>
+                            )}
+                        </div>
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        {editingBeachTourReq.requested_tour_url &&
+                          editingBeachTourReq.requested_tour_url !== 'Recapture Request' && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setPreviewTourUrl(editingBeachTourReq.requested_tour_url);
+                                setPreviewTourBeachName(editingBeach.name);
+                                setShowPreviewModal(true);
+                              }}
+                              className="px-3 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 text-slate-700 dark:text-neutral-200 hover:bg-slate-50 cursor-pointer"
+                            >
+                              Preview Requested Tour
+                            </button>
+                          )}
+                        <button
+                          type="button"
+                          onClick={() => void handleApproveTour(editingBeachTourReq, editForm.virtual_tour_url)}
+                          disabled={isProcessingAction}
+                          className="px-3 py-1.5 rounded-lg text-xs font-bold bg-[#1F3F74] hover:bg-[#18325c] text-white disabled:opacity-50 cursor-pointer"
+                        >
+                          Approve Request
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setRejectingRequest(editingBeachTourReq)}
+                          disabled={isProcessingAction}
+                          className="px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300 disabled:opacity-50 cursor-pointer"
+                        >
+                          Reject Request
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="space-y-1.5">
                     <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
                       360° Virtual Tour URL / Embed Link
@@ -1315,6 +1468,57 @@ export default function AdminBeachesPage() {
               {/* TAB: COORDINATES */}
               {editTab === 'coordinates' && (
                 <div className="space-y-4">
+                  {editingBeachCoordReq && (
+                    <div className="rounded-xl border border-sky-200 dark:border-sky-800 bg-sky-50/70 dark:bg-sky-950/25 p-4 space-y-3">
+                      <div className="space-y-1">
+                        <span className="inline-flex items-center gap-1.5 text-xs font-bold text-[#1F3F74] dark:text-[#4987BA]">
+                          <MapPin className="w-4 h-4" />
+                          Pending Pin Coordinates Update
+                        </span>
+                        <p className="text-xs font-mono text-slate-700 dark:text-neutral-200">
+                          Proposed Pin: {Number(editingBeachCoordReq.requested_latitude).toFixed(5)},{' '}
+                          {Number(editingBeachCoordReq.requested_longitude).toFixed(5)}
+                        </p>
+                        {editingBeachCoordReq.requested_location && (
+                          <p className="text-xs text-slate-600 dark:text-neutral-300">
+                            Proposed Location: {editingBeachCoordReq.requested_location}
+                          </p>
+                        )}
+                        {editingBeachCoordReq.requester_note && (
+                          <p className="text-xs text-slate-500 dark:text-neutral-400">
+                            Owner note: &ldquo;{editingBeachCoordReq.requester_note}&rdquo;
+                          </p>
+                        )}
+                      </div>
+
+                      <div className="flex flex-wrap items-center gap-2">
+                        <button
+                          type="button"
+                          onClick={() => setPreviewCoordRequest(editingBeachCoordReq)}
+                          className="px-3 py-1.5 rounded-lg text-xs font-bold bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 text-slate-700 dark:text-neutral-200 hover:bg-slate-50 cursor-pointer"
+                        >
+                          View Proposed Pin on Map
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => void handleApproveCoord(editingBeachCoordReq)}
+                          disabled={isProcessingCoordAction}
+                          className="px-3 py-1.5 rounded-lg text-xs font-bold bg-[#1F3F74] hover:bg-[#18325c] text-white disabled:opacity-50 cursor-pointer"
+                        >
+                          Approve Request
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setRejectingCoordRequest(editingBeachCoordReq)}
+                          disabled={isProcessingCoordAction}
+                          className="px-3 py-1.5 rounded-lg text-xs font-bold bg-rose-50 text-rose-600 hover:bg-rose-100 dark:bg-rose-950/40 dark:text-rose-300 disabled:opacity-50 cursor-pointer"
+                        >
+                          Reject Request
+                        </button>
+                      </div>
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-2 gap-4">
                     <div className="space-y-1.5">
                       <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
@@ -1786,6 +1990,7 @@ export default function AdminBeachesPage() {
               }
 
               showToast(`Pin updated to ${latNum.toFixed(5)}, ${lngNum.toFixed(5)}.`, 'success');
+              notifyRealtimeSync('beaches');
               setSelectedBeachForCoords(null);
             } catch (err: unknown) {
               showToast(err instanceof Error ? err.message : 'Failed to update pin.', 'error');

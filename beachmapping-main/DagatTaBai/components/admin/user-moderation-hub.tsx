@@ -22,6 +22,7 @@ import {
   RefreshCw,
 } from 'lucide-react';
 import { showToast } from '@/components/ui/feedback-toasts';
+import { notifyRealtimeSync, useRealtimeSync } from '@/lib/realtime-sync';
 
 export interface AdminUser {
   id: string;
@@ -109,6 +110,10 @@ export function UserModerationHub(_props: UserModerationHubProps) {
   useEffect(() => {
     void loadUsers();
   }, []);
+
+  useRealtimeSync(() => {
+    void loadUsers();
+  });
 
   // Copy ID
   const copyToClipboard = (text: string) => {
@@ -208,6 +213,7 @@ export function UserModerationHub(_props: UserModerationHubProps) {
       }
 
       showToast('User details updated.');
+      notifyRealtimeSync('users');
       setEditingUser(null);
     } catch (error: unknown) {
       showToast(error instanceof Error ? error.message : 'Failed to update user.', 'error');
@@ -278,6 +284,7 @@ export function UserModerationHub(_props: UserModerationHubProps) {
       }
 
       showToast(`Account updated to ${newStatus}.`);
+      notifyRealtimeSync('users');
       setStatusModalUser(null);
     } catch (error: unknown) {
       showToast(error instanceof Error ? error.message : 'Failed to update account status.', 'error');
@@ -332,6 +339,7 @@ export function UserModerationHub(_props: UserModerationHubProps) {
       }
 
       showToast('User account deleted.', 'destructive');
+      notifyRealtimeSync('all');
       setDeleteModalUser(null);
     } catch (error: unknown) {
       showToast(error instanceof Error ? error.message : 'Failed to delete user account.', 'error');
@@ -368,6 +376,7 @@ export function UserModerationHub(_props: UserModerationHubProps) {
       );
 
       showToast('6-digit PIN reset.');
+      notifyRealtimeSync('users');
       setResetPinUser(null);
       setNewPin('');
     } catch (error: unknown) {

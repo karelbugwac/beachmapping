@@ -350,8 +350,9 @@ export async function cancelTourRequest(params: {
 export async function approveTourRequest(params: {
   beachId: string;
   reviewerId?: string | null;
+  overrideTourUrl?: string | null;
 }): Promise<{ success: boolean; tourUrl: string }> {
-  const { beachId, reviewerId } = params;
+  const { beachId, reviewerId, overrideTourUrl } = params;
   const adminSupabase = createAdminClient();
   const now = new Date().toISOString();
 
@@ -361,21 +362,28 @@ export async function approveTourRequest(params: {
     throw new Error('No pending 360 tour request found for this beach.');
   }
 
-  const tourUrl = currentReq.requested_tour_url;
+  const candidateUrl =
+    typeof overrideTourUrl === 'string' && overrideTourUrl.trim()
+      ? extractTourEmbedUrl(overrideTourUrl.trim()) || overrideTourUrl.trim()
+      : currentReq.requested_tour_url;
+  const isRecapturePlaceholder = candidateUrl === 'Recapture Request';
 
-  // 2. Update beaches table
-  const { error: beachError } = await (adminSupabase.from('beaches') as any)
-    .update({
-      virtual_tour_url: tourUrl,
-      updated_at: now,
-    })
-    .eq('id', beachId);
+  // 2. Update beaches table only when a real URL is provided
+  if (!isRecapturePlaceholder) {
+    const { error: beachError } = await (adminSupabase.from('beaches') as any)
+      .update({
+        virtual_tour_url: candidateUrl,
+        updated_at: now,
+      })
+      .eq('id', beachId);
 
-  if (beachError) {
-    throw beachError;
+    if (beachError) {
+      throw beachError;
+    }
+
+    invalidateBeachesCache();
   }
-
-  invalidateBeachesCache();
+  const tourUrl = candidateUrl;
 
   // 3. Update dedicated table or beach_general_information
   if (await hasDedicatedTable(adminSupabase)) {

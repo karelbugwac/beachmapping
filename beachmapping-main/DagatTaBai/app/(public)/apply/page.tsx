@@ -17,6 +17,7 @@ import {
   Camera,
   RefreshCw,
 } from 'lucide-react';
+import { notifyRealtimeSync } from '@/lib/realtime-sync';
 
 interface FilePreviewState {
   file: File;
@@ -348,6 +349,7 @@ export default function BeachOwnerApplicationPage() {
       }
 
       // Smoothly switch to confirmation view without showing any floating message
+      notifyRealtimeSync('applications');
       setSubmitted(true);
       window.scrollTo({ top: 100, behavior: 'smooth' });
     } catch (err: unknown) {

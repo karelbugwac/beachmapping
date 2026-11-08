@@ -3,6 +3,7 @@
 import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { showToast } from '@/components/ui/feedback-toasts';
+import { notifyRealtimeSync, useRealtimeSync } from '@/lib/realtime-sync';
 import {
   ChevronLeft,
   Camera,
@@ -74,28 +75,32 @@ export default function AdminApplicationDetailPage({
     setDocumentMessage(`${label} is not linked to a viewable file.`);
   };
 
-  useEffect(() => {
-    const fetchDetail = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(`/api/admin/applications/${resolvedParams.id}`, { cache: 'no-store' });
-        const data = await res.json();
-        if (res.ok && data.application) {
-          setApplication(data.application);
-          setStatus(data.application.status || 'pending');
-          if (data.application.rejection_reason) {
-            setAdminNotes(data.application.rejection_reason);
-          }
+  const fetchDetail = async (silent = false) => {
+    if (!silent) setLoading(true);
+    try {
+      const res = await fetch(`/api/admin/applications/${resolvedParams.id}`, { cache: 'no-store' });
+      const data = await res.json();
+      if (res.ok && data.application) {
+        setApplication(data.application);
+        setStatus(data.application.status || 'pending');
+        if (data.application.rejection_reason) {
+          setAdminNotes(data.application.rejection_reason);
         }
-      } catch (err) {
-        console.error('Failed to load application detail:', err);
-      } finally {
-        setLoading(false);
       }
-    };
+    } catch (err) {
+      console.error('Failed to load application detail:', err);
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  };
 
-    void fetchDetail();
+  useEffect(() => {
+    void fetchDetail(false);
   }, [resolvedParams.id]);
+
+  useRealtimeSync(() => {
+    void fetchDetail(true);
+  });
 
   const handleApprove = async () => {
     if (!application) return;
@@ -116,6 +121,7 @@ export default function AdminApplicationDetailPage({
       if (!res.ok) throw new Error(data.error || 'Failed to approve application');
 
       setStatus('approved');
+      notifyRealtimeSync('all');
       showToast(`Approved! 6-digit PIN emailed to ${application.applicant_email}.`, 'success');
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Approval failed', 'error');
@@ -144,6 +150,7 @@ export default function AdminApplicationDetailPage({
       if (!res.ok) throw new Error(data.error || 'Failed to reject application');
 
       setStatus('rejected');
+      notifyRealtimeSync('applications');
       showToast('Application rejected.', 'error');
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Rejection failed', 'error');

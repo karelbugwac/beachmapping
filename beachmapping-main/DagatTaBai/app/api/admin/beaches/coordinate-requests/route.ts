@@ -39,9 +39,18 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { action, beach_id, rejection_reason } = body;
+    const { action, beach_id, request_id, rejection_reason } = body;
 
-    if (!beach_id || typeof beach_id !== 'string') {
+    let targetBeachId = typeof beach_id === 'string' ? beach_id : '';
+    if (!targetBeachId && typeof request_id === 'string') {
+      const allReqs = await getAllCoordinateRequests();
+      const matched = allReqs.find((r) => r.id === request_id);
+      if (matched?.beach_id) {
+        targetBeachId = matched.beach_id;
+      }
+    }
+
+    if (!targetBeachId) {
       return NextResponse.json(
         { error: 'beach_id is required.' },
         { status: 400, headers: noStoreHeaders }
@@ -50,7 +59,7 @@ export async function POST(request: NextRequest) {
 
     if (action === 'approve') {
       const result = await approveCoordinateRequest({
-        beachId: beach_id,
+        beachId: targetBeachId,
         reviewerId: auth.user.id,
       });
 
@@ -68,7 +77,7 @@ export async function POST(request: NextRequest) {
       );
     } else if (action === 'reject') {
       await rejectCoordinateRequest({
-        beachId: beach_id,
+        beachId: targetBeachId,
         rejectionReason: rejection_reason || 'Coordinates could not be verified by Admin.',
         reviewerId: auth.user.id,
       });

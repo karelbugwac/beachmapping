@@ -25,6 +25,7 @@ import {
 import { useTheme } from '@/components/theme-provider';
 import { showToast } from '@/components/ui/feedback-toasts';
 import { confirmAction } from '@/components/ui/confirm-dialog';
+import { notifyRealtimeSync, useRealtimeSync } from '@/lib/realtime-sync';
 
 interface ProfileData {
   id: string;
@@ -340,6 +341,7 @@ export default function ProfilePage() {
             detail: { full_name: data.user.full_name },
           })
         );
+        notifyRealtimeSync('users');
         setProfileSaveState('saved');
       } catch (error: unknown) {
         setProfileSaveState('error');
@@ -350,11 +352,9 @@ export default function ProfilePage() {
     return () => window.clearTimeout(timer);
   }, [name, user, userLocation]);
 
-  useEffect(() => {
-    if (activeCategory !== 'reviews' || !user?.id) return;
-
-    let isMounted = true;
-    setReviewsLoading(true);
+  const fetchUserReviews = (silent = false) => {
+    if (!user?.id) return;
+    if (!silent) setReviewsLoading(true);
     fetch(`/api/profile/reviews?userId=${encodeURIComponent(user.id)}`, { cache: 'no-store' })
       .then(async (response) => {
         const result = await response.json();
@@ -362,22 +362,29 @@ export default function ProfilePage() {
         return result;
       })
       .then((result: unknown) => {
-        if (isMounted && Array.isArray(result)) setReviews(result as UserReview[]);
+        if (Array.isArray(result)) setReviews(result as UserReview[]);
       })
       .catch((error: unknown) => {
-        if (isMounted) {
+        if (!silent) {
           setReviews([]);
           showToast(error instanceof Error ? error.message : 'Could not load your reviews.', 'error');
         }
       })
       .finally(() => {
-        if (isMounted) setReviewsLoading(false);
+        if (!silent) setReviewsLoading(false);
       });
+  };
 
-    return () => {
-      isMounted = false;
-    };
+  useEffect(() => {
+    if (activeCategory !== 'reviews' || !user?.id) return;
+    fetchUserReviews(false);
   }, [activeCategory, user?.id]);
+
+  useRealtimeSync(() => {
+    if (activeCategory === 'reviews' && user?.id) {
+      fetchUserReviews(true);
+    }
+  });
 
   const handleDeleteReview = async (reviewId: string) => {
     if (!await confirmAction({ title: 'Delete Review', message: 'Are you sure you want to delete this review?' })) return;
@@ -390,6 +397,7 @@ export default function ProfilePage() {
         throw new Error(result.error || 'Failed to delete review.');
       }
       setReviews((previous) => previous.filter((review) => review.id !== reviewId));
+      notifyRealtimeSync('reviews');
       showToast('Review deleted.', 'destructive');
     } catch (error: unknown) {
       showToast(error instanceof Error ? error.message : 'Failed to delete review.', 'error');

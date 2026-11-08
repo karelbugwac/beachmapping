@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
 import { AppShell } from '@/components/owner/AppShell';
 import type { BeachRecord } from '@/lib/db/beaches';
+import { useRealtimeSync } from '@/lib/realtime-sync';
 
 function parseOpeningHours(hours: any): string {
   if (!hours) return 'Hours not provided';
@@ -27,10 +28,9 @@ export default function OwnerLayout({
   // If on login page, render plain full-screen login card without sidebar
   const isLoginPage = pathname === '/owner/login';
 
-  useEffect(() => {
+  const fetchShellData = () => {
     if (isLoginPage) return;
 
-    // Fetch operator beach and review count for shell
     Promise.all([
       fetch('/api/owner/beach', { cache: 'no-store' }).then((res) => (res.ok ? res.json() : [])),
       fetch('/api/owner/reviews', { cache: 'no-store' }).then((res) => (res.ok ? res.json() : null)),
@@ -46,7 +46,15 @@ export default function OwnerLayout({
       .catch(() => {
         // Fallback gracefully if database or network is warming up
       });
+  };
+
+  useEffect(() => {
+    fetchShellData();
   }, [isLoginPage]);
+
+  useRealtimeSync(() => {
+    fetchShellData();
+  }, { enabled: !isLoginPage });
 
   if (isLoginPage) {
     return <>{children}</>;

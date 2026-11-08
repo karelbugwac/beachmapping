@@ -11,6 +11,7 @@ import {
 } from 'lucide-react';
 import { AnalyticsBarChart, type AnalyticsPoint } from '@/components/ui/analytics-bar-chart';
 import { showToast } from '@/components/ui/feedback-toasts';
+import { useRealtimeSync } from '@/lib/realtime-sync';
 
 export default function AdminDashboardPage() {
   const [stats, setStats] = useState({
@@ -80,13 +81,11 @@ export default function AdminDashboardPage() {
 
   useEffect(() => {
     void loadStats();
-    const interval = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        void loadStats();
-      }
-    }, 60000);
-    return () => clearInterval(interval);
   }, []);
+
+  useRealtimeSync(() => {
+    void loadStats();
+  });
 
   return (
     <div className="max-w-7xl mx-auto space-y-6 font-sans">

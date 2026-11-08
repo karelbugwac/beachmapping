@@ -96,7 +96,7 @@ export interface BeachRecord {
   updated_at: string;
 }
 
-const BEACH_CACHE_TTL_MS = 15_000; // 15 seconds in-memory cache with instant invalidation on mutations
+const BEACH_CACHE_TTL_MS = 0; // Real-time: always fetch live data without stale in-memory caching
 let allBeachesCache: { data: BeachRecord[]; expiresAt: number } | null = null;
 const slugBeachCache = new Map<string, { data: BeachRecord | null; expiresAt: number }>();
 
@@ -297,10 +297,10 @@ export async function getBeachBySlug(slug: string): Promise<BeachRecord | null> 
 
     let dbBeach: any = null;
     if (isUuid) {
-      const { data, error } = await query.eq('id', normalized).maybeSingle();
+      const { data, error } = await query.eq('id', normalized).eq('status', 'active').maybeSingle();
       if (!error && data) dbBeach = data;
     } else {
-      const { data, error } = await query.eq('slug', normalized).maybeSingle();
+      const { data, error } = await query.eq('slug', normalized).eq('status', 'active').maybeSingle();
       if (!error && data) {
         dbBeach = data;
       } else {
@@ -313,6 +313,7 @@ export async function getBeachBySlug(slug: string): Promise<BeachRecord | null> 
             beach_facilities ( name ),
             beach_external_links ( label, url )
           `)
+          .eq('status', 'active')
           .ilike('slug', `${normalized}%`)
           .limit(1)
           .maybeSingle();
@@ -329,6 +330,7 @@ export async function getBeachBySlug(slug: string): Promise<BeachRecord | null> 
               beach_facilities ( name ),
               beach_external_links ( label, url )
             `)
+            .eq('status', 'active')
             .ilike('name', `%${cleanName}%`)
             .limit(1)
             .maybeSingle();

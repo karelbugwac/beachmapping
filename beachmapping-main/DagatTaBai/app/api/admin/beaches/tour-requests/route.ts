@@ -39,9 +39,18 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { action, beach_id, rejection_reason } = body;
+    const { action, beach_id, request_id, rejection_reason, virtual_tour_url } = body;
 
-    if (!beach_id || typeof beach_id !== 'string') {
+    let targetBeachId = typeof beach_id === 'string' ? beach_id : '';
+    if (!targetBeachId && typeof request_id === 'string') {
+      const allReqs = await getAllTourRequests();
+      const matched = allReqs.find((r) => r.id === request_id);
+      if (matched?.beach_id) {
+        targetBeachId = matched.beach_id;
+      }
+    }
+
+    if (!targetBeachId) {
       return NextResponse.json(
         { error: 'beach_id is required.' },
         { status: 400, headers: noStoreHeaders }
@@ -50,21 +59,22 @@ export async function POST(request: NextRequest) {
 
     if (action === 'approve') {
       const result = await approveTourRequest({
-        beachId: beach_id,
+        beachId: targetBeachId,
         reviewerId: auth.user.id,
+        overrideTourUrl: typeof virtual_tour_url === 'string' ? virtual_tour_url : undefined,
       });
 
       return NextResponse.json(
         {
           success: true,
-          message: '360° Virtual Tour approved and published to the beach listing!',
+          message: '360° Virtual Tour request approved!',
           tourUrl: result.tourUrl,
         },
         { headers: noStoreHeaders }
       );
     } else if (action === 'reject') {
       await rejectTourRequest({
-        beachId: beach_id,
+        beachId: targetBeachId,
         rejectionReason: rejection_reason || 'Tour submission did not meet listing guidelines.',
         reviewerId: auth.user.id,
       });

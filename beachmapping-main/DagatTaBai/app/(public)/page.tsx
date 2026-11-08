@@ -10,6 +10,7 @@ import {
   Bot,
 } from 'lucide-react';
 import { ScrollReveal } from '@/components/ui/scroll-reveal';
+import { useRealtimeSync } from '@/lib/realtime-sync';
 
 interface SystemTestimonial {
   id: string;
@@ -59,26 +60,30 @@ function formatRole(role: string | undefined): string {
 export default function HomePage() {
   const [systemTestimonials, setSystemTestimonials] = useState<SystemTestimonial[]>([]);
 
-  useEffect(() => {
-    const fetchSystemTestimonials = async () => {
-      try {
-        const res = await fetch('/api/platform-feedback');
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data)) {
-            const highRated = data.filter(
-              (item: SystemTestimonial) => item.rating >= 4 && item.rating <= 5
-            );
-            setSystemTestimonials(highRated);
-          }
+  const fetchSystemTestimonials = async () => {
+    try {
+      const res = await fetch('/api/platform-feedback', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          const highRated = data.filter(
+            (item: SystemTestimonial) => item.rating >= 4 && item.rating <= 5
+          );
+          setSystemTestimonials(highRated);
         }
-      } catch {
-        setSystemTestimonials([]);
       }
-    };
+    } catch {
+      setSystemTestimonials([]);
+    }
+  };
 
-    fetchSystemTestimonials();
+  useEffect(() => {
+    void fetchSystemTestimonials();
   }, []);
+
+  useRealtimeSync(() => {
+    void fetchSystemTestimonials();
+  });
 
   useEffect(() => {
     const panoIframeName = 'tour-embeded';

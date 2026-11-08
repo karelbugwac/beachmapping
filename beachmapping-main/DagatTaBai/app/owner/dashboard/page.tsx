@@ -15,6 +15,7 @@ import {
 import type { BeachRecord } from '@/lib/db/beaches';
 import { AnalyticsBarChart, type AnalyticsPoint } from '@/components/ui/analytics-bar-chart';
 import { getValidBeachCoordinates } from '@/lib/utils/beach-coordinates';
+import { useRealtimeSync } from '@/lib/realtime-sync';
 
 interface ReviewAnalytics {
   totalReviews: number;
@@ -52,55 +53,52 @@ export default function OwnerDashboardPage() {
     return 'Maayong buntag';
   }, []);
 
-  useEffect(() => {
-    const loadDashboard = () => {
-      if (isFetchingRef.current) return;
-      isFetchingRef.current = true;
+  const loadDashboard = () => {
+    if (isFetchingRef.current) return;
+    isFetchingRef.current = true;
 
-      const beachPromise = fetch('/api/owner/beach', { cache: 'no-store' })
-        .then((res) => (res.ok ? res.json() : []))
-        .then((beaches) => {
-          if (Array.isArray(beaches) && beaches.length > 0) {
-            setBeach(beaches[0]);
-          }
-        })
-        .catch(() => {})
-        .finally(() => {
-          setLoading(false);
-        });
-
-      const reviewsPromise = fetch('/api/owner/reviews', { cache: 'no-store' })
-        .then((res) => (res.ok ? res.json() : null))
-        .then((reviewData) => {
-          if (reviewData && typeof reviewData.totalReviews === 'number') {
-            setReviews(reviewData);
-          }
-        })
-        .catch(() => {});
-
-      const analyticsPromise = fetch('/api/owner/analytics', { cache: 'no-store' })
-        .then((res) => (res.ok ? res.json() : null))
-        .then((visitorData) => {
-          if (Array.isArray(visitorData?.points)) {
-            setVisitorPoints(visitorData.points);
-          }
-        })
-        .catch(() => {});
-
-      Promise.allSettled([beachPromise, reviewsPromise, analyticsPromise]).finally(() => {
-        isFetchingRef.current = false;
+    const beachPromise = fetch('/api/owner/beach', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((beaches) => {
+        if (Array.isArray(beaches) && beaches.length > 0) {
+          setBeach(beaches[0]);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        setLoading(false);
       });
-    };
 
+    const reviewsPromise = fetch('/api/owner/reviews', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((reviewData) => {
+        if (reviewData && typeof reviewData.totalReviews === 'number') {
+          setReviews(reviewData);
+        }
+      })
+      .catch(() => {});
+
+    const analyticsPromise = fetch('/api/owner/analytics', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((visitorData) => {
+        if (Array.isArray(visitorData?.points)) {
+          setVisitorPoints(visitorData.points);
+        }
+      })
+      .catch(() => {});
+
+    Promise.allSettled([beachPromise, reviewsPromise, analyticsPromise]).finally(() => {
+      isFetchingRef.current = false;
+    });
+  };
+
+  useEffect(() => {
     loadDashboard();
-    // Automatic refresh every 60s only when tab is visible
-    const interval = window.setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        loadDashboard();
-      }
-    }, 60000);
-    return () => window.clearInterval(interval);
   }, []);
+
+  useRealtimeSync(() => {
+    loadDashboard();
+  });
 
   if (loading) {
     return (
