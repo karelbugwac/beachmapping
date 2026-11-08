@@ -126,7 +126,7 @@ export function AppShell({
 
         {/* Page Content */}
         <main
-          className="flex-1 p-6 sm:p-8 lg:p-10 w-full overflow-y-auto no-scrollbar"
+          className="flex-1 p-3.5 sm:p-6 lg:p-8 w-full max-w-full overflow-y-auto overflow-x-hidden no-scrollbar"
         >
           {children}
         </main>

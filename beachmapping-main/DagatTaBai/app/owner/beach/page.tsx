@@ -1592,7 +1592,7 @@ export default function ManageInformationPage() {
       </div>
 
       {/* ── Horizontally Scrollable Category Tab Pills ── */}
-      <div className="flex items-center gap-1.5 pb-2 overflow-x-auto no-scrollbar flex-nowrap -mx-4 px-4 sm:mx-0 sm:px-0">
+      <div className="flex items-center gap-1.5 pb-2 overflow-x-auto no-scrollbar flex-nowrap -mx-3.5 px-3.5 sm:mx-0 sm:px-0">
         {[
           { key: 'basic', label: 'Basic Info' },
           { key: 'cottages', label: 'Cottage/Tables' },
@@ -1883,17 +1883,8 @@ export default function ManageInformationPage() {
       {/* ── TAB 2: COTTAGES & TABLES (Built-in Peso ₱ sign, PNG/JPG upload only) ── */}
       {activeTab === 'cottages' && (
         <div className="space-y-6">
-          <div className="space-y-5">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
-                  Resort Cottages &amp; Tables
-                </h2>
-                <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
-                  Detailed cottage and table listings including photos, capacity, rates, and features.
-                </p>
-              </div>
-
+          <div className="space-y-4">
+            <div className="flex justify-end">
               <button
                 type="button"
                 onClick={() => {
@@ -2223,19 +2214,10 @@ export default function ManageInformationPage() {
 
           {/* 1. Profile Picture & Cover Photo */}
           {photoSubTab === 'branding' && (
-            <div className="space-y-6">
+            <div className="space-y-4">
               {/* Cover Banner */}
               <div className="space-y-2">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h3 className="text-sm font-bold text-slate-900 dark:text-white">
-                      Resort Cover Banner (Landscape)
-                    </h3>
-                    <p className="text-xs text-slate-500 dark:text-neutral-400">
-                      High-resolution landscape photo shown at the top of your public beach profile. PNG or JPG, up to 20 GB.
-                    </p>
-                  </div>
-
+                <div className="flex justify-end">
                   <label className="px-5 py-2 rounded-full bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-bold cursor-pointer transition-all inline-flex items-center gap-1.5">
                     {uploadingCover ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
                     <span>{formData.cover_image ? 'Change Cover' : 'Upload Cover'}</span>
@@ -2335,7 +2317,7 @@ export default function ManageInformationPage() {
                     onClick={handlePublishPost}
                     className="px-6 py-2 rounded-full bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-bold shadow-xs cursor-pointer"
                   >
-                    Publish Update
+                    Publish
                   </button>
                 </div>
               </div>
@@ -2572,20 +2554,11 @@ export default function ManageInformationPage() {
       {/* ── TAB 6: 360° VIRTUAL TOUR ── */}
       {activeTab === 'tour' && (
         <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-            <div>
-              <h2 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
-                360° Virtual Tour Panorama
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
-                Immersive 360° panoramic scan of your resort coastline powered by Panoee.
-              </p>
-            </div>
-
+          <div className="flex justify-end">
             <button
               type="button"
               onClick={() => setShowRecaptureModal(true)}
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-bold shadow-xs cursor-pointer transition-all self-start sm:self-auto"
+              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-bold shadow-xs cursor-pointer transition-all"
             >
               <Compass className="w-3.5 h-3.5" />
               <span>Request 360° Recapture</span>
@@ -2693,7 +2666,7 @@ export default function ManageInformationPage() {
             if (event.target === event.currentTarget) requestCloseCottageEditor();
           }}
         >
-          <div className="max-h-[90vh] w-full max-w-lg space-y-5 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-6 shadow-2xl animate-in fade-in zoom-in-95 duration-200 dark:border-neutral-800 dark:bg-neutral-900 sm:p-8">
+          <div className="max-h-[90vh] w-full max-w-lg space-y-4 sm:space-y-5 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 sm:p-7 shadow-2xl animate-in fade-in zoom-in-95 duration-200 dark:border-neutral-800 dark:bg-neutral-900">
             <div className="flex items-start justify-between gap-3">
               <h3 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
                 {editingCottageId ? 'Edit Resort Cottage' : 'Add New Resort Cottage'}
@@ -3596,7 +3569,7 @@ export default function ManageInformationPage() {
       {/* ── MODAL: ADD RESORT GUIDELINE / RULE ── */}
       {showAddRule && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-6 sm:p-8 max-w-lg w-full space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-4 sm:p-7 max-w-lg w-full space-y-4 sm:space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             <div>
               <h3 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
                 Add Resort Guideline / Policy
@@ -3715,7 +3688,7 @@ export default function ManageInformationPage() {
       {/* ── MODAL: 360° RECAPTURE REQUEST ── */}
       {showRecaptureModal && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-6 sm:p-8 max-w-lg w-full space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
+          <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-4 sm:p-7 max-w-lg w-full space-y-4 sm:space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             <div>
               <h3 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
                 Request 360° Virtual Tour Recapture

@@ -42,15 +42,15 @@ export function FacilityCard({
   const rateSummary = feeItems.map((item) => `${item.label}: ${formatFacilityFeeAmount(item.amount)}`).join(' · ');
 
   return (
-    <article className="flex min-w-0 flex-col gap-0 rounded-2xl border border-slate-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950">
-      <div className="flex min-w-0 items-center gap-4">
+    <article className="flex min-w-0 flex-col gap-0 rounded-2xl border border-slate-200 bg-white p-3 sm:p-4 dark:border-neutral-800 dark:bg-neutral-950">
+      <div className="flex min-w-0 items-center gap-2.5 sm:gap-4">
         <button
           type="button"
           onClick={onView}
           aria-label={`View ${name}`}
-          className="flex min-w-0 flex-1 items-center gap-4 rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74] dark:focus-visible:ring-[#4987BA]"
+          className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-4 rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74] dark:focus-visible:ring-[#4987BA]"
         >
-          <span className="relative h-[88px] w-[120px] shrink-0 overflow-hidden rounded-xl bg-slate-100 dark:bg-neutral-800">
+          <span className="relative h-18 w-20 sm:h-[88px] sm:w-[120px] shrink-0 overflow-hidden rounded-xl bg-slate-100 dark:bg-neutral-800">
             {imageUrl ? (
               <Image
                 src={imageUrl}
@@ -58,24 +58,24 @@ export function FacilityCard({
                 fill
                 unoptimized
                 loading="lazy"
-                sizes="120px"
+                sizes="(max-width: 640px) 80px, 120px"
                 className="object-cover"
               />
             ) : (
               <span className="absolute inset-0 flex items-center justify-center text-slate-400">
-                <Camera className="h-7 w-7" />
+                <Camera className="h-5 w-5 sm:h-7 sm:w-7" />
               </span>
             )}
           </span>
-          <span className="flex min-w-0 flex-1 flex-col items-start gap-1.5">
-            <span className={`inline-flex w-fit max-w-full rounded-full px-3 py-1 text-xs font-semibold whitespace-normal break-words leading-snug ${getFacilityCategoryStyle(category)}`}>
+          <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5 sm:gap-1">
+            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#1F3F74] dark:text-[#4987BA] truncate max-w-full">
               {getFacilityCategoryLabel(category)}
             </span>
-            <span className="max-w-full break-words text-lg font-bold text-slate-900 dark:text-white">
+            <span className="max-w-full truncate text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
               {name}
             </span>
             {description && (
-              <span className="line-clamp-2 text-sm text-slate-500 dark:text-neutral-400">
+              <span className="line-clamp-2 text-[11px] sm:text-xs text-slate-500 dark:text-neutral-400 leading-snug">
                 {description}
               </span>
             )}
