@@ -29,6 +29,7 @@ import { FACILITY_CATEGORY_CONFIG, type FacilityCategory, getFacilityCategoryLab
 import { getFacilityFeeItems } from '@/lib/utils/facility-pricing';
 import { getValidBeachCoordinates } from '@/lib/utils/beach-coordinates';
 import { MAX_BEACH_IMAGE_SIZE_BYTES, removeBeachImageByPath, uploadBeachImage, uploadBeachImageWithPath } from '@/lib/utils/beach-image-upload';
+import { generateUUID } from '@/lib/utils/uuid';
 
 interface CottageItem {
   id: string;
@@ -684,7 +685,7 @@ export default function ManageInformationPage() {
     const newPhotos = files.map((file): CottagePhotoDraft => {
       const previewUrl = URL.createObjectURL(file);
       return {
-        localId: crypto.randomUUID(),
+        localId: generateUUID(),
         image_url: '',
         previewUrl,
         file,
@@ -996,7 +997,7 @@ export default function ManageInformationPage() {
     ));
     setCustomFacilityRates(savedRates
       .filter((rate) => rate.key === 'custom' && applicableRateOptions.length > 0)
-      .map((rate) => ({ localId: crypto.randomUUID(), label: rate.label, amount: formatFacilityRateInput(rate.amount) })));
+      .map((rate) => ({ localId: generateUUID(), label: rate.label, amount: formatFacilityRateInput(rate.amount) })));
     setFacilityRateErrors({});
     setFacilityPhotos((facility?.photos || (facility?.image_url
       ? [{ image_url: facility.image_url, storage_path: '', sort_order: 0 }]
@@ -1162,7 +1163,7 @@ export default function ManageInformationPage() {
     setFacilityFieldError('');
     setUploadingFacilityPhotos(true);
     const drafts = files.map((file): FacilityPhotoDraft => ({
-      localId: crypto.randomUUID(),
+      localId: generateUUID(),
       image_url: '',
       previewUrl: URL.createObjectURL(file),
       file,
@@ -3562,7 +3563,7 @@ export default function ManageInformationPage() {
                     type="button"
                     onClick={() => {
                       facilityHasChangesRef.current = true;
-                      setCustomFacilityRates((current) => [...current, { localId: crypto.randomUUID(), label: '', amount: '' }]);
+                      setCustomFacilityRates((current) => [...current, { localId: generateUUID(), label: '', amount: '' }]);
                     }}
                     className="text-xs font-semibold text-[#1F3F74] hover:underline dark:text-[#4987BA]"
                   >

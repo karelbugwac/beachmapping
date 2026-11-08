@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { showToast } from '@/components/ui/feedback-toasts';
+import { generateUUID } from '@/lib/utils/uuid';
 
 const DEVICE_STORAGE_KEY = 'dtb_login_device_id';
 
@@ -10,7 +11,7 @@ function getDeviceId(): string {
   const savedId = window.localStorage.getItem(DEVICE_STORAGE_KEY);
   if (savedId) return savedId;
 
-  const deviceId = window.crypto.randomUUID();
+  const deviceId = generateUUID();
   window.localStorage.setItem(DEVICE_STORAGE_KEY, deviceId);
   return deviceId;
 }
