@@ -30,6 +30,7 @@ import { getFacilityFeeItems } from '@/lib/utils/facility-pricing';
 import { getValidBeachCoordinates } from '@/lib/utils/beach-coordinates';
 import { MAX_BEACH_IMAGE_SIZE_BYTES, removeBeachImageByPath, uploadBeachImage, uploadBeachImageWithPath } from '@/lib/utils/beach-image-upload';
 import { generateUUID } from '@/lib/utils/uuid';
+import { confirmAction } from '@/components/ui/confirm-dialog';
 
 interface CottageItem {
   id: string;
@@ -1510,8 +1511,8 @@ export default function ManageInformationPage() {
   };
 
   // Photo Delete Handler
-  const handleDeletePhoto = (index: number) => {
-    if (!window.confirm('Are you sure you want to delete this photo?')) return;
+  const handleDeletePhoto = async (index: number) => {
+    if (!await confirmAction({ title: 'Delete Photo', message: 'Are you sure you want to delete this photo?' })) return;
     const updated = formData.images.filter((_, i) => i !== index);
     setFormData((prev) => ({ ...prev, images: updated }));
     setToast({ type: 'delete', message: 'Photo deleted.' });
@@ -1976,7 +1977,7 @@ export default function ManageInformationPage() {
                     setShowAddCottage(true);
                   }}
                   onDelete={async () => {
-                    if (!window.confirm('Are you sure you want to delete this cottage?')) return;
+                    if (!await confirmAction({ title: 'Delete Cottage', message: `Are you sure you want to delete "${item.name}"?` })) return;
                     try {
                       await deleteCatalogItem('cottage', item.id);
                       setCottages((current) => current.filter((c) => c.id !== item.id));
@@ -2034,7 +2035,7 @@ export default function ManageInformationPage() {
                 onView={() => setViewingFacility(fac)}
                 onEdit={() => startFacilityEditor(fac)}
                 onDelete={async () => {
-                  if (!window.confirm('Are you sure you want to delete this facility?')) return;
+                  if (!await confirmAction({ title: 'Delete Facility', message: `Are you sure you want to delete "${fac.title}"?` })) return;
                   try {
                     await deleteCatalogItem('facility', fac.id);
                     setFacilities((current) => current.filter((facility) => facility.id !== fac.id));
@@ -2380,7 +2381,7 @@ export default function ManageInformationPage() {
                       <button
                         type="button"
                         onClick={async () => {
-                          if (!window.confirm('Are you sure you want to delete this post?')) return;
+                          if (!await confirmAction({ title: 'Delete Post', message: 'Are you sure you want to delete this post?' })) return;
                           try {
                             await deleteCatalogItem('post', post.id);
                             setResortPosts((current) => current.filter((p) => p.id !== post.id));
@@ -2490,7 +2491,7 @@ export default function ManageInformationPage() {
                     <button
                       type="button"
                       onClick={async () => {
-                        if (!window.confirm('Are you sure you want to delete this guideline?')) return;
+                        if (!await confirmAction({ title: 'Delete Guideline', message: `Are you sure you want to delete "${rule.title}"?` })) return;
                         const nextRules = rules.filter((r) => r.id !== rule.id);
                         const ok = await saveRulesSilently(nextRules);
                         if (ok) {
@@ -2560,7 +2561,7 @@ export default function ManageInformationPage() {
                     <button
                       type="button"
                       onClick={async () => {
-                        if (!window.confirm('Are you sure you want to delete this restriction?')) return;
+                        if (!await confirmAction({ title: 'Delete Restriction', message: `Are you sure you want to delete "${rule.title}"?` })) return;
                         const nextRules = rules.filter((r) => r.id !== rule.id);
                         const ok = await saveRulesSilently(nextRules);
                         if (ok) {

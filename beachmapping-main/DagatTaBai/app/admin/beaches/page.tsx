@@ -18,6 +18,7 @@ import {
 } from 'lucide-react';
 import type { BeachRecord } from '@/lib/db/beaches';
 import { showToast } from '@/components/ui/feedback-toasts';
+import { confirmAction } from '@/components/ui/confirm-dialog';
 import { VirtualTourModal, extractTourEmbedUrl } from '@/components/virtual-tour-modal';
 import { LocationPickerModal } from '@/components/map/location-picker-modal';
 import type { TourRequestWithBeach } from '@/lib/services/tourRequests';
@@ -1134,8 +1135,8 @@ export default function AdminBeachesPage() {
                         <div className="pt-1 flex justify-end">
                           <button
                             type="button"
-                            onClick={() => {
-                              if (!window.confirm('Are you sure you want to delete this post?')) return;
+                            onClick={async () => {
+                              if (!await confirmAction({ title: 'Delete Post', message: 'Are you sure you want to delete this post?' })) return;
                               setResortPosts((prev) => prev.filter((p) => p.id !== post.id));
                               showToast('Post deleted.', 'destructive');
                             }}
@@ -1267,8 +1268,8 @@ export default function AdminBeachesPage() {
                         </div>
                         <button
                           type="button"
-                          onClick={() => {
-                            if (!window.confirm('Are you sure you want to delete this rule?')) return;
+                          onClick={async () => {
+                            if (!await confirmAction({ title: 'Delete Rule', message: `Are you sure you want to delete this rule?` })) return;
                             setResortRules((prev) => prev.filter((r) => r.id !== rule.id));
                             showToast('Rule deleted.', 'destructive');
                           }}

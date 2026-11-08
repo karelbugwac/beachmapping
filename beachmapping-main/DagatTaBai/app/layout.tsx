@@ -8,6 +8,7 @@ import { AiChatWidget } from '@/components/ai-chat-widget';
 import { ThemeProvider } from '@/components/theme-provider';
 import { CookieConsent } from '@/components/cookie-consent';
 import { FeedbackToasts } from '@/components/ui/feedback-toasts';
+import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { VisitorTracker } from '@/components/visitor-tracker';
 import { PageLoader } from '@/components/page-loader';
 import { LoginDeviceTracker } from '@/components/login-device-tracker';
@@ -54,6 +55,7 @@ export default function RootLayout({
             <PageLoader />
           </Suspense>
           <FeedbackToasts />
+          <ConfirmDialog />
           <VisitorTracker />
           <Navbar />
           <LoginDeviceTracker />

@@ -24,6 +24,7 @@ import {
 } from 'lucide-react';
 import { useTheme } from '@/components/theme-provider';
 import { showToast } from '@/components/ui/feedback-toasts';
+import { confirmAction } from '@/components/ui/confirm-dialog';
 
 interface ProfileData {
   id: string;
@@ -379,7 +380,7 @@ export default function ProfilePage() {
   }, [activeCategory, user?.id]);
 
   const handleDeleteReview = async (reviewId: string) => {
-    if (!window.confirm('Are you sure you want to delete this review?')) return;
+    if (!await confirmAction({ title: 'Delete Review', message: 'Are you sure you want to delete this review?' })) return;
     try {
       const response = await fetch(`/api/profile/reviews?id=${encodeURIComponent(reviewId)}`, {
         method: 'DELETE',
