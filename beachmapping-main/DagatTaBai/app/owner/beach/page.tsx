@@ -560,12 +560,11 @@ export default function ManageInformationPage() {
 
       setToast({
         type: 'success',
-        message: 'Changes saved successfully.',
+        message: 'Changes saved!',
       });
       return true;
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to save changes.';
-      setToast({ type: 'error', message: msg });
+      setToast({ type: 'error', message: 'Unable to save changes.' });
       return false;
     } finally {
       setSaving(false);
@@ -1441,10 +1440,9 @@ export default function ManageInformationPage() {
       setFormData((prev) => ({ ...prev, images: nextImages }));
       setGalleryFile(null);
       setGalleryPreview('');
-      setToast({ type: 'success', message: 'Photo uploaded and added to resort gallery!' });
+      setToast({ type: 'success', message: 'Upload complete!' });
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Photo upload failed.';
-      setToast({ type: 'error', message: msg });
+      setToast({ type: 'error', message: 'Something went wrong.' });
     } finally {
       setUploadingImage(false);
     }
@@ -1459,10 +1457,9 @@ export default function ManageInformationPage() {
     try {
       const url = await uploadImageFile(file);
       setFormData((prev) => ({ ...prev, profile_image: url }));
-      setToast({ type: 'success', message: 'Resort profile logo updated! Click Save Changes.' });
+      setToast({ type: 'success', message: 'Upload complete!' });
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Profile upload failed.';
-      setToast({ type: 'error', message: msg });
+      setToast({ type: 'error', message: 'Something went wrong.' });
     } finally {
       setUploadingProfile(false);
       e.target.value = '';
@@ -1478,10 +1475,9 @@ export default function ManageInformationPage() {
     try {
       const url = await uploadImageFile(file);
       setFormData((prev) => ({ ...prev, cover_image: url }));
-      setToast({ type: 'success', message: 'Resort banner cover updated! Click Save Changes.' });
+      setToast({ type: 'success', message: 'Upload complete!' });
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Cover upload failed.';
-      setToast({ type: 'error', message: msg });
+      setToast({ type: 'error', message: 'Something went wrong.' });
     } finally {
       setUploadingCover(false);
       e.target.value = '';
@@ -1492,7 +1488,7 @@ export default function ManageInformationPage() {
   const handlePublishPost = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newPostCaption.trim() && !newPostImage) {
-      setToast({ type: 'error', message: 'Please write a caption or attach a photo.' });
+      setToast({ type: 'error', message: 'Please fill in all fields.' });
       return;
     }
 
@@ -1504,9 +1500,9 @@ export default function ManageInformationPage() {
       setResortPosts((current) => [post, ...current]);
       setNewPostCaption('');
       setNewPostImage(null);
-      setToast({ type: 'success', message: 'Update posted to resort feed!' });
+      setToast({ type: 'success', message: 'Submitted successfully!' });
     } catch (error) {
-      setToast({ type: 'error', message: error instanceof Error ? error.message : 'Failed to publish update.' });
+      setToast({ type: 'error', message: 'Submission failed.' });
     }
   };
 
@@ -1515,7 +1511,7 @@ export default function ManageInformationPage() {
     if (!await confirmAction({ title: 'Delete Photo', message: 'Are you sure you want to delete this photo?' })) return;
     const updated = formData.images.filter((_, i) => i !== index);
     setFormData((prev) => ({ ...prev, images: updated }));
-    setToast({ type: 'delete', message: 'Photo deleted.' });
+    setToast({ type: 'delete', message: 'Deleted successfully!' });
   };
 
   // Recapture Tour Request
@@ -1536,18 +1532,17 @@ export default function ManageInformationPage() {
 
       const data = await res.json();
       if (!res.ok) {
-        throw new Error(data.error || 'Could not submit 360° recapture request.');
+        throw new Error(data.error || 'Submission failed.');
       }
 
       setToast({
         type: 'success',
-        message: '360° virtual tour recapture request submitted to Municipal Tourism Admin!',
+        message: 'Submitted successfully!',
       });
       setShowRecaptureModal(false);
       setRecaptureNotes('');
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : 'Failed to submit tour request.';
-      setToast({ type: 'error', message: msg });
+      setToast({ type: 'error', message: 'Submission failed.' });
     } finally {
       setSubmittingRecapture(false);
     }
@@ -1555,11 +1550,8 @@ export default function ManageInformationPage() {
 
   if (loading) {
     return (
-      <div className="py-24 flex flex-col items-center justify-center gap-3 text-slate-500">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#1F3F74] border-t-transparent" />
-        <p className="text-xs font-semibold text-[#1F3F74] dark:text-[#4987BA]">
-          Loading resort information...
-        </p>
+      <div className="pt-36 pb-24 flex flex-col items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#1F3F74] border-t-transparent dark:border-sky-400" />
       </div>
     );
   }
@@ -1603,7 +1595,7 @@ export default function ManageInformationPage() {
       <div className="flex items-center gap-1.5 pb-2 overflow-x-auto no-scrollbar flex-nowrap -mx-4 px-4 sm:mx-0 sm:px-0">
         {[
           { key: 'basic', label: 'Basic Info' },
-          { key: 'cottages', label: 'Cottages' },
+          { key: 'cottages', label: 'Cottage/Tables' },
           { key: 'facilities', label: 'Facilities & Parkings' },
           { key: 'hours', label: 'Operating Schedule' },
           { key: 'photos', label: 'Resort Updates' },
@@ -1772,6 +1764,66 @@ export default function ManageInformationPage() {
               )}
             </div>
 
+            {/* General Admission Rates */}
+            <div className="space-y-3 sm:col-span-2 pt-2 border-t border-slate-200 dark:border-neutral-800">
+              <div>
+                <h3 className="text-xs font-bold text-slate-800 dark:text-white">General Admission Rates</h3>
+                <p className="mt-0.5 text-[11px] text-slate-500 dark:text-neutral-400">
+                  Standard entrance fees displayed to visitors on the map and beach details.
+                </p>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
+                    Adult Entrance Fee
+                  </label>
+                  <div className="relative flex items-center">
+                    <span className="absolute left-4 text-sm font-bold text-[#1F3F74] dark:text-[#4987BA]">₱</span>
+                    <input
+                      type="number"
+                      value={formData.entrance_fee_adults}
+                      onChange={(e) => setFormData({ ...formData, entrance_fee_adults: e.target.value })}
+                      placeholder="50"
+                      className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 pl-9 pr-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus:outline-none focus:border-[#1F3F74] focus:ring-2 focus:ring-[#1F3F74]/20 transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
+                    Children Entrance Fee
+                  </label>
+                  <div className="relative flex items-center">
+                    <span className="absolute left-4 text-sm font-bold text-[#1F3F74] dark:text-[#4987BA]">₱</span>
+                    <input
+                      type="number"
+                      value={formData.entrance_fee_children}
+                      onChange={(e) => setFormData({ ...formData, entrance_fee_children: e.target.value })}
+                      placeholder="25"
+                      className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 pl-9 pr-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus:outline-none focus:border-[#1F3F74] focus:ring-2 focus:ring-[#1F3F74]/20 transition-all"
+                    />
+                  </div>
+                </div>
+
+                <div className="space-y-1.5">
+                  <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
+                    Senior Citizen Entrance Fee
+                  </label>
+                  <div className="relative flex items-center">
+                    <span className="absolute left-4 text-sm font-bold text-[#1F3F74] dark:text-[#4987BA]">₱</span>
+                    <input
+                      type="number"
+                      value={formData.entrance_fee_senior}
+                      onChange={(e) => setFormData({ ...formData, entrance_fee_senior: e.target.value })}
+                      placeholder="25"
+                      className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 pl-9 pr-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus:outline-none focus:border-[#1F3F74] focus:ring-2 focus:ring-[#1F3F74]/20 transition-all"
+                    />
+                  </div>
+                </div>
+              </div>
+            </div>
+
             <div className="space-y-3 sm:col-span-2 pt-2">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div>
@@ -1828,77 +1880,17 @@ export default function ManageInformationPage() {
         </div>
       )}
 
-      {/* ── TAB 2: COTTAGES & RATES (Built-in Peso ₱ sign, PNG/JPG upload only) ── */}
+      {/* ── TAB 2: COTTAGES & TABLES (Built-in Peso ₱ sign, PNG/JPG upload only) ── */}
       {activeTab === 'cottages' && (
-        <div className="space-y-8">
-          {/* General Entrance Fee Card */}
-          <div className="space-y-4 pb-8 border-b border-slate-200 dark:border-neutral-800">
-            <div>
-              <h2 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
-                General Admission Rates
-              </h2>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
-                  Adult Entrance Fee
-                </label>
-                <div className="relative flex items-center">
-                  <span className="absolute left-4 text-sm font-bold text-[#1F3F74] dark:text-[#4987BA]">₱</span>
-                  <input
-                    type="number"
-                    value={formData.entrance_fee_adults}
-                    onChange={(e) => setFormData({ ...formData, entrance_fee_adults: e.target.value })}
-                    placeholder="50"
-                    className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 pl-9 pr-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus:outline-none focus:border-[#1F3F74] focus:ring-2 focus:ring-[#1F3F74]/20 transition-all"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
-                  Children Entrance Fee
-                </label>
-                <div className="relative flex items-center">
-                  <span className="absolute left-4 text-sm font-bold text-[#1F3F74] dark:text-[#4987BA]">₱</span>
-                  <input
-                    type="number"
-                    value={formData.entrance_fee_children}
-                    onChange={(e) => setFormData({ ...formData, entrance_fee_children: e.target.value })}
-                    placeholder="25"
-                    className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 pl-9 pr-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus:outline-none focus:border-[#1F3F74] focus:ring-2 focus:ring-[#1F3F74]/20 transition-all"
-                  />
-                </div>
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
-                  Senior Citizen Entrance Fee
-                </label>
-                <div className="relative flex items-center">
-                  <span className="absolute left-4 text-sm font-bold text-[#1F3F74] dark:text-[#4987BA]">₱</span>
-                  <input
-                    type="number"
-                    value={formData.entrance_fee_senior}
-                    onChange={(e) => setFormData({ ...formData, entrance_fee_senior: e.target.value })}
-                    placeholder="25"
-                    className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 pl-9 pr-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus:outline-none focus:border-[#1F3F74] focus:ring-2 focus:ring-[#1F3F74]/20 transition-all"
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
-          {/* Cottage Units Listing with PNG/JPG upload */}
+        <div className="space-y-6">
           <div className="space-y-5">
             <div className="flex items-center justify-between">
               <div>
                 <h2 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
-                  Resort Cottages &amp; Sheds
+                  Resort Cottages &amp; Tables
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
-                  Detailed cottage listings including photos, capacity, rates, and features.
+                  Detailed cottage and table listings including photos, capacity, rates, and features.
                 </p>
               </div>
 
@@ -1906,26 +1898,27 @@ export default function ManageInformationPage() {
                 type="button"
                 onClick={() => {
                   setEditingCottageId(null);
-                    cottageEditorIdRef.current = null;
-                    createdCottageIdRef.current = null;
-                    cottageOriginalSnapshotRef.current = null;
-                    cottageNeedsLegacyRestoreRef.current = false;
-                    cottageSessionPhotoIdsRef.current.clear();
-                    cottageAllSessionPhotoIdsRef.current.clear();
-                    cottageSessionStoragePathsRef.current.clear();
-                    cottageStagedRemovalIdsRef.current.clear();
-                    cottageHasChangesRef.current = false;
-                    cottageDiscardingRef.current = false;
-                    setCottageModalStatus(null);
+                  cottageEditorIdRef.current = null;
+                  createdCottageIdRef.current = null;
+                  cottageOriginalSnapshotRef.current = null;
+                  cottageNeedsLegacyRestoreRef.current = false;
+                  cottageSessionPhotoIdsRef.current.clear();
+                  cottageAllSessionPhotoIdsRef.current.clear();
+                  cottageSessionStoragePathsRef.current.clear();
+                  cottageStagedRemovalIdsRef.current.clear();
+                  cottageHasChangesRef.current = false;
+                  cottageDiscardingRef.current = false;
+                  setCottageModalStatus(null);
                   setCottageFieldErrors({});
                   setCottagePhotos([]);
                   setNewCottage({ name: '', price: '', capacity: '', description: '', image_url: '' });
                   setShowAddCottage(true);
                 }}
-                className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-bold shadow-xs cursor-pointer transition-all"
+                className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-[#1F3F74] hover:bg-[#183460] text-white shadow-xs cursor-pointer transition-all"
+                title="Add Cottage/Table"
+                aria-label="Add Cottage/Table"
               >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add Cottage</span>
+                <Plus className="w-4 h-4" />
               </button>
             </div>
 
@@ -1981,9 +1974,9 @@ export default function ManageInformationPage() {
                     try {
                       await deleteCatalogItem('cottage', item.id);
                       setCottages((current) => current.filter((c) => c.id !== item.id));
-                      setToast({ type: 'delete', message: 'Cottage deleted.' });
+                      setToast({ type: 'delete', message: 'Deleted successfully!' });
                     } catch (error) {
-                      setToast({ type: 'error', message: 'Failed to delete cottage.' });
+                      setToast({ type: 'error', message: 'Unable to delete item.' });
                     }
                   }}
                 />
@@ -2001,23 +1994,15 @@ export default function ManageInformationPage() {
       {/* ── TAB 3: FACILITIES & PARKINGS (With Price and PNG/JPG upload) ── */}
       {activeTab === 'facilities' && (
         <div className="space-y-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h2 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
-                Facilities, Parkings &amp; Equipment
-              </h2>
-              <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
-                Showcase parking capacity, shower cubicles, water sports gear, and amenity highlights with pictures and pricing.
-              </p>
-            </div>
-
+          <div className="flex justify-end">
             <button
               type="button"
               onClick={() => startFacilityEditor()}
-              className="inline-flex items-center gap-1.5 px-6 py-2.5 rounded-full bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-bold shadow-xs cursor-pointer transition-all"
+              className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-[#1F3F74] hover:bg-[#183460] text-white shadow-xs cursor-pointer transition-all"
+              title="Add Facility"
+              aria-label="Add Facility"
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add Facility</span>
+              <Plus className="w-4 h-4" />
             </button>
           </div>
 
@@ -2039,9 +2024,9 @@ export default function ManageInformationPage() {
                   try {
                     await deleteCatalogItem('facility', fac.id);
                     setFacilities((current) => current.filter((facility) => facility.id !== fac.id));
-                    setToast({ type: 'delete', message: 'Facility deleted.' });
+                    setToast({ type: 'delete', message: 'Deleted successfully!' });
                   } catch (error) {
-                    setToast({ type: 'error', message: 'Failed to delete facility.' });
+                    setToast({ type: 'error', message: 'Unable to delete item.' });
                   }
                 }}
               />
@@ -2061,9 +2046,8 @@ export default function ManageInformationPage() {
           {/* Peak Days & Visiting Hours Section */}
           <div className="space-y-4 pb-8 border-b border-slate-200 dark:border-neutral-800">
             <div>
-              <h2 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans flex items-center gap-2">
-                <Clock className="w-5 h-5 text-[#1F3F74] dark:text-[#4987BA]" />
-                <span>Peak Days &amp; Recommended Visiting Hours</span>
+              <h2 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
+                Peak Days &amp; Recommended Visiting Hours
               </h2>
               <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
                 Help tourists choose the optimal time to visit your beach based on crowds and tide conditions.
@@ -2123,7 +2107,7 @@ export default function ManageInformationPage() {
               </p>
             </div>
 
-            <div className="divide-y divide-slate-200 dark:divide-neutral-800 max-w-2xl">
+            <div className="divide-y divide-slate-200 dark:divide-neutral-800 w-full">
               {DEFAULT_DAYS.map((day) => {
                 const current = schedule[day] || { isOpen: true, openTime: '08:00 AM', closeTime: '06:00 PM' };
                 const fullDayNames: Record<string, string> = {
@@ -2425,7 +2409,7 @@ export default function ManageInformationPage() {
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
               <h2 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
-                Resort Guidelines &amp; Regulations (Do&apos;s &amp; Don&apos;ts)
+                Resort Guidelines &amp; Regulations (Do&apos;s &amp; Dont&apos;s)
               </h2>
               <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
                 Establish clear safety policies, environmental guidelines, and conduct expectations for resort guests.
@@ -2435,17 +2419,18 @@ export default function ManageInformationPage() {
             <button
               type="button"
               onClick={() => {
-                setNewRule({ type: 'do', title: '', description: '', category: 'Safety' });
+                setNewRule({ type: 'do', title: '', description: '', category: 'General' });
                 setShowAddRule(true);
               }}
-              className="inline-flex items-center gap-2 px-6 py-2.5 rounded-full bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-bold shadow-xs cursor-pointer transition-all self-start sm:self-auto"
+              className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-[#1F3F74] hover:bg-[#183460] text-white shadow-xs cursor-pointer transition-all self-end sm:self-auto"
+              title="Add Rule"
+              aria-label="Add Rule"
             >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add Guideline / Rule</span>
+              <Plus className="w-4 h-4" />
             </button>
           </div>
 
-          {/* Dual Columns: Do's vs Don'ts */}
+          {/* Dual Columns: Do's vs Dont's */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-2">
             {/* DO'S COLUMN */}
             <div className="space-y-4">
@@ -2455,7 +2440,7 @@ export default function ManageInformationPage() {
                     <CheckCircle2 className="w-4 h-4" />
                   </span>
                   <h3 className="text-sm font-extrabold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
-                    Do&apos;s (Recommended &amp; Permitted)
+                    Do&apos;s
                   </h3>
                 </div>
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
@@ -2476,9 +2461,6 @@ export default function ManageInformationPage() {
                           <span className="text-xs font-bold text-slate-900 dark:text-white">
                             {rule.title}
                           </span>
-                          <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-300 border border-emerald-200 dark:border-emerald-900/40">
-                            {rule.category}
-                          </span>
                         </div>
                         {rule.description && (
                           <p className="text-[11px] text-slate-500 dark:text-neutral-400 leading-relaxed">
@@ -2496,9 +2478,9 @@ export default function ManageInformationPage() {
                         const ok = await saveRulesSilently(nextRules);
                         if (ok) {
                           setRules(nextRules);
-                          setToast({ type: 'delete', message: 'Guideline deleted.' });
+                          setToast({ type: 'delete', message: 'Deleted successfully!' });
                         } else {
-                          setToast({ type: 'error', message: 'Failed to delete guideline.' });
+                          setToast({ type: 'error', message: 'Unable to delete item.' });
                         }
                       }}
                       className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer flex-shrink-0"
@@ -2511,13 +2493,13 @@ export default function ManageInformationPage() {
 
                 {rules.filter((r) => r.type === 'do').length === 0 && (
                   <div className="py-8 text-center border-2 border-dashed border-slate-200 dark:border-neutral-800 rounded-2xl p-4 text-slate-400 text-xs">
-                    No &quot;Do&quot; guidelines registered. Click &quot;Add Guideline / Rule&quot; to add one.
+                    No &quot;Do&apos;s&quot; guidelines registered.
                   </div>
                 )}
               </div>
             </div>
 
-            {/* DON'TS COLUMN */}
+            {/* DONT'S COLUMN */}
             <div className="space-y-4">
               <div className="flex items-center justify-between pb-2 border-b border-red-200 dark:border-red-900/60">
                 <div className="flex items-center gap-2">
@@ -2525,7 +2507,7 @@ export default function ManageInformationPage() {
                     <XCircle className="w-4 h-4" />
                   </span>
                   <h3 className="text-sm font-extrabold text-red-800 dark:text-red-300 uppercase tracking-wider">
-                    Don&apos;ts (Strict Prohibitions)
+                    Dont&apos;s
                   </h3>
                 </div>
                 <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-red-100 dark:bg-red-950/60 text-red-700 dark:text-red-300">
@@ -2546,9 +2528,6 @@ export default function ManageInformationPage() {
                           <span className="text-xs font-bold text-slate-900 dark:text-white">
                             {rule.title}
                           </span>
-                          <span className="px-2 py-0.5 rounded-full text-[9px] font-semibold bg-red-50 dark:bg-red-950/40 text-red-700 dark:text-red-300 border border-red-200 dark:border-red-900/40">
-                            {rule.category}
-                          </span>
                         </div>
                         {rule.description && (
                           <p className="text-[11px] text-slate-500 dark:text-neutral-400 leading-relaxed">
@@ -2566,9 +2545,9 @@ export default function ManageInformationPage() {
                         const ok = await saveRulesSilently(nextRules);
                         if (ok) {
                           setRules(nextRules);
-                          setToast({ type: 'delete', message: 'Restriction deleted.' });
+                          setToast({ type: 'delete', message: 'Deleted successfully!' });
                         } else {
-                          setToast({ type: 'error', message: 'Failed to delete restriction.' });
+                          setToast({ type: 'error', message: 'Unable to delete item.' });
                         }
                       }}
                       className="p-1.5 rounded-lg text-slate-400 hover:text-red-600 hover:bg-red-50 dark:hover:bg-red-950/30 transition-colors cursor-pointer flex-shrink-0"
@@ -2581,7 +2560,7 @@ export default function ManageInformationPage() {
 
                 {rules.filter((r) => r.type === 'dont').length === 0 && (
                   <div className="py-8 text-center border-2 border-dashed border-slate-200 dark:border-neutral-800 rounded-2xl p-4 text-slate-400 text-xs">
-                    No &quot;Don&apos;t&quot; restrictions registered. Click &quot;Add Guideline / Rule&quot; to add one.
+                    No &quot;Dont&apos;s&quot; restrictions registered.
                   </div>
                 )}
               </div>
@@ -2657,16 +2636,18 @@ export default function ManageInformationPage() {
       )}
 
       {/* ── BOTTOM SAVE CHANGES BUTTON (Oblong, Dive Blue, Strictly NO icon inside) ── */}
-      <div className="pt-6 border-t border-slate-200 dark:border-neutral-800 flex justify-center">
-        <button
-          type="button"
-          onClick={() => handleSave()}
-          disabled={saving}
-          className="rounded-full px-8 py-3 bg-[#1F3F74] hover:bg-[#183460] active:scale-[0.99] text-white font-bold text-xs sm:text-sm tracking-wide transition-all shadow-md cursor-pointer disabled:opacity-50"
-        >
-          {saving ? 'Saving...' : 'Save Changes'}
-        </button>
-      </div>
+      {activeTab !== 'tour' && (
+        <div className="pt-6 border-t border-slate-200 dark:border-neutral-800 flex justify-center">
+          <button
+            type="button"
+            onClick={() => handleSave()}
+            disabled={saving}
+            className="rounded-full px-8 py-3 bg-[#1F3F74] hover:bg-[#183460] active:scale-[0.99] text-white font-bold text-xs sm:text-sm tracking-wide transition-all shadow-md cursor-pointer disabled:opacity-50"
+          >
+            {saving ? 'Saving...' : 'Save Changes'}
+          </button>
+        </div>
+      )}
 
       {viewingCottagePhotos && (
         <PhotoViewerModal
@@ -2802,7 +2783,7 @@ export default function ManageInformationPage() {
                     }]);
                   setCottageModalStatus({
                     type: 'success',
-                    message: editingCottageId ? 'Cottage updated successfully.' : 'Cottage added successfully.',
+                    message: editingCottageId ? 'Changes saved!' : 'Added successfully!',
                   });
                   cottageStatusTimerRef.current = setTimeout(() => {
                     resetCottageEditor();
@@ -2810,7 +2791,7 @@ export default function ManageInformationPage() {
                 } catch (error) {
                   setCottageModalStatus({
                     type: 'error',
-                    message: error instanceof Error ? error.message : 'Failed to save cottage.',
+                    message: editingCottageId ? 'Unable to save changes.' : 'Failed to add item.',
                   });
                   setSavingCottage(false);
                 }
@@ -3131,8 +3112,8 @@ export default function ManageInformationPage() {
                 if (!rates) return;
                 setSavingFacility(true);
                 setFacilityModalStatus(null);
+                const wasEditing = Boolean(facilityOriginalSnapshotRef.current);
                 try {
-                  const wasEditing = Boolean(facilityOriginalSnapshotRef.current);
                   let item = await saveCatalogItem<FacilityItem>('facility', {
                     ...(editingFacilityId ? { id: editingFacilityId } : {}),
                     title: newFacility.title.trim(),
@@ -3184,13 +3165,13 @@ export default function ManageInformationPage() {
                       : [...current, item]);
                   setFacilityModalStatus({
                     type: 'success',
-                    message: wasEditing ? 'Facility updated successfully.' : 'Facility added successfully.',
+                    message: wasEditing ? 'Changes saved!' : 'Added successfully!',
                   });
                   window.setTimeout(resetFacilityEditor, 800);
                 } catch (error) {
                   setFacilityModalStatus({
                     type: 'error',
-                    message: error instanceof Error ? error.message : 'Failed to save facility.',
+                    message: wasEditing ? 'Unable to save changes.' : 'Failed to add item.',
                   });
                   setSavingFacility(false);
                 }
@@ -3240,7 +3221,7 @@ export default function ManageInformationPage() {
                       className="w-full appearance-none rounded-full border border-slate-300 bg-white py-2.5 pl-4 pr-10 text-xs text-slate-900 focus:border-[#1F3F74] focus:outline-none dark:border-neutral-700 dark:bg-neutral-950 dark:text-white"
                     >
                       {Object.entries(FACILITY_CATEGORY_CONFIG)
-                        .filter(([, option]) => !('selectable' in option) || option.selectable !== false)
+                        .filter(([value, option]) => value !== 'cottages' && (!('selectable' in option) || option.selectable !== false))
                         .map(([value, option]) => (
                           <option key={value} value={value}>{option.label}</option>
                         ))}
@@ -3637,19 +3618,19 @@ export default function ManageInformationPage() {
                   type: newRule.type,
                   title: newRule.title.trim(),
                   description: newRule.description.trim(),
-                  category: newRule.category || 'General',
+                  category: '',
                 };
                 const nextRules = [...rules, item];
                 if (await handleSave(nextRules)) {
                   setRules(nextRules);
                   setShowAddRule(false);
-                  setNewRule({ type: 'do', title: '', description: '', category: 'Safety' });
-                  setToast({ type: 'success', message: 'New resort rule added successfully!' });
+                  setNewRule({ type: 'do', title: '', description: '', category: '' });
+                  setToast({ type: 'success', message: 'Added successfully!' });
                 }
               }}
               className="space-y-4"
             >
-              {/* Type Switcher: Do vs Don't */}
+              {/* Type Switcher: Do's vs Dont's */}
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
                   Rule Type *
@@ -3665,7 +3646,7 @@ export default function ManageInformationPage() {
                     }`}
                   >
                     <CheckCircle2 className="w-3.5 h-3.5" />
-                    <span>Do (Permitted / Recommended)</span>
+                    <span>Do&apos;s</span>
                   </button>
                   <button
                     type="button"
@@ -3677,30 +3658,8 @@ export default function ManageInformationPage() {
                     }`}
                   >
                     <XCircle className="w-3.5 h-3.5" />
-                    <span>Don&apos;t (Prohibited)</span>
+                    <span>Dont&apos;s</span>
                   </button>
-                </div>
-              </div>
-
-              {/* Category Dropdown */}
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
-                  Category *
-                </label>
-                <div className="relative">
-                  <select
-                    value={newRule.category}
-                    onChange={(e) => setNewRule({ ...newRule, category: e.target.value })}
-                    className="w-full appearance-none rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 pl-4 pr-10 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#1F3F74]"
-                  >
-                    <option value="Safety">Safety</option>
-                    <option value="Shoreline Etiquette">Shoreline Etiquette</option>
-                    <option value="Environment">Environment &amp; Marine Life</option>
-                    <option value="Noise & Curfew">Noise &amp; Curfew</option>
-                    <option value="Pets">Pets Policy</option>
-                    <option value="General Policy">General Policy</option>
-                  </select>
-                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
               </div>
 

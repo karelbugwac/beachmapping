@@ -72,7 +72,7 @@ function UserLoginForm() {
         throw new Error(data.error || 'Invalid email or password.');
       }
 
-      showToast('You are now signed in.');
+      showToast('Successfully logged in!');
       window.dispatchEvent(new CustomEvent('dtb_login_completed', {
         detail: { userId: data.user.id },
       }));

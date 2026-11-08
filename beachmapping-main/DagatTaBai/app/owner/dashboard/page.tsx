@@ -104,11 +104,8 @@ export default function OwnerDashboardPage() {
 
   if (loading) {
     return (
-      <div className="py-24 flex flex-col items-center justify-center gap-3 text-slate-500">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#1F3F74] border-t-transparent" />
-        <p className="text-xs font-semibold text-[#1F3F74] dark:text-[#4987BA]">
-          Loading your resort dashboard...
-        </p>
+      <div className="pt-36 pb-24 flex flex-col items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#1F3F74] border-t-transparent dark:border-sky-400" />
       </div>
     );
   }
@@ -130,30 +127,14 @@ export default function OwnerDashboardPage() {
         {greeting}
       </p>
       
-      {/* ── 1. Hero Overview Header (No Manage Listing button, no Binongkalan badge, date ONLY under name) ── */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-2 border-b border-slate-200 dark:border-neutral-800">
-        <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1F3F74] dark:text-[#4987BA] tracking-tight font-sans">
-            {beachName}
-          </h1>
-          {/* Date ONLY under name, no description, no Catmon prefix */}
-          <p className="text-xs sm:text-sm text-slate-500 dark:text-neutral-400 mt-1 font-medium">
-            {formattedDate}
-          </p>
-        </div>
-
-        {beach?.slug && (
-          <div className="flex items-center gap-2.5">
-            <Link
-              href={`/beaches/${beach.slug}`}
-              target="_blank"
-              className="inline-flex items-center gap-2 px-5 py-2.5 bg-slate-100 hover:bg-slate-200 dark:bg-neutral-900 dark:hover:bg-neutral-800 text-[#1F3F74] dark:text-[#4987BA] text-xs font-bold rounded-full transition-all border border-slate-200 dark:border-neutral-800 shadow-2xs"
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-              <span>View Public Page</span>
-            </Link>
-          </div>
-        )}
+      {/* ── 1. Hero Overview Header (Clean, Corporate, Date ONLY under name) ── */}
+      <div className="pb-3 border-b border-slate-200 dark:border-neutral-800">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1F3F74] dark:text-[#4987BA] tracking-tight font-sans">
+          {beachName}
+        </h1>
+        <p className="text-xs sm:text-sm text-slate-500 dark:text-neutral-400 mt-1 font-medium">
+          {formattedDate}
+        </p>
       </div>
 
       {beach && !hasMapPin && (
@@ -176,7 +157,7 @@ export default function OwnerDashboardPage() {
         </div>
       )}
 
-      {/* ── 2. Real Metrics KPI Grid (EXACTLY 4 SQUARES) ── */}
+      {/* ── 2. Real Metrics KPI Grid (EXACTLY 4 SQUARES, Modern Corporate Style) ── */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         
         {/* Card 1: Visitor Rating */}
@@ -213,7 +194,6 @@ export default function OwnerDashboardPage() {
               <span className="text-2xl sm:text-3xl font-black text-[#1F3F74] dark:text-[#4987BA]">
                 {totalVisits}
               </span>
-              <span className="text-xs text-emerald-600 dark:text-emerald-400 font-bold">+14%</span>
             </div>
           </div>
           <p className="text-[11px] text-slate-500 dark:text-neutral-400 mt-2 font-medium">
@@ -278,7 +258,7 @@ export default function OwnerDashboardPage() {
         </section>
       )}
 
-      {/* ── 4. Recent Guest Reviews Feed ── */}
+      {/* ── 4. Recent Guest Reviews Feed (Clean, unboxed) ── */}
       <section className="p-6 bg-white dark:bg-neutral-900 rounded-2xl border border-slate-200/90 dark:border-neutral-800 shadow-2xs space-y-4">
         <div className="flex items-center justify-between">
           <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans flex items-center gap-2">
@@ -295,11 +275,11 @@ export default function OwnerDashboardPage() {
         </div>
 
         {reviews?.reviews && reviews.reviews.length > 0 ? (
-          <div className="space-y-3">
+          <div className="divide-y divide-slate-100 dark:divide-neutral-800">
             {reviews.reviews.slice(0, 4).map((r) => (
               <div
                 key={r.id}
-                className="p-4 rounded-xl bg-slate-50/70 dark:bg-neutral-950 border border-slate-200/70 dark:border-neutral-800 space-y-2 transition-all hover:border-[#1F3F74]/30"
+                className="py-3.5 first:pt-1 last:pb-0 space-y-1.5"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
@@ -323,12 +303,12 @@ export default function OwnerDashboardPage() {
             ))}
           </div>
         ) : (
-          <div className="p-8 text-center rounded-xl bg-slate-50/50 dark:bg-neutral-950/50 border border-slate-200/50 dark:border-neutral-800">
-            <Users className="w-8 h-8 text-slate-400 dark:text-neutral-600 mx-auto mb-2" />
-            <p className="text-xs font-semibold text-slate-700 dark:text-slate-200">
+          <div className="py-10 text-center">
+            <Users className="w-8 h-8 text-slate-300 dark:text-neutral-700 mx-auto mb-2" />
+            <p className="text-xs font-semibold text-slate-700 dark:text-slate-300">
               No guest reviews posted yet
             </p>
-            <p className="text-[11px] text-slate-500 dark:text-neutral-400 mt-0.5">
+            <p className="text-[11px] text-slate-400 dark:text-neutral-500 mt-0.5">
               When tourists visit your beach and leave reviews, they will automatically appear here.
             </p>
           </div>
