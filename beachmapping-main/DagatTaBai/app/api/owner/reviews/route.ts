@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { authorizeRoles } from '@/lib/supabase/authorization';
+import { maskReviewerName } from '@/lib/utils/mask-reviewer-name';
 
 export async function GET() {
   try {
@@ -75,7 +76,7 @@ export async function GET() {
       rating: Number(r.rating),
       comment: r.comment,
       created_at: r.created_at,
-      user_name: (r.profiles as any)?.full_name || 'Verified Tourist',
+      user_name: maskReviewerName((r.profiles as any)?.full_name),
     }));
 
     return NextResponse.json({

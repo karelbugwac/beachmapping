@@ -584,7 +584,7 @@ export default function MapPage() {
                 <span className="block text-[11px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider mb-1">
                   About
                 </span>
-                <p className={`text-xs text-slate-600 dark:text-neutral-300 leading-relaxed ${showFullAbout ? '' : 'line-clamp-3'}`}>
+                <p className={`text-justify text-xs text-slate-600 dark:text-neutral-300 leading-relaxed ${showFullAbout ? '' : 'line-clamp-3'}`}>
                   {selectedBeach.description}
                 </p>
                 {selectedBeach.description.length > 130 && (

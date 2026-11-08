@@ -3,6 +3,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { Star } from 'lucide-react';
 import { showToast } from '@/components/ui/feedback-toasts';
+import { maskReviewerName } from '@/lib/utils/mask-reviewer-name';
 
 interface PlatformReview {
   id: string;
@@ -12,21 +13,6 @@ interface PlatformReview {
   rating: number;
   comment: string;
   created_at: string;
-}
-
-// Mask user names: e.g. "Charisse Villamor" -> "C*** V***"
-function maskUserName(name: string): string {
-  if (!name || name.trim() === '' || name.toLowerCase().includes('dagat ta bai user')) {
-    return 'Community member';
-  }
-  const parts = name.trim().split(/\s+/);
-  if (parts.length === 1) {
-    const p = parts[0];
-    return p.length > 1 ? `${p[0]}***` : `${p}***`;
-  }
-  const first = parts[0];
-  const last = parts[parts.length - 1];
-  return `${first[0]}*** ${last[0]}***`;
 }
 
 const RATING_LABELS: Record<number, string> = {
@@ -250,7 +236,7 @@ export default function PlatformFeedbackPage() {
                       )}
                     </div>
                     <span className="truncate font-bold text-slate-900 dark:text-white">
-                      {maskUserName(review.user_name)}
+                      {maskReviewerName(review.user_name)}
                     </span>
                   </div>
 

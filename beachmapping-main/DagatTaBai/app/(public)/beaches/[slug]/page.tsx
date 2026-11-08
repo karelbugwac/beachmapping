@@ -30,6 +30,7 @@ import { getFacilityCategoryLabel } from '@/lib/utils/facility-categories';
 import { OpeningStatusPill } from '@/components/opening-status-pill';
 import { formatOpeningHoursGroups } from '@/lib/utils/opening-status';
 import { getFacilityFeeItems } from '@/lib/utils/facility-pricing';
+import { maskReviewerName } from '@/lib/utils/mask-reviewer-name';
 import { showToast } from '@/components/ui/feedback-toasts';
 
 interface ResortRuleItem {
@@ -38,21 +39,6 @@ interface ResortRuleItem {
   title: string;
   description: string;
   category: string;
-}
-
-// Mask user names: e.g. "Bugwac, Karel" -> "B*** K***"
-function maskUserName(name?: string | null): string {
-  if (!name || name.trim() === '' || name.toLowerCase().includes('dagat ta bai user')) {
-    return 'Community visitor';
-  }
-  const parts = name.trim().replace(/,/g, '').split(/\s+/);
-  if (parts.length === 1) {
-    const p = parts[0];
-    return p.length > 1 ? `${p[0]}***` : `${p}***`;
-  }
-  const first = parts[0];
-  const last = parts[parts.length - 1];
-  return `${first[0]}*** ${last[0]}***`;
 }
 
 const RATING_LABELS: Record<number, string> = {
@@ -269,7 +255,7 @@ export default function BeachProfilePage({
           </p>
 
           {/* Quick Contact & Facebook Link Row */}
-          <div className="flex items-center gap-4 sm:gap-6 flex-wrap text-xs text-slate-600 dark:text-neutral-400 pt-1 border-t border-slate-100 dark:border-neutral-900">
+          <div className="flex items-center gap-4 sm:gap-6 flex-wrap text-xs text-slate-600 dark:text-neutral-400 pt-1">
             <div className="flex items-center gap-1.5">
               <MapPin className="w-4 h-4 text-[#1F3F74] dark:text-[#4987BA] flex-shrink-0" />
               <span>{beach.location || 'Location not provided'}</span>
@@ -408,7 +394,6 @@ export default function BeachProfilePage({
                       </div>
                     ))}
                   </div>
-                  <p className="text-xs text-slate-700 dark:text-neutral-300">Day access per guest</p>
                 </div>
 
                 <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950">
@@ -676,11 +661,11 @@ export default function BeachProfilePage({
                       <span>Do&apos;s (Recommended Etiquette)</span>
                     </div>
 
-                    <ul className="space-y-3 text-xs text-slate-700 dark:text-neutral-300">
+                    <ul className="space-y-3 text-justify text-xs text-slate-700 dark:text-neutral-300">
                       {resortRules.filter((rule) => rule.type === 'do').map((rule) => (
                         <li key={rule.id} className="flex items-start gap-2.5">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 flex-shrink-0" />
-                          <span className="text-justify">
+                          <span className="block text-justify">
                             <strong>{rule.title}</strong>
                             {rule.description && `: ${rule.description}`}
                           </span>
@@ -697,11 +682,11 @@ export default function BeachProfilePage({
                       <span>Don&apos;ts (Strictly Prohibited)</span>
                     </div>
 
-                    <ul className="space-y-3 text-xs text-slate-700 dark:text-neutral-300">
+                    <ul className="space-y-3 text-justify text-xs text-slate-700 dark:text-neutral-300">
                       {resortRules.filter((rule) => rule.type === 'dont').map((rule) => (
                         <li key={rule.id} className="flex items-start gap-2.5">
                           <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mt-1.5 flex-shrink-0" />
-                          <span className="text-justify">
+                          <span className="block text-justify">
                             <strong>{rule.title}</strong>
                             {rule.description && `: ${rule.description}`}
                           </span>
@@ -925,7 +910,7 @@ export default function BeachProfilePage({
                         <article key={rev.id} className="py-5 space-y-2">
                           <div className="flex items-center justify-between gap-4">
                             <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                              {maskUserName(rev.user_name || rev.userName)}
+                              {maskReviewerName(rev.user_name || rev.userName)}
                             </span>
                             <div className="flex items-center gap-1" aria-label={`${rev.rating} out of 5 stars`}>
                               {Array.from({ length: 5 }, (_, index) => (
