@@ -746,12 +746,10 @@ export default function ManageInformationPage() {
       }
       if (cottageDiscardingRef.current) return;
 
-      let uploadFailed = false;
       for (const photo of newPhotos) {
         if (cottageDiscardingRef.current) break;
-        if (!await uploadCottagePhotoDraft(photo, cottageId)) uploadFailed = true;
+        await uploadCottagePhotoDraft(photo, cottageId);
       }
-      if (!uploadFailed) setCottageModalStatus({ type: 'success', message: 'Photos uploaded and saved.' });
     } catch (error) {
       for (const photo of newPhotos) {
         if (photo.previewUrl) {
@@ -826,9 +824,7 @@ export default function ManageInformationPage() {
       }
       if (cottageDiscardingRef.current) return;
       if (cottageDiscardingRef.current) return;
-      if (await uploadCottagePhotoDraft(photo, cottageId)) {
-        setCottageModalStatus({ type: 'success', message: 'Photo uploaded and saved.' });
-      }
+      await uploadCottagePhotoDraft(photo, cottageId);
     } catch (error) {
       setCottagePhotos((current) => current.map((item) => item.localId === photo.localId
         ? {
@@ -2272,24 +2268,16 @@ export default function ManageInformationPage() {
                   className="w-full rounded-2xl border border-slate-200 dark:border-neutral-800 bg-slate-50/50 dark:bg-neutral-900 p-3.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic focus:outline-none focus:border-[#1F3F74]"
                 />
 
-                {/* Attached Preview */}
-                {newPostImage && (
-                  <div className="relative w-full h-48 rounded-xl overflow-hidden border border-slate-200 dark:border-neutral-800">
-                    <Image src={newPostImage} alt="Post Attachment" fill className="object-cover" />
-                    <button
-                      type="button"
-                      onClick={() => setNewPostImage(null)}
-                      className="absolute top-2 right-2 p-1.5 rounded-full bg-black/70 text-white hover:bg-black"
-                    >
-                      <Trash2 className="w-3.5 h-3.5" />
-                    </button>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-between pt-1">
-                  <label className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200 dark:border-neutral-800 text-xs font-semibold text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 cursor-pointer">
-                    {uploadingPostImage ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Camera className="w-3.5 h-3.5 text-[#1F3F74] dark:text-[#4987BA]" />}
-                    <span>Attach Photo (PNG/JPG, max 20 GB)</span>
+                <div className="relative">
+                  <label className={`relative flex h-48 w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-dashed border-slate-300 bg-slate-50 text-xs font-semibold text-slate-500 transition hover:border-[#1F3F74] hover:bg-slate-100 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 ${uploadingPostImage ? 'pointer-events-none opacity-60' : ''}`}>
+                    {newPostImage ? (
+                      <Image src={newPostImage} alt="Resort update cover preview" fill className="object-cover" />
+                    ) : (
+                      <span className="flex flex-col items-center gap-2">
+                        {uploadingPostImage ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5 text-[#1F3F74] dark:text-[#4987BA]" />}
+                        {uploadingPostImage ? 'Uploading image...' : 'Click to upload update cover image'}
+                      </span>
+                    )}
                     <input
                       type="file"
                       accept="image/png, image/jpeg, image/jpg"
@@ -2308,14 +2296,27 @@ export default function ManageInformationPage() {
                           e.target.value = '';
                         }
                       }}
-                      className="hidden"
+                      className="sr-only"
                     />
                   </label>
+                  {newPostImage && (
+                    <button
+                      type="button"
+                      onClick={() => setNewPostImage(null)}
+                      aria-label="Remove update cover image"
+                      className="absolute right-2 top-2 z-10 rounded-full bg-black/70 p-1.5 text-white hover:bg-black"
+                    >
+                      <Trash2 className="w-3.5 h-3.5" />
+                    </button>
+                  )}
+                </div>
 
+                <div className="flex items-center justify-between pt-1">
                   <button
                     type="button"
                     onClick={handlePublishPost}
-                    className="px-6 py-2 rounded-full bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-bold shadow-xs cursor-pointer"
+                    disabled={uploadingPostImage}
+                    className="ml-auto px-6 py-2 rounded-full bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50"
                   >
                     Publish
                   </button>
@@ -2418,9 +2419,6 @@ export default function ManageInformationPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between pb-2 border-b border-emerald-200 dark:border-emerald-900/60">
                 <div className="flex items-center gap-2">
-                  <span className="p-1 rounded-full bg-emerald-100 dark:bg-emerald-950/60 text-emerald-600 dark:text-emerald-400">
-                    <CheckCircle2 className="w-4 h-4" />
-                  </span>
                   <h3 className="text-sm font-extrabold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
                     Do&apos;s
                   </h3>
@@ -2437,7 +2435,6 @@ export default function ManageInformationPage() {
                     className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-2xs hover:border-emerald-300 dark:hover:border-emerald-800 transition-colors flex items-start justify-between gap-3"
                   >
                     <div className="flex items-start gap-3 min-w-0 flex-1">
-                      <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 flex-shrink-0 mt-0.5" />
                       <div className="space-y-1 min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-xs font-bold text-slate-900 dark:text-white">
@@ -2474,9 +2471,9 @@ export default function ManageInformationPage() {
                 ))}
 
                 {rules.filter((r) => r.type === 'do').length === 0 && (
-                  <div className="py-8 text-center border-2 border-dashed border-slate-200 dark:border-neutral-800 rounded-2xl p-4 text-slate-400 text-xs">
+                  <p className="py-3 text-center text-slate-400 text-xs">
                     No &quot;Do&apos;s&quot; guidelines registered.
-                  </div>
+                  </p>
                 )}
               </div>
             </div>
@@ -2485,9 +2482,6 @@ export default function ManageInformationPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between pb-2 border-b border-red-200 dark:border-red-900/60">
                 <div className="flex items-center gap-2">
-                  <span className="p-1 rounded-full bg-red-100 dark:bg-red-950/60 text-red-600 dark:text-red-400">
-                    <XCircle className="w-4 h-4" />
-                  </span>
                   <h3 className="text-sm font-extrabold text-red-800 dark:text-red-300 uppercase tracking-wider">
                     Dont&apos;s
                   </h3>
@@ -2504,7 +2498,6 @@ export default function ManageInformationPage() {
                     className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-2xs hover:border-red-300 dark:hover:border-red-800 transition-colors flex items-start justify-between gap-3"
                   >
                     <div className="flex items-start gap-3 min-w-0 flex-1">
-                      <XCircle className="w-4 h-4 text-red-600 dark:text-red-400 flex-shrink-0 mt-0.5" />
                       <div className="space-y-1 min-w-0 flex-1">
                         <div className="flex items-center gap-2 flex-wrap">
                           <span className="text-xs font-bold text-slate-900 dark:text-white">
@@ -2541,9 +2534,9 @@ export default function ManageInformationPage() {
                 ))}
 
                 {rules.filter((r) => r.type === 'dont').length === 0 && (
-                  <div className="py-8 text-center border-2 border-dashed border-slate-200 dark:border-neutral-800 rounded-2xl p-4 text-slate-400 text-xs">
+                  <p className="py-3 text-center text-slate-400 text-xs">
                     No &quot;Dont&apos;s&quot; restrictions registered.
-                  </div>
+                  </p>
                 )}
               </div>
             </div>
@@ -2851,9 +2844,9 @@ export default function ManageInformationPage() {
               {/* Persistent cottage image upload */}
               <div className="space-y-1.5">
                 <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
-                  Cottage Photos (up to 10; JPG, PNG, or WebP, optimized to 1600px and 5 MB each)
+                  Cottage Photos
                 </label>
-                <div className="flex gap-3 overflow-x-auto pb-2">
+                <div className="flex flex-wrap justify-center gap-3 pb-2">
                   {cottagePhotos.map((photo, index) => (
                     <div key={photo.localId} className="w-24 shrink-0 space-y-1.5">
                       <div className={`relative aspect-[4/3] overflow-hidden rounded-none border border-slate-200 dark:border-neutral-700 ${
@@ -2912,9 +2905,6 @@ export default function ManageInformationPage() {
                       {photo.status === 'uploading' && (
                         <span className="block text-center text-[10px] text-slate-500">Uploading...</span>
                       )}
-                      {photo.status === 'saved' && (
-                        <span className="block text-center text-[10px] font-semibold text-emerald-700 dark:text-emerald-400">Saved photo</span>
-                      )}
                       {photo.status === 'error' && (
                         <div className="space-y-1">
                           <span className="block text-center text-[10px] text-rose-600" role="alert">
@@ -2933,7 +2923,7 @@ export default function ManageInformationPage() {
                     </div>
                   ))}
                 </div>
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex flex-col items-center gap-1.5">
                   <label
                     aria-disabled={cottagePhotos.length >= 10}
                     className={`px-4 py-2 rounded-full border border-slate-300 dark:border-neutral-700 bg-slate-50 dark:bg-neutral-950 text-xs font-semibold text-slate-700 dark:text-neutral-300 inline-flex items-center gap-1.5 ${
@@ -2944,7 +2934,7 @@ export default function ManageInformationPage() {
                   >
                     <Upload className="w-3.5 h-3.5" />
                     <span>{cottagePhotos.length ? 'Add more photos' : 'Add Photos'}</span>
-                    {cottagePhotos.length > 0 && <span className="text-slate-500">{cottagePhotos.length} / 10</span>}
+                    <span className="text-slate-500">{cottagePhotos.length} / 10</span>
                     <input
                       type="file"
                       accept="image/jpeg, image/png, image/webp"
@@ -2958,8 +2948,11 @@ export default function ManageInformationPage() {
                       className="hidden"
                     />
                   </label>
+                  <p className="text-center text-[10px] leading-relaxed text-slate-500 dark:text-neutral-400">
+                    Up to 10 photos; JPG, PNG, or WebP, optimized to 1600px and 5 MB each.
+                  </p>
                   {cottagePhotos.length >= 10 && (
-                    <span className="text-xs text-slate-500">The 10-photo limit has been reached.</span>
+                    <span className="text-[10px] text-slate-500">The 10-photo limit has been reached.</span>
                   )}
                 </div>
               </div>
@@ -3386,7 +3379,7 @@ export default function ManageInformationPage() {
 
               <div className="space-y-2">
                 <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
-                  Photos (up to 10; JPG, PNG, or WebP, optimized to 1600px and 5 MB each)
+                  Photos
                 </label>
                 {facilityPhotos.length > 0 && (
                   <div className="grid grid-cols-2 gap-3 sm:grid-cols-3">
@@ -3461,7 +3454,7 @@ export default function ManageInformationPage() {
                     })}
                   </div>
                 )}
-                <div className="flex flex-wrap items-center gap-3">
+                <div className="flex flex-col items-center gap-1.5">
                   <label className={`inline-flex items-center gap-1.5 rounded-full border border-slate-300 bg-slate-50 px-4 py-2 text-xs font-semibold text-slate-700 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-300 ${
                     facilityPhotos.length >= 10 || uploadingFacilityPhotos || savingFacility
                       ? 'pointer-events-none opacity-50'
@@ -3469,7 +3462,7 @@ export default function ManageInformationPage() {
                   }`}>
                     <Upload className="h-3.5 w-3.5" />
                     <span>{facilityPhotos.length ? 'Add more photos' : 'Add Photos'}</span>
-                    {facilityPhotos.length > 0 && <span className="text-slate-500">{facilityPhotos.length} / 10</span>}
+                    <span className="text-slate-500">{facilityPhotos.length} / 10</span>
                     <input
                       type="file"
                       accept="image/jpeg, image/png, image/webp"
@@ -3483,8 +3476,11 @@ export default function ManageInformationPage() {
                       className="hidden"
                     />
                   </label>
+                  <p className="text-center text-[10px] leading-relaxed text-slate-500 dark:text-neutral-400">
+                    Up to 10 photos; JPG, PNG, or WebP, optimized to 1600px and 5 MB each.
+                  </p>
                   {facilityPhotos.length >= 10 && (
-                    <span className="text-xs text-slate-500">The 10-photo limit has been reached.</span>
+                    <span className="text-[10px] text-slate-500">The 10-photo limit has been reached.</span>
                   )}
                 </div>
               </div>

@@ -57,7 +57,12 @@ export async function POST(request: Request) {
       .select('id, rating, comment, created_at')
       .single();
     if (error) throw error;
-    return NextResponse.json({ ...data, user_name: user.full_name }, { status: 201 });
+    return NextResponse.json({
+      ...data,
+      user_name: user.full_name,
+      profile_image_url: user.profile_image_url || null,
+      user_role: user.role,
+    }, { status: 201 });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Could not save platform feedback.';
     return NextResponse.json({ error: message }, { status: 500 });

@@ -68,14 +68,14 @@ export function FacilityCard({
             )}
           </span>
           <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5 sm:gap-1">
-            <span className="text-[10px] sm:text-[11px] font-bold uppercase tracking-wider text-[#1F3F74] dark:text-[#4987BA] truncate max-w-full">
+            <span className={`max-w-full truncate rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider sm:text-[11px] ${getFacilityCategoryStyle(category)}`}>
               {getFacilityCategoryLabel(category)}
             </span>
             <span className="max-w-full truncate text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
               {name}
             </span>
             {description && (
-              <span className="line-clamp-2 text-[11px] sm:text-xs text-slate-500 dark:text-neutral-400 leading-snug">
+              <span className="line-clamp-2 text-justify text-[10px] leading-snug text-slate-500 dark:text-neutral-400 sm:text-[11px]">
                 {description}
               </span>
             )}

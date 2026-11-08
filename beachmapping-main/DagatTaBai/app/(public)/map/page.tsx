@@ -68,6 +68,15 @@ function parseOpeningHoursSummary(openingHours: string | any): string {
   }
 }
 
+function formatContactPhone(phone: string): string {
+  if (!phone) return '';
+  const cleaned = phone.trim();
+  let local = cleaned.replace(/\D/g, '');
+  while (local.startsWith('63')) local = local.slice(2);
+  if (local.startsWith('0')) local = local.slice(1);
+  return local ? `+63 ${local}` : cleaned;
+}
+
 export default function MapPage() {
   const searchParams = useSearchParams();
   const selectedSlugFromUrl = searchParams.get('beach');
@@ -599,7 +608,7 @@ export default function MapPage() {
                 {selectedBeach.contact_phone && (
                   <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     <Phone className="w-3.5 h-3.5 text-[#1F3F74] dark:text-[#38BDF8] shrink-0" />
-                    <span>+63 {selectedBeach.contact_phone}</span>
+                    <span>{formatContactPhone(selectedBeach.contact_phone)}</span>
                   </div>
                 )}
                 {selectedBeach.contact_email && (
@@ -612,7 +621,7 @@ export default function MapPage() {
             )}
 
             {/* 3. Operating Hours */}
-            <div className="flex items-center justify-between py-2.5 px-3.5 bg-slate-50 dark:bg-neutral-900/80 border border-slate-200/90 dark:border-neutral-800 rounded-xl text-xs">
+            <div className="flex items-center justify-between py-1 text-xs">
               <span className="font-semibold text-slate-700 dark:text-slate-300 flex items-center gap-2">
                 <Clock className="w-4 h-4 text-[#1F3F74] dark:text-[#38BDF8]" />
                 <span>Operating Hours</span>
@@ -624,7 +633,7 @@ export default function MapPage() {
 
             {/* 4. Entrance Fee */}
             {selectedBeach.entrance_fee && (
-              <div className="flex items-center justify-between py-2.5 px-3.5 bg-slate-50 dark:bg-neutral-900/80 border border-slate-200/90 dark:border-neutral-800 rounded-xl text-xs">
+              <div className="flex items-center justify-between py-1 text-xs">
                 <span className="font-semibold text-slate-700 dark:text-slate-300">
                   Entrance Fee
                 </span>

@@ -408,9 +408,9 @@ export default function WeatherPage() {
     ? 'dawn'
     : currentHour >= 6 && currentHour < 12
       ? 'morning'
-      : currentHour >= 12 && currentHour < 17
+      : currentHour >= 12 && currentHour < 18
         ? 'afternoon'
-        : currentHour >= 17 && currentHour < 20
+        : currentHour >= 18 && currentHour < 20
           ? 'evening'
           : 'midnight';
   const sunriseMinutes = weather?.sunrise ? Number(weather.sunrise.slice(11, 13)) * 60 + Number(weather.sunrise.slice(14, 16)) : null;
@@ -578,7 +578,7 @@ export default function WeatherPage() {
           <div className="pointer-events-none absolute -bottom-36 left-1/4 h-64 w-64 rounded-full bg-cyan-100/10 blur-3xl" />
           <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             
-            <div className="flex items-center justify-center gap-0 sm:gap-1 lg:justify-start">
+            <div className="flex items-center justify-center gap-2 sm:gap-3 lg:justify-start">
               <div className="relative flex h-20 w-20 shrink-0 items-center justify-center sm:h-24 sm:w-24">
                 <div className="absolute inset-2 rounded-full bg-white/10 blur-xl" />
                 <WeatherIcon
@@ -595,7 +595,7 @@ export default function WeatherPage() {
                 )}
               </div>
 
-              <div className="-ml-4 space-y-0.5 sm:-ml-5">
+              <div className="space-y-0.5">
                 <div className="text-3xl sm:text-5xl font-extrabold tracking-tight text-white">
                   {weather ? `${weather.temperature.toFixed(1)}°C` : '--'}
                 </div>

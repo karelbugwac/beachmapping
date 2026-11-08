@@ -17,9 +17,6 @@ import {
   ShieldCheck,
   Compass,
   Navigation,
-  Share2,
-  CheckCircle2,
-  XCircle,
   AlertTriangle,
   MessageSquare,
   Ticket,
@@ -93,25 +90,6 @@ function parseResortRules(value: string | null): ResortRuleItem[] {
   }
 }
 
-function formatEntranceFeeSummary(beach: BeachRecord): string {
-  if (beach.entrance_fee_adults && beach.entrance_fee_children) {
-    if (beach.entrance_fee_adults === beach.entrance_fee_children) {
-      return `₱${beach.entrance_fee_adults}`;
-    }
-    return `₱${beach.entrance_fee_adults} / ₱${beach.entrance_fee_children}`;
-  }
-  if (beach.entrance_fee) {
-    if (beach.entrance_fee.includes('|')) {
-      const [adults, children] = beach.entrance_fee.split('|');
-      if (adults && children && adults === children) return `₱${adults}`;
-      if (adults && children) return `₱${adults} / ₱${children}`;
-      if (adults) return `₱${adults}`;
-    }
-    return beach.entrance_fee.startsWith('₱') ? beach.entrance_fee : `₱${beach.entrance_fee}`;
-  }
-  return 'Contact resort';
-}
-
 function getEntranceFeeValues(beach: BeachRecord) {
   const legacyValues = beach.entrance_fee?.split('|') || [];
   const adultFee = beach.entrance_fee_adults || legacyValues[0] || beach.entrance_fee;
@@ -123,27 +101,6 @@ function getEntranceFeeValues(beach: BeachRecord) {
     adults: formatFee(adultFee),
     children: formatFee(childFee),
   };
-}
-
-function formatOpeningHoursSummary(openingHours: string | Record<string, string> | null | undefined): string {
-  if (!openingHours) return 'Hours not provided';
-  if (typeof openingHours === 'string') {
-    if (!openingHours.trim()) return 'Hours not provided';
-    if (openingHours.startsWith('{')) {
-      try {
-        const parsed = JSON.parse(openingHours);
-        return formatOpeningHoursSummary(parsed);
-      } catch {
-        return openingHours;
-      }
-    }
-    return openingHours;
-  }
-  if (typeof openingHours === 'object') {
-    const sample = openingHours['Mon'] || openingHours['Sat'] || Object.values(openingHours)[0];
-    return sample ? `Daily: ${sample}` : 'Hours not provided';
-  }
-  return 'Hours not provided';
 }
 
 export default function BeachProfilePage({
@@ -211,21 +168,6 @@ export default function BeachProfilePage({
       .catch(() => {});
   }, [slug]);
 
-  const handleShare = async () => {
-    if (typeof navigator !== 'undefined' && navigator.share && beach) {
-      try {
-        await navigator.share({
-          title: beach.name,
-          text: `Check out ${beach.name} on Dagat Ta Bai!`,
-          url: window.location.href,
-        });
-      } catch {}
-    } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
-      navigator.clipboard.writeText(window.location.href);
-      showToast('Beach link copied to clipboard!', 'success');
-    }
-  };
-
   // 1st Image Requirement: Spinning indicator only (no text)
   if (loading) {
     return (
@@ -285,7 +227,7 @@ export default function BeachProfilePage({
 
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/30" />
 
-        {/* Top Floating Controls on Edge-to-Edge Hero: Back to Map & Share */}
+        {/* Top Floating Control on Edge-to-Edge Hero */}
         <div className="absolute top-5 left-4 right-4 sm:left-8 sm:right-8 flex items-center justify-between z-20">
           <Link
             href="/map"
@@ -295,14 +237,6 @@ export default function BeachProfilePage({
             <span>Back to Map</span>
           </Link>
 
-          <button
-            type="button"
-            onClick={handleShare}
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-black/50 hover:bg-black/70 backdrop-blur-md text-white text-xs font-bold rounded-full border border-white/20 transition-all shadow-md cursor-pointer"
-          >
-            <Share2 className="w-3.5 h-3.5 text-sky-300" />
-            <span>Share</span>
-          </button>
         </div>
 
         {/* Clean Hero Bottom: Title & Rating ONLY (No overlay buttons or badges) */}
@@ -326,28 +260,11 @@ export default function BeachProfilePage({
         </div>
       </div>
 
-      {/* ── 2. RESORT DETAILS, HOURS, ABOUT & CONTACT (BEFORE CATEGORIES) ── */}
+      {/* ── 2. ABOUT & CONTACT (BEFORE CATEGORIES) ── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2">
         <div className="space-y-4">
-          {/* Resort details: schedule and entrance admission */}
-          <div className="flex items-center gap-3 flex-wrap">
-            <div className="inline-flex items-center gap-1.5 text-xs text-slate-700 dark:text-neutral-300 font-semibold">
-              <Clock className="w-3.5 h-3.5 text-[#1F3F74] dark:text-[#4987BA]" />
-              <span>{formatOpeningHoursSummary(beach.opening_hours)}</span>
-            </div>
-
-            {beach.entrance_fee && (
-              <>
-                <span className="text-slate-300 dark:text-neutral-700">•</span>
-                <span className="text-xs font-bold text-[#1F3F74] dark:text-[#4987BA]">
-                  Entrance: {formatEntranceFeeSummary(beach)}
-                </span>
-              </>
-            )}
-          </div>
-
           {/* About / Description of Resort */}
-          <p className="text-xs sm:text-sm text-slate-700 dark:text-neutral-300 leading-relaxed max-w-4xl">
+          <p className="max-w-4xl text-justify text-[11px] leading-relaxed text-slate-700 dark:text-neutral-300 sm:text-xs">
             {beach.description || 'No beach description provided yet.'}
           </p>
 
@@ -414,7 +331,7 @@ export default function BeachProfilePage({
           {[
             { id: 'general', label: 'General Info', icon: Info },
             { id: 'posts', label: 'Posts', icon: Images },
-            { id: 'cottages', label: 'Cottage', icon: Home },
+            { id: 'cottages', label: 'Cottage & Tables', icon: Home },
             { id: 'facilities', label: 'Facilities', icon: ShieldCheck },
             { id: 'dos', label: "Do's & Don'ts", icon: AlertTriangle },
             { id: 'reviews', label: `Reviews (${reviewCount})`, icon: MessageSquare },
@@ -447,26 +364,9 @@ export default function BeachProfilePage({
           {/* ── TAB 1: GENERAL INFO (Includes 360 Virtual Tour & Highlights) ── */}
           {activeTab === 'general' && (
             <div className="space-y-8">
-              {/* 360° Virtual Tour Experience */}
               <div className="space-y-3">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-base font-extrabold text-[#1F3F74] dark:text-[#4987BA] flex items-center gap-2">
-                    <Compass className="w-4 h-4 text-[#1F3F74] dark:text-[#4987BA]" />
-                    <span>360° Virtual Tour Experience</span>
-                  </h3>
-                  {beach.virtual_tour_url && (
-                    <button
-                      type="button"
-                      onClick={() => setShowTourModal(true)}
-                      className="text-xs font-bold text-[#1F3F74] dark:text-[#4987BA] hover:underline cursor-pointer"
-                    >
-                      Fullscreen Tour ↗
-                    </button>
-                  )}
-                </div>
-
                 {beach.virtual_tour_url ? (
-                  <div className="relative w-full h-80 sm:h-96 md:h-[460px] rounded-2xl overflow-hidden bg-black border border-slate-200 dark:border-neutral-800 shadow-md">
+                  <div className="relative w-full h-80 sm:h-96 md:h-[460px] overflow-hidden bg-black border border-slate-200 dark:border-neutral-800 shadow-md">
                     <iframe
                       src={beach.virtual_tour_url}
                       title={`${beach.name} 360 Tour`}
@@ -475,7 +375,7 @@ export default function BeachProfilePage({
                     />
                   </div>
                 ) : (
-                  <div className="p-8 text-center rounded-2xl border border-dashed border-slate-200 dark:border-neutral-800 bg-slate-50/50 dark:bg-neutral-900/30 space-y-2">
+                  <div className="p-8 text-center border border-dashed border-slate-200 dark:border-neutral-800 bg-slate-50/50 dark:bg-neutral-900/30 space-y-2">
                     <Compass className="w-8 h-8 mx-auto text-[#1F3F74] dark:text-[#4987BA] opacity-70" />
                     <p className="text-xs font-bold text-slate-700 dark:text-neutral-300">
                       No virtual tour available yet
@@ -489,26 +389,26 @@ export default function BeachProfilePage({
 
               {/* Admission & Schedule Highlights */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-5 rounded-2xl border border-slate-200 bg-white p-6 dark:border-neutral-800 dark:bg-neutral-950">
-                  <div className="flex items-center gap-3">
-                    <span className="flex h-12 w-12 items-center justify-center rounded-xl bg-blue-100 text-[#1F3F74] dark:bg-blue-950/50 dark:text-[#4987BA]">
-                      <Ticket className="h-6 w-6" aria-hidden="true" />
+                <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950 sm:p-5">
+                  <div className="flex items-center gap-2.5">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100 text-[#1F3F74] dark:bg-blue-950/50 dark:text-[#4987BA]">
+                      <Ticket className="h-5 w-5" aria-hidden="true" />
                     </span>
-                    <span className="text-sm font-bold uppercase tracking-wider text-slate-700 dark:text-neutral-200">Entrance Admission</span>
+                    <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-neutral-200">Entrance Admission</span>
                   </div>
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-2">
                     {Object.entries(getEntranceFeeValues(beach)).map(([label, amount]) => (
-                      <div key={label} className="min-w-0 rounded-2xl bg-slate-50 px-4 py-4 dark:bg-neutral-900/60">
-                        <span className="block truncate text-sm text-slate-700 dark:text-neutral-300">
+                      <div key={label} className="flex min-w-0 flex-col items-center justify-center rounded-xl bg-slate-50 px-2 py-3 text-center dark:bg-neutral-900/60">
+                        <span className="text-[11px] leading-tight text-slate-700 dark:text-neutral-300 sm:text-xs">
                           {label === 'adults' ? 'Adult' : 'Children / Senior'}
                         </span>
-                        <span className="mt-1 block truncate text-3xl font-extrabold text-[#1F3F74] dark:text-[#4987BA]">
+                        <span className="mt-1 break-words text-xl font-extrabold leading-tight text-[#1F3F74] dark:text-[#4987BA] sm:text-2xl">
                           {amount}
                         </span>
                       </div>
                     ))}
                   </div>
-                  <p className="text-sm text-slate-700 dark:text-neutral-300">Day access per guest</p>
+                  <p className="text-xs text-slate-700 dark:text-neutral-300">Day access per guest</p>
                 </div>
 
                 <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950">
@@ -529,7 +429,6 @@ export default function BeachProfilePage({
                       </div>
                     ))}
                   </div>
-                  <p className="mt-2 text-[11px] text-slate-500">Daily beach & swimming hours</p>
                 </div>
               </div>
 
@@ -633,9 +532,9 @@ export default function BeachProfilePage({
               <div className="space-y-6">
                 <div>
                   <h2 className="text-lg font-extrabold text-[#1F3F74] dark:text-[#4987BA]">
-                    Cottage
+                    Cottage &amp; Tables
                   </h2>
-                  <p className="text-xs text-slate-500 dark:text-neutral-400">
+                  <p className="text-xs text-justify text-slate-500 dark:text-neutral-400">
                     Day-use shoreline shade and cottage options available at {beach.name}.
                   </p>
                 </div>
@@ -705,7 +604,7 @@ export default function BeachProfilePage({
                   <h2 className="text-lg font-extrabold text-[#1F3F74] dark:text-[#4987BA]">
                     Facilities
                   </h2>
-                  <p className="text-xs text-slate-500 dark:text-neutral-400">
+                  <p className="text-xs text-justify text-slate-500 dark:text-neutral-400">
                     Verified guest accommodations, on-site parking, and resort amenities.
                   </p>
                 </div>
@@ -766,15 +665,14 @@ export default function BeachProfilePage({
                   <h2 className="text-lg font-extrabold text-[#1F3F74] dark:text-[#4987BA]">
                     Do&apos;s &amp; Don&apos;ts (Resort Guidelines)
                   </h2>
-                  <p className="text-xs text-slate-500 dark:text-neutral-400">
+                  <p className="text-xs text-justify text-slate-500 dark:text-neutral-400">
                     Guidelines provided by {beach.name}.
                   </p>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="p-5 rounded-2xl bg-emerald-50/50 dark:bg-emerald-950/20 border border-emerald-200 dark:border-emerald-800/60 space-y-4">
-                    <div className="flex items-center gap-2 text-emerald-700 dark:text-emerald-400 font-bold text-sm">
-                      <CheckCircle2 className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
+                  <div className="space-y-4">
+                    <div className="font-bold text-sm text-emerald-700 dark:text-emerald-400">
                       <span>Do&apos;s (Recommended Etiquette)</span>
                     </div>
 
@@ -782,7 +680,7 @@ export default function BeachProfilePage({
                       {resortRules.filter((rule) => rule.type === 'do').map((rule) => (
                         <li key={rule.id} className="flex items-start gap-2.5">
                           <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 flex-shrink-0" />
-                          <span>
+                          <span className="text-justify">
                             <strong>{rule.title}</strong>
                             {rule.description && `: ${rule.description}`}
                           </span>
@@ -794,9 +692,8 @@ export default function BeachProfilePage({
                     )}
                   </div>
 
-                  <div className="p-5 rounded-2xl bg-rose-50/50 dark:bg-rose-950/20 border border-rose-200 dark:border-rose-800/60 space-y-4">
-                    <div className="flex items-center gap-2 text-rose-700 dark:text-rose-400 font-bold text-sm">
-                      <XCircle className="w-5 h-5 text-rose-600 dark:text-rose-400" />
+                  <div className="space-y-4">
+                    <div className="font-bold text-sm text-rose-700 dark:text-rose-400">
                       <span>Don&apos;ts (Strictly Prohibited)</span>
                     </div>
 
@@ -804,7 +701,7 @@ export default function BeachProfilePage({
                       {resortRules.filter((rule) => rule.type === 'dont').map((rule) => (
                         <li key={rule.id} className="flex items-start gap-2.5">
                           <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mt-1.5 flex-shrink-0" />
-                          <span>
+                          <span className="text-justify">
                             <strong>{rule.title}</strong>
                             {rule.description && `: ${rule.description}`}
                           </span>
@@ -959,7 +856,7 @@ export default function BeachProfilePage({
                 )}
 
                 {/* Rating Filter Categories: Equal Width across 6 columns (Matches Feedback Page) */}
-                <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 w-full pt-2">
+                <div className="flex w-full gap-2 overflow-x-auto pt-2 pb-2 snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
                   {(
                     [
                       { id: 'all', label: 'All' },
@@ -981,7 +878,7 @@ export default function BeachProfilePage({
                         key={category.id}
                         type="button"
                         onClick={() => setReviewCategory(category.id)}
-                        className={`w-full py-2 px-3 text-xs font-bold rounded-full flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                        className={`shrink-0 snap-start py-2 px-3 text-xs font-bold whitespace-nowrap rounded-full flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                           isActive
                             ? 'bg-[#1F3F74] text-white shadow-xs'
                             : 'bg-slate-100 hover:bg-slate-200 dark:bg-neutral-900 dark:hover:bg-neutral-800 text-slate-700 dark:text-slate-300'

@@ -279,7 +279,7 @@ export function PhotoViewerModal({
           <div className="flex min-w-0 flex-col gap-4 p-6">
             <h2 className="pr-10 text-xl font-semibold text-slate-900 dark:text-white">{name}</h2>
             {capacityText && (
-              <div className="inline-flex items-center gap-1.5 rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">
+              <div className={`inline-flex items-center gap-1.5 text-xs font-semibold ${capacity ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-600 dark:text-neutral-300'}`}>
                 {capacity ? (
                   <UsersRound className="h-3.5 w-3.5" aria-hidden="true" />
                 ) : (
@@ -291,7 +291,7 @@ export function PhotoViewerModal({
             {description?.trim() && (
               <section className="border-t border-slate-200 pt-4 dark:border-neutral-800">
                 <h3 className="text-xs font-semibold text-slate-500 dark:text-neutral-400">Description</h3>
-                <p className="mt-2 whitespace-pre-line text-sm leading-relaxed text-slate-700 dark:text-neutral-200">
+                <p className="mt-2 whitespace-pre-line text-justify text-xs leading-relaxed text-slate-700 dark:text-neutral-200">
                   {description}
                 </p>
               </section>

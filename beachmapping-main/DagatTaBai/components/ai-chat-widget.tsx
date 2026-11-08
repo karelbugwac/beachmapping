@@ -279,7 +279,6 @@ export function AiChatWidget() {
                   <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" aria-label="Online" />
                   <span className="text-[9px] sm:text-[10px] font-medium leading-tight text-blue-100/90">Local Guide</span>
                 </div>
-                <p className="mt-0.5 truncate text-[9px] sm:text-[10px] leading-tight text-blue-100/75">Ask anything about Catmon</p>
               </div>
             </div>
 
@@ -318,9 +317,13 @@ export function AiChatWidget() {
                 className={`flex min-w-0 items-end gap-1.5 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
               >
                 {msg.sender === 'assistant' && (
-                  <div className="relative mb-4 h-6 w-6 shrink-0 overflow-hidden rounded-full bg-[#1F3F74]/10 ring-1 ring-[#1F3F74]/10 dark:bg-[#4987BA]/15 dark:ring-[#4987BA]/20">
-                    <Image src="/images/bai.png" alt="" fill sizes="24px" className="object-contain p-0.5" />
-                  </div>
+                  <Image
+                    src="/images/bai.png"
+                    alt=""
+                    width={24}
+                    height={24}
+                    className="mb-4 h-6 w-6 shrink-0 object-contain"
+                  />
                 )}
                 <div
                   className={`max-w-[85%] min-w-0 space-y-1 px-3 py-2 shadow-2xs sm:max-w-[82%] ${

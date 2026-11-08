@@ -7,6 +7,8 @@ import { showToast } from '@/components/ui/feedback-toasts';
 interface PlatformReview {
   id: string;
   user_name: string;
+  profile_image_url?: string | null;
+  user_role?: string;
   rating: number;
   comment: string;
   created_at: string;
@@ -187,7 +189,7 @@ export default function PlatformFeedbackPage() {
       {/* Platform Feedback Categories & Feed */}
       <section className="space-y-6" aria-label="Platform feedback list">
         {/* Expanded Equal Sectioning Category Filter Pills (Responsive on Mobile and Desktop) */}
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-2 w-full">
+        <div className="flex w-full gap-2 overflow-x-auto pb-2 snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
           {(['all', 5, 4, 3, 2, 1] as const).map((cat) => {
             const count = cat === 'all'
               ? reviews.length
@@ -199,7 +201,7 @@ export default function PlatformFeedbackPage() {
                 key={cat}
                 type="button"
                 onClick={() => setActiveCategory(cat)}
-                className={`w-full py-2.5 px-3 rounded-full text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs ${
+                className={`shrink-0 snap-start py-2.5 px-3 whitespace-nowrap rounded-full text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs ${
                   isSelected
                     ? 'bg-[#1F3F74] text-white'
                     : 'bg-slate-100 dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 hover:bg-slate-200 dark:hover:bg-neutral-800'
@@ -232,9 +234,25 @@ export default function PlatformFeedbackPage() {
                 className="space-y-2 border-b border-slate-200 dark:border-neutral-800 pb-4"
               >
                 <div className="flex items-center justify-between gap-4 text-sm">
-                  <span className="font-bold text-slate-900 dark:text-white">
-                    {maskUserName(review.user_name)}
-                  </span>
+                  <div className="flex min-w-0 items-center gap-2.5">
+                    <div className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#edf3fa] text-sm font-bold text-[#1F3F74] dark:bg-blue-950/60 dark:text-[#9fc8ee]">
+                      {review.user_name?.trim().charAt(0).toUpperCase() || 'U'}
+                      {review.profile_image_url && (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img
+                          src={review.profile_image_url}
+                          alt=""
+                          className="absolute inset-0 h-full w-full object-cover"
+                          onError={(event) => {
+                            event.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      )}
+                    </div>
+                    <span className="truncate font-bold text-slate-900 dark:text-white">
+                      {maskUserName(review.user_name)}
+                    </span>
+                  </div>
 
                   {/* Star Icons instead of "5 / 5" */}
                   <div
