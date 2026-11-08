@@ -130,12 +130,17 @@ export function Navbar() {
         });
       }
     };
+    const handleLoginCompleted = () => {
+      void checkSession();
+    };
     window.addEventListener('dtb_user_updated', handleUserUpdate);
+    window.addEventListener('dtb_login_completed', handleLoginCompleted);
 
     return () => {
       isMounted = false;
       authSubscription?.unsubscribe();
       window.removeEventListener('dtb_user_updated', handleUserUpdate);
+      window.removeEventListener('dtb_login_completed', handleLoginCompleted);
     };
   }, [isDedicatedPortal]);
 

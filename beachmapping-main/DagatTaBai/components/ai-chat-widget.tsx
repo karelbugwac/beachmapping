@@ -48,7 +48,7 @@ export function AiChatWidget() {
     {
       id: 'welcome-1',
       sender: 'assistant',
-      text: "Maayong adlaw! I'm **Bai**, your Dagat Ta Bai local guide for Barangay Binongkalan, Catmon. Tap a question below or ask me about **Rañola Beach (Raniola)**, **Lite Bay Resort**, **Majestique Beach**, or **Hinagdan Beach**!",
+      text: "Hello! I'm **Bai**, your Dagat Ta Bai local guide for Barangay Binongkalan, Catmon. Ask me anything about **Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, or **Hinagdan Beach**!",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -347,15 +347,15 @@ export function AiChatWidget() {
             ))}
 
             {!hasUserMessages && !loading && (
-              <div className="ml-7 space-y-2 pt-1">
+              <div className="ml-7 space-y-1.5 pt-0.5">
                 <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Try asking</p>
-                <div className="grid grid-cols-2 gap-1.5">
+                <div className="flex flex-wrap gap-1.5">
                   {BAI_SUGGESTED_QUESTIONS.map((item) => (
                     <button
                       key={item.label}
                       type="button"
                       onClick={() => void submitQuestion(item.question)}
-                      className="min-h-9 rounded-xl border border-slate-200 bg-white px-2.5 py-1.5 text-left text-[10px] font-medium leading-relaxed text-[#1F3F74] transition-colors hover:border-[#1F3F74]/40 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74] dark:border-slate-700 dark:bg-[#132035] dark:text-blue-200 dark:hover:bg-[#182b48] dark:focus-visible:ring-[#4987BA]"
+                      className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-medium text-[#1F3F74] transition-colors hover:border-[#1F3F74]/40 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74] dark:border-slate-700 dark:bg-[#132035] dark:text-blue-200 dark:hover:bg-[#182b48] dark:focus-visible:ring-[#4987BA]"
                     >
                       {item.label}
                     </button>

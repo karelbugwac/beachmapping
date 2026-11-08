@@ -1,4 +1,4 @@
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createServerSupabaseClient, createAdminClient } from '@/lib/supabase/server';
 
 export interface AuthUser {
   id: string;
@@ -117,29 +117,95 @@ export async function registerLocalUser(
 
   try {
     const supabase = await createServerSupabaseClient();
-    const siteUrl = process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000';
-    const emailRedirectTo = new URL('/auth/callback', siteUrl);
-    emailRedirectTo.searchParams.set('next', '/login?confirmed=1');
-    const { data, error } = await supabase.auth.signUp({
+    const adminSupabase = createAdminClient();
+
+    // Create the user via the Admin API with email_confirm: true so the account works immediately without getting blocked by unconfirmed email
+    let userId: string | null = null;
+    let createdAt: string | undefined = undefined;
+
+    const { data: adminCreated, error: adminCreateError } = await adminSupabase.auth.admin.createUser({
       email: cleanEmail,
       password,
-      options: {
-        data: { full_name: cleanName, role: 'user' },
-        emailRedirectTo: emailRedirectTo.toString(),
-      },
+      email_confirm: true,
+      user_metadata: { full_name: cleanName, role: 'user' },
     });
-    if (error) return { error: error.message };
-    if (!data.user) return { error: 'Supabase did not create the account.' };
+
+    if (adminCreateError) {
+      // Check if an unconfirmed account with this email already exists from an earlier attempt
+      const { data: usersList } = await adminSupabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
+      const existingUser = usersList?.users?.find(
+        (u) => (u.email || '').toLowerCase() === cleanEmail
+      );
+
+      if (existingUser && !existingUser.email_confirmed_at) {
+        const { data: updatedUser, error: updateErr } = await adminSupabase.auth.admin.updateUserById(
+          existingUser.id,
+          {
+            password,
+            email_confirm: true,
+            user_metadata: {
+              ...(existingUser.user_metadata || {}),
+              full_name: cleanName,
+              role: (existingUser.user_metadata as any)?.role || 'user',
+            },
+          }
+        );
+        if (updateErr || !updatedUser.user) {
+          return { error: updateErr?.message || adminCreateError.message };
+        }
+        userId = updatedUser.user.id;
+        createdAt = updatedUser.user.created_at;
+      } else if (existingUser) {
+        return { error: 'An account with this email address already exists. Please sign in instead.' };
+      } else {
+        // Fallback to standard signUp if service role key is unavailable
+        const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+          email: cleanEmail,
+          password,
+          options: {
+            data: { full_name: cleanName, role: 'user' },
+          },
+        });
+        if (signUpError || !signUpData.user) {
+          return { error: signUpError?.message || adminCreateError.message };
+        }
+        userId = signUpData.user.id;
+        createdAt = signUpData.user.created_at;
+      }
+    } else if (adminCreated.user) {
+      userId = adminCreated.user.id;
+      createdAt = adminCreated.user.created_at;
+    }
+
+    if (!userId) {
+      return { error: 'Supabase did not create the account.' };
+    }
+
+    // Ensure profile record exists in public.profiles
+    try {
+      await (adminSupabase.from('profiles') as any).upsert(
+        {
+          id: userId,
+          email: cleanEmail,
+          full_name: cleanName,
+          role: 'user',
+          updated_at: new Date().toISOString(),
+        },
+        { onConflict: 'id' }
+      );
+    } catch {
+      // Non-fatal if trigger already created the profile
+    }
 
     return {
       user: {
-        id: data.user.id,
+        id: userId,
         full_name: cleanName,
         email: cleanEmail,
         role: 'user',
-        created_at: data.user.created_at,
+        created_at: createdAt || new Date().toISOString(),
       },
-      requiresEmailConfirmation: !data.session,
+      requiresEmailConfirmation: false,
     };
   } catch (error: unknown) {
     return { error: error instanceof Error ? error.message : 'Could not connect to Supabase Auth.' };
@@ -153,17 +219,62 @@ export async function loginLocalUser(
   const cleanEmail = email.trim().toLowerCase();
   try {
     const supabase = await createServerSupabaseClient();
-    const { data, error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
+    let { data, error } = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
+
+    // If login failed because the account was created before email auto-confirmation (e.g., "Email not confirmed"),
+    // auto-confirm the account via Admin API and retry signing in.
+    if (error) {
+      try {
+        const adminSupabase = createAdminClient();
+        const { data: usersList } = await adminSupabase.auth.admin.listUsers({ page: 1, perPage: 1000 });
+        const existingUser = usersList?.users?.find(
+          (u) => (u.email || '').toLowerCase() === cleanEmail
+        );
+        if (existingUser && !existingUser.email_confirmed_at) {
+          await adminSupabase.auth.admin.updateUserById(existingUser.id, {
+            email_confirm: true,
+          });
+          const retry = await supabase.auth.signInWithPassword({ email: cleanEmail, password });
+          data = retry.data;
+          error = retry.error;
+        }
+      } catch {
+        // Ignore admin fallback error and return original auth error
+      }
+    }
+
     if (error || !data.user) return { error: error?.message || 'Invalid email address or password.' };
 
     let profile: any = null;
     try {
-      const { data: profData, error: profileError } = await (supabase.from('profiles') as any)
+      const adminSupabase = createAdminClient();
+      const { data: profData, error: profileError } = await (adminSupabase.from('profiles') as any)
         .select('id, full_name, email, role, profile_image_url, created_at')
         .eq('id', data.user.id)
         .maybeSingle();
       if (!profileError && profData) {
         profile = profData;
+      } else if (!profData) {
+        // Ensure a profile row exists for this user
+        const metadata = (data.user.user_metadata || {}) as Record<string, any>;
+        const fallbackName = metadata.full_name || metadata.name || cleanEmail.split('@')[0];
+        const fallbackRole = metadata.role || 'user';
+        const { data: insertedProfile } = await (adminSupabase.from('profiles') as any)
+          .upsert(
+            {
+              id: data.user.id,
+              email: data.user.email || cleanEmail,
+              full_name: fallbackName,
+              role: fallbackRole,
+              updated_at: new Date().toISOString(),
+            },
+            { onConflict: 'id' }
+          )
+          .select('id, full_name, email, role, profile_image_url, created_at')
+          .maybeSingle();
+        if (insertedProfile) {
+          profile = insertedProfile;
+        }
       }
     } catch {
       // Ignore profile query failure, continue with auth user details

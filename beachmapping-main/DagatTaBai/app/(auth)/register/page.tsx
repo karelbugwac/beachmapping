@@ -94,15 +94,8 @@ export default function UserRegisterPage() {
         throw new Error(data.error || 'Registration failed.');
       }
 
-      if (data.requiresEmailConfirmation) {
-        showToast(
-          'Account created. Check your email to confirm it before signing in.',
-        );
-        router.push('/login');
-      } else {
-        showToast('Account created!');
-        router.push('/');
-      }
+      showToast('Account created! Please sign in with your password.');
+      router.push(`/login?email=${encodeURIComponent(formData.email.trim())}`);
       router.refresh();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Registration failed.';

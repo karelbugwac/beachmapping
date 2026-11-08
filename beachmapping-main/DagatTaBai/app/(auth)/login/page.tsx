@@ -18,12 +18,19 @@ function UserLoginForm() {
   const searchParams = useSearchParams();
   const emailConfirmed = searchParams.get('confirmed') === '1';
   const authError = searchParams.get('error');
+  const prefilledEmail = searchParams.get('email') || '';
 
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState(prefilledEmail);
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [touched, setTouched] = useState({ email: false, password: false });
+
+  useEffect(() => {
+    if (prefilledEmail) {
+      setEmail(prefilledEmail);
+    }
+  }, [prefilledEmail]);
 
   useEffect(() => {
     if (emailConfirmed) {

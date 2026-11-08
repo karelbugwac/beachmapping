@@ -176,18 +176,10 @@ export interface QuickPromptQuestion {
 }
 
 export const BAI_SUGGESTED_QUESTIONS: QuickPromptQuestion[] = [
-  { label: 'Unsay pinakaduol?', question: 'Unsay pinakaduol na beach?' },
-  { label: 'Batoon ba o dili?', question: 'Batoon ba ang mga beach o dili?' },
-  { label: 'Naay sugbaanan?', question: 'Asa na beach ang naay sugbaanan?' },
-  { label: 'Asay pinaka safe?', question: 'Asay pinaka safe na beach?' },
-  { label: 'Naay lifeguard?', question: 'Naa bay lifeguard ang mga beach?' },
-  { label: 'Naay store / foods?', question: 'Naa bay store or foods ang mga beach?' },
-  { label: 'Naay shower?', question: 'Naa bay shower ang mga beach?' },
-  { label: 'Senior accessible?', question: 'Accessible ba sa mga senior citizen ang mga beach?' },
-  { label: 'Naay sinkhole?', question: 'Are there any sinkholes in any of the beaches?' },
-  { label: 'Dali molawm?', question: 'Asa na beaches ang dali molawm?' },
-  { label: 'Pwede magda og pets?', question: 'Pwede ba magda ug pets sa mga beach?' },
-  { label: 'Taob or hunas?', question: 'Taob or hunas?' },
+  { label: 'Nearest beach?', question: 'Which beach is the nearest?' },
+  { label: 'Entrance & cottage fees?', question: 'What are the entrance and cottage fees?' },
+  { label: 'Safest beach?', question: 'Which beach is the safest?' },
+  { label: 'Rocky or sandy?', question: 'Are the beaches rocky or sandy?' },
 ];
 
 export type BeachKey = 'ranola' | 'litebay' | 'majestique' | 'hinagdan';
@@ -1099,7 +1091,7 @@ export function matchBaiInstantAnswer(
       cleanWords
     )
   ) {
-    return `Hello${nameSuffix}! Maayong adlaw! 👋 I'm **Bai**, your local beach guide for **Dagat Ta Bai** in Barangay Binongkalan, Catmon, Cebu. Which beach (**Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, or **Hinagdan Beach**) or detail would you like to ask about?`;
+    return `Hello${nameSuffix}! 👋 I'm **Bai**, your local beach guide for **Dagat Ta Bai** in Barangay Binongkalan, Catmon, Cebu. Which beach (**Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, or **Hinagdan Beach**) or detail would you like to ask about?`;
   }
 
   if (
@@ -1262,7 +1254,14 @@ export function matchBaiInstantAnswer(
     return `Tide conditions (taob or hunas) follow the **Live Tide Schedule in the Weather section** on our website (showing real-time water levels and schedules for today).\n\n💡 **Note:** **Lite Bay Resort and Majestique Beach** do not recede deeply (dili mohunas ug pamaayo) even during low tide, whereas **Rañola Beach and Hinagdan Beach** have noticeably exposed shorelines during low tide.`;
   }
 
-  // 6L. ENTRANCE FEES (Broad)
+  // 6L. ENTRANCE & COTTAGE FEES (Broad)
+  if (topics.asksEntrance && topics.asksCottage) {
+    if (isCeb) {
+      return `Mao kini ang **entrance fee ug cottage rates** sa 4 ka beach sa Barangay Binongkalan:\n• **Rañola Beach:** Entrance ₱20 (naay cottage) / ₱30 (walay cottage) | Cottage ₱500–₱2,500\n• **Lite Bay Resort:** Entrance ₱50 | Table ₱300, Cottage ₱800–₱1,000\n• **Majestique Beach:** Entrance ₱30 | Day Cottage ₱500–₱1,000, Overnight ₱800–₱1,200\n• **Hinagdan Beach:** Entrance ₱30 (day w/ cottage) / ₱50 (walay cottage/overnight) | Cottage ₱600–₱700`;
+    }
+    return `Here are the **entrance fees and cottage rates** for all 4 beaches in Barangay Binongkalan:\n• **Rañola Beach:** Entrance ₱20 (with cottage) / ₱30 (without) | Cottages ₱500–₱2,500\n• **Lite Bay Resort:** Entrance ₱50 | Table ₱300, Cottage ₱800–₱1,000\n• **Majestique Beach:** Entrance ₱30 | Day Cottage ₱500–₱1,000, Overnight ₱800–₱1,200\n• **Hinagdan Beach:** Entrance ₱30 (day with cottage) / ₱50 (without/overnight) | Cottages ₱600–₱700`;
+  }
+
   if (topics.asksEntrance) {
     if (isCeb) {
       return `Mao kini ang **entrance fee kada tawo** sa tanang 4 ka beach sa Barangay Binongkalan:\n• **Rañola Beach:** ₱20 (naay cottage) | ₱30 (walay cottage)\n• **Majestique Beach:** ₱30 kada tawo\n• **Hinagdan Beach:** ₱30 (day use naay cottage) | ₱50 (walay cottage / overnight)\n• **Lite Bay Resort:** ₱50 kada tawo`;
@@ -1316,12 +1315,17 @@ export function getContextualBranchQuestions(
 
   // If asking about nearest
   if (isNearestBeachQuery(lastUserText)) {
-    return [
-      { label: 'Pinakaduol from Talamban?', question: 'Pinakaduol na beach from Talamban?' },
-      { label: 'Pinakaduol from Danao?', question: 'Pinakaduol na beach from Danao?' },
-      { label: 'Pinakaduol from Sogod?', question: 'Pinakaduol na beach from Sogod?' },
-      { label: 'Pinakaduol from Bogo?', question: 'Pinakaduol na beach from Bogo?' },
-    ];
+    return isCeb
+      ? [
+          { label: 'Pinakaduol from Talamban?', question: 'Pinakaduol na beach from Talamban?' },
+          { label: 'Pinakaduol from Danao?', question: 'Pinakaduol na beach from Danao?' },
+          { label: 'Pinakaduol from Bogo?', question: 'Pinakaduol na beach from Bogo?' },
+        ]
+      : [
+          { label: 'From Cebu City?', question: 'Nearest beach from Cebu City?' },
+          { label: 'From Danao?', question: 'Nearest beach from Danao?' },
+          { label: 'From Bogo?', question: 'Nearest beach from Bogo?' },
+        ];
   }
 
   // If asking about specific single beach, suggest other topics for that beach + switch to another beach
@@ -1336,30 +1340,27 @@ export function getContextualBranchQuestions(
 
   if (activeBeachKey) {
     const b = BEACH_DATA[activeBeachKey];
+    const shortName = b.name.split(' ')[0];
     const branches: QuickPromptQuestion[] = [];
 
-    if (!topics.asksBatoon) {
+    if (!topics.asksEntrance && !topics.asksCottage) {
       branches.push({
-        label: isCeb ? `Batoon ba sa ${b.name.split(' ')[0]}?` : `Is ${b.name.split(' ')[0]} rocky?`,
-        question: `Batoon ba ni na beach sa ${b.name.split(' ')[0]}?`,
+        label: isCeb ? `Presyo sa ${shortName}?` : `${shortName} fees?`,
+        question: isCeb ? `Tagpila ang entrance sa ${b.name}?` : `What are the entrance fees at ${b.name}?`,
       });
     }
-    if (!topics.asksSugba) {
+    if (!topics.asksBatoon) {
       branches.push({
-        label: isCeb ? `Naay sugbaanan?` : `Has sugbaanan?`,
-        question: `Naa bay sugbaanan sa ${b.name}?`,
+        label: isCeb ? `Batoon ba sa ${shortName}?` : `Is ${shortName} rocky?`,
+        question: isCeb ? `Batoon ba ni na beach sa ${shortName}?` : `Is ${b.name} rocky or sandy?`,
       });
     }
     if (!topics.asksSenior) {
       branches.push({
-        label: isCeb ? `Senior accessible?` : `Senior accessible?`,
-        question: `Accessible ba ni sa mga senior citizen ang ${b.name}?`,
-      });
-    }
-    if (!topics.asksSinkhole) {
-      branches.push({
-        label: isCeb ? `Naay sinkhole?` : `Is there a sinkhole?`,
-        question: `Is there a sinkhole in ${b.name}?`,
+        label: 'Senior accessible?',
+        question: isCeb
+          ? `Accessible ba ni sa mga senior citizen ang ${b.name}?`
+          : `Is ${b.name} accessible for senior citizens?`,
       });
     }
 
@@ -1375,16 +1376,21 @@ export function getContextualBranchQuestions(
 
     branches.push({
       label: isCeb ? `Kumusta sa ${nextBeach.name.split(' ')[0]}?` : `What about ${nextBeach.name.split(' ')[0]}?`,
-      question: `Unsa man sa ${nextBeach.name}?`,
+      question: isCeb ? `Unsa man sa ${nextBeach.name}?` : `Tell me about ${nextBeach.name}`,
     });
 
-    return branches.slice(0, 4);
+    return branches.slice(0, 3);
   }
 
-  return [
-    { label: 'Batoon ba o dili?', question: 'Batoon ba ang mga beach o dili?' },
-    { label: 'Naay sugbaanan?', question: 'Asa na beach ang naay sugbaanan?' },
-    { label: 'Asay pinaka safe?', question: 'Asay pinaka safe na beach?' },
-    { label: 'Senior accessible?', question: 'Accessible ba sa mga senior citizen ang mga beach?' },
-  ];
+  return isCeb
+    ? [
+        { label: 'Batoon ba o dili?', question: 'Batoon ba ang mga beach o dili?' },
+        { label: 'Asay pinaka safe?', question: 'Asay pinaka safe na beach?' },
+        { label: 'Senior accessible?', question: 'Accessible ba sa mga senior citizen ang mga beach?' },
+      ]
+    : [
+        { label: 'Entrance & cottage fees?', question: 'What are the entrance and cottage fees?' },
+        { label: 'Safest beach?', question: 'Which beach is the safest?' },
+        { label: 'Senior accessible?', question: 'Which beaches are accessible for senior citizens?' },
+      ];
 }
