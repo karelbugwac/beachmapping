@@ -7,8 +7,8 @@ const nextConfig: NextConfig = {
   devIndicators: false, // Disables the floating Next.js ("N") dev indicator badge
 
   // Allow access from your phone through local network
-  allowedDevOrigins: ["192.168.254.102"],
-  
+  allowedDevOrigins: ["10.240.253.248"],
+
   experimental: {
     optimizePackageImports: ["lucide-react", "@supabase/supabase-js"],
     proxyClientMaxBodySize: "25mb",
