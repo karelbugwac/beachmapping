@@ -22,24 +22,21 @@ export async function POST(req: NextRequest) {
       });
     }
 
-    const user = await getCurrentSession();
-    let history: { role: 'user' | 'assistant'; text: string }[] = [];
-    const adminClient = user ? createAdminClient() : null;
-    if (user && adminClient) {
-      const { data: previousMessages } = await (adminClient.from('ai_chat_messages') as any)
-        .select('role, content')
-        .eq('user_id', user.id)
-        .order('created_at', { ascending: false })
-        .limit(10);
-      history = (previousMessages || []).reverse().map((entry: any) => ({ role: entry.role, text: entry.content }));
-    } else if (Array.isArray(body.history)) {
-      history = body.history
-        .slice(-10)
-        .filter((entry: any) => entry && (entry.role === 'user' || entry.role === 'assistant') && typeof entry.text === 'string')
-        .map((entry: any) => ({ role: entry.role, text: entry.text.slice(0, 500) }));
-    }
+    // Use client-supplied history immediately so we don't block on database roundtrips before replying
+    const history: { role: 'user' | 'assistant'; text: string }[] = Array.isArray(body.history)
+      ? body.history
+          .slice(-10)
+          .filter(
+            (entry: any) =>
+              entry && (entry.role === 'user' || entry.role === 'assistant') && typeof entry.text === 'string'
+          )
+          .map((entry: any) => ({ role: entry.role, text: entry.text.slice(0, 500) }))
+      : [];
 
-    const stream = await askGeminiAssistantStream(message, userLocation, history, user?.full_name);
+    // Fetch session in parallel for optional history persistence
+    const sessionPromise = getCurrentSession().catch(() => null);
+
+    const stream = await askGeminiAssistantStream(message, userLocation, history, null);
 
     // Collect the full response for saving to database
     let fullReply = '';
@@ -56,24 +53,28 @@ export async function POST(req: NextRequest) {
         } catch {
           if (!fullReply) {
             const fallback =
-              matchBaiInstantAnswer(message, user?.full_name, history) ||
-              getBaiApologyFallback(message, user?.full_name);
+              matchBaiInstantAnswer(message, null, history) ||
+              getBaiApologyFallback(message, null);
             fullReply = fallback;
             controller.enqueue(encoder.encode(fallback));
           }
         } finally {
-          // Save to database after stream completes
-          if (user && adminClient && fullReply) {
-            try {
-              await (adminClient.from('ai_chat_messages') as any).insert([
-                { user_id: user.id, role: 'user', content: message.trim().slice(0, 500) },
-                { user_id: user.id, role: 'assistant', content: fullReply.slice(0, 8000) },
-              ]);
-            } catch {
-              // Non-blocking history save
-            }
-          }
           controller.close();
+          // Save to database asynchronously after stream completes so the user never waits
+          if (fullReply) {
+            sessionPromise
+              .then(async (user) => {
+                if (!user) return;
+                const adminClient = createAdminClient();
+                await (adminClient.from('ai_chat_messages') as any).insert([
+                  { user_id: user.id, role: 'user', content: message.trim().slice(0, 500) },
+                  { user_id: user.id, role: 'assistant', content: fullReply.slice(0, 8000) },
+                ]);
+              })
+              .catch(() => {
+                // Non-blocking history save
+              });
+          }
         }
       },
     });

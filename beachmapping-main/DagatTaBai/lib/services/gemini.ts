@@ -27,12 +27,19 @@ function getOrderedModelCandidates(): string[] {
 }
 
 async function enrichWithLiveWeatherIfNeeded(query: string, baseReply: string): Promise<string> {
-  if (!/\b(safe|safety|luwas|weather|panahon|ulan|bagyo|forecast|tide|taob|hunas|bawod|wave|ligtas)\b/i.test(query)) {
+  if (
+    baseReply.includes('this information is not available') ||
+    baseReply.includes('random letters') ||
+    !/\b(safe|safety|luwas|weather|panahon|ulan|bagyo|forecast|tide|taob|hunas|bawod|wave|ligtas)\b/i.test(query)
+  ) {
     return baseReply;
   }
 
   try {
-    const w = await fetchLiveWeather(10.7286, 124.0152);
+    const w = await Promise.race([
+      fetchLiveWeather(10.7286, 124.0152),
+      new Promise<never>((_, reject) => setTimeout(() => reject(new Error('Weather timeout')), 800)),
+    ]);
     const wave = typeof w.waveHeight === 'number' ? ` · Wave: **${w.waveHeight} m**` : '';
     const liveLine = `\n\n📍 **Current Catmon Weather Update:** **${Math.round(w.temperature)}°C (${w.conditionLabel})** · Wind: **${Math.round(w.windSpeed)} km/h**${wave}`;
     return `${baseReply}${liveLine}`;
@@ -78,8 +85,9 @@ async function buildCombinedDatabaseContext(
 
 function buildSystemInstruction(databaseContext: string, userName?: string | null): string {
   return [
-    'You are Bai, the friendly Dagat Ta Bai AI beach guide for Barangay Binongkalan, Catmon, Cebu.',
+    'You are Bai, local guide for the beaches in Barangay Binongkalan, Catmon, Cebu. If asked what your name is or who you are, answer that you are "Bai, local guide".',
     'Always reply in the SAME language the user used (Cebuano/Bisaya, Tagalog, or English). Use simple, clear, everyday words that are immediately easy for any user to understand.',
+    'Keep a professional tone. Do NOT use asterisks (*) for italics or bullets; use "•" for lists. If the message is unclear, reply only: "Sorry, I did not understand your message. Please be more concise and clear with your question."',
     'There are ONLY 4 verified beaches in Barangay Binongkalan: Rañola Beach (Raniola), Lite Bay Resort, Majestique Beach, and Hinagdan Beach. Do not mention or include Turtle Point Beach.',
     'RULES FOR SPECIFIC, EASY-TO-UNDERSTAND, & PER-BEACH / BROAD ANSWERS:',
     '1. PINAKADUOL NA BEACH (Nearest Beach):',

@@ -385,17 +385,17 @@ const BEACH_DATA: Record<BeachKey, StructuredBeachData> = {
     petsEn: 'Yes, **pets are allowed** at **Hinagdan Beach**! Please supervise your pets and help keep the beach clean.',
     tideCeb: 'Para sa kahimtang sa taob o hunas sa **Hinagdan Beach**, palihug **i-refer ang Live Tide Status sa Weather section** diri sa among website. Klaro sab kaayo ang paghunas sa Hinagdan.',
     tideEn: 'To check if it is high tide (taob) or low tide (hunas) at **Hinagdan Beach**, please **refer to the Live Tide Status in the Weather section** on our website. Hinagdan has noticeably exposed shoreline at low tide.',
-    parkingCeb: 'Pasensya na, wala pa ma-lista sa among database ang bayad sa parking sa **Hinagdan Beach**.',
-    parkingEn: 'Sorry, the parking fee for **Hinagdan Beach** is not yet listed in our database.',
-    restroomCeb: 'Pasensya na, wala pa ma-lista sa among database ang bayad sa CR sa **Hinagdan Beach**.',
-    restroomEn: 'Sorry, the restroom fee for **Hinagdan Beach** is not yet listed in our database.',
+    parkingCeb: 'Pasensya na, **kini nga impormasyon kay wala sa among beripikadong database** (this information is not available — wala pa ma-lista ang bayad sa parking sa **Hinagdan Beach**).',
+    parkingEn: 'Sorry, **this information is not available** in our verified database (the parking fee for **Hinagdan Beach** is not listed).',
+    restroomCeb: 'Pasensya na, **kini nga impormasyon kay wala sa among beripikadong database** (this information is not available — wala pa ma-lista ang bayad sa CR sa **Hinagdan Beach**, apan naa silay shower ug kaligoan).',
+    restroomEn: 'Sorry, **this information is not available** in our verified database (the restroom fee for **Hinagdan Beach** is not listed, though shower facilities are available).',
   },
 };
 
 export function detectLanguage(q: string): 'ceb' | 'tl' | 'en' {
   const lower = ` ${q.toLowerCase()} `;
   if (
-    /\b(tagpila|pila|unsa|unsay|asa|asay|abli|sirado|sabado|dominggo|walay|wala|bayad|kwarto|sakyanan|taob|hunas|unsaon|padulong|paingon|gikan|naay|naa|pwede|maayong|kumusta|pinakabarato|barato|pinakaduol|duol|kaligoan|makabangag|kinsa|ngano|kanus-a|ila|ilang|didto|byahe|biyahe|sakay|oras|kung|tinda|tindahan|maligo|balas|ba|mga|dili|batoon|bato-on|bato|sugba|sugbaanan|sugba-anan|ihaw|luwas|bantay|karne|hagdanan|hagdan|molawm|lawm|lawom|pamaayo|iro|ayam|binuhi|kuting)\b/.test(
+    /\b(tagpila|pila|unsa|unsay|asa|asay|abli|sirado|sabado|dominggo|walay|wala|bayad|kwarto|sakyanan|taob|hunas|unsaon|padulong|paingon|gikan|naay|naa|pwede|maayong|kumusta|pinakabarato|barato|pinakaduol|duol|kaligoan|makabangag|kinsa|ngano|kanus-a|ila|ilang|imong|nimo|pangalan|pangan|didto|byahe|biyahe|sakay|oras|kung|tinda|tindahan|maligo|balas|ba|mga|dili|batoon|bato-on|bato|sugba|sugbaanan|sugba-anan|ihaw|luwas|bantay|karne|hagdanan|hagdan|molawm|lawm|lawom|pamaayo|iro|ayam|binuhi|kuting)\b/.test(
       lower
     )
   ) {
@@ -446,35 +446,44 @@ export interface TopicFlags {
   asksRentals: boolean;
   asksPrivateBooking: boolean;
   asksDiscount: boolean;
+  asksLocation: boolean;
 }
 
 export function detectTopicsInText(text: string): TopicFlags {
   const lower = text.toLowerCase();
   return {
     asksMostRocky: /\b(most\s*rocky|pinaka\s*batoon|pinakabatoon|asay\s*pinaka\s*batoon|unsay\s*pinaka\s*batoon|pinaka\s*mabato|pinakamabato|pinaka\s*daghan\s*og\s*bato)\b/i.test(lower),
-    asksBatoon: /\b(batoon|bato-on|bato|batoa|rocky|rocks|pebble|pebbles|stone|stones|balas|sand|sandy|white\s*sand|whitesand)\b/i.test(lower),
+    asksBatoon: /\b(batoon|bato-on|bato|batoa|mabato|rocky|rocks|pebble|pebbles|stone|stones|balas|sand|sandy|white\s*sand|whitesand)\b/i.test(lower),
     asksSugba: /\b(sugba|sugbaanan|sugba-anan|ihaw|ihawan|grill|grilling|barbecue|bbq|barbeque)\b/i.test(lower),
-    asksSafest: /\b(pinaka\s*safe|pinakasafe|asay\s*pinaka\s*safe|safest|safest\s*beach|safe\s*for\s*(children|kids|seniors|families))\b/i.test(lower),
-    asksSafety: /\b(safe|safety|luwas|delikado|dangerous|wave|waves|bawod|current|ligtas)\b/i.test(lower),
-    asksLifeguard: /\b(lifeguard|life\s*guard|bantay\s*dagat|guard)\b/i.test(lower),
+    asksSafest: /\b(pinaka\s*safe|pinakasafe|asay\s*pinaka\s*safe|safest|safest\s*beach|safe\s*for\s*(children|kids|seniors|families)|safe\s*sa\s*(mga\s*)?(bata|senior|tiguwang))\b/i.test(lower),
+    asksSafety: /\b(safe|safety|luwas|delikado|dangerous|wave|waves|bawod|current|ligtas|bata|kids|children)\b/i.test(lower),
+    asksLifeguard: /\b(lifeguard|life\s*guard|lifeguards|bantay\s*dagat|guard)\b/i.test(lower),
     asksStore: /\b(store|stores|food|foods|tinda|tindahan|sari-sari|sari\s*sari|pagkaon|snack|snacks|canteen|karne|meat|shop|palitanan)\b/i.test(lower),
     asksShower: /\b(shower|showers|kaligoan|himasa|rinse|banlaw|ligoan)\b/i.test(lower),
-    asksSenior: /\b(senior|seniors|senior\s*citizen|senior\s*citizens|tiguwang|elderly|accessible|wheelchair)\b/i.test(lower),
+    asksSenior: /\b(senior|seniors|senior\s*citizen|senior\s*citizens|tiguwang|elderly|accessible|accessibility|wheelchair|pwd|hagdan|hagdanan|stairs)\b/i.test(lower),
     asksSinkhole: /\b(sinkhole|sink\s*hole|sinkholes|sink\s*holes|bangag|lungag)\b/i.test(lower),
-    asksMolawm: /\b(molawm|mo\s*lawm|dali\s*molawm|dali\s*mo\s*lawm|lawm|lawom|deep|depth|deeply|drop\s*off|drop-off|dropoff|shallow|mababaw|pamaayo|hunas\s*ug\s*pamaayo)\b/i.test(lower),
-    asksPets: /\b(pet|pets|iro|ayam|dog|dogs|cat|cats|kuting|hayop|animal|animals)\b/i.test(lower),
-    asksTide: /\b(taob|hunas|tide|tides|high\s*tide|low\s*tide|water\s*level)\b/i.test(lower),
-    asksEntrance: /\b(entrance|entran|fee|bayad\s*sa\s*pagsulod|pagsulod|per\s*head|per\s*person)\b/i.test(lower),
+    asksMolawm: /\b(molawm|mo\s*lawm|dali\s*molawm|dali\s*mo\s*lawm|lawm|lawom|malalim|deep|depth|deeply|drop\s*off|drop-off|dropoff|shallow|mababaw|pamaayo|hunas\s*ug\s*pamaayo)\b/i.test(lower),
+    asksPets: /\b(pet|pets|iro|ayam|dog|dogs|cat|cats|kuting|aso|pusa|hayop|binuhi|animal|animals)\b/i.test(lower),
+    asksTide: /\b(taob|hunas|tide|tides|high\s*tide|low\s*tide|water\s*level|weather|panahon|ulan|forecast)\b/i.test(lower),
+    asksEntrance:
+      /\b(entrance|entran|entrance\s*fee|bayad\s*sa\s*pagsulod|pagsulod|per\s*head|per\s*person|cheapest|pinakabarato|pinaka\s*barato|barato|affordable|budget|pinakamura)\b/i.test(
+        lower
+      ) ||
+      (/\b(tagpila|pila\s*ang\s*bayad|how\s*much|magkano|price|prices|rate|rates|fees)\b/i.test(lower) &&
+        !/\b(cottage|cottages|table|tables|room|rooms|kwarto|parking|park|car|motor|cr|restroom|toilet|shower|kaligo|himasa|salbabida|floater|kayak|jacket|vest|goggles|fins)\b/i.test(
+          lower
+        )),
     asksCottage: /\b(cottage|cottages|table|tables|shed|payag|space)\b/i.test(lower),
     asksRoom: /\b(room|rooms|kwarto|overnight|aircon|ac|short-time|shortime|short\s*time|balay|tent|camp|camping|tulog|katulog|stay)\b/i.test(lower),
-    asksHours: /\b(open|opening|close|closing|operating|schedule|abli|sirado|mangabre|manirado|saturday|sabado|sunday|dominggo|everyday|kada\s*adlaw)\b/i.test(lower),
-    asksContact: /\b(contact|number|phone|cellphone|call|text|tawag|reach)\b/i.test(lower),
-    asksParking: /\b(parking|park|car|motor|motorcycle|sakyanan)\b/i.test(lower),
+    asksHours: /\b(open|opening|close|closing|operating|schedule|abli|sirado|mangabre|manirado|saturday|sabado|sunday|dominggo|everyday|kada\s*adlaw|hours|oras\s*sa\s*pag-abli)\b/i.test(lower),
+    asksContact: /\b(contact|contacts|number|numbers|phone|cellphone|call|text|tawag|reach|facebook|fb)\b/i.test(lower),
+    asksParking: /\b(parking|park\s*fee|car\s*park|motor\s*park|motorcycle\s*park|parada|paradahan|sakyanan)\b/i.test(lower),
     asksRestroom: /\b(restroom|restrooms|cr|comfort\s*room|toilet|ihi|libang)\b/i.test(lower),
     asksActivities: /\b(activity|activities|snorkel|snorkeling|kayak|kayaking|fishing|lingaw)\b/i.test(lower),
-    asksRentals: /\b(rent|rental|rentals|equipment|salbabida|floater|life\s*jacket|lifejacket|vest|goggles|fins|mouthpiece|abang)\b/i.test(lower),
+    asksRentals: /\b(rent|rental|rentals|equipment|salbabida|floater|floaters|life\s*jacket|lifejacket|life\s*jackets|vest|goggles|fins|mouthpiece|abang)\b/i.test(lower),
     asksPrivateBooking: /\b(book|booking|mabookingan|ma-bookingan|bookingan|reserve|reservation|private|exclusive|walk-in|walk\s*in)\b/i.test(lower),
     asksDiscount: /\b(discount|discounts|promo|promos|event|events|birthday|birthdays|reunion|team\s*building|group\s*rate|less|hangyo)\b/i.test(lower),
+    asksLocation: /\b(where\s+is|where\s+are|located|location\s+of|address|asa\s+dapit|asa\s+makit-an|asa\s+ang\s+lugar|saan\s+matatagpuan)\b/i.test(lower),
   };
 }
 
@@ -503,7 +512,8 @@ export function hasAnyTopic(t: TopicFlags): boolean {
     t.asksActivities ||
     t.asksRentals ||
     t.asksPrivateBooking ||
-    t.asksDiscount
+    t.asksDiscount ||
+    t.asksLocation
   );
 }
 
@@ -949,6 +959,22 @@ function matchCebuCommuteAndTravelHours(
 }
 
 /**
+ * Checks whether a single-beach query without a specific topic flag is asking for a general overview
+ * (e.g. "Rañola Beach", "Tell me about Hinagdan", "Unsa man sa Lite Bay?")
+ * rather than asking an unverified/unanswerable specific question.
+ */
+function isGeneralBeachOverviewQuery(lower: string): boolean {
+  const stripped = lower
+    .replace(/\b(rañola|ranola|raniola|lite\s*bay|litebay|light\s*bay|majestique|majestic|hinagdan|beach|beaches|resort|resorts)\b/gi, '')
+    .replace(/[^\w\sñ]/gi, '')
+    .trim();
+  if (!stripped) return true;
+  return /^(tell\s*me(\s*about)?|what\s*about|how\s*about|info(\s*about|\s*on)?|information(\s*about|\s*on)?|details(\s*about|\s*of|\s*on)?|describe|overview(\s*of)?|profile(\s*of)?|unsa\s*man(\s*ang|\s*sa)?|unsay\s*naa(\s*sa)?|unsay\s*detalye(\s*sa)?|kumusta(\s*ang|\s*sa)?|musta(\s*ang|\s*sa)?|about|sa|ang|in|at|for|unsa\s*ang)$/i.test(
+    stripped
+  );
+}
+
+/**
  * Builds specific answers for a single beach
  */
 function buildSpecificSingleBeachAnswer(
@@ -956,11 +982,11 @@ function buildSpecificSingleBeachAnswer(
   lower: string,
   lang: 'ceb' | 'tl' | 'en',
   asks: TopicFlags
-): string {
+): string | null {
   const isCeb = lang === 'ceb';
 
   // Specific single topic checks
-  if (asks.asksBatoon) {
+  if (asks.asksBatoon || asks.asksMostRocky) {
     return isCeb ? b.batoonCeb : b.batoonEn;
   }
 
@@ -1004,6 +1030,12 @@ function buildSpecificSingleBeachAnswer(
     return isCeb ? b.tideCeb : b.tideEn;
   }
 
+  if (asks.asksEntrance && asks.asksCottage) {
+    return isCeb
+      ? `Sa **${b.name}**:\n• **Entrance Fee:** ${b.entranceCeb}\n• **Cottage / Table:** ${b.cottagesCeb}`
+      : `At **${b.name}**:\n• **Entrance Fee:** ${b.entranceEn}\n• **Cottages / Tables:** ${b.cottagesEn}`;
+  }
+
   if (asks.asksEntrance) {
     return isCeb ? `Sa **${b.name}**: ${b.entranceCeb}` : `At **${b.name}**: ${b.entranceEn}`;
   }
@@ -1032,6 +1064,33 @@ function buildSpecificSingleBeachAnswer(
     return isCeb ? `Ang contact number sa **${b.name}** kay: **${b.contact}**.` : `The contact number for **${b.name}** is: **${b.contact}**.`;
   }
 
+  if (asks.asksActivities || asks.asksRentals) {
+    if (b.key === 'ranola') {
+      return isCeb
+        ? `Sa **${b.name}**: Pwede maligo, magsugba, ug mag-overnight tent camping. Naay maabangan nga **salbabida tag ₱30**.`
+        : `At **${b.name}**: Guests can enjoy swimming, grilling, and overnight tent camping. **Floaters (salbabida)** are available for rent for **₱30**.`;
+    }
+    if (b.key === 'litebay') {
+      return isCeb
+        ? `Sa **${b.name}**: Pwede maligo, magsugba, ug mag-kayak (**₱200 sa 2 ka oras**). Naay maabangan nga **life jacket tag ₱50**.`
+        : `At **${b.name}**: Guests can enjoy swimming, grilling, and **kayaking (₱200 for 2 hours)**. **Life jackets** are available for rent for **₱50**.`;
+    }
+    if (b.key === 'majestique') {
+      return isCeb
+        ? `Sa **${b.name}**: Pwede maligo, magsugba, ug mag-overnight stay. Naay maabangan nga **life jacket tag ₱50**.`
+        : `At **${b.name}**: Guests can enjoy swimming, grilling, and overnight stays. **Life jackets** are available for rent for **₱50**.`;
+    }
+    return isCeb
+      ? `Sa **${b.name}**: Pwede maligo sa balas nga baybayon, magsugba, ug mag-overnight. Naay maabangan nga **salbabida (₱50)** ug **life jackets (₱50–₱100)**.`
+      : `At **${b.name}**: Guests can enjoy swimming on the sandy shore, grilling, and overnight stays. **Floaters (₱50)** and **life jackets (₱50–₱100)** are available for rent.`;
+  }
+
+  if (asks.asksLocation) {
+    return isCeb
+      ? `Ang **${b.name}** kay nahimutang sa **Barangay Binongkalan, Catmon, Cebu** (daplin ra mismo sa Cebu North National Highway).`
+      : `**${b.name}** is located in **Barangay Binongkalan, Catmon, Cebu** (right along the Cebu North National Highway).`;
+  }
+
   if (asks.asksPrivateBooking) {
     return isCeb
       ? `**Walay private kay open sya sa tanan** — ang **${b.name}** kay abli para sa tanan ug walk-ins are welcome.`
@@ -1044,6 +1103,11 @@ function buildSpecificSingleBeachAnswer(
       : `**No discounts** — **${b.name}** does not offer special event discounts (regular rates apply).`;
   }
 
+  // Only return the general beach profile if the user actually asked for a general overview of the beach
+  if (!isGeneralBeachOverviewQuery(lower)) {
+    return null;
+  }
+
   // General profile of single beach
   if (isCeb) {
     return `Mao kini ang mga detalye sa **${b.name}**:\n• **Oras sa Pag-abli:** ${b.hoursCeb}\n• **Entrance Fee:** ${b.entranceCeb}\n• **Cottage / Table:** ${b.cottagesCeb}\n• **Kwarto / Overnight:** ${b.roomsCeb}\n• **Batoon ba:** ${b.batoonCeb}\n• **Sugbaanan:** ${b.sugbaCeb}\n• **Senior Citizens:** ${b.seniorCeb}\n• **Sinkhole:** ${b.sinkholeCeb}\n• **Dali molawm:** ${b.molawmCeb}\n• **Pets:** ${b.petsCeb}\n• **Contact:** ${b.contact}`;
@@ -1052,25 +1116,139 @@ function buildSpecificSingleBeachAnswer(
   return `Here are the details for **${b.name}**:\n• **Operating Hours:** ${b.hoursEn}\n• **Entrance Fee:** ${b.entranceEn}\n• **Cottages / Tables:** ${b.cottagesEn}\n• **Rooms / Overnight:** ${b.roomsEn}\n• **Shoreline (Batoon):** ${b.batoonEn}\n• **Grilling (Sugbaanan):** ${b.sugbaEn}\n• **Senior Citizen Accessibility:** ${b.seniorEn}\n• **Sinkhole:** ${b.sinkholeEn}\n• **Depth (Dali molawm):** ${b.molawmEn}\n• **Pets:** ${b.petsEn}\n• **Contact:** ${b.contact}`;
 }
 
+/**
+ * Detects if the user typed random letters, keyboard mashes, gibberish, or unintelligible text.
+ */
+export function isRandomOrGibberishInput(userQuery: string): boolean {
+  const trimmed = userQuery.trim();
+  if (!trimmed) return true;
+
+  const lower = trimmed.toLowerCase();
+
+  // 1. Only symbols, punctuation, or numbers (e.g. "???", "...", "12345", "!@#$")
+  const lettersOnly = lower.replace(/[^a-zñ]/gi, '');
+  if (lettersOnly.length === 0) {
+    return true;
+  }
+
+  // 2. Very short single-letter or 2-letter inputs that are not valid short words
+  const validShortWords = new Set(['hi', 'yo', 'ty', 'oo', 'no', 'ok', 'cr', 'ac', 'fb', 'sm']);
+  if (lettersOnly.length <= 2 && !validShortWords.has(lettersOnly)) {
+    return true;
+  }
+
+  // 3. Same character repeated 4 or more times in a row (e.g. "aaaaa", "zzzzz", "hhhhh", "kkkkk")
+  if (/(.)\1{3,}/i.test(lettersOnly)) {
+    return true;
+  }
+
+  // 4. Common keyboard mash sequences or repetitive syllable gibberish
+  if (
+    /(asdf|sdfg|dfgh|fghj|ghjk|hjkl|qwerty|qwert|werty|ertyu|rtyui|tyuio|yuiop|zxcv|xcvb|cvbn|vbnm|fdsa|gfds|hgfd|jhgf|kjhg|lkjh|poiu|oiuy|iuyt|uytr|ytre|rewq|mnbv|nbvc|bvcx|vcxz|qazwsx|wsxedc|plmokn|asdasd|qweqwe|zxczxc|dfgdfg|cvbcvb|jkjkjk|fgfgfg|lklklk|hahaha|hehehe|hihihi|huhuhu|lololol|blabla|nyenye|sksksk)/i.test(
+      lower
+    )
+  ) {
+    return true;
+  }
+
+  // 5. Extract alphabetic words
+  const words = lower.match(/[a-zñ]+/gi) || [];
+  if (words.length === 0) return true;
+
+  // Check if any word has 5+ consecutive consonants (e.g. "kjhfg", "bvcxz", "sdfgh", "plmkn")
+  const hasExtremeConsonantCluster = words.some((w) => /[bcdfghjklmnpqrstvwxz]{5,}/i.test(w));
+  if (hasExtremeConsonantCluster) {
+    return true;
+  }
+
+  // Check if all words lack vowels (and aren't valid short abbreviations)
+  const validVowelLessWords = new Set([
+    'ty',
+    'tysm',
+    'cr',
+    'fb',
+    'sm',
+    'km',
+    'hr',
+    'hrs',
+    'st',
+    'brgy',
+    'srp',
+    'csbt',
+    'bbq',
+    'pwd',
+    'atm',
+    'tv',
+    'id',
+    'vs',
+  ]);
+  const allWordsLackVowels = words.every(
+    (w) => !/[aeiouy]/i.test(w) && !validVowelLessWords.has(w)
+  );
+  if (allWordsLackVowels) {
+    return true;
+  }
+
+  // 6. Check if the input contains at least ONE recognizable word (Bisaya, Tagalog, English, beach name, or place name)
+  const hasRecognizableWord =
+    detectBeachesInText(lower).length > 0 ||
+    hasAnyTopic(detectTopicsInText(lower)) ||
+    isNearestBeachQuery(lower) ||
+    isExplicitCommuteText(lower) ||
+    Boolean(matchSpecificOriginInText(lower)) ||
+    /\b(hi|hello|hey|good|morning|afternoon|evening|day|greetings|yo|sup|hola|maayong|mayng|adlaw|buntag|udto|hapon|gabii|kumusta|musta|ayo|thank|thanks|ty|tysm|salamat|daghang|maraming|bye|goodbye|amping|name|names|pangalan|pangan|what|whats|which|where|when|who|whom|whose|why|how|is|are|was|were|be|been|do|does|did|can|could|will|would|should|may|might|must|have|has|had|there|this|that|these|those|the|in|on|at|to|from|for|of|with|by|about|near|far|much|many|any|all|some|most|more|best|very|too|also|only|just|if|or|and|but|not|you|your|we|our|us|my|me|it|its|they|their|them|he|she|tell|ask|know|want|need|like|go|going|get|take|bring|allowed|available|open|close|closed|yes|no|ok|okay|help|please|info|information|details|beach|beaches|resort|resorts|dagat|baybay|baybayon|tubig|water|sea|ocean|shore|sand|sandy|balas|rock|rocks|rocky|bato|batoon|catmon|binongkalan|cebu|north|south|unsa|unsay|asa|asay|kinsa|kinsay|ngano|nganong|kanus|pila|tagpila|unsaon|hain|ug|og|ang|sa|mga|ba|bay|man|ra|lang|kaayo|jud|gyud|sab|sad|pod|pud|kay|kung|kon|para|gikan|padulong|paingon|duol|layo|tawo|oo|dili|wala|walay|naa|naay|pwede|puwede|palihug|kani|kini|ari|diri|didto|nindot|barato|mahal|lugar|ano|anong|saan|paano|magkano|kailan|sino|bakit|alin|ng|na|pa|po|ito|iyan|iyon|dito|diyan|doon|mula|papunta|papuntang|may|mayroon|meron|hindi|bawal|lahat|pinaka|tabang|bai|pool|swimming|wifi|internet|password|videoke|karaoke|alcohol|beer|liquor|corkage|boat|jetski|banana|buffet|restaurant|hotel|gcash|card|atm|owner|mayor)\b/i.test(
+      lower
+    );
+
+  if (!hasRecognizableWord) {
+    return true;
+  }
+
+  return false;
+}
+
+/**
+ * Detects if the user is explicitly asking about an unverified topic or feature
+ * that is NOT in our verified database (so we never falsely trigger a known topic).
+ */
+export function isAskingUnverifiedTopic(lower: string): boolean {
+  return /\b(pool|swimming\s*pool|wifi|wi-fi|internet|password|signal|videoke|karaoke|magic\s*sing|corkage|alcohol|liquor|beer|red\s*horse|tanduay|alak|jet\s*ski|jetski|banana\s*boat|parasailing|scuba|diving|island\s*hopping|pumpboat|bangka|yacht|speedboat|gcash|paymaya|credit\s*card|debit\s*card|atm|bank\s*transfer|spa|massage|jacuzzi|sauna|gym|buffet|billiards|bowling|television|refrigerator|rice\s*cooker|heater|hot\s*shower|towel|tuwalya|pillow|unlan|blanket|habol|electric\s*fan|generator|drone|bonfire|fireworks|curfew|refund|cancellation|owner|tag-iya|manager|mayor|kapitan|barangay\s*captain|turtle\s*point|boracay|palawan|siargao|bohol|panglao|bantayan|malapascua|camotes|sumilon|kawasan|oslob\s*whale|ocean\s*park|safari|anjo\s*world)\b/i.test(
+    lower
+  );
+}
+
+/**
+ * Fast response when the user types random letters, gibberish, or unrecognized typings.
+ */
+export function getBaiRandomInputFallback(userQuery: string, userName?: string | null): string {
+  const firstName = userName ? userName.trim().split(/\s+/)[0] : '';
+  const nameSuffix = firstName ? `, ${firstName}` : '';
+
+  return `Sorry${nameSuffix}, I did not understand your message. Please be more concise and clear with your question.`;
+}
+
+/**
+ * Fast, direct, and formal response when asked information that cannot be answered / is not in the database.
+ */
 export function getBaiApologyFallback(userQuery: string, userName?: string | null): string {
   const lang = detectLanguage(userQuery);
   const firstName = userName ? userName.trim().split(/\s+/)[0] : '';
   const nameSuffix = firstName ? `, **${firstName}**` : '';
 
   if (lang === 'ceb') {
-    return `Maayong adlaw${nameSuffix}. Subay sa among opisyal nga database sa **Barangay Binongkalan, Catmon, Cebu**, **wala akoy napalgan nga beripikadong impormasyon** kabahin sa maong pangutana o detalye.\n\nAron mahatagan kamo og tukma ug pormal nga giya, andam ako motubag sa mga beripikadong detalye alang sa 4 ka opisyal nga beach resort (**Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, ug **Hinagdan Beach**) kabahin sa:\n• **Lokasyon ug Byahe:** Pinakaduol nga beach gikan sa inyong lugar ug giya sa commute\n• **Baybayon:** Batoon ba o dili (rocky shoreline), kalawmon sa tubig (dali molawm), ug baybayon\n• **Kaluwasan:** Pinaka-safe nga beach, kondisyon sa dagat, ug kahimtang sa lifeguards\n• **Fasilidad ug Serbisyo:** Sugbaanan, tindahan/pagkaon, shower/himasa, ug senior citizen accessibility\n• **Kondisyon sa Dagat:** Sinkholes, taob ug hunas (live tide schedule), ug pagdala og mga pets\n• **Presyo ug Oras:** Entrance fees, cottages, mga kwarto, ug operating hours\n\nPalihug isulti kon asa niini ang buot ninyong ipangutana.`;
+    return `Pasensya na${nameSuffix}, **kini nga impormasyon kay wala sa among beripikadong database** (*this information is not available*) ug dili nako matubag.\n\nAng ako rang matubag kay ang mga beripikadong detalye para sa 4 ka opisyal nga beach sa **Barangay Binongkalan, Catmon, Cebu** (**Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, ug **Hinagdan Beach**) — sama sa pinakaduol nga beach, batoon ba o dili, sugbaanan, safety, lifeguard, store/foods, shower, commute, senior citizen accessibility, sinkhole, dali molawm, pets, taob/hunas, entrance fee, cottage, kwarto, ug oras sa pag-abli.`;
   }
 
   if (lang === 'tl') {
-    return `Magandang araw po${nameSuffix}. Ayon sa opisyal na database ng **Barangay Binongkalan, Catmon, Cebu**, **wala po akong natagpuang beripikadong impormasyon** ukol sa inyong katanungan.\n\nUpang mabigyan kayo ng tumpak at pormal na gabay, maaari po ninyo akong tanungin tungkol sa 4 na opisyal na beach resort (**Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, at **Hinagdan Beach**) ukol sa:\n• **Lokasyon at Commute:** Pinakamalapit na beach mula sa inyong pinanggalingan at direksyon sa biyahe\n• **Dalampasigan:** Mabato ba o hindi, lalim ng tubig, at buhangin\n• **Kaligtasan:** Pinakaligtas na beach at lifeguards\n• **Pasilidad:** Sugbaanan/ihawan, tindahan/pagkain, shower, at senior citizen accessibility\n• **Kondisyon ng Dagat:** Sinkholes, taob/hunas (tides), at pagdadala ng pets\n• **Bayarin at Oras:** Entrance fees, cottage rates, mga kwarto, at operating hours\n\nMangyaring sabihin po kung alin sa mga ito ang nais ninyong itanong.`;
+    return `Paumanhin po${nameSuffix}, **ang impormasyong ito ay wala sa aming beripikadong database** (*this information is not available*) at hindi ko po masasagot.\n\nAng masasagot ko lamang po ay ang mga beripikadong detalye para sa 4 na opisyal na beach sa **Barangay Binongkalan, Catmon, Cebu** (**Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, at **Hinagdan Beach**).`;
   }
 
-  return `Good day${nameSuffix}. According to the official verified database of **Barangay Binongkalan, Catmon, Cebu**, **I do not have verified information** regarding this specific inquiry.\n\nTo ensure you receive accurate and formal assistance, I can provide verified information for our 4 official beach resorts (**Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, and **Hinagdan Beach**) on the following topics:\n• **Location & Commute:** Nearest beach based on your starting origin and step-by-step commute directions\n• **Shoreline Conditions:** Rocky conditions (batoon ba o dili), water depth (dali molawm), and sandy shores\n• **Safety & Lifeguards:** Safest beach for families/seniors and lifeguard status\n• **Facilities & Amenities:** Grilling areas (sugbaanan), food/stores, showers, and senior citizen accessibility\n• **Marine Conditions:** Sinkhole details, live tides (taob/hunas), and pet policies\n• **Rates & Schedules:** Entrance fees, cottage and table rentals, room accommodations, and operating hours\n\nPlease let me know which of these verified topics you would like to inquire about.`;
+  return `Sorry${nameSuffix}, **this information is not available** in our verified database and cannot be answered.\n\nI can only provide verified information for the 4 official beaches in **Barangay Binongkalan, Catmon, Cebu** (**Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, and **Hinagdan Beach**) — such as nearest beach, rocky/batoon shoreline, grilling areas (sugbaanan), safety, lifeguards, store/foods, showers, commute directions, senior citizen accessibility, sinkholes, water depth, pets, tides, entrance fees, cottages, rooms, and operating hours.`;
 }
 
 /**
  * Main matching engine: handles specific per-beach questions, broad multi-beach questions,
- * nearest-beach queries, and context continuation.
+ * nearest-beach queries, context continuation, random typings, and unanswerable queries instantaneously.
  */
 export function matchBaiInstantAnswer(
   userQuery: string,
@@ -1085,13 +1263,13 @@ export function matchBaiInstantAnswer(
   const firstName = userName ? userName.trim().split(/\s+/)[0] : '';
   const nameSuffix = firstName ? `, **${firstName}**` : '';
 
-  // 1. Greetings
+  // 1. Greetings, Thanks, Farewells, Name & Help
   if (
     /^(hi+|hello+|hey+|good\s*(morning|afternoon|evening|day)|greetings|yo|sup|hola|hi\s+bai|hello\s+bai|hey\s+bai)$/i.test(
       cleanWords
     )
   ) {
-    return `Hello${nameSuffix}! 👋 I'm **Bai**, your local beach guide for **Dagat Ta Bai** in Barangay Binongkalan, Catmon, Cebu. Which beach (**Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, or **Hinagdan Beach**) or detail would you like to ask about?`;
+    return `Hello${nameSuffix}! 👋 I'm **Bai**, your local guide for **Dagat Ta Bai** in Barangay Binongkalan, Catmon, Cebu. Which beach (**Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, or **Hinagdan Beach**) or detail would you like to ask about?`;
   }
 
   if (
@@ -1110,6 +1288,43 @@ export function matchBaiInstantAnswer(
     return isCeb
       ? `Walay sapayan${nameSuffix}! 😊 Ingna lang ko kung naa pa kay laing pangutana bahin sa mga beach diri sa Binongkalan.`
       : `You're very welcome${nameSuffix}! 😊 Let me know if you have any other questions about the beaches here in Binongkalan.`;
+  }
+
+  if (/^(bye+|goodbye|see\s*you|amping|babay|paalam)$/i.test(cleanWords)) {
+    return isCeb
+      ? `Amping sa inyong byahe${nameSuffix}! 👋 Kita-kits puhon diri sa Barangay Binongkalan, Catmon!`
+      : `Safe travels${nameSuffix}! 👋 Hope to see you soon at Barangay Binongkalan, Catmon!`;
+  }
+
+  // Name & identity queries ("What is your name?", "Unsay imong pangalan?", "Who are you?")
+  if (
+    /\b(what\s+is\s+your\s+name|whats\s+your\s+name|what's\s+your\s+name|your\s+name|who\s+are\s+you|what\s+are\s+you|unsa\s+imong\s+(name|pangalan|pangan)|unsay\s+imong\s+(name|pangalan|pangan)|unsay\s+(name|pangalan|pangan)\s+nimo|kinsa\s+imong\s+(name|pangalan|pangan)|kinsa\s+ka|unsa\s+ka|anong\s+pangalan\s+mo|ano\s+ang\s+pangalan\s+mo|sino\s+ka)\b/i.test(
+      lower
+    )
+  ) {
+    return isCeb
+      ? `Ako si **Bai, local guide** para sa mga beach sa **Barangay Binongkalan, Catmon, Cebu**! Makatubag ko sa imong mga pangutana bahin sa **Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, ug **Hinagdan Beach**.`
+      : `I am **Bai, local guide** for the beaches in **Barangay Binongkalan, Catmon, Cebu**! You can ask me anything about **Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, and **Hinagdan Beach**.`;
+  }
+
+  if (
+    /^(what\s+can\s+you\s+do|help(\s+me)?|unsay\s+imong\s+mahimo|tabang)$/i.test(
+      cleanWords
+    )
+  ) {
+    return isCeb
+      ? `Ako si **Bai, local guide** para sa **Barangay Binongkalan, Catmon, Cebu**! Makatubag ko sa imong mga pangutana (sa Bisaya o English) bahin sa **Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, ug **Hinagdan Beach**—sama sa pinakaduol nga beach, batoon ba, sugbaanan, safety, lifeguard, tindahan, shower, commute, senior citizen accessibility, sinkhole, dali molawm, pets, taob/hunas, entrance fee, cottage, ug kwarto.`
+      : `I'm **Bai, local guide** for **Barangay Binongkalan, Catmon, Cebu**! I can answer questions in **Bisaya or English** about **Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, and **Hinagdan Beach**—including nearest beach, rocky/batoon shoreline, grilling areas (sugbaanan), safety, lifeguards, stores/food, showers, commute, senior citizen accessibility, sinkholes, water depth, pets, tides, entrance fees, cottages, and rooms.`;
+  }
+
+  // 1B. Fast check for random letters / keyboard mash / gibberish
+  if (isRandomOrGibberishInput(q)) {
+    return getBaiRandomInputFallback(q, userName);
+  }
+
+  // 1C. Fast check for explicitly unverified topics (pool, wifi, videoke, corkage, etc.)
+  if (isAskingUnverifiedTopic(lower)) {
+    return getBaiApologyFallback(q, userName);
   }
 
   // Find recent beach in conversation history for single-beach follow-ups
@@ -1154,7 +1369,8 @@ export function matchBaiInstantAnswer(
   // 5. SPECIFIC BEACH ANSWER: If ONE beach is targeted
   if (targetBeaches.length === 1) {
     const b = BEACH_DATA[targetBeaches[0]];
-    return buildSpecificSingleBeachAnswer(b, lower, lang, topics);
+    const singleBeachReply = buildSpecificSingleBeachAnswer(b, lower, lang, topics);
+    return singleBeachReply || getBaiApologyFallback(q, userName);
   }
 
   // 6. BROAD QUESTIONS (User did NOT specify 1 beach, or asked about "mga beach" / "all beaches"):
@@ -1285,21 +1501,91 @@ export function matchBaiInstantAnswer(
     return `Here are the **room and overnight options** in Barangay Binongkalan:\n• **Hinagdan Beach:** ₱250 (3-hr short-time room), ₱1,000 (Ordinary room), ₱2,500 (AC room)\n• **Majestique Beach:** ₱2,000 (Regular room), ₱3,500 (AC room)\n• **Rañola Beach:** No rooms, but overnight tent camping is allowed at the regular rate\n• **Lite Bay Resort:** No rooms or overnight stays (day use only)`;
   }
 
-  // 6O. LIST ALL BEACHES
+  // 6O. OPERATING HOURS (Broad)
+  if (topics.asksHours) {
+    if (isCeb) {
+      return `Mao kini ang **oras sa pag-abli (operating hours)** sa 4 ka beach sa Barangay Binongkalan:\n• **Rañola Beach:** 6:00 AM – 7:00 PM (Abli kada adlaw; pwede overnight tent camping)\n• **Lite Bay Resort:** 6:00 AM – 8:00 PM (Sun–Thu), 6:00 AM – 5:00 PM (Fri), **SIRADO kada Sabado**\n• **Majestique Beach:** 7:00 AM – 5:00 PM (Day use) | 6:00 PM – 6:00 AM (Overnight), abli kada adlaw\n• **Hinagdan Beach:** 6:00 AM – 7:00 PM (Day use) | Abli tibuok gabii para sa overnight (abli kada adlaw)`;
+    }
+    return `Here are the **operating hours** for all 4 beaches in Barangay Binongkalan:\n• **Rañola Beach:** 6:00 AM – 7:00 PM (Open daily; overnight tent camping allowed)\n• **Lite Bay Resort:** 6:00 AM – 8:00 PM (Sun–Thu), 6:00 AM – 5:00 PM (Fri), **CLOSED every Saturday**\n• **Majestique Beach:** 7:00 AM – 5:00 PM (Day use) | 6:00 PM – 6:00 AM (Overnight), open daily\n• **Hinagdan Beach:** 6:00 AM – 7:00 PM (Day use) | Open whole night for overnight stays (open daily)`;
+  }
+
+  // 6P. CONTACT NUMBERS (Broad)
+  if (topics.asksContact) {
+    if (isCeb) {
+      return `Mao kini ang **contact numbers** sa 4 ka beach sa Barangay Binongkalan:\n• **Rañola Beach:** 0935-724-1824 / 0960-326-7698\n• **Lite Bay Resort:** 0953-411-7454\n• **Majestique Beach:** 0943-622-7972\n• **Hinagdan Beach:** 0975-086-2570 / 0963-654-0904 / 0926-234-5373`;
+    }
+    return `Here are the **contact numbers** for all 4 beaches in Barangay Binongkalan:\n• **Rañola Beach:** 0935-724-1824 / 0960-326-7698\n• **Lite Bay Resort:** 0953-411-7454\n• **Majestique Beach:** 0943-622-7972\n• **Hinagdan Beach:** 0975-086-2570 / 0963-654-0904 / 0926-234-5373`;
+  }
+
+  // 6Q. PARKING (Broad)
+  if (topics.asksParking) {
+    if (isCeb) {
+      return `Mao kini ang **parking fee** sa mga beach sa Barangay Binongkalan:\n• **Rañola Beach:** ₱50 (Sakyanan/Car) | ₱20 (Motor)\n• **Lite Bay Resort:** **LIBRE** (Walay bayad)\n• **Majestique Beach:** **LIBRE** (Walay bayad)\n• **Hinagdan Beach:** Wala pa ma-lista sa among database (this information is not available)`;
+    }
+    return `Here are the **parking fees** for the beaches in Barangay Binongkalan:\n• **Rañola Beach:** ₱50 (Car) | ₱20 (Motorcycle)\n• **Lite Bay Resort:** **FREE** (No parking fee)\n• **Majestique Beach:** **FREE** (No parking fee)\n• **Hinagdan Beach:** Not listed in our verified database (this information is not available)`;
+  }
+
+  // 6R. RESTROOM / CR (Broad)
+  if (topics.asksRestroom) {
+    if (isCeb) {
+      return `Mao kini ang detalye sa **CR / Restroom ug Shower** sa mga beach sa Barangay Binongkalan:\n• **Rañola Beach:** ₱5 (ihi) | ₱10 (kaligo/shower)\n• **Lite Bay Resort:** **LIBRE** (Walay bayad ang CR ug shower)\n• **Majestique Beach:** ₱10 (himasa/shower)\n• **Hinagdan Beach:** Naay shower ug kaligoan (wala ma-lista ang specific CR fee sa database)`;
+    }
+    return `Here is the **restroom (CR) and shower** information for the beaches in Barangay Binongkalan:\n• **Rañola Beach:** ₱5 (restroom) | ₱10 (shower)\n• **Lite Bay Resort:** **FREE** (No restroom or shower fee)\n• **Majestique Beach:** ₱10 (rinse/shower)\n• **Hinagdan Beach:** Has showers and restrooms (specific restroom fee is not listed in our database)`;
+  }
+
+  // 6S. ACTIVITIES & RENTALS (Broad)
+  if (topics.asksActivities || topics.asksRentals) {
+    if (isCeb) {
+      return `Mao kini ang mga **activities ug abangan (rentals)** sa mga beach sa Barangay Binongkalan:\n• **Rañola Beach:** Swimming, sugba, overnight tent camping | Salbabida rental: **₱30**\n• **Lite Bay Resort:** Swimming, sugba, **Kayak (₱200 / 2 hrs)** | Life jacket rental: **₱50**\n• **Majestique Beach:** Swimming, sugba, overnight stay | Life jacket rental: **₱50**\n• **Hinagdan Beach:** Swimming, sugba, overnight stay | Salbabida: **₱50**, Life jacket: **₱50–₱100**`;
+    }
+    return `Here are the **activities and equipment rentals** at the beaches in Barangay Binongkalan:\n• **Rañola Beach:** Swimming, grilling, overnight tent camping | Floater (salbabida): **₱30**\n• **Lite Bay Resort:** Swimming, grilling, **Kayaking (₱200 / 2 hrs)** | Life jacket: **₱50**\n• **Majestique Beach:** Swimming, grilling, overnight stays | Life jacket: **₱50**\n• **Hinagdan Beach:** Swimming, grilling, overnight stays | Floater: **₱50**, Life jacket: **₱50–₱100**`;
+  }
+
+  // 6T. PRIVATE BOOKING / WALK-INS (Broad)
+  if (topics.asksPrivateBooking) {
+    if (isCeb) {
+      return `**Walay exclusive/private closure** sa mga beach sa Barangay Binongkalan (**Rañola, Lite Bay, Majestique, ug Hinagdan**) tungod kay abli kini para sa tanan ug **welcome kaayo ang walk-ins**. Pwede sab mo motawag diretso sa ilang contact numbers para sa pag-inquire sa cottages o kwarto.`;
+    }
+    return `**None of the beaches can be booked for exclusive private closure** in Barangay Binongkalan (**Rañola, Lite Bay, Majestique, and Hinagdan**) as they are open to the public and **walk-ins are welcome**. You may call their contact numbers directly to inquire about cottages or rooms.`;
+  }
+
+  // 6U. DISCOUNTS (Broad)
+  if (topics.asksDiscount) {
+    if (isCeb) {
+      return `**Walay special event discounts** sa 4 ka beach sa Barangay Binongkalan (**Rañola, Lite Bay, Majestique, ug Hinagdan**)—regular rates ang gipatuman para sa tanan.`;
+    }
+    return `There are **no special event discounts** at the 4 beaches in Barangay Binongkalan (**Rañola, Lite Bay, Majestique, and Hinagdan**)—regular rates apply.`;
+  }
+
+  // 6V. LOCATION (Broad)
+  if (topics.asksLocation) {
+    if (isCeb) {
+      return `Ang tanang 4 ka verified beaches (**Rañola Beach, Lite Bay Resort, Majestique Beach, ug Hinagdan Beach**) kay nahimutang sa **Barangay Binongkalan, Catmon, Cebu**, daplin ra mismo sa **Cebu North National Highway**.`;
+    }
+    return `All 4 verified beaches (**Rañola Beach, Lite Bay Resort, Majestique Beach, and Hinagdan Beach**) are located in **Barangay Binongkalan, Catmon, Cebu**, right along the **Cebu North National Highway**.`;
+  }
+
+  // 6W. LIST ALL BEACHES / RECOMMENDATIONS
   if (
     lower.includes('which beach') ||
     lower.includes('what beach') ||
     lower.includes('available beach') ||
     lower.includes('all beach') ||
+    lower.includes('best beach') ||
+    lower.includes('recommend') ||
+    lower.includes('nindot') ||
     lower.includes('unsa nga mga beach') ||
-    lower.includes('unsay mga beach')
+    lower.includes('unsay mga beach') ||
+    lower.includes('mga beach') ||
+    lower.includes('beaches in')
   ) {
     return isCeb
-      ? `Naay **4 ka verified beaches** sa Barangay Binongkalan, Catmon, Cebu:\n1. **Rañola Beach (Raniola)**\n2. **Lite Bay Resort**\n3. **Majestique Beach**\n4. **Hinagdan Beach**\n\nUnsa nga beach o detalye (batoon ba, sugbaanan, safety, lifeguard, tindahan, shower, senior accessibility, sinkhole, dali molawm, pets, o taob/hunas) ang gusto nimong mahibaw-an?`
-      : `There are **4 verified beaches** in Barangay Binongkalan, Catmon, Cebu:\n1. **Rañola Beach (Raniola)**\n2. **Lite Bay Resort**\n3. **Majestique Beach**\n4. **Hinagdan Beach**\n\nWhich beach or question (rocky/batoon, grilling/sugbaanan, safety, lifeguards, store/foods, showers, senior accessibility, sinkholes, depth, pets, or tides) would you like to ask about?`;
+      ? `Naay **4 ka verified beaches** sa Barangay Binongkalan, Catmon, Cebu:\n1. **Rañola Beach (Raniola)** — Pinaka-safe para sa mga bata ug accessible sa senior citizens (Entrance: ₱20–₱30)\n2. **Lite Bay Resort** — Libre ang parking, CR, ug shower; naay kayak (Entrance: ₱50)\n3. **Majestique Beach** — Dili ra batoon ug naay aircon/regular rooms para overnight (Entrance: ₱30)\n4. **Hinagdan Beach** — Dili batoon (balas / sandy shoreline) ug naay affordable rooms ug cottages (Entrance: ₱30–₱50)\n\nUnsa nga beach o detalye ang gusto nimong mahibaw-an?`
+      : `There are **4 verified beaches** in Barangay Binongkalan, Catmon, Cebu:\n1. **Rañola Beach (Raniola)** — Safest for kids and accessible for senior citizens (Entrance: ₱20–₱30)\n2. **Lite Bay Resort** — Free parking, restroom, and shower; offers kayaking (Entrance: ₱50)\n3. **Majestique Beach** — Not rocky and offers regular/aircon rooms for overnight stays (Entrance: ₱30)\n4. **Hinagdan Beach** — Sandy shoreline (dili batoon) with affordable rooms and cottages (Entrance: ₱30–₱50)\n\nWhich beach or question would you like to ask about?`;
   }
 
-  return null;
+  // 7. Fast fallback for any question whose information is not in our verified database
+  return getBaiApologyFallback(q, userName);
 }
 
 /**

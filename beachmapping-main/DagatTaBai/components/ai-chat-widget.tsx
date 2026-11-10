@@ -12,6 +12,8 @@ import { showToast } from '@/components/ui/feedback-toasts';
 import {
   BAI_SUGGESTED_QUESTIONS,
   getContextualBranchQuestions,
+  matchBaiInstantAnswer,
+  getBaiApologyFallback,
 } from '@/lib/services/baiKnowledgeBase';
 
 interface ChatMessage {
@@ -22,16 +24,18 @@ interface ChatMessage {
 }
 
 function renderFormattedText(text: string) {
-  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  // Convert markdown bullets ("* item") to clean bullets, keep **bold**, and strip any other stray asterisks.
+  const cleaned = text.replace(/^[ \t]*\*[ \t]+/gm, '• ');
+  const parts = cleaned.split(/(\*\*[^*]+\*\*)/g);
   return parts.map((part, idx) => {
     if (part.startsWith('**') && part.endsWith('**')) {
       return (
         <strong key={idx} className="font-bold">
-          {part.slice(2, -2)}
+          {part.slice(2, -2).replace(/\*/g, '')}
         </strong>
       );
     }
-    return <React.Fragment key={idx}>{part}</React.Fragment>;
+    return <React.Fragment key={idx}>{part.replace(/\*/g, '')}</React.Fragment>;
   });
 }
 
@@ -172,12 +176,15 @@ export function AiChatWidget() {
         }
       }
     } catch {
+      const localFallback =
+        matchBaiInstantAnswer(userMsg.text, null, recentHistory) ||
+        getBaiApologyFallback(userMsg.text, null);
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === assistantMsgId
             ? {
                 ...msg,
-                text: "I'm currently unable to connect to the assistant service. Please check your internet connection.",
+                text: localFallback,
               }
             : msg
         )
