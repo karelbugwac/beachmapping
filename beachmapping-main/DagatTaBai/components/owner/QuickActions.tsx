@@ -39,7 +39,7 @@ export function QuickActions() {
     },
     {
       title: 'Manage Staff Login 6-Digit PIN',
-      description: 'Update the 6-digit access code used by resort staff on-site in Catmon.',
+      description: 'Update the 6-digit access code used by resort staff.',
       href: '/owner/account',
       icon: Lock,
     },
