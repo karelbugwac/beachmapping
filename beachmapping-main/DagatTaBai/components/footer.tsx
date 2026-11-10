@@ -139,7 +139,7 @@ export function Footer() {
                     href="mailto:support@dagattabai.ph"
                     className="hover:text-[#1F3F74] dark:hover:text-sky-300 font-medium transition-colors"
                   >
-                    support@dagattabai.ph
+                    support.dagattabai@gmail.com
                   </a>
                 </div>
                 <div className="flex items-start gap-2.5">
