@@ -1,83 +1,98 @@
 import type { TideExtreme } from './tide-interpolation';
 
-interface StormglassExtreme {
+interface OpenWatersExtreme {
   time?: unknown;
-  height?: unknown;
-  type?: unknown;
+  level?: unknown;
+  high?: unknown;
+  low?: unknown;
+  label?: unknown;
 }
 
-interface StormglassResponse {
-  data?: unknown;
-  errors?: unknown;
+interface OpenWatersStation {
+  name?: unknown;
+  source?: { name?: unknown };
+  attribution?: unknown;
 }
 
-export interface StormglassTidesResult {
+interface OpenWatersResponse {
+  extremes?: unknown;
+  station?: OpenWatersStation;
+  message?: unknown;
+}
+
+export interface OpenWatersTidesResult {
   extremes: TideExtreme[];
   copyright: string;
 }
 
-export async function fetchStormglassTides(
+export async function fetchOpenWatersTides(
   latitude: number,
   longitude: number
-): Promise<StormglassTidesResult> {
-  const apiKey = process.env.STORMGLASS_API_KEY?.trim();
-  if (!apiKey) {
-    throw new Error('Tide data is not configured. Add STORMGLASS_API_KEY to .env.local and restart the app.');
-  }
-
+): Promise<OpenWatersTidesResult> {
   const start = new Date();
   start.setHours(0, 0, 0, 0);
   const end = new Date(start);
   end.setDate(end.getDate() + 2);
 
-  const url = new URL('https://api.stormglass.io/v2/tide/extremes/point');
-  url.searchParams.set('lat', String(latitude));
-  url.searchParams.set('lng', String(longitude));
+  const url = new URL('https://api.openwaters.io/tides/extremes');
+  url.searchParams.set('latitude', String(latitude));
+  url.searchParams.set('longitude', String(longitude));
   url.searchParams.set('start', start.toISOString());
   url.searchParams.set('end', end.toISOString());
+  url.searchParams.set('units', 'meters');
 
   const response = await fetch(url, {
-    headers: { Authorization: apiKey },
     next: { revalidate: 1800 },
     signal: AbortSignal.timeout(10000),
   });
-  const data = (await response.json().catch(() => null)) as StormglassResponse | null;
+  const data = (await response.json().catch(() => null)) as OpenWatersResponse | null;
 
   if (!response.ok) {
-    const reason = Array.isArray(data?.errors) && typeof data.errors[0] === 'string'
-      ? data.errors[0]
-      : `Stormglass request failed (HTTP ${response.status}).`;
+    const reason = typeof data?.message === 'string'
+      ? data.message
+      : `OpenWaters tides request failed (HTTP ${response.status}).`;
     throw new Error(reason);
   }
 
-  if (!Array.isArray(data?.data)) {
-    throw new Error('Stormglass did not return tide extremes for this location.');
+  if (!Array.isArray(data?.extremes)) {
+    throw new Error('OpenWaters did not return tide extremes for this location.');
   }
 
-  const extremes = data.data.flatMap((value): TideExtreme[] => {
+  const extremes = data.extremes.flatMap((value): TideExtreme[] => {
     if (typeof value !== 'object' || value === null) return [];
-    const item = value as StormglassExtreme;
+    const item = value as OpenWatersExtreme;
     const time = typeof item.time === 'string' ? item.time : '';
-    const type = typeof item.type === 'string' ? item.type.toLowerCase() : '';
+    const label = typeof item.label === 'string' ? item.label.toLowerCase() : '';
+    const type = item.high === true || label === 'high'
+      ? 'high'
+      : item.low === true || label === 'low'
+        ? 'low'
+        : null;
+
     if (
       !time ||
       !Number.isFinite(new Date(time).getTime()) ||
-      typeof item.height !== 'number' ||
-      !Number.isFinite(item.height) ||
-      (type !== 'high' && type !== 'low')
+      typeof item.level !== 'number' ||
+      !Number.isFinite(item.level) ||
+      !type
     ) {
       return [];
     }
 
-    return [{ time, height: item.height, type }];
+    return [{ time, height: item.level, type }];
   });
 
   if (extremes.length < 2) {
-    throw new Error('Stormglass returned insufficient tide data for this location.');
+    throw new Error('OpenWaters returned insufficient tide data for this location.');
   }
+
+  const sourceName = typeof data.station?.source?.name === 'string'
+    ? data.station.source.name
+    : '';
+  const stationName = typeof data.station?.name === 'string' ? ` for ${data.station.name}` : '';
 
   return {
     extremes,
-    copyright: 'Tide predictions provided by Stormglass',
+    copyright: `Tides: OpenWaters${stationName}${sourceName ? ` · ${sourceName}` : ''} (Hart-Davis et al., 2025) · CC BY 4.0`,
   };
 }

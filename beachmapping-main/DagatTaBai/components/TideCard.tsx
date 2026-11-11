@@ -272,12 +272,19 @@ export default function TideCard({ extremes, attribution }: TideCardProps) {
       </div>
       {attribution && (
         <p className="pt-2 text-[10px] leading-relaxed text-slate-500 dark:text-slate-400">
-          {attribution.match(/^.*?\bLLC\b\.?/i)?.[0] ?? attribution}
+          <a href="https://openwaters.io/api/tides/" target="_blank" rel="noreferrer" className="underline underline-offset-2">
+            OpenWaters
+          </a>
+          {' · '}
+          <a href="https://doi.org/10.17882/109129" target="_blank" rel="noreferrer" className="underline underline-offset-2">
+            {attribution.split(' · ')[1] ?? 'TICON-4 (Hart-Davis et al., 2025)'}
+          </a>
+          {' · '}
+          <a href="https://creativecommons.org/licenses/by/4.0/" target="_blank" rel="noreferrer" className="underline underline-offset-2">
+            CC BY 4.0
+          </a>
         </p>
       )}
-      <p className="pt-1 text-[10px] leading-relaxed text-slate-500 dark:text-slate-400">
-        Tide estimate is for the nearby coast; water depth and resort boundaries can differ. Follow local signs and staff.
-      </p>
     </div>
   );
 }

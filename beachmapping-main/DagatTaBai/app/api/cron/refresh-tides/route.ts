@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
-import { fetchStormglassTides } from '@/lib/services/tides';
+import { fetchOpenWatersTides } from '@/lib/services/tides';
 import type { Beach } from '@/lib/supabase/types';
 import { getValidBeachCoordinates } from '@/lib/utils/beach-coordinates';
 
@@ -54,7 +54,7 @@ export async function GET(req: NextRequest) {
         continue;
       }
 
-      const { extremes: tideExtremes } = await fetchStormglassTides(
+      const { extremes: tideExtremes } = await fetchOpenWatersTides(
         coordinates.latitude,
         coordinates.longitude
       );
