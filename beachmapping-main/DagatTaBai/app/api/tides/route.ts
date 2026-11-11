@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { fetchWorldTides } from '@/lib/services/tides';
+import { fetchStormglassTides } from '@/lib/services/tides';
 import { calculateCurrentTide, type TideExtreme } from '@/lib/services/tide-interpolation';
 
 export async function GET(req: NextRequest) {
@@ -15,7 +15,7 @@ export async function GET(req: NextRequest) {
       );
     }
 
-    const tideResult = await fetchWorldTides(lat, lon);
+    const tideResult = await fetchStormglassTides(lat, lon);
     const tideExtremes: TideExtreme[] = tideResult.extremes;
     if (tideExtremes.length < 2) throw new Error('Tide provider returned insufficient data.');
 

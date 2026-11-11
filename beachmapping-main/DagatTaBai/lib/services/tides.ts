@@ -1,65 +1,63 @@
 import type { TideExtreme } from './tide-interpolation';
 
-interface WorldTidesExtreme {
-  dt?: unknown;
-  date?: unknown;
+interface StormglassExtreme {
+  time?: unknown;
   height?: unknown;
   type?: unknown;
 }
 
-interface WorldTidesResponse {
-  status: number;
-  error?: string;
-  copyright?: string;
-  extremes?: unknown[];
+interface StormglassResponse {
+  data?: unknown;
+  errors?: unknown;
 }
 
-export interface WorldTidesResult {
+export interface StormglassTidesResult {
   extremes: TideExtreme[];
   copyright: string;
 }
 
-export async function fetchWorldTides(
+export async function fetchStormglassTides(
   latitude: number,
   longitude: number
-): Promise<WorldTidesResult> {
-  const apiKey = process.env.WORLDTIDES_API_KEY?.trim();
+): Promise<StormglassTidesResult> {
+  const apiKey = process.env.STORMGLASS_API_KEY?.trim();
   if (!apiKey) {
-    throw new Error('Tide data is not configured. Add WORLDTIDES_API_KEY to .env.local and restart the app.');
+    throw new Error('Tide data is not configured. Add STORMGLASS_API_KEY to .env.local and restart the app.');
   }
 
-  const url = new URL('https://www.worldtides.info/api/v3');
-  url.searchParams.set('extremes', '');
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const end = new Date(start);
+  end.setDate(end.getDate() + 2);
+
+  const url = new URL('https://api.stormglass.io/v2/tide/extremes/point');
   url.searchParams.set('lat', String(latitude));
-  url.searchParams.set('lon', String(longitude));
-  url.searchParams.set('days', '2');
-  url.searchParams.set('localtime', '');
-  url.searchParams.set('key', apiKey);
+  url.searchParams.set('lng', String(longitude));
+  url.searchParams.set('start', start.toISOString());
+  url.searchParams.set('end', end.toISOString());
 
   const response = await fetch(url, {
+    headers: { Authorization: apiKey },
     next: { revalidate: 1800 },
     signal: AbortSignal.timeout(10000),
   });
-  const data = (await response.json().catch(() => null)) as WorldTidesResponse | null;
+  const data = (await response.json().catch(() => null)) as StormglassResponse | null;
 
-  if (!response.ok || !data || data.status !== 200) {
-    const reason = data?.error || `WorldTides request failed (HTTP ${response.status}).`;
+  if (!response.ok) {
+    const reason = Array.isArray(data?.errors) && typeof data.errors[0] === 'string'
+      ? data.errors[0]
+      : `Stormglass request failed (HTTP ${response.status}).`;
     throw new Error(reason);
   }
 
-  if (!Array.isArray(data.extremes)) {
-    throw new Error('WorldTides did not return tide extremes for this location.');
+  if (!Array.isArray(data?.data)) {
+    throw new Error('Stormglass did not return tide extremes for this location.');
   }
 
-  const extremes = data.extremes.flatMap((value): TideExtreme[] => {
+  const extremes = data.data.flatMap((value): TideExtreme[] => {
     if (typeof value !== 'object' || value === null) return [];
-    const item = value as WorldTidesExtreme;
-    const time =
-      typeof item.date === 'string'
-        ? item.date
-        : typeof item.dt === 'number' && Number.isFinite(item.dt)
-          ? new Date(item.dt * 1000).toISOString()
-          : '';
+    const item = value as StormglassExtreme;
+    const time = typeof item.time === 'string' ? item.time : '';
     const type = typeof item.type === 'string' ? item.type.toLowerCase() : '';
     if (
       !time ||
@@ -75,11 +73,11 @@ export async function fetchWorldTides(
   });
 
   if (extremes.length < 2) {
-    throw new Error('WorldTides returned insufficient tide data for this location.');
+    throw new Error('Stormglass returned insufficient tide data for this location.');
   }
 
   return {
     extremes,
-    copyright: data.copyright || 'Tide predictions provided by WorldTides.info',
+    copyright: 'Tide predictions provided by Stormglass',
   };
 }
