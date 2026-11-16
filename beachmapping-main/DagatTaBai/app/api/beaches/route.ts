@@ -1,19 +1,30 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getAllBeaches, invalidateBeachesCache } from '@/lib/db/beaches';
 import { createServerSupabaseClient } from '@/lib/supabase/server';
 import { getValidBeachCoordinates } from '@/lib/utils/beach-coordinates';
+import { checkRateLimit, rateLimitExceededResponse } from '@/lib/utils/rate-limit';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const rateLimit = checkRateLimit(req, {
+    keyPrefix: 'api-beaches',
+    maxRequests: 60,
+    windowMs: 60 * 1000,
+  });
+  if (!rateLimit.allowed) {
+    return rateLimitExceededResponse(rateLimit);
+  }
+
   try {
     const beaches = await getAllBeaches();
     return NextResponse.json(beaches, {
       headers: {
+        ...rateLimit.headers,
         'Cache-Control': 'no-cache, no-store, must-revalidate',
       },
     });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Failed to fetch beaches';
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json({ error: msg }, { status: 500, headers: rateLimit.headers });
   }
 }
 

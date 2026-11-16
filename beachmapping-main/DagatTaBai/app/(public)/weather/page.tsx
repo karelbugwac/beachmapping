@@ -326,26 +326,82 @@ export default function WeatherPage() {
 
   useEffect(() => {
     let active = true;
+    const FIVE_MINUTES_MS = 5 * 60 * 1000;
+    const WEATHER_STORAGE_KEY = 'dagat_weather_cache_v1';
+    const TIDE_STORAGE_KEY = 'dagat_tide_cache_v1';
 
-    const loadConditions = async () => {
-      const [weatherResult, tideResult] = await Promise.allSettled([
-        fetch(`/api/weather?lat=${BINONGKALAN_LATITUDE}&lon=${BINONGKALAN_LONGITUDE}`, { cache: 'no-store' })
-          .then(async (response) => {
-            if (!response.ok) {
-              const result = await response.json().catch(() => null);
-              throw new Error(result?.error || 'Weather data is unavailable.');
+    let refreshTimeout: number | undefined;
+    let refreshInterval: number | undefined;
+
+    const loadConditions = async (forceFetch = false) => {
+      const now = Date.now();
+      let cachedWeather: { data: WeatherData; fetchedAt: number } | null = null;
+      let cachedTide: { data: { extremes: TideExtreme[]; copyright?: string | null }; fetchedAt: number } | null = null;
+
+      if (!forceFetch) {
+        try {
+          const rawW = window.localStorage.getItem(WEATHER_STORAGE_KEY);
+          if (rawW) {
+            const parsed = JSON.parse(rawW);
+            if (parsed?.data && typeof parsed.fetchedAt === 'number' && now - parsed.fetchedAt < FIVE_MINUTES_MS) {
+              cachedWeather = parsed;
             }
-            return response.json() as Promise<WeatherData>;
-          }),
-        fetch(`/api/tides?lat=${BINONGKALAN_LATITUDE}&lon=${BINONGKALAN_LONGITUDE}`, { cache: 'no-store' })
-          .then(async (response) => {
-            const result = await response.json().catch(() => null);
-            if (!response.ok) throw new Error(result?.error || 'Tide data is unavailable.');
-            return result;
-          }),
+          }
+          const rawT = window.localStorage.getItem(TIDE_STORAGE_KEY);
+          if (rawT) {
+            const parsed = JSON.parse(rawT);
+            if (parsed?.data && typeof parsed.fetchedAt === 'number' && now - parsed.fetchedAt < FIVE_MINUTES_MS) {
+              cachedTide = parsed;
+            }
+          }
+        } catch {
+          // Ignore storage read errors
+        }
+      }
+
+      if (cachedWeather && cachedTide) {
+        if (!active) return;
+        setWeather(cachedWeather.data);
+        setTideExtremes(Array.isArray(cachedTide.data.extremes) ? cachedTide.data.extremes : []);
+        setTideAttribution(typeof cachedTide.data.copyright === 'string' ? cachedTide.data.copyright : null);
+        setDataError(null);
+        setLoading(false);
+        return Math.max(1000, FIVE_MINUTES_MS - (now - Math.min(cachedWeather.fetchedAt, cachedTide.fetchedAt)));
+      }
+
+      const [weatherResult, tideResult] = await Promise.allSettled([
+        cachedWeather
+          ? Promise.resolve(cachedWeather.data)
+          : fetch(`/api/weather?lat=${BINONGKALAN_LATITUDE}&lon=${BINONGKALAN_LONGITUDE}`).then(async (response) => {
+              if (!response.ok) {
+                const result = await response.json().catch(() => null);
+                throw new Error(result?.error || 'Weather data is unavailable.');
+              }
+              const data = (await response.json()) as WeatherData;
+              try {
+                window.localStorage.setItem(
+                  WEATHER_STORAGE_KEY,
+                  JSON.stringify({ data, fetchedAt: Date.now() })
+                );
+              } catch {}
+              return data;
+            }),
+        cachedTide
+          ? Promise.resolve(cachedTide.data)
+          : fetch(`/api/tides?lat=${BINONGKALAN_LATITUDE}&lon=${BINONGKALAN_LONGITUDE}`).then(async (response) => {
+              const result = await response.json().catch(() => null);
+              if (!response.ok) throw new Error(result?.error || 'Tide data is unavailable.');
+              try {
+                window.localStorage.setItem(
+                  TIDE_STORAGE_KEY,
+                  JSON.stringify({ data: result, fetchedAt: Date.now() })
+                );
+              } catch {}
+              return result;
+            }),
       ]);
 
-      if (!active) return;
+      if (!active) return FIVE_MINUTES_MS;
 
       if (weatherResult.status === 'fulfilled') setWeather(weatherResult.value);
       else {
@@ -367,11 +423,23 @@ export default function WeatherPage() {
       }
 
       setLoading(false);
+      return FIVE_MINUTES_MS;
     };
 
-    void loadConditions();
+    void loadConditions(false).then((nextDelayMs) => {
+      if (!active) return;
+      refreshTimeout = window.setTimeout(() => {
+        void loadConditions(true);
+        refreshInterval = window.setInterval(() => {
+          void loadConditions(true);
+        }, FIVE_MINUTES_MS);
+      }, nextDelayMs ?? FIVE_MINUTES_MS);
+    });
+
     return () => {
       active = false;
+      if (refreshTimeout !== undefined) window.clearTimeout(refreshTimeout);
+      if (refreshInterval !== undefined) window.clearInterval(refreshInterval);
     };
   }, []);
 

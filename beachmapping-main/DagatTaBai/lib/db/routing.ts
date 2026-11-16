@@ -15,11 +15,20 @@ export interface RouteResult {
  * Uses real geographic coordinates for origin and destination.
  * Note: OSRM doesn't have a motorcycle, commute, or walking profile, so we use 'driving' for road vehicles and 'foot' for walking, then adjust speed calculations for frequent commute stops.
  */
+const ROUTE_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const routeCache = new Map<string, { data: RouteResult; expiresAt: number }>();
+
 export async function calculateRoadRoute(
   origin: { lat: number; lng: number },
   destination: { lat: number; lng: number },
   travelMode: 'car' | 'motorcycle' | 'commute' | 'walking' = 'car'
 ): Promise<RouteResult> {
+  const cacheKey = `${origin.lat.toFixed(4)},${origin.lng.toFixed(4)}->${destination.lat.toFixed(4)},${destination.lng.toFixed(4)}:${travelMode}`;
+  const cached = routeCache.get(cacheKey);
+  if (cached && cached.expiresAt > Date.now()) {
+    return cached.data;
+  }
+
   // Use 'foot' profile for walking, 'driving' for car/motorcycle/commute
   const profile = travelMode === 'walking' ? 'foot' : 'driving';
   const url = `https://router.project-osrm.org/route/v1/${profile}/${origin.lng},${origin.lat};${destination.lng},${destination.lat}?overview=full&geometries=geojson`;
@@ -28,7 +37,9 @@ export async function calculateRoadRoute(
     const res = await fetch(url, {
       headers: {
         Accept: 'application/json',
+        'User-Agent': 'DagatTaBai/1.0 (Coastal Route Planner)',
       },
+      signal: AbortSignal.timeout(6000),
     });
 
     if (res.ok) {
@@ -67,7 +78,7 @@ export async function calculateRoadRoute(
           (coord: [number, number]) => [coord[1], coord[0]]
         );
 
-        return {
+        const result: RouteResult = {
           coordinates,
           distanceKm,
           durationMinutes: totalMinutes,
@@ -83,6 +94,8 @@ export async function calculateRoadRoute(
           durationIsEstimated,
           provider: 'OSRM OpenStreetMap Driving Engine',
         };
+        routeCache.set(cacheKey, { data: result, expiresAt: Date.now() + ROUTE_CACHE_TTL_MS });
+        return result;
       }
     }
   } catch (err) {

@@ -1,14 +1,14 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
 import {
   Star,
   Map,
   CloudSun,
   Bot,
 } from 'lucide-react';
+import { HeroMapSection } from '@/components/hero-map-section';
 import { ScrollReveal } from '@/components/ui/scroll-reveal';
 import { useRealtimeSync } from '@/lib/realtime-sync';
 
@@ -21,16 +21,6 @@ interface SystemTestimonial {
   comment: string;
   created_at: string;
 }
-
-const HeroMapSection = dynamic(
-  () => import('@/components/hero-map-section').then((mod) => mod.HeroMapSection),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="w-full min-h-[500px] bg-slate-100 dark:bg-neutral-950 animate-pulse" />
-    ),
-  }
-);
 
 // Helper function to mask user name: e.g. "Charisse Villamor" -> "C*** V***"
 function maskUserName(name: string): string {
@@ -59,6 +49,8 @@ function formatRole(role: string | undefined): string {
 
 export default function HomePage() {
   const [systemTestimonials, setSystemTestimonials] = useState<SystemTestimonial[]>([]);
+  const [loadVirtualTour, setLoadVirtualTour] = useState(false);
+  const tourContainerRef = useRef<HTMLDivElement | null>(null);
 
   const fetchSystemTestimonials = async () => {
     try {
@@ -79,6 +71,34 @@ export default function HomePage() {
 
   useEffect(() => {
     void fetchSystemTestimonials();
+  }, []);
+
+  useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+    if (!window.location.hash) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+    }
+
+    const checkShouldLoadTour = () => {
+      if (window.scrollY <= 120) return false;
+      const el = tourContainerRef.current;
+      if (!el) return false;
+      const rect = el.getBoundingClientRect();
+      return rect.top < window.innerHeight + 250 && rect.bottom > -250;
+    };
+
+    const onScroll = () => {
+      if (checkShouldLoadTour()) {
+        setLoadVirtualTour(true);
+      }
+    };
+
+    window.addEventListener('scroll', onScroll, { passive: true });
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+    };
   }, []);
 
   useRealtimeSync(() => {
@@ -245,20 +265,31 @@ export default function HomePage() {
 
           {/* Virtual Tour Container: Centered Below, 90-degree straight corners */}
           <ScrollReveal direction="up" delay={150} duration={650} className="w-full max-w-5xl mx-auto">
-            <div className="relative overflow-hidden shadow-2xl border border-white/20 bg-black w-full h-[360px] sm:h-[460px] lg:h-[520px]">
-              <iframe
-                id="tour-embeded"
-                name="Raniola"
-                src="https://tour.panoee.net/6ac4b494035368b0747a8077"
-                frameBorder="0"
-                width="100%"
-                height="100%"
-                scrolling="no"
-                allow="vr; xr; accelerometer; gyroscope; autoplay;"
-                allowFullScreen={false}
-                loading="lazy"
-                className="w-full h-full border-0 block"
-              />
+            <div
+              ref={tourContainerRef}
+              onClick={() => setLoadVirtualTour(true)}
+              className="relative overflow-hidden shadow-2xl border border-white/20 bg-black w-full h-[360px] sm:h-[460px] lg:h-[520px]"
+            >
+              {loadVirtualTour ? (
+                <iframe
+                  id="tour-embeded"
+                  name="Raniola"
+                  src="https://tour.panoee.net/6ac4b494035368b0747a8077"
+                  frameBorder="0"
+                  width="100%"
+                  height="100%"
+                  scrolling="no"
+                  tabIndex={-1}
+                  sandbox="allow-scripts allow-same-origin"
+                  allow="vr; xr; accelerometer; gyroscope;"
+                  allowFullScreen={false}
+                  className="w-full h-full border-0 block"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-slate-950 text-xs sm:text-sm text-blue-100/80">
+                  Loading 360° Virtual Tour…
+                </div>
+              )}
             </div>
           </ScrollReveal>
         </div>
