@@ -5,27 +5,46 @@
 
 :root,
 [data-theme='light'] {
-  /* Coastal Palette: Sun-bleached sand, deep ocean ink, seafoam, coral */
-  --color-sand-50: #FBF7EF;       /* Canvas / Page background */
-  --color-sand-100: #F3EBDC;      /* Subtle panels, cards & ledger */
-  --color-sand-200: #E8DCB8;      /* Hairline borders & dividers */
-  --color-sand-300: #D8C6A5;      /* Secondary borders & disabled */
-  --color-surface: #FFFDF9;       /* Elevated white sand surface */
-  
-  --color-sea-900: #0B2E36;       /* Deep ocean ink (sidebar & strong headers) */
-  --color-sea-700: #145A66;       /* Mid-depth coastal sea */
-  --color-seafoam-200: #CFE6DF;   /* Shallow-water seafoam highlight */
-  --color-seafoam-100: #E7F3F0;   /* Light seafoam tint */
-  
-  --color-coral: #CF4530;         /* Singular primary action accent (white text) */
-  --color-coral-hover: #B83B28;   /* Hover state */
-  --color-sun: #F0A93A;           /* Warm sunlight accent (rating star & open dot) */
-  
-  --color-text: #14262B;          /* High-contrast sea ink reading text */
-  --color-muted: #56686B;         /* Subtle secondary reading text */
-  --color-sidebar-bg: #0B2E36;    /* Sidebar background */
-  --color-sidebar-text: #FBF7EF;  /* Sidebar text */
-  --color-sidebar-muted: #8EA7AC; /* Sidebar secondary text */
+  --color-sand-50: #FBF7EF;
+  --color-sand-100: #F3EBDC;
+  --color-sand-200: #E8DCB8;
+  --color-sand-300: #D8C6A5;
+  --color-surface: #FFFDF9;
+
+  --color-brand-navy: #173F65;
+  --color-brand-navy-hover: #153651;
+  --color-brand-teal: #276B69;
+  --color-brand-teal-hover: #1F5B59;
+  --color-sea-900: #173F65;
+  --color-sea-700: #145A66;
+  --color-seafoam-200: #CFE6DF;
+  --color-seafoam-100: #E7F3F0;
+  --color-sun: #F0A93A;
+  --color-danger: #B84237;
+  --color-coral: var(--color-danger);
+  --color-coral-hover: #98372F;
+
+  --color-text: #14262B;
+  --color-muted: #56686B;
+  --color-sidebar-bg: #173F65;
+  --color-sidebar-text: #FBF7EF;
+  --color-sidebar-muted: #B1C0C2;
+
+  --dtb-sand-50: 251 247 239;
+  --dtb-sand-100: 243 235 220;
+  --dtb-sand-200: 232 220 184;
+  --dtb-sand-300: 216 198 165;
+  --dtb-neutral-50: 251 247 239;
+  --dtb-neutral-100: 243 235 220;
+  --dtb-neutral-200: 232 220 184;
+  --dtb-neutral-300: 216 198 165;
+  --dtb-neutral-400: 132 126 112;
+  --dtb-neutral-500: 112 108 98;
+  --dtb-neutral-600: 93 95 87;
+  --dtb-neutral-700: 62 71 66;
+  --dtb-neutral-800: 36 45 41;
+  --dtb-neutral-900: 21 25 22;
+  --dtb-neutral-950: 14 16 15;
 
   /* Type Scale: 12 / 14 / 16 / 20 / 28 / 40 */
   --font-serif: var(--font-serif), 'Newsreader', 'Fraunces', Georgia, serif;
@@ -55,42 +74,44 @@
   --radius-lg: 16px;
   --radius-full: 9999px;
 
-  /* Hairline borders & single soft shadow */
   --border-hairline: 1px solid var(--color-sand-200);
-  --shadow-soft: 0 4px 20px -2px rgba(11, 46, 54, 0.06);
-
-  /* Transitions */
+  --shadow-soft: 0 4px 20px -2px rgba(31, 63, 116, 0.08);
   --transition-fast: 220ms cubic-bezier(0.16, 1, 0.3, 1);
 }
 
-/* ==========================================================================
-   DARK THEME: "NIGHT TIDE" (TRUE WARM CHARCOAL / BLACK, NOT BLUISH DARK)
-   ========================================================================== */
 [data-theme='dark'],
 .dark {
-  --color-sand-50: #0A0D0E;       /* Deep warm charcoal-black canvas */
-  --color-sand-100: #121516;      /* Subtle panel & card background */
-  --color-sand-200: #222627;      /* Subtle hairline borders */
-  --color-sand-300: #303637;      /* Secondary borders */
-  --color-surface: #151819;       /* Elevated dark surface */
-  
-  --color-sea-900: #0E1213;       /* Neutral black-toned ink */
-  --color-sea-700: #29383A;       /* Subtle dark sea tone */
-  --color-seafoam-200: #A3C7BD;   /* Seafoam accent with high AA contrast */
-  --color-seafoam-100: #162425;   /* Dark seafoam tint */
-  
-  --color-coral: #CF4530;         /* Same energetic coral */
-  --color-coral-hover: #B83B28;
-  --color-sun: #F0A93A;           /* Same warm sun */
-  
-  --color-text: #F4F6F5;          /* Crisp high-contrast light text */
-  --color-muted: #96A0A2;         /* Muted neutral gray text */
-  --color-sidebar-bg: #090B0C;    /* Deep black sidebar */
-  --color-sidebar-text: #F4F6F5;
-  --color-sidebar-muted: #7F8A8C;
+  --color-sand-50: #10110F;
+  --color-sand-100: #191B18;
+  --color-sand-200: #2C2E29;
+  --color-sand-300: #41433D;
+  --color-surface: #1B1D1A;
 
+  --color-brand-navy: #355A8D;
+  --color-brand-navy-hover: #42699E;
+  --color-brand-teal: #65AAA1;
+  --color-brand-teal-hover: #7ABBB2;
+  --color-sea-900: #0B0D0B;
+  --color-sea-700: #31423C;
+  --color-seafoam-200: #A3C7BD;
+  --color-seafoam-100: #1E2A25;
+  --color-sun: #F0A93A;
+  --color-danger: #E27869;
+  --color-coral: var(--color-danger);
+  --color-coral-hover: #B83B28;
+
+  --color-text: #F4EFE4;
+  --color-muted: #B5B1A5;
+  --color-sidebar-bg: #0B0D0B;
+  --color-sidebar-text: #F4EFE4;
+  --color-sidebar-muted: #A6A599;
+
+  --dtb-sand-50: 16 17 15;
+  --dtb-sand-100: 25 27 24;
+  --dtb-sand-200: 44 46 41;
+  --dtb-sand-300: 65 67 61;
   --border-hairline: 1px solid var(--color-sand-200);
-  --shadow-soft: 0 4px 24px -2px rgba(0, 0, 0, 0.65);
+  --shadow-soft: 0 4px 24px -2px rgba(0, 0, 0, 0.42);
 }
 
 /* Tabular numbers for clean ledger stats */

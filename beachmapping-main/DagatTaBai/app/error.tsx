@@ -1,7 +1,8 @@
 'use client';
 
 import { useEffect } from 'react';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { RefreshCw } from 'lucide-react';
+import { CoastalIllustration } from '@/components/ui/coastal-empty-state';
 
 export default function Error({
   error,
@@ -16,20 +17,18 @@ export default function Error({
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-4 py-16">
-      <div className="text-center max-w-md bg-white p-8 rounded-xl border border-slate-200 shadow-sm">
-        <div className="w-14 h-14 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
-          <AlertTriangle className="w-7 h-7" />
-        </div>
-        <h2 className="text-xl font-bold text-slate-900 mb-2">Something Went Wrong</h2>
-        <p className="text-sm text-slate-600 mb-6">
+      <div className="text-center max-w-md bg-white dark:bg-neutral-900 p-8 rounded-2xl border border-slate-200 dark:border-neutral-800 shadow-sm">
+        <CoastalIllustration variant="error" className="w-52 h-36 mx-auto mb-3" />
+        <h1 className="text-xl font-bold text-slate-900 dark:text-white mb-2">Something Went Wrong</h1>
+        <p className="text-sm text-slate-600 dark:text-neutral-400 mb-6">
           An unexpected error occurred while rendering this page.
         </p>
         <button
           type="button"
           onClick={() => reset()}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-sky-600 text-white font-medium rounded-md hover:bg-sky-700 transition-colors"
+          className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand-600 px-5 py-2.5 font-medium text-white transition-colors hover:bg-brand-700 active:bg-brand-800"
         >
-          <RefreshCw className="w-4 h-4" />
+          <RefreshCw className="w-4 h-4" aria-hidden="true" />
           <span>Try Again</span>
         </button>
       </div>

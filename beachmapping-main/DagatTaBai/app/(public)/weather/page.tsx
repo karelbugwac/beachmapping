@@ -575,7 +575,7 @@ export default function WeatherPage() {
         <div className="pointer-events-none absolute inset-0 -z-10 bg-black/10" />
         <div className="relative mx-auto max-w-7xl space-y-6">
           <div className="h-14 w-72 animate-pulse rounded-xl bg-slate-200 dark:bg-neutral-800" />
-          <div className="h-56 animate-pulse rounded-2xl bg-[#1f3f74]/15 dark:bg-[#1f3f74]/30" />
+          <div className="h-56 animate-pulse rounded-2xl bg-[#1f3f74]/15 dark:bg-brand-950/30" />
           <div className="grid gap-5 lg:grid-cols-2">
             <div className="h-72 animate-pulse rounded-2xl bg-slate-200 dark:bg-neutral-800" />
             <div className="h-72 animate-pulse rounded-2xl bg-slate-200 dark:bg-neutral-800" />

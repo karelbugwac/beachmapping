@@ -1,5 +1,47 @@
 import type { Config } from "tailwindcss";
 
+const neutralPalette = {
+  50: 'rgb(var(--dtb-neutral-50) / <alpha-value>)',
+  100: 'rgb(var(--dtb-neutral-100) / <alpha-value>)',
+  200: 'rgb(var(--dtb-neutral-200) / <alpha-value>)',
+  300: 'rgb(var(--dtb-neutral-300) / <alpha-value>)',
+  400: 'rgb(var(--dtb-neutral-400) / <alpha-value>)',
+  500: 'rgb(var(--dtb-neutral-500) / <alpha-value>)',
+  600: 'rgb(var(--dtb-neutral-600) / <alpha-value>)',
+  700: 'rgb(var(--dtb-neutral-700) / <alpha-value>)',
+  800: 'rgb(var(--dtb-neutral-800) / <alpha-value>)',
+  900: 'rgb(var(--dtb-neutral-900) / <alpha-value>)',
+  950: 'rgb(var(--dtb-neutral-950) / <alpha-value>)',
+};
+
+const brandPalette = {
+  50: '#F1F5F1',
+  100: '#DFEBE5',
+  200: '#BFD4CA',
+  300: '#94B2A6',
+  400: '#688B7D',
+  500: '#3B6658',
+  600: '#173F65',
+  700: '#153651',
+  800: '#25312D',
+  900: '#171B18',
+  950: '#0E100F',
+};
+
+const seaPalette = {
+  50: '#F0F7F6',
+  100: '#DBEFEB',
+  200: '#BDE1D8',
+  300: '#3A7973',
+  400: '#2D7374',
+  500: '#276B69',
+  600: '#173F65',
+  700: '#153651',
+  800: '#23413B',
+  900: '#18201D',
+  950: '#101311',
+};
+
 const config: Config = {
   darkMode: "class",
   content: [
@@ -11,50 +53,48 @@ const config: Config = {
     extend: {
       colors: {
         sand: {
-          50: '#faf8f5',
-          100: '#f4efe8',
-          200: '#e8ded0',
-          300: '#d7c7b0',
-          400: '#c1aa8e',
-          500: '#ad9172',
-          600: '#94785b',
-          700: '#775f48',
-          800: '#624f3e',
+          50: 'rgb(var(--dtb-sand-50) / <alpha-value>)',
+          100: 'rgb(var(--dtb-sand-100) / <alpha-value>)',
+          200: 'rgb(var(--dtb-sand-200) / <alpha-value>)',
+          300: 'rgb(var(--dtb-sand-300) / <alpha-value>)',
+          400: '#C1AA8E',
+          500: '#AD9172',
+          600: '#94785B',
+          700: '#775F48',
+          800: '#624F3E',
           900: '#524336',
         },
         ocean: {
-          50: '#f0f7fb',
-          100: '#dcedf5',
-          200: '#bedde9',
-          300: '#8fc4d9',
-          400: '#5ba6c4',
-          500: '#3a8baa',
-          600: '#2c6f8c',
-          700: '#265972',
-          800: '#234a5d',
-          900: '#213f4f',
-          950: '#0b1b26',
+          50: '#F0F7F6',
+          100: '#DBEFEB',
+          200: '#BDE1D8',
+          300: '#3A7973',
+          400: '#2D7374',
+          500: '#276B69',
+          600: '#1F5B59',
+          700: '#194B4A',
+          800: '#1B5555',
+          900: '#143F42',
+          950: '#0B292D',
         },
         dtb: {
-          navy: '#1F3F74',     // Dive Navy Blue (Primary buttons & key highlights)
-          midnight: '#254B8A', // Midnight Blue
-          ocean: '#2B5F9D',    // Ocean Blue
-          classic: '#3A72AC',  // Classic Blue
-          sky: '#4987BA',      // Ocean Sky Blue
+          navy: '#173F65',
+          midnight: '#153651',
+          ocean: '#145A66',
+          classic: '#276B69',
+          sky: '#2D7374',
         },
-        brand: {
-          50: '#f0f4f9',
-          100: '#dbe5f3',
-          200: '#b9cfe8',
-          300: '#8ab1db',
-          400: '#4987BA',  // Ocean Sky Blue
-          500: '#3A72AC',  // Classic Blue
-          600: '#2B5F9D',  // Ocean Blue
-          700: '#254B8A',  // Midnight Blue
-          800: '#1F3F74',  // Dive Navy Blue (button color!)
-          900: '#14284b',
-          950: '#0c1930',
-        },
+        brand: brandPalette,
+        slate: neutralPalette,
+        gray: neutralPalette,
+        neutral: neutralPalette,
+        zinc: neutralPalette,
+        blue: brandPalette,
+        indigo: brandPalette,
+        sky: seaPalette,
+        cyan: seaPalette,
+        ink: 'var(--color-text)',
+        surface: 'var(--color-surface)',
       },
       fontFamily: {
         sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],

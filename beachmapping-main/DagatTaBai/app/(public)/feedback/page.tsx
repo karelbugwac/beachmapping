@@ -232,7 +232,7 @@ export default function PlatformFeedbackPage() {
               >
                 <div className="flex items-center justify-between gap-4 text-sm">
                   <div className="flex min-w-0 items-center gap-2.5">
-                    <div className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#edf3fa] text-sm font-bold text-[#1F3F74] dark:bg-blue-950/60 dark:text-[#9fc8ee]">
+                    <div className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#edf3fa] text-sm font-bold text-[#1F3F74] dark:bg-blue-950/60 dark:text-sky-300">
                       {review.user_name?.trim().charAt(0).toUpperCase() || 'U'}
                       {review.profile_image_url && (
                         // eslint-disable-next-line @next/next/no-img-element

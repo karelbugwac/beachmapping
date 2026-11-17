@@ -20,6 +20,7 @@ import {
 } from 'lucide-react';
 import type { BeachRecord } from '@/lib/db/beaches';
 import { showToast } from '@/components/ui/feedback-toasts';
+import { CoastalEmptyState } from '@/components/ui/coastal-empty-state';
 import { confirmAction } from '@/components/ui/confirm-dialog';
 import { VirtualTourModal, extractTourEmbedUrl } from '@/components/virtual-tour-modal';
 import { LocationPickerModal } from '@/components/map/location-picker-modal';
@@ -815,9 +816,11 @@ export default function AdminBeachesPage() {
           <p className="text-xs font-semibold text-slate-400">Loading beaches...</p>
         </div>
       ) : filteredBeaches.length === 0 ? (
-        <div className="p-12 text-center bg-white dark:bg-neutral-900 rounded-2xl border border-slate-200/80 dark:border-neutral-800 space-y-2">
-          <Palmtree className="w-9 h-9 mx-auto text-slate-300 dark:text-neutral-600" />
-          <h3 className="font-bold text-sm text-[#1F3F74] dark:text-[#4987BA]">No beaches found</h3>
+        <div className="p-8 bg-white dark:bg-neutral-900 rounded-2xl border border-slate-200/80 dark:border-neutral-800">
+          <CoastalEmptyState
+            title="No beaches found"
+            description="Try changing your search or filters to find a beach listing."
+          />
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">

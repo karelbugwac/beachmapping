@@ -35,7 +35,7 @@ export function Footer() {
             <Link href="/" className="inline-flex items-center gap-2.5">
               <div className="relative w-8 h-8 flex-shrink-0 flex items-center justify-center">
                 <Image
-                  src="/images/logo.png"
+                  src="/logo.png"
                   alt="Dagat Ta Bai"
                   width={34}
                   height={34}
