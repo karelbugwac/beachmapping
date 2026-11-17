@@ -697,7 +697,8 @@ export default function MapPage() {
                     src={selectedBeach.virtual_tour_url}
                     title={`${selectedBeach.name} 360 Virtual Tour`}
                     className="w-full h-full border-0 pointer-events-auto"
-                    allow="accelerometer; gyroscope; magnetometer; fullscreen"
+                    allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; magnetometer; picture-in-picture; web-share; vr; xr-spatial-tracking"
+                    allowFullScreen
                     loading="lazy"
                   />
                 </div>

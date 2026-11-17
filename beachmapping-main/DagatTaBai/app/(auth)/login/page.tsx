@@ -10,6 +10,7 @@ import {
   AlertCircle,
   CheckCircle2,
   ChevronLeft,
+  X,
 } from 'lucide-react';
 import { showToast } from '@/components/ui/feedback-toasts';
 
@@ -25,6 +26,16 @@ function UserLoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [touched, setTouched] = useState({ email: false, password: false });
+  const [lockoutSeconds, setLockoutSeconds] = useState(0);
+  const [loginErrorMessage, setLoginErrorMessage] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (lockoutSeconds <= 0) return;
+    const timer = setInterval(() => {
+      setLockoutSeconds((prev) => (prev <= 1 ? 0 : prev - 1));
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [lockoutSeconds]);
 
   useEffect(() => {
     if (prefilledEmail) {
@@ -38,6 +49,19 @@ function UserLoginForm() {
       router.replace('/login', { scroll: false });
     }
     if (authError) {
+      if (authError === 'rate_limited') {
+        const retryParam = Number(searchParams.get('retryAfter') || 0);
+        const retrySecs = Number.isFinite(retryParam) && retryParam > 0 ? retryParam : 15 * 60;
+        setLockoutSeconds(retrySecs);
+        const mins = Math.ceil(retrySecs / 60);
+        const waitText = retrySecs >= 60 ? `${mins} minute${mins > 1 ? 's' : ''}` : `${retrySecs} seconds`;
+        const msg = `Too many failed login attempts. Please wait ${waitText} before trying again.`;
+        setLoginErrorMessage(msg);
+        showToast(msg, 'error');
+        router.replace('/login', { scroll: false });
+        return;
+      }
+
       const errorMessages: Record<string, string> = {
         google_auth_failed: 'Google sign in failed. Please check your credentials.',
         code_exchange_failed: 'Authentication session exchange failed.',
@@ -48,7 +72,7 @@ function UserLoginForm() {
       showToast(errorMessages[authError] || `Sign-in error: ${authError}`, 'error');
       router.replace('/login', { scroll: false });
     }
-  }, [emailConfirmed, authError, router]);
+  }, [emailConfirmed, authError, router, searchParams]);
 
   // ── Validation ──────────────────────────────────────────────
   const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
@@ -66,6 +90,15 @@ function UserLoginForm() {
       return;
     }
 
+    if (lockoutSeconds > 0) {
+      const mins = Math.floor(lockoutSeconds / 60);
+      const secs = lockoutSeconds % 60;
+      const waitText = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+      showToast(`Too many failed login attempts. Please wait ${waitText} before trying again.`, 'error');
+      return;
+    }
+
+    setLoginErrorMessage(null);
     setLoading(true);
     try {
       const res = await fetch('/api/auth/login', {
@@ -75,8 +108,21 @@ function UserLoginForm() {
       });
 
       const data = await res.json();
+      if (res.status === 429) {
+        const retrySecs = typeof data.retryAfterSeconds === 'number' && data.retryAfterSeconds > 0
+          ? data.retryAfterSeconds
+          : 15 * 60;
+        setLockoutSeconds(retrySecs);
+        const msg = data.error || 'Too many failed login attempts. Please wait before trying again.';
+        setLoginErrorMessage(msg);
+        showToast(msg, 'error');
+        return;
+      }
+
       if (!res.ok || data.error) {
-        throw new Error(data.error || 'Invalid email or password.');
+        const msg = data.error || 'Invalid email or password.';
+        setLoginErrorMessage(msg);
+        throw new Error(msg);
       }
 
       showToast('Successfully logged in!');
@@ -95,11 +141,51 @@ function UserLoginForm() {
   };
 
   const handleGoogleSignIn = () => {
-    window.location.href = '/api/auth/google';
+    if (lockoutSeconds > 0) {
+      const mins = Math.floor(lockoutSeconds / 60);
+      const secs = lockoutSeconds % 60;
+      const waitText = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
+      showToast(`Too many failed login attempts. Please wait ${waitText} before trying again.`, 'error');
+      return;
+    }
+    const emailQuery = email.trim() ? `?email=${encodeURIComponent(email.trim())}` : '';
+    window.location.href = `/api/auth/google${emailQuery}`;
   };
 
   return (
     <div className="min-h-screen flex flex-col justify-between items-center px-4 py-8 bg-[#f8fafc] dark:bg-black transition-colors duration-200">
+      {/* ── Floating Rate Limit / Login Error Message ────── */}
+      {(lockoutSeconds > 0 || loginErrorMessage) && (
+        <div
+          role="alert"
+          className="fixed top-5 left-1/2 -translate-x-1/2 z-50 w-[min(92vw,420px)] flex items-start gap-2.5 rounded-2xl border border-red-200 bg-white/95 backdrop-blur-md px-4 py-3 text-xs text-red-700 shadow-xl shadow-red-950/10 animate-in fade-in slide-in-from-top-3 duration-200 dark:border-red-900/60 dark:bg-[#1a0f12]/95 dark:text-red-300 dark:shadow-black/40"
+        >
+          <AlertCircle className="mt-0.5 h-4 w-4 shrink-0 text-red-500" />
+          <div className="flex-1 space-y-0.5 leading-relaxed">
+            <p className="font-semibold">
+              {lockoutSeconds > 0
+                ? 'Too many failed login attempts'
+                : 'Sign-in failed'}
+            </p>
+            <p>
+              {lockoutSeconds > 0
+                ? `Please wait ${Math.floor(lockoutSeconds / 60) > 0 ? `${Math.floor(lockoutSeconds / 60)}m ${lockoutSeconds % 60}s` : `${lockoutSeconds}s`} before trying again.`
+                : loginErrorMessage}
+            </p>
+          </div>
+          {lockoutSeconds <= 0 && (
+            <button
+              type="button"
+              onClick={() => setLoginErrorMessage(null)}
+              aria-label="Dismiss message"
+              className="rounded-full p-1 text-red-400 hover:bg-red-100 hover:text-red-600 dark:hover:bg-red-900/40 dark:hover:text-red-200 transition-colors cursor-pointer"
+            >
+              <X className="h-3.5 w-3.5" />
+            </button>
+          )}
+        </div>
+      )}
+
       {/* ── Top Navigation (Left-aligned) ─────────────────── */}
       <div className="w-full px-4 sm:px-8 md:px-12 flex items-center justify-start">
         <Link
@@ -219,7 +305,7 @@ function UserLoginForm() {
           {/* Primary Submit Button: Oblong rounded-full, No arrow */}
           <button
             type="submit"
-            disabled={loading}
+            disabled={loading || lockoutSeconds > 0}
             className="group relative w-full py-3.5 mt-2 bg-[#1F3F74] hover:bg-[#285091] dark:bg-[#1F3F74] dark:hover:bg-[#285091] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm rounded-full transition-all duration-200 shadow-md hover:shadow-lg shadow-[#1F3F74]/25 flex items-center justify-center cursor-pointer"
           >
             {loading ? (
@@ -260,7 +346,8 @@ function UserLoginForm() {
         <button
           type="button"
           onClick={handleGoogleSignIn}
-          className="w-full py-3.5 px-5 bg-white dark:bg-[#121212] border border-slate-300 dark:border-neutral-800 hover:bg-slate-50 dark:hover:bg-neutral-900 rounded-full text-slate-700 dark:text-neutral-200 text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-3 shadow-2xs hover:shadow-xs cursor-pointer"
+          disabled={loading || lockoutSeconds > 0}
+          className="w-full py-3.5 px-5 bg-white dark:bg-[#121212] border border-slate-300 dark:border-neutral-800 hover:bg-slate-50 dark:hover:bg-neutral-900 disabled:opacity-50 disabled:cursor-not-allowed rounded-full text-slate-700 dark:text-neutral-200 text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-3 shadow-2xs hover:shadow-xs cursor-pointer"
         >
           <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24">
             <path

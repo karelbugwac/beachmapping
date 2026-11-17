@@ -590,6 +590,7 @@ export default function ProfilePage() {
                 key={user.picture}
                 src={user.picture}
                 alt=""
+                referrerPolicy="no-referrer"
                 onError={(event) => {
                   event.currentTarget.style.display = 'none';
                 }}
@@ -1087,33 +1088,43 @@ export default function ProfilePage() {
               }}
             >
               {avatarDraft || user.picture ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  ref={avatarPreviewImageRef}
-                  src={avatarDraft || user.picture || ''}
-                  alt="Profile photo preview"
-                  draggable={false}
-                  onLoad={(event) => {
-                    if (avatarDraft) {
-                      setAvatarImageSize({
-                        width: event.currentTarget.naturalWidth,
-                        height: event.currentTarget.naturalHeight,
-                      });
-                    }
-                  }}
-                  className={`absolute left-1/2 top-1/2 max-w-none ${
-                    avatarDraft ? '' : 'h-full w-full object-cover'
-                  }`}
-                  style={avatarDraft && avatarImageSize
-                    ? {
-                        width: `${AVATAR_PREVIEW_SIZE * (avatarImageSize.width / Math.min(avatarImageSize.width, avatarImageSize.height)) * avatarZoom}px`,
-                        height: `${AVATAR_PREVIEW_SIZE * (avatarImageSize.height / Math.min(avatarImageSize.width, avatarImageSize.height)) * avatarZoom}px`,
-                        transform: `translate(calc(-50% - ${avatarOffsetX * Math.max(0, (AVATAR_PREVIEW_SIZE * (avatarImageSize.width / Math.min(avatarImageSize.width, avatarImageSize.height)) * avatarZoom - AVATAR_PREVIEW_SIZE) / 2)}px), calc(-50% - ${avatarOffsetY * Math.max(0, (AVATAR_PREVIEW_SIZE * (avatarImageSize.height / Math.min(avatarImageSize.width, avatarImageSize.height)) * avatarZoom - AVATAR_PREVIEW_SIZE) / 2)}px))`,
+                <>
+                  <span>{user.name.charAt(0).toUpperCase()}</span>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    ref={avatarPreviewImageRef}
+                    key={avatarDraft || user.picture}
+                    src={avatarDraft || user.picture || ''}
+                    alt="Profile photo preview"
+                    referrerPolicy="no-referrer"
+                    draggable={false}
+                    onLoad={(event) => {
+                      if (avatarDraft) {
+                        setAvatarImageSize({
+                          width: event.currentTarget.naturalWidth,
+                          height: event.currentTarget.naturalHeight,
+                        });
                       }
-                    : avatarDraft
-                      ? { width: '100%', height: '100%', objectFit: 'cover' }
-                      : undefined}
-                />
+                    }}
+                    onError={(event) => {
+                      event.currentTarget.style.display = 'none';
+                    }}
+                    className={
+                      avatarDraft && avatarImageSize
+                        ? 'absolute left-1/2 top-1/2 max-w-none'
+                        : 'absolute inset-0 h-full w-full object-cover'
+                    }
+                    style={
+                      avatarDraft && avatarImageSize
+                        ? {
+                            width: `${AVATAR_PREVIEW_SIZE * (avatarImageSize.width / Math.min(avatarImageSize.width, avatarImageSize.height)) * avatarZoom}px`,
+                            height: `${AVATAR_PREVIEW_SIZE * (avatarImageSize.height / Math.min(avatarImageSize.width, avatarImageSize.height)) * avatarZoom}px`,
+                            transform: `translate(calc(-50% - ${avatarOffsetX * Math.max(0, (AVATAR_PREVIEW_SIZE * (avatarImageSize.width / Math.min(avatarImageSize.width, avatarImageSize.height)) * avatarZoom - AVATAR_PREVIEW_SIZE) / 2)}px), calc(-50% - ${avatarOffsetY * Math.max(0, (AVATAR_PREVIEW_SIZE * (avatarImageSize.height / Math.min(avatarImageSize.width, avatarImageSize.height)) * avatarZoom - AVATAR_PREVIEW_SIZE) / 2)}px))`,
+                          }
+                        : undefined
+                    }
+                  />
+                </>
               ) : (
                 user.name.charAt(0).toUpperCase()
               )}

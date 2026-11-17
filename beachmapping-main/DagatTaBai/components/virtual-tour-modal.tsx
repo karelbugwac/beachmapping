@@ -168,7 +168,7 @@ export function VirtualTourModal({
                 src={embedUrl}
                 title={`${beachName} 360 Virtual Tour`}
                 className="w-full h-full border-0"
-                allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share; vr; xr-spatial-tracking"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; magnetometer; picture-in-picture; web-share; vr; xr-spatial-tracking"
                 allowFullScreen
                 onLoad={() => setLoading(false)}
               />
@@ -195,7 +195,7 @@ export function VirtualTourModal({
             <span className="hidden sm:inline">Click & drag to look around or use arrow keys</span>
           </div>
           <span className="text-[11px] text-zinc-500">
-            Supports VR &amp; Gyroscope on mobile
+            Supports VR &amp; Gyroscope over HTTPS (use &ldquo;Open in Tab&rdquo; on mobile if VR is blocked)
           </span>
         </div>
       </div>

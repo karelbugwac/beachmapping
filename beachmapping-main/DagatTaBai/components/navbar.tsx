@@ -284,6 +284,7 @@ export function Navbar() {
                         key={user.profile_image_url}
                         src={user.profile_image_url}
                         alt=""
+                        referrerPolicy="no-referrer"
                         onError={(event) => {
                           event.currentTarget.style.display = 'none';
                         }}
@@ -350,6 +351,7 @@ export function Navbar() {
                     key={user.profile_image_url}
                     src={user.profile_image_url}
                     alt=""
+                    referrerPolicy="no-referrer"
                     onError={(event) => {
                       event.currentTarget.style.display = 'none';
                     }}

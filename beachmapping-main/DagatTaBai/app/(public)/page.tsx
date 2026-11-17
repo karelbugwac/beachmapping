@@ -280,9 +280,8 @@ export default function HomePage() {
                   height="100%"
                   scrolling="no"
                   tabIndex={-1}
-                  sandbox="allow-scripts allow-same-origin"
-                  allow="vr; xr; accelerometer; gyroscope;"
-                  allowFullScreen={false}
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; magnetometer; picture-in-picture; web-share; vr; xr-spatial-tracking"
+                  allowFullScreen
                   className="w-full h-full border-0 block"
                 />
               ) : (

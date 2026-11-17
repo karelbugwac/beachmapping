@@ -1459,7 +1459,8 @@ export default function AdminBeachesPage() {
                         <iframe
                           src={extractTourEmbedUrl(editForm.virtual_tour_url) || ''}
                           className="w-full h-full border-0"
-                          allow="accelerometer; gyroscope; magnetometer; vr"
+                          allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; magnetometer; picture-in-picture; web-share; vr; xr-spatial-tracking"
+                          allowFullScreen
                           title="Tour Preview"
                         />
                       </div>
