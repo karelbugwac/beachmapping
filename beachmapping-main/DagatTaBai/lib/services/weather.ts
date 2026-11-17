@@ -78,6 +78,18 @@ interface OpenMeteoMarine {
   };
 }
 
+const WEATHER_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const globalForWeather = globalThis as unknown as {
+  __dagatWeatherCache?: Map<string, { data: WeatherData; expiresAt: number }>;
+  __dagatWeatherInFlight?: Map<string, Promise<WeatherData>>;
+};
+const weatherCache =
+  globalForWeather.__dagatWeatherCache ??
+  (globalForWeather.__dagatWeatherCache = new Map());
+const weatherInFlight =
+  globalForWeather.__dagatWeatherInFlight ??
+  (globalForWeather.__dagatWeatherInFlight = new Map());
+
 function fetchOpenMeteo<T>(url: string, endpoint: string, timeoutMs: number): Promise<T> {
   return fetch(url, { next: { revalidate: 300 }, signal: AbortSignal.timeout(timeoutMs) })
     .then((response) => {
@@ -177,7 +189,21 @@ function closestHourlyIndex(times: string[] | undefined, targetTime: string): nu
 }
 
 export async function fetchLiveWeather(latitude: number, longitude: number): Promise<WeatherData> {
-  const coordinates = `latitude=${encodeURIComponent(latitude)}&longitude=${encodeURIComponent(longitude)}`;
+  const cacheKey = `${latitude.toFixed(4)},${longitude.toFixed(4)}`;
+  const now = Date.now();
+  const cached = weatherCache.get(cacheKey);
+  if (cached && cached.expiresAt > now) {
+    return cached.data;
+  }
+
+  const existingInFlight = weatherInFlight.get(cacheKey);
+  if (existingInFlight) {
+    return existingInFlight;
+  }
+
+  const requestPromise = (async (): Promise<WeatherData> => {
+    try {
+      const coordinates = `latitude=${encodeURIComponent(latitude)}&longitude=${encodeURIComponent(longitude)}`;
   const forecastUrl = `https://api.open-meteo.com/v1/forecast?${coordinates}&current=temperature_2m,relative_humidity_2m,weather_code,wind_speed_10m,wind_direction_10m&hourly=uv_index&daily=weather_code,temperature_2m_max,temperature_2m_min,precipitation_probability_max,uv_index_max,sunrise,sunset&timezone=Asia%2FManila&forecast_days=5`;
   const marineUrl = `https://marine-api.open-meteo.com/v1/marine?${coordinates}&hourly=wave_height,swell_wave_height&timezone=Asia%2FManila&forecast_days=2`;
   const airQualityUrl = `https://air-quality-api.open-meteo.com/v1/air-quality?${coordinates}&current=us_aqi,pm2_5,pm10&timezone=Asia%2FManila`;
@@ -239,7 +265,7 @@ export async function fetchLiveWeather(latitude: number, longitude: number): Pro
   const today = daily?.time?.[0];
   const moonEvents = today ? getMoonEvents(today, latitude, longitude) : { moonrise: null, moonset: null };
 
-  return {
+  const result: WeatherData = {
     temperature: current.temperature_2m,
     relativeHumidity: current.relative_humidity_2m,
     windSpeed: current.wind_speed_10m,
@@ -258,4 +284,14 @@ export async function fetchLiveWeather(latitude: number, longitude: number): Pro
     waveHeight: marineIndex >= 0 ? marine?.hourly?.wave_height?.[marineIndex] ?? null : null,
     swellHeight: marineIndex >= 0 ? marine?.hourly?.swell_wave_height?.[marineIndex] ?? null : null,
   };
+
+      weatherCache.set(cacheKey, { data: result, expiresAt: Date.now() + WEATHER_CACHE_TTL_MS });
+      return result;
+    } finally {
+      weatherInFlight.delete(cacheKey);
+    }
+  })();
+
+  weatherInFlight.set(cacheKey, requestPromise);
+  return requestPromise;
 }

@@ -3,8 +3,28 @@ import { askGeminiAssistantStream } from '@/lib/services/gemini';
 import { matchBaiInstantAnswer, getBaiApologyFallback } from '@/lib/services/baiKnowledgeBase';
 import { getCurrentSession } from '@/lib/db/auth';
 import { createAdminClient } from '@/lib/supabase/server';
+import { checkRateLimit } from '@/lib/utils/rate-limit';
 
 export async function POST(req: NextRequest) {
+  const rateLimit = checkRateLimit(req, {
+    keyPrefix: 'api-assistant',
+    maxRequests: 20,
+    windowMs: 10 * 60 * 1000, // 20 messages per 10 minutes per client
+  });
+  if (!rateLimit.allowed) {
+    const minutesLeft = Math.max(1, Math.ceil(rateLimit.resetInSeconds / 60));
+    return new Response(
+      `Sorry, you have reached the limit of 20 messages per 10 minutes. Please wait about ${minutesLeft} minute${minutesLeft > 1 ? 's' : ''} before asking another question.`,
+      {
+        status: 429,
+        headers: {
+          'Content-Type': 'text/plain; charset=utf-8',
+          ...rateLimit.headers,
+        },
+      }
+    );
+  }
+
   try {
     const body = await req.json();
     const message = body.message;
@@ -83,6 +103,7 @@ export async function POST(req: NextRequest) {
       headers: {
         'Content-Type': 'text/plain; charset=utf-8',
         'Transfer-Encoding': 'chunked',
+        ...rateLimit.headers,
       },
     });
   } catch (error: unknown) {

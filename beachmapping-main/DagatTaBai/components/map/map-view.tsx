@@ -1,34 +1,8 @@
 'use client';
 
 import React, { useEffect, useState, useMemo, useRef } from 'react';
-import dynamic from 'next/dynamic';
 import type { BeachRecord } from '@/lib/db/beaches';
 import { getValidBeachCoordinates } from '@/lib/utils/beach-coordinates';
-
-const MapContainer = dynamic(
-  () => import('react-leaflet').then((mod) => mod.MapContainer),
-  { ssr: false }
-);
-const TileLayer = dynamic(
-  () => import('react-leaflet').then((mod) => mod.TileLayer),
-  { ssr: false }
-);
-const Marker = dynamic(
-  () => import('react-leaflet').then((mod) => mod.Marker),
-  { ssr: false }
-);
-const Tooltip = dynamic(
-  () => import('react-leaflet').then((mod) => mod.Tooltip),
-  { ssr: false }
-);
-const Polyline = dynamic(
-  () => import('react-leaflet').then((mod) => mod.Polyline),
-  { ssr: false }
-);
-const ZoomControl = dynamic(
-  () => import('react-leaflet').then((mod) => mod.ZoomControl),
-  { ssr: false }
-);
 
 // Curated Coastal Palette: strictly brand-aligned (Dive Blue, Sky Blue, Golden Amber, Sea Teal)
 // Strictly NO purple!
@@ -116,6 +90,7 @@ function createTeardropPinSvg(color: string, isSelected: boolean): string {
 interface MapViewProps {
   beaches: BeachRecord[];
   userLocation?: { lat: number; lng: number } | null;
+  onUpdateUserLocation?: (loc: { lat: number; lng: number }) => void;
   onSelectBeach?: (beach: BeachRecord) => void;
   selectedBeachId?: string | null;
   routeActive?: boolean;
@@ -123,21 +98,27 @@ interface MapViewProps {
   travelMode?: 'car' | 'motorcycle' | 'commute' | 'walking';
   center?: [number, number];
   zoom?: number;
+  flyToKey?: number;
 }
+
+const DEFAULT_BINONGKALAN_CENTER: [number, number] = [10.6348, 124.0275];
 
 export function MapView({
   beaches,
   userLocation,
+  onUpdateUserLocation,
   onSelectBeach,
   selectedBeachId,
   routeActive = false,
   routeCoordinates = null,
   travelMode = 'car',
-  center = [10.6348, 124.0275],
+  center = DEFAULT_BINONGKALAN_CENTER,
   zoom = 15,
+  flyToKey = 0,
 }: MapViewProps) {
   const [isClient, setIsClient] = useState(false);
   const [L, setL] = useState<any>(null);
+  const [RL, setRL] = useState<any>(null);
   const mapRef = useRef<any>(null);
 
   // Traveling marker animation state
@@ -145,15 +126,11 @@ export function MapView({
 
   useEffect(() => {
     setIsClient(true);
-    import('leaflet').then((leaflet) => {
+    Promise.all([import('leaflet'), import('react-leaflet')]).then(([leaflet, reactLeaflet]) => {
       setL(leaflet.default);
+      setRL(reactLeaflet);
     });
   }, []);
-
-  useEffect(() => {
-    if (!isClient || !L || !mapRef.current) return;
-    mapRef.current.setView(center, zoom, { animate: true });
-  }, [center, zoom, isClient, L]);
 
   // Animate the traveling vehicle / walker along the route coordinates
   useEffect(() => {
@@ -278,16 +255,20 @@ export function MapView({
     });
   }, [L, visibleBeaches, selectedBeachId]);
 
-  // Smoothly center the map view when destination beach changes
+  // Smoothly fly to target coordinates only when explicitly triggered (selecting a beach, Locate Me, or Go back to Binongkalan)
+  // Never zoom out automatically if the user has zoomed in closer than `zoom`.
   useEffect(() => {
-    if (mapRef.current && center) {
-      try {
-        mapRef.current.flyTo(center, zoom, { duration: 0.8 });
-      } catch {}
-    }
-  }, [center, zoom]);
+    if (!flyToKey || !mapRef.current || !center) return;
+    try {
+      const currentZoom =
+        typeof mapRef.current.getZoom === 'function' ? mapRef.current.getZoom() : zoom;
+      const targetZoom = Math.max(currentZoom, zoom);
+      mapRef.current.flyTo(center, targetZoom, { duration: 0.8 });
+    } catch {}
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [flyToKey]);
 
-  if (!isClient || !L) {
+  if (!isClient || !L || !RL) {
     return (
       <div className="w-full h-full flex items-center justify-center bg-slate-100 dark:bg-black text-slate-500">
         <div className="flex flex-col items-center gap-2 text-xs">
@@ -298,12 +279,19 @@ export function MapView({
     );
   }
 
+  const { MapContainer, TileLayer, Marker, Tooltip, Polyline, ZoomControl } = RL;
+
   return (
     <div className="relative w-full h-full overflow-hidden">
       <MapContainer
-        ref={mapRef}
-        center={center}
-        zoom={zoom}
+        ref={(instance: any) => {
+          if (instance) {
+            mapRef.current = instance;
+          }
+        }}
+        center={DEFAULT_BINONGKALAN_CENTER}
+        zoom={15}
+        maxZoom={19}
         zoomControl={false}
         scrollWheelZoom={true}
         className="w-full h-full"
@@ -362,9 +350,18 @@ export function MapView({
           <Marker
             position={[userLocation.lat, userLocation.lng]}
             icon={userLocationIcon}
+            draggable={Boolean(onUpdateUserLocation)}
+            eventHandlers={{
+              dragend: (e: any) => {
+                const pos = e.target?.getLatLng?.();
+                if (pos && onUpdateUserLocation) {
+                  onUpdateUserLocation({ lat: pos.lat, lng: pos.lng });
+                }
+              },
+            }}
           >
             <Tooltip direction="top" offset={[0, -10]}>
-              Your Detected GPS Location
+              Your Location (drag to adjust)
             </Tooltip>
           </Marker>
         )}

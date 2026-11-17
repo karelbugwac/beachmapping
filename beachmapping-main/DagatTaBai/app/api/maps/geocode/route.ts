@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { checkRateLimit, rateLimitExceededResponse } from '@/lib/utils/rate-limit';
 
 const NOMINATIM_ENDPOINT = 'https://nominatim.openstreetmap.org/search';
 const VERIFIED_AREA_CENTERS = {
@@ -24,6 +25,18 @@ interface NominatimResult {
 }
 
 export async function GET(request: NextRequest) {
+  const rateLimit = checkRateLimit(request, {
+    keyPrefix: 'api-maps-geocode',
+    maxRequests: 25,
+    windowMs: 60 * 1000,
+  });
+  if (!rateLimit.allowed) {
+    return rateLimitExceededResponse(
+      rateLimit,
+      'Too many map search requests. Please wait a moment and try again.'
+    );
+  }
+
   const rawQuery = request.nextUrl.searchParams.get('q')?.trim();
   if (!rawQuery) {
     return NextResponse.json({ error: 'Enter an address or place name to search.' }, { status: 400 });
@@ -39,7 +52,11 @@ export async function GET(request: NextRequest) {
       /^catmon$/i.test(rawQuery));
   const query = /philippines/i.test(rawQuery)
     ? rawQuery
-    : `${rawQuery}, Catmon, Cebu, Philippines`;
+    : isBinongkalanSearch || isCatmonSearch
+      ? `${rawQuery}, Catmon, Cebu, Philippines`
+      : /cebu/i.test(rawQuery)
+        ? `${rawQuery}, Philippines`
+        : `${rawQuery}, Cebu, Philippines`;
   const params = new URLSearchParams({
     format: 'jsonv2',
     addressdetails: '1',

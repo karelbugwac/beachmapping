@@ -148,6 +148,16 @@ export function AiChatWidget() {
         }),
       });
 
+      if (res.status === 429) {
+        const rateLimitMsg =
+          (await res.text()) ||
+          'Sorry, you are sending messages too quickly. Please wait a moment and try again.';
+        setMessages((prev) =>
+          prev.map((msg) => (msg.id === assistantMsgId ? { ...msg, text: rateLimitMsg } : msg))
+        );
+        return;
+      }
+
       if (!res.ok) {
         const errorText = await res.text();
         throw new Error(errorText || 'Assistant request failed.');

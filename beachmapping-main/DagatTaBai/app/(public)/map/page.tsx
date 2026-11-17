@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
@@ -78,6 +78,8 @@ function formatContactPhone(phone: string): string {
   return local ? `+63 ${local}` : cleaned;
 }
 
+const BINONGKALAN_CENTER: [number, number] = [10.6348, 124.0275];
+
 export default function MapPage() {
   const searchParams = useSearchParams();
   const selectedSlugFromUrl = searchParams.get('beach');
@@ -91,7 +93,15 @@ export default function MapPage() {
   const [locationFilter, setLocationFilter] = useState<'all' | 'mapped' | 'missing'>('all');
   const [beachLoadError, setBeachLoadError] = useState<string | null>(null);
   const [beachReloadTrigger, setBeachReloadTrigger] = useState(0);
-  const [searchMapCenter, setSearchMapCenter] = useState<[number, number] | null>(null);
+  const [mapCamera, setMapCamera] = useState<{
+    center: [number, number];
+    zoom: number;
+    flyToKey: number;
+  }>({
+    center: BINONGKALAN_CENTER,
+    zoom: 15,
+    flyToKey: 0,
+  });
   const [travelMode, setTravelMode] = useState<'car' | 'motorcycle' | 'commute' | 'walking'>('car');
   const [showFullAbout, setShowFullAbout] = useState(false);
 
@@ -100,6 +110,7 @@ export default function MapPage() {
   const [routeData, setRouteData] = useState<RouteResult | null>(null);
   const [routingLoading, setRoutingLoading] = useState(false);
   const [watchId, setWatchId] = useState<number | null>(null);
+  const hasAppliedInitialSlugRef = useRef(false);
 
   // Refresh from the database so owner edits appear without redeploying or reloading the map.
   useEffect(() => {
@@ -120,10 +131,23 @@ export default function MapPage() {
           if (current) {
             return latestBeaches.find((beach) => beach.id === current.id) || null;
           }
-          if (selectedSlugFromUrl) {
-            return latestBeaches.find(
-              (beach) => beach.slug === selectedSlugFromUrl || beach.id === selectedSlugFromUrl
-            ) || null;
+          if (selectedSlugFromUrl && !hasAppliedInitialSlugRef.current) {
+            hasAppliedInitialSlugRef.current = true;
+            const initialMatch =
+              latestBeaches.find(
+                (beach) => beach.slug === selectedSlugFromUrl || beach.id === selectedSlugFromUrl
+              ) || null;
+            if (initialMatch) {
+              const coords = getValidBeachCoordinates(initialMatch.latitude, initialMatch.longitude);
+              if (coords) {
+                setMapCamera({
+                  center: [coords.latitude, coords.longitude],
+                  zoom: 16,
+                  flyToKey: Date.now(),
+                });
+              }
+            }
+            return initialMatch;
           }
           return null;
         });
@@ -149,8 +173,37 @@ export default function MapPage() {
     setBeachReloadTrigger((prev) => prev + 1);
   });
 
+  const handleSelectBeachOnMap = (beach: BeachRecord | null) => {
+    setSelectedBeach(beach);
+    if (beach) {
+      const coords = getValidBeachCoordinates(beach.latitude, beach.longitude);
+      if (coords) {
+        setMapCamera({
+          center: [coords.latitude, coords.longitude],
+          zoom: 16,
+          flyToKey: Date.now(),
+        });
+      }
+    }
+  };
+
+  const handleGoBackToBinongkalan = () => {
+    setMapCamera({
+      center: BINONGKALAN_CENTER,
+      zoom: 15,
+      flyToKey: Date.now(),
+    });
+  };
+
   useEffect(() => {
-    if (!/\b(binongkalan|catmon)\b/i.test(searchQuery)) {
+    const trimmed = searchQuery.trim();
+    if (trimmed.length < 3) {
+      return;
+    }
+    const matchingLocalBeaches = beaches.filter((beach) =>
+      matchesBeachSearch(beach, trimmed.toLowerCase())
+    );
+    if (matchingLocalBeaches.length > 0 && !/\b(binongkalan|catmon)\b/i.test(trimmed)) {
       return;
     }
 
@@ -158,7 +211,7 @@ export default function MapPage() {
     const timeoutId = window.setTimeout(async () => {
       try {
         const response = await fetch(
-          `/api/maps/geocode?q=${encodeURIComponent(searchQuery.trim())}`,
+          `/api/maps/geocode?q=${encodeURIComponent(trimmed)}`,
           { signal: controller.signal }
         );
         const data = await response.json();
@@ -169,7 +222,11 @@ export default function MapPage() {
           Number.isFinite(result.latitude) &&
           Number.isFinite(result.longitude)
         ) {
-          setSearchMapCenter([result.latitude, result.longitude]);
+          setMapCamera({
+            center: [result.latitude, result.longitude],
+            zoom: 15,
+            flyToKey: Date.now(),
+          });
         }
       } catch (error: unknown) {
         if (controller.signal.aborted) return;
@@ -183,14 +240,15 @@ export default function MapPage() {
     };
   }, [searchQuery]);
 
-  // 2. Geolocation with Real-time GPS Watching
-  const handleLocateMe = (onSuccess?: (loc: { lat: number; lng: number }) => void) => {
-    if (typeof window === 'undefined' || !navigator.geolocation) {
-      setLocationError('Geolocation is not supported by your browser.');
-      return;
-    }
+  // 2. Geolocation with automatic fallback (High-accuracy GPS -> Wi-Fi/Network -> Server IP/Highway fallback)
+  // Calls `onSuccess` ONLY ONCE so background GPS ticks never reset the user's map zoom or camera!
+  const handleLocateMe = (
+    onSuccess?: (loc: { lat: number; lng: number }) => void,
+    onError?: () => void
+  ) => {
+    if (typeof window === 'undefined') return;
 
-    if (watchId !== null) {
+    if (watchId !== null && navigator.geolocation) {
       navigator.geolocation.clearWatch(watchId);
       setWatchId(null);
     }
@@ -198,38 +256,92 @@ export default function MapPage() {
     setLocating(true);
     setLocationError(null);
 
-    const id = navigator.geolocation.watchPosition(
+    const finalizeSuccess = (loc: { lat: number; lng: number }) => {
+      setUserLocation(loc);
+      setLocating(false);
+      if (onSuccess) onSuccess(loc);
+
+      // Start passive background watch that only updates the blue dot if the user moves > 20m,
+      // without ever re-triggering onSuccess or resetting the map zoom/camera.
+      if (navigator.geolocation) {
+        const id = navigator.geolocation.watchPosition(
+          (pos) => {
+            const nextLoc = {
+              lat: pos.coords.latitude,
+              lng: pos.coords.longitude,
+            };
+            setUserLocation((prev) => {
+              if (!prev) return nextLoc;
+              const dLat = Math.abs(prev.lat - nextLoc.lat);
+              const dLng = Math.abs(prev.lng - nextLoc.lng);
+              if (dLat < 0.0002 && dLng < 0.0002) return prev;
+              return nextLoc;
+            });
+          },
+          () => {
+            // Ignore passive watch errors
+          },
+          { enableHighAccuracy: false, timeout: 20000, maximumAge: 15000 }
+        );
+        setWatchId(id);
+      }
+    };
+
+    const tryServerNetworkFallback = async (permissionDenied: boolean) => {
+      try {
+        const res = await fetch('/api/maps/locate', { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          if (typeof data?.lat === 'number' && typeof data?.lng === 'number') {
+            finalizeSuccess({ lat: data.lat, lng: data.lng });
+            return;
+          }
+        }
+      } catch {
+        // Ignore network error
+      }
+      setLocationError(
+        permissionDenied
+          ? 'Location permission denied. Please enable location access in browser settings.'
+          : 'Unable to detect location. Please check your browser location permissions.'
+      );
+      setLocating(false);
+      if (onError) onError();
+    };
+
+    if (!navigator.geolocation) {
+      void tryServerNetworkFallback(false);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
       (position) => {
-        const loc = {
+        finalizeSuccess({
           lat: position.coords.latitude,
           lng: position.coords.longitude,
-        };
-        setUserLocation(loc);
-        setLocating(false);
-        if (onSuccess) onSuccess(loc);
+        });
       },
-      (error) => {
-        let errorMsg = 'Unable to detect location.';
-        switch (error.code) {
-          case error.PERMISSION_DENIED:
-            errorMsg = 'Location permission denied. Please enable location access in browser settings.';
-            break;
-          case error.POSITION_UNAVAILABLE:
-            errorMsg = 'Location information is unavailable. Please try again.';
-            break;
-          case error.TIMEOUT:
-            errorMsg = 'Location request timed out. Please try again.';
-            break;
-          default:
-            errorMsg = 'Unable to detect location. Please check your permissions.';
+      (highAccError) => {
+        if (highAccError.code === highAccError.PERMISSION_DENIED) {
+          void tryServerNetworkFallback(true);
+          return;
         }
-        setLocationError(errorMsg);
-        setLocating(false);
+        // Fallback to standard network/Wi-Fi geolocation (works much better on desktops/laptops)
+        navigator.geolocation.getCurrentPosition(
+          (position) => {
+            finalizeSuccess({
+              lat: position.coords.latitude,
+              lng: position.coords.longitude,
+            });
+          },
+          () => {
+            void tryServerNetworkFallback(false);
+          },
+          { enableHighAccuracy: false, timeout: 6000, maximumAge: 300000 }
+        );
       },
-      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 }
+      { enableHighAccuracy: true, timeout: 4500, maximumAge: 60000 }
     );
-
-    setWatchId(id);
   };
 
   useEffect(() => {
@@ -242,11 +354,13 @@ export default function MapPage() {
   // STRICT RULE: Only executed when user explicitly clicks "Calculate Route"! NEVER AUTOMATICALLY!
   const executeRouteCalculation = async (
     originLoc: { lat: number; lng: number },
-    destBeach: BeachRecord
+    destBeach: BeachRecord,
+    modeOverride?: 'car' | 'motorcycle' | 'commute' | 'walking'
   ) => {
     const coordinates = getValidBeachCoordinates(destBeach.latitude, destBeach.longitude);
     if (!coordinates) {
       setLocationError('This beach does not have verified map coordinates yet.');
+      setRoutingLoading(false);
       return;
     }
 
@@ -260,7 +374,7 @@ export default function MapPage() {
         body: JSON.stringify({
           origin: originLoc,
           destination: { lat: coordinates.latitude, lng: coordinates.longitude },
-          travelMode,
+          travelMode: modeOverride || travelMode,
         }),
       });
 
@@ -271,6 +385,11 @@ export default function MapPage() {
       const data: RouteResult = await res.json();
       setRouteData(data);
       setRouteActive(true);
+      setMapCamera({
+        center: [coordinates.latitude, coordinates.longitude],
+        zoom: 15,
+        flyToKey: Date.now(),
+      });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Route calculation failed.';
       setLocationError(msg);
@@ -288,11 +407,17 @@ export default function MapPage() {
     }
 
     if (userLocation) {
-      executeRouteCalculation(userLocation, selectedBeach);
+      void executeRouteCalculation(userLocation, selectedBeach);
     } else {
-      handleLocateMe((loc) => {
-        executeRouteCalculation(loc, selectedBeach);
-      });
+      setRoutingLoading(true);
+      handleLocateMe(
+        (loc) => {
+          void executeRouteCalculation(loc, selectedBeach);
+        },
+        () => {
+          setRoutingLoading(false);
+        }
+      );
     }
   };
 
@@ -333,19 +458,18 @@ export default function MapPage() {
     <div className="relative w-full h-[calc(100vh-64px)] sm:h-[calc(100vh-72px)] overflow-hidden flex flex-col bg-slate-100 dark:bg-black">
       {/* 1. TOP FLOATING SEARCH & ACTION BAR (OBLONG / ROUNDED-FULL, Shifts smoothly on desktop when Sidebar docks) */}
       <div className={`absolute top-3 sm:top-4 left-3 right-3 transition-all duration-300 ${selectedBeach && !routeActive ? 'sm:left-[445px]' : 'sm:left-6'} sm:right-6 z-30 pointer-events-none`}>
-        <div className="max-w-2xl mx-auto flex items-center gap-2">
+        <div className="max-w-3xl mx-auto flex flex-wrap sm:flex-nowrap items-center gap-2">
           {/* Oblong Search Input Box */}
-          <div className="relative flex-1 pointer-events-auto bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md rounded-full shadow-md border border-slate-200 dark:border-neutral-800 flex items-center px-4 py-2.5">
+          <div className="relative flex-1 min-w-[200px] pointer-events-auto bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md rounded-full shadow-md border border-slate-200 dark:border-neutral-800 flex items-center px-4 py-2.5">
             <Search className="w-4 h-4 text-[#1F3F74] dark:text-[#4987BA] mr-2.5 flex-shrink-0" />
             <input
               type="text"
               value={searchQuery}
               onChange={(e) => {
                 setSelectedBeach(null);
-                setSearchMapCenter(null);
                 setSearchQuery(e.target.value);
               }}
-              placeholder="Search beaches or resorts..."
+              placeholder="Search beaches, resorts, or places..."
               className="w-full bg-transparent text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 placeholder:italic focus:outline-none"
             />
             {searchQuery && (
@@ -360,10 +484,29 @@ export default function MapPage() {
             )}
           </div>
 
+          {/* Go Back to Binongkalan Button */}
+          <button
+            type="button"
+            onClick={handleGoBackToBinongkalan}
+            className="pointer-events-auto inline-flex items-center gap-1.5 px-4 py-2.5 bg-white/95 hover:bg-slate-100 dark:bg-neutral-900/95 dark:hover:bg-neutral-800 text-[#1F3F74] dark:text-[#38BDF8] border border-slate-200 dark:border-neutral-800 text-xs font-bold rounded-full shadow-md transition-colors flex-shrink-0 cursor-pointer"
+            title="Go back to Barangay Binongkalan"
+          >
+            <MapPin className="w-3.5 h-3.5" />
+            <span>Go back to Binongkalan</span>
+          </button>
+
           {/* Oblong Locate Me (GPS) Button */}
           <button
             type="button"
-            onClick={() => handleLocateMe()}
+            onClick={() =>
+              handleLocateMe((loc) => {
+                setMapCamera({
+                  center: [loc.lat, loc.lng],
+                  zoom: 15,
+                  flyToKey: Date.now(),
+                });
+              })
+            }
             disabled={locating}
             className="pointer-events-auto inline-flex items-center gap-2 px-5 py-2.5 bg-[#1F3F74] hover:bg-[#285091] dark:bg-[#1F3F74] dark:hover:bg-[#285091] disabled:opacity-50 text-white text-xs font-bold rounded-full shadow-md transition-colors flex-shrink-0 cursor-pointer"
             title="Detect Current GPS Location"
@@ -398,7 +541,7 @@ export default function MapPage() {
                   <button
                     key={beach.id}
                     type="button"
-                    onClick={() => setSelectedBeach(beach)}
+                    onClick={() => handleSelectBeachOnMap(beach)}
                     className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-neutral-800"
                   >
                     <span className="min-w-0">
@@ -497,15 +640,20 @@ export default function MapPage() {
         <MapView
           beaches={filteredBeaches}
           userLocation={userLocation}
-          onSelectBeach={(b) => setSelectedBeach(b)}
+          onUpdateUserLocation={(newLoc) => {
+            setUserLocation(newLoc);
+            if (routeActive && selectedBeach) {
+              void executeRouteCalculation(newLoc, selectedBeach);
+            }
+          }}
+          onSelectBeach={(b) => handleSelectBeachOnMap(b)}
           selectedBeachId={selectedBeach?.id}
           routeActive={routeActive}
           routeCoordinates={routeData?.coordinates || null}
           travelMode={travelMode}
-          center={selectedBeachCoordinates
-            ? [selectedBeachCoordinates.latitude, selectedBeachCoordinates.longitude]
-            : searchMapCenter || [10.6348, 124.0275]}
-          zoom={selectedBeachCoordinates ? 16 : 15}
+          center={mapCamera.center}
+          zoom={mapCamera.zoom}
+          flyToKey={mapCamera.flyToKey}
         />
       </div>
 
