@@ -124,7 +124,7 @@ export default function ResetPasswordPage() {
               <Link href="/" className="inline-block transition-transform hover:scale-105 mb-3.5">
                 <div className="relative w-16 h-16 flex items-center justify-center">
                   <Image
-                    src="/images/logo.png"
+                    src="/logo.png"
                     alt="Dagat Ta Bai Logo"
                     width={64}
                     height={64}

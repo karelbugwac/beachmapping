@@ -208,7 +208,7 @@ export function Navbar() {
           >
             <div className="relative w-9 h-9 sm:w-10 sm:h-10 transition-transform duration-200 group-hover:scale-105">
               <Image
-                src="/images/logo.png"
+                src="/logo.png"
                 alt="Dagat Ta Bai Logo"
                 fill
                 sizes="(max-width: 640px) 36px, 40px"

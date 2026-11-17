@@ -1,7 +1,6 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Calendar, BarChart3 } from 'lucide-react';
+import { CoastalTides } from '@/components/ui/coastal-icons';
 
 export interface AnalyticsPoint {
   date: string;
@@ -15,8 +14,6 @@ export function AnalyticsBarChart({
   title: string;
   points: AnalyticsPoint[];
 }) {
-  const [hoveredIndex, setHoveredIndex] = useState<number | null>(null);
-
   const peak = Math.max(1, ...points.map((point) => point.visitors));
   const total = points.reduce((sum, point) => sum + point.visitors, 0);
   const avg = Math.round(total / Math.max(1, points.length));
@@ -33,34 +30,32 @@ export function AnalyticsBarChart({
 
   return (
     <section aria-label={title} className="space-y-6">
-      {/* Chart Header with Metrics Overview */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-white font-sans">
-            {title}
-          </h2>
-          <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
-            Daily visitor activity.
-          </p>
+        <div className="flex items-center gap-2">
+          <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-sky-50 text-sky-700 dark:bg-sky-950/40 dark:text-sky-300">
+            <CoastalTides size={20} />
+          </span>
+          <div>
+            <h2 className="text-base sm:text-lg font-bold text-slate-900 dark:text-white font-sans">
+              {title}
+            </h2>
+            <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
+              Daily visitor activity.
+            </p>
+          </div>
         </div>
 
-        {/* Legend-style Pills */}
-        <div className="flex flex-wrap items-center gap-3 text-xs">
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-[#1F3F74] dark:bg-[#38BDF8]" />
-            <span className="text-slate-600 dark:text-neutral-400">Peak Day</span>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-slate-400 dark:bg-neutral-600" />
-            <span className="text-slate-600 dark:text-neutral-400">Regular Day</span>
-          </div>
+        <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-xs">
+          <span className="inline-flex items-center gap-1.5 font-semibold text-slate-700 dark:text-neutral-300">
+            {total.toLocaleString()} visits
+          </span>
+          <span className="text-slate-600 dark:text-neutral-400">Avg. {avg} / day</span>
+          <span className="text-slate-600 dark:text-neutral-400">Peak: {peakDayName}</span>
         </div>
       </div>
 
-      {/* Chart Canvas with Enhanced Grid Lines */}
-      <div className="relative pt-8 pb-4 bg-gradient-to-b from-slate-50/50 to-transparent dark:from-neutral-900/30 rounded-2xl">
-        {/* Enhanced Horizontal Grid Lines */}
-        <div className="absolute inset-0 top-8 bottom-12 flex flex-col justify-between pointer-events-none">
+      <div className="relative border-b border-slate-200 pb-2 pt-6 dark:border-neutral-800">
+        <div className="absolute inset-0 top-6 bottom-10 flex flex-col justify-between pointer-events-none">
           <div className="border-b border-slate-200 dark:border-neutral-800 w-full" />
           <div className="border-b border-slate-200 dark:border-neutral-800 w-full" />
           <div className="border-b border-slate-300 dark:border-neutral-700 w-full" />
@@ -75,56 +70,41 @@ export function AnalyticsBarChart({
             const label = new Intl.DateTimeFormat('en', { weekday: 'short' }).format(day);
             const formattedDate = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(day);
             const height = point.visitors === 0 ? 4 : Math.max(12, (point.visitors / peak) * 100);
-            const isHovered = hoveredIndex === index;
             const isPeak = point.visitors === peak;
 
             return (
               <li
                 key={point.date}
-                className="relative flex h-full min-w-0 flex-col items-center justify-end gap-2 group cursor-pointer"
-                onMouseEnter={() => setHoveredIndex(index)}
-                onMouseLeave={() => setHoveredIndex(null)}
+                className="relative flex h-full min-w-0 flex-col items-center justify-end gap-2"
               >
-                {/* Floating Tooltip */}
-                {isHovered && (
-                  <div className="absolute -top-12 z-20 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#1F3F74] to-[#4987BA] text-white text-[11px] font-bold shadow-xl whitespace-nowrap animate-in fade-in slide-in-from-bottom-2 duration-200">
-                    {point.visitors} visit{point.visitors !== 1 ? 's' : ''} &bull; {formattedDate}
-                  </div>
-                )}
-
-                {/* Number above bar */}
-                <span className={`text-[11px] tabular-nums font-bold transition-all duration-200 ${
-                  isHovered || isPeak
-                    ? 'text-[#1F3F74] dark:text-[#4987BA] scale-110'
+                <span className={`text-[11px] tabular-nums font-bold ${
+                  isPeak
+                    ? 'text-brand-700 dark:text-sky-300'
                     : 'text-slate-500 dark:text-neutral-400'
                 }`}>
                   {point.visitors}
                 </span>
 
-                {/* Enhanced Bar with Gradient and Glow */}
                 <div
-                  className={`w-full max-w-14 rounded-t-2xl transition-all duration-300 ease-out ${
-                    isHovered
-                      ? 'bg-gradient-to-t from-[#1F3F74] via-[#2a5a9a] to-sky-400 shadow-lg shadow-[#1F3F74]/20 scale-y-105'
-                      : isPeak
-                      ? 'bg-gradient-to-t from-[#1F3F74] via-[#2a5a9a] to-[#4987BA] shadow-md shadow-[#1F3F74]/15'
-                      : 'bg-gradient-to-t from-slate-400 via-slate-300 to-slate-200 dark:from-neutral-600 dark:via-neutral-500 dark:to-neutral-400 opacity-70 group-hover:opacity-90'
+                  className={`w-full max-w-14 ${
+                    isPeak
+                      ? 'bg-brand-700'
+                      : 'bg-slate-400 dark:bg-neutral-600'
                   }`}
                   style={{ height: `${height}%` }}
                   role="img"
                   aria-label={`${label}: ${point.visitors} visitors`}
                 />
 
-                {/* Day Label */}
                 <div className="text-center pt-1.5">
-                  <span className={`text-xs font-bold block transition-colors ${
-                    isHovered || isPeak
-                      ? 'text-[#1F3F74] dark:text-[#4987BA]'
+                  <span className={`text-xs font-bold block ${
+                    isPeak
+                      ? 'text-brand-700 dark:text-sky-300'
                       : 'text-slate-600 dark:text-neutral-400'
                   }`}>
                     {label}
                   </span>
-                  <span className="text-[9.5px] text-slate-400 dark:text-neutral-500 block">
+                  <span className="text-[10px] text-slate-500 dark:text-neutral-400 block">
                     {formattedDate.split(' ')[1]}
                   </span>
                 </div>

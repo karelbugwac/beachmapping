@@ -4,6 +4,7 @@ import React, { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { showToast } from '@/components/ui/feedback-toasts';
 import { notifyRealtimeSync, useRealtimeSync } from '@/lib/realtime-sync';
+import { getApplicationNotesDisplay } from '@/lib/utils/application-review-notes';
 import {
   ChevronLeft,
   Camera,
@@ -75,6 +76,10 @@ export default function AdminApplicationDetailPage({
     setDocumentMessage(`${label} is not linked to a viewable file.`);
   };
 
+  const notesDisplay = application
+    ? getApplicationNotesDisplay(status, application.rejection_reason)
+    : null;
+
   const fetchDetail = async (silent = false) => {
     if (!silent) setLoading(true);
     try {
@@ -83,8 +88,10 @@ export default function AdminApplicationDetailPage({
       if (res.ok && data.application) {
         setApplication(data.application);
         setStatus(data.application.status || 'pending');
-        if (data.application.rejection_reason) {
-          setAdminNotes(data.application.rejection_reason);
+        if (!silent) {
+          setAdminNotes(
+            data.application.status === 'pending' ? '' : data.application.rejection_reason || ''
+          );
         }
       }
     } catch (err) {
@@ -112,8 +119,6 @@ export default function AdminApplicationDetailPage({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'approve',
-          applicant_email: application.applicant_email,
-          applicant_name: application.applicant_full_name || application.applicant_name || 'Beach Owner',
         }),
       });
 
@@ -132,6 +137,12 @@ export default function AdminApplicationDetailPage({
 
   const handleReject = async () => {
     if (!application) return;
+    const reason = adminNotes.trim();
+    if (!reason) {
+      showToast('Add a rejection reason in Notes before rejecting.', 'error');
+      return;
+    }
+
     setSubmitting(true);
 
     try {
@@ -140,9 +151,7 @@ export default function AdminApplicationDetailPage({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'reject',
-          applicant_email: application.applicant_email,
-          applicant_name: application.applicant_full_name || application.applicant_name || 'Beach Owner',
-          rejection_reason: adminNotes || 'Incomplete business permits or permit mismatch.',
+          rejection_reason: reason,
         }),
       });
 
@@ -150,6 +159,9 @@ export default function AdminApplicationDetailPage({
       if (!res.ok) throw new Error(data.error || 'Failed to reject application');
 
       setStatus('rejected');
+      setApplication((current) =>
+        current ? { ...current, rejection_reason: reason } : current
+      );
       notifyRealtimeSync('applications');
       showToast('Application rejected.', 'error');
     } catch (err: unknown) {
@@ -338,7 +350,7 @@ export default function AdminApplicationDetailPage({
                 type="button"
                 onClick={() =>
                   openDocument(
-                    application.live_selfie_url || application.live_selfie_path || '/images/logo.png',
+                    application.live_selfie_url || application.live_selfie_path || '/logo.png',
                     'ID / Selfie'
                   )
                 }
@@ -357,20 +369,37 @@ export default function AdminApplicationDetailPage({
             </div>
           </div>
 
-          {/* Notes */}
-          <div className="space-y-1.5">
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Notes
-            </label>
-            <textarea
-              rows={2}
-              value={adminNotes}
-              onChange={(e) => setAdminNotes(e.target.value)}
-              disabled={status !== 'pending'}
-              placeholder="Optional notes or rejection reason..."
-              className="w-full px-4 py-2.5 text-xs rounded-2xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1F3F74] dark:focus:ring-sky-500 disabled:bg-slate-50 dark:disabled:bg-neutral-800/50 disabled:text-slate-400"
-            />
-          </div>
+          {notesDisplay?.kind === 'input' && (
+            <div className="space-y-1.5">
+              <label
+                htmlFor="application-rejection-reason"
+                className="block text-xs font-semibold text-slate-700 dark:text-neutral-300"
+              >
+                Rejection reason <span className="text-rose-700 dark:text-rose-300">(required)</span>
+              </label>
+              <textarea
+                id="application-rejection-reason"
+                rows={3}
+                value={adminNotes}
+                onChange={(e) => setAdminNotes(e.target.value)}
+                required
+                aria-required="true"
+                placeholder="Explain what needs to be corrected."
+                className="min-h-24 w-full border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20 dark:border-neutral-700 dark:bg-black dark:text-white"
+              />
+            </div>
+          )}
+
+          {notesDisplay?.kind === 'reason' && (
+            <div className="border-l-2 border-rose-600 bg-rose-50 px-4 py-3 dark:border-rose-400 dark:bg-rose-950/30">
+              <h2 className="text-xs font-semibold text-rose-900 dark:text-rose-200">
+                Rejection reason
+              </h2>
+              <p className="mt-1 whitespace-pre-wrap text-sm text-rose-800 dark:text-rose-300">
+                {notesDisplay.reason}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Footer Actions */}
@@ -379,9 +408,9 @@ export default function AdminApplicationDetailPage({
             {status === 'pending' && (
               <button
                 type="button"
-                disabled={submitting}
+                disabled={submitting || !adminNotes.trim()}
                 onClick={handleReject}
-                className="px-5 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-bold text-xs rounded-full transition-colors shadow-xs cursor-pointer"
+                className="px-5 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs rounded-full transition-colors shadow-xs cursor-pointer"
               >
                 Reject
               </button>

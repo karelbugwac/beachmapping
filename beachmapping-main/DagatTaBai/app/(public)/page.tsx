@@ -291,7 +291,7 @@ export default function HomePage() {
                       <div className="space-y-3.5">
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#edf3fa] text-sm font-bold text-[#1F3F74] dark:bg-blue-950/60 dark:text-[#9fc8ee]">
+                            <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#edf3fa] text-sm font-bold text-[#1F3F74] dark:bg-blue-950/60 dark:text-sky-300">
                               <span>{item.user_name?.trim().charAt(0).toUpperCase() || 'U'}</span>
                               {item.profile_image_url ? (
                                 // eslint-disable-next-line @next/next/no-img-element

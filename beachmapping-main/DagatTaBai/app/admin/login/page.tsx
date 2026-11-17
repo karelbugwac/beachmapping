@@ -156,7 +156,7 @@ export default function AdminLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center px-4 py-8 bg-[#f8fafc] dark:bg-black transition-colors duration-200 font-sans">
+    <div className="admin-console min-h-screen flex flex-col justify-center items-center px-4 py-8 bg-[#f8fafc] dark:bg-black transition-colors duration-200 font-sans">
       {/* ── Top Page Loader Line Indicator ── */}
       {loading && (
         <div className="fixed top-0 left-0 right-0 h-1 bg-[#1F3F74] dark:bg-[#4987BA] z-[400] animate-pulse overflow-hidden">
@@ -171,7 +171,7 @@ export default function AdminLoginPage() {
           <Link href="/" className="inline-block transition-transform hover:scale-105 mb-4">
             <div className="relative w-16 h-16 flex items-center justify-center">
               <Image
-                src="/images/logo.png"
+                src="/logo.png"
                 alt="Dagat Ta Bai Logo"
                 width={64}
                 height={64}
@@ -204,6 +204,7 @@ export default function AdminLoginPage() {
                   maxLength={1}
                   required
                   value={digit}
+                  aria-label={`PIN digit ${i + 1}`}
                   onChange={(e) => handleDigitChange(i, e.target.value)}
                   onKeyDown={(e) => handleDigitKeyDown(i, e)}
                   onPaste={handleDigitPaste}

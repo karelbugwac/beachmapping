@@ -6,11 +6,7 @@ import {
   Eye,
   Loader2,
   Search,
-  Filter,
-  ChevronDown,
   RefreshCw,
-  Clock,
-  CheckCircle2,
   XCircle,
   Camera,
   ZoomIn,
@@ -20,7 +16,9 @@ import {
   Palmtree,
 } from 'lucide-react';
 import { showToast } from '@/components/ui/feedback-toasts';
+import { CoastalEmptyState } from '@/components/ui/coastal-empty-state';
 import { notifyRealtimeSync, useRealtimeSync } from '@/lib/realtime-sync';
+import { getApplicationNotesDisplay } from '@/lib/utils/application-review-notes';
 
 interface ApplicationItem {
   id: string;
@@ -46,6 +44,7 @@ interface ApplicationItem {
 export default function AdminApplicationsPage() {
   const [applications, setApplications] = useState<ApplicationItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
   const [refreshing, setRefreshing] = useState(false);
   const [statusFilter, setStatusFilter] = useState<'all' | 'pending' | 'approved' | 'rejected'>('all');
   const [searchQuery, setSearchQuery] = useState('');
@@ -59,16 +58,20 @@ export default function AdminApplicationsPage() {
   const [previewDocument, setPreviewDocument] = useState<{ url: string; title: string } | null>(null);
   const [zoomLevel, setZoomLevel] = useState(1);
 
-  const fetchApplications = async () => {
+  const fetchApplications = async (): Promise<boolean> => {
+    setLoading(true);
     try {
       const res = await fetch('/api/applications', { cache: 'no-store' });
-      if (!res.ok) return;
+      if (!res.ok) throw new Error('Failed to load applications.');
       const data = await res.json();
-      if (data?.applications && Array.isArray(data.applications)) {
-        setApplications(data.applications);
-      }
+      if (!Array.isArray(data?.applications)) throw new Error('Application response was invalid.');
+      setApplications(data.applications);
+      setLoadError(false);
+      return true;
     } catch (err) {
       console.error('Failed to fetch applications:', err);
+      setLoadError(true);
+      return false;
     } finally {
       setLoading(false);
     }
@@ -76,9 +79,12 @@ export default function AdminApplicationsPage() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchApplications();
+    const refreshed = await fetchApplications();
     setRefreshing(false);
-    showToast('Applications refreshed.');
+    showToast(
+      refreshed ? 'Applications refreshed.' : 'Applications could not be refreshed. Please try again.',
+      refreshed ? 'success' : 'error'
+    );
   };
 
   useEffect(() => {
@@ -112,10 +118,14 @@ export default function AdminApplicationsPage() {
     });
   }, [applications, statusFilter, searchQuery]);
 
+  const notesDisplay = selectedApp
+    ? getApplicationNotesDisplay(selectedApp.status, selectedApp.rejection_reason)
+    : null;
+
   // Open View Modal & load signed document URLs
   const handleOpenView = async (app: ApplicationItem) => {
     setSelectedApp(app);
-    setAdminNotes(app.rejection_reason || '');
+    setAdminNotes(app.status === 'pending' ? '' : app.rejection_reason || '');
     setDocumentMessage(null);
     setLoadingDetail(true);
 
@@ -124,7 +134,9 @@ export default function AdminApplicationsPage() {
       const data = await res.json();
       if (res.ok && data?.application) {
         setSelectedApp(data.application);
-        setAdminNotes(data.application.rejection_reason || '');
+        setAdminNotes(
+          data.application.status === 'pending' ? '' : data.application.rejection_reason || ''
+        );
       }
     } catch {
       // Keep initial row data if detail fetch fails
@@ -162,8 +174,6 @@ export default function AdminApplicationsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'approve',
-          applicant_email: selectedApp.applicant_email,
-          applicant_name: selectedApp.applicant_full_name || selectedApp.applicant_name || 'Beach Owner',
         }),
       });
       const data = await res.json();
@@ -184,16 +194,19 @@ export default function AdminApplicationsPage() {
 
   const handleReject = async () => {
     if (!selectedApp) return;
+    const reason = adminNotes.trim();
+    if (!reason) {
+      showToast('Add a rejection reason in Notes before rejecting.', 'error');
+      return;
+    }
+
     setSubmitting(true);
     try {
-      const reason = adminNotes.trim() || 'Incomplete business permits or permit mismatch.';
       const res = await fetch(`/api/admin/applications/${selectedApp.id}/review`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'reject',
-          applicant_email: selectedApp.applicant_email,
-          applicant_name: selectedApp.applicant_full_name || selectedApp.applicant_name || 'Beach Owner',
           rejection_reason: reason,
         }),
       });
@@ -235,7 +248,7 @@ export default function AdminApplicationsPage() {
             type="button"
             onClick={handleRefresh}
             disabled={refreshing}
-            className="inline-flex items-center gap-2 px-4 py-2 rounded-full border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-xs font-bold text-slate-700 dark:text-neutral-200 hover:border-[#1F3F74] dark:hover:border-[#4987BA] transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+            className="inline-flex min-h-11 items-center gap-2 border border-slate-200 bg-white px-4 py-2 text-xs font-bold text-slate-700 transition-colors hover:border-brand-600 active:bg-slate-100 disabled:opacity-50 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:border-sky-400"
             title="Refresh applications"
           >
             <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin text-sky-600' : 'text-slate-500 dark:text-neutral-400'}`} />
@@ -244,155 +257,113 @@ export default function AdminApplicationsPage() {
         </div>
       </div>
 
-      {/* KPI Cards Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <button
-          type="button"
-          onClick={() => setStatusFilter('all')}
-          className={`p-5 rounded-3xl bg-white dark:bg-neutral-900 border text-left shadow-xs transition-all cursor-pointer ${
-            statusFilter === 'all'
-              ? 'border-[#1F3F74] dark:border-[#4987BA] ring-2 ring-[#1F3F74]/15'
-              : 'border-slate-200 dark:border-neutral-800 hover:border-[#1F3F74]'
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 dark:text-neutral-400">
-              Total
-            </span>
-            <FileText className="w-4 h-4 text-[#1F3F74] dark:text-[#4987BA]" strokeWidth={2.2} />
-          </div>
-          <div className="mt-3 text-3xl font-black text-[#1F3F74] dark:text-white leading-none">
-            {loading ? '...' : stats.total}
-          </div>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setStatusFilter(statusFilter === 'pending' ? 'all' : 'pending')}
-          className={`p-5 rounded-3xl bg-white dark:bg-neutral-900 border text-left shadow-xs transition-all cursor-pointer ${
-            statusFilter === 'pending'
-              ? 'border-yellow-500 ring-2 ring-yellow-500/15'
-              : 'border-slate-200 dark:border-neutral-800 hover:border-yellow-500'
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 dark:text-neutral-400">
-              Pending
-            </span>
-            <Clock className="w-4 h-4 text-yellow-500" strokeWidth={2.2} />
-          </div>
-          <div className="mt-3 text-3xl font-black text-yellow-500 dark:text-yellow-400 leading-none">
-            {loading ? '...' : stats.pending}
-          </div>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setStatusFilter(statusFilter === 'approved' ? 'all' : 'approved')}
-          className={`p-5 rounded-3xl bg-white dark:bg-neutral-900 border text-left shadow-xs transition-all cursor-pointer ${
-            statusFilter === 'approved'
-              ? 'border-emerald-500 ring-2 ring-emerald-500/15'
-              : 'border-slate-200 dark:border-neutral-800 hover:border-emerald-500'
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 dark:text-neutral-400">
-              Approved
-            </span>
-            <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" strokeWidth={2.2} />
-          </div>
-          <div className="mt-3 text-3xl font-black text-emerald-600 dark:text-emerald-400 leading-none">
-            {loading ? '...' : stats.approved}
-          </div>
-        </button>
-
-        <button
-          type="button"
-          onClick={() => setStatusFilter(statusFilter === 'rejected' ? 'all' : 'rejected')}
-          className={`p-5 rounded-3xl bg-white dark:bg-neutral-900 border text-left shadow-xs transition-all cursor-pointer ${
-            statusFilter === 'rejected'
-              ? 'border-rose-500 ring-2 ring-rose-500/15'
-              : 'border-slate-200 dark:border-neutral-800 hover:border-rose-500'
-          }`}
-        >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-bold text-slate-500 dark:text-neutral-400">
-              Rejected
-            </span>
-            <XCircle className="w-4 h-4 text-rose-600 dark:text-rose-400" strokeWidth={2.2} />
-          </div>
-          <div className="mt-3 text-3xl font-black text-rose-600 dark:text-rose-400 leading-none">
-            {loading ? '...' : stats.rejected}
-          </div>
-        </button>
-      </div>
-
-      {/* Search Bar and Filter Dropdown */}
+      {/* Search */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" aria-hidden="true" />
           <input
             type="text"
             placeholder="Search applicant or beach..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-10 pr-4 py-2.5 rounded-full border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-[#1F3F74] dark:focus:ring-sky-500 placeholder:text-slate-400 shadow-2xs"
+            aria-label="Search owner applications"
+            className="min-h-11 w-full border border-slate-200 bg-white pl-10 pr-4 text-sm text-slate-900 placeholder:text-slate-400 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20 dark:border-neutral-800 dark:bg-neutral-900 dark:text-white"
           />
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <div className="relative flex-1 sm:flex-initial sm:w-48">
-            <Filter className="absolute left-3.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-slate-400 pointer-events-none" />
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value as any)}
-              aria-label="Filter applications by status"
-              className="w-full appearance-none pl-9 pr-9 py-2.5 rounded-full border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-800 dark:text-white text-xs font-bold focus:outline-none focus:ring-2 focus:ring-[#1F3F74] dark:focus:ring-sky-500 cursor-pointer shadow-2xs"
-            >
-              <option value="all">All Statuses</option>
-              <option value="pending">Pending</option>
-              <option value="approved">Approved</option>
-              <option value="rejected">Rejected</option>
-            </select>
-            <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
-          </div>
+        {(searchQuery || statusFilter !== 'all') && (
+          <button
+            type="button"
+            onClick={() => {
+              setSearchQuery('');
+              setStatusFilter('all');
+            }}
+            className="min-h-11 border border-slate-200 px-4 text-xs font-bold text-slate-700 transition-colors hover:bg-slate-100 active:bg-slate-200 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800"
+          >
+            Reset filters
+          </button>
+        )}
+      </div>
 
-          {(searchQuery || statusFilter !== 'all') && (
-            <button
-              type="button"
-              onClick={() => {
-                setSearchQuery('');
-                setStatusFilter('all');
-              }}
-              className="px-3.5 py-2.5 text-xs font-bold text-rose-600 hover:text-rose-700 dark:text-rose-400 bg-rose-50/80 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-950/50 rounded-full transition-colors cursor-pointer whitespace-nowrap"
-            >
-              Reset
-            </button>
-          )}
-        </div>
+      <div
+        role="group"
+        aria-label="Filter applications by status"
+        className="grid grid-cols-2 border-y border-slate-200 bg-white dark:border-neutral-800 dark:bg-neutral-900 sm:grid-cols-4"
+      >
+        {([
+          ['all', 'All', stats.total],
+          ['pending', 'Pending', stats.pending],
+          ['approved', 'Approved', stats.approved],
+          ['rejected', 'Rejected', stats.rejected],
+        ] as const).map(([status, label, count]) => (
+          <button
+            key={status}
+            type="button"
+            onClick={() => setStatusFilter(status)}
+            aria-pressed={statusFilter === status}
+            className={`flex min-h-14 items-center justify-between gap-3 border-b border-l-2 border-l-transparent border-slate-200 px-4 text-left text-sm transition-colors last:border-b-0 hover:bg-slate-50 active:bg-slate-100 dark:border-neutral-800 dark:hover:bg-neutral-800 dark:active:bg-neutral-700 sm:border-b-0 sm:border-r sm:last:border-r-0 ${
+              statusFilter === status
+                ? 'border-l-brand-600 bg-slate-50 font-semibold text-brand-700 dark:bg-neutral-800 dark:text-sky-300'
+                : 'text-slate-600 dark:text-neutral-300'
+            }`}
+          >
+            <span>{label}</span>
+            <span className="tabular-nums text-slate-500 dark:text-neutral-400">
+              {loading ? '...' : count}
+            </span>
+          </button>
+        ))}
       </div>
 
       {/* Main List Table */}
-      <div className="bg-white dark:bg-neutral-900 rounded-3xl border border-slate-200 dark:border-neutral-800 shadow-xs overflow-hidden">
-        {loading && applications.length === 0 ? (
-          <div className="py-20 text-center">
+      <div className="border border-slate-200 bg-white dark:border-neutral-800 dark:bg-neutral-900">
+        {loadError && applications.length === 0 ? (
+          <div className="py-12">
+            <CoastalEmptyState
+              variant="error"
+              title="Applications are unavailable"
+              description="The application list could not be loaded. Try again."
+              action={
+                <button
+                  type="button"
+                  onClick={() => void fetchApplications()}
+                  disabled={loading}
+                  className="min-h-11 border border-brand-600 px-4 text-sm font-semibold text-brand-700 transition-colors hover:bg-slate-100 active:bg-slate-200 disabled:opacity-60 dark:text-sky-300 dark:hover:bg-neutral-800"
+                >
+                  {loading ? 'Retrying...' : 'Retry'}
+                </button>
+              }
+            />
+          </div>
+        ) : loading && applications.length === 0 ? (
+          <div className="py-20 text-center" role="status" aria-label="Loading applications">
             <Loader2 className="w-7 h-7 animate-spin mx-auto text-[#1F3F74] dark:text-[#4987BA]" />
+            <p className="mt-3 text-sm text-slate-600 dark:text-neutral-400">Loading applications...</p>
           </div>
         ) : filteredApplications.length === 0 ? (
-          <div className="py-20 text-center text-slate-400 space-y-2">
-            <FileText className="w-9 h-9 mx-auto text-slate-300 dark:text-neutral-700" />
-            <p className="text-sm font-bold text-[#1F3F74] dark:text-[#4987BA]">No applications found</p>
+          <div className="py-12">
+            <CoastalEmptyState
+              title="No applications found"
+              description="Try adjusting the filters or check back when new owner applications arrive."
+            />
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full min-w-[880px] table-fixed text-xs">
+              <colgroup>
+                <col className="w-[34%]" />
+                <col className="w-[26%]" />
+                <col className="w-[14%]" />
+                <col className="w-[16%]" />
+                <col className="w-[10%]" />
+              </colgroup>
               <thead className="bg-slate-50/80 dark:bg-black/40 border-b border-slate-200 dark:border-neutral-800 text-slate-500 dark:text-neutral-400 uppercase tracking-wider font-bold text-[11px]">
                 <tr>
-                  <th className="py-4 px-6">Applicant</th>
-                  <th className="py-4 px-6 whitespace-nowrap">Beach</th>
-                  <th className="py-4 px-6 whitespace-nowrap">Status</th>
-                  <th className="py-4 px-6 whitespace-nowrap">Date</th>
-                  <th className="py-4 px-6 text-right whitespace-nowrap">Actions</th>
+                  <th scope="col" className="py-4 px-6">Applicant</th>
+                  <th scope="col" className="py-4 px-6">Beach</th>
+                  <th scope="col" className="py-4 px-6 text-center">Status</th>
+                  <th scope="col" className="py-4 px-6 text-center">Date</th>
+                  <th scope="col" className="py-4 px-6 text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-neutral-800/80 text-slate-700 dark:text-neutral-300">
@@ -426,7 +397,7 @@ export default function AdminApplicationsPage() {
                       </span>
                     </td>
 
-                    <td className="py-4 px-6 whitespace-nowrap">
+                    <td className="py-4 px-6 text-center whitespace-nowrap">
                       <span
                         className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold capitalize ${
                           app.status === 'approved'
@@ -449,7 +420,7 @@ export default function AdminApplicationsPage() {
                       </span>
                     </td>
 
-                    <td className="py-4 px-6 whitespace-nowrap text-slate-500 dark:text-neutral-400 font-medium">
+                    <td className="py-4 px-6 text-center whitespace-nowrap text-slate-500 dark:text-neutral-400 font-medium tabular-nums">
                       {new Date(app.created_at).toLocaleDateString(undefined, {
                         year: 'numeric',
                         month: 'short',
@@ -461,7 +432,7 @@ export default function AdminApplicationsPage() {
                       <button
                         type="button"
                         onClick={() => void handleOpenView(app)}
-                        className="inline-flex items-center gap-1.5 px-4 py-2 bg-[#1F3F74] hover:bg-[#183460] text-white dark:bg-sky-600 dark:hover:bg-sky-500 rounded-full font-bold text-xs transition-all shadow-xs cursor-pointer"
+                        className="inline-flex min-h-11 items-center gap-1.5 bg-[#1F3F74] px-4 py-2 text-white transition-colors hover:bg-[#153651] active:bg-[#102b40] dark:bg-sky-700 dark:hover:bg-sky-600"
                       >
                         <Eye className="w-3.5 h-3.5" />
                         <span>View</span>
@@ -643,7 +614,7 @@ export default function AdminApplicationsPage() {
                     type="button"
                     onClick={() =>
                       openDocument(
-                        selectedApp.live_selfie_url || selectedApp.live_selfie_path || '/images/logo.png',
+                        selectedApp.live_selfie_url || selectedApp.live_selfie_path || '/logo.png',
                         'ID / Selfie'
                       )
                     }
@@ -662,20 +633,37 @@ export default function AdminApplicationsPage() {
                 </div>
               </div>
 
-              {/* Notes */}
-              <div className="space-y-1.5">
-                <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  Notes
-                </label>
-                <textarea
-                  rows={2}
-                  value={adminNotes}
-                  onChange={(e) => setAdminNotes(e.target.value)}
-                  disabled={selectedApp.status !== 'pending'}
-                  placeholder="Optional notes or rejection reason..."
-                  className="w-full px-4 py-2.5 text-xs rounded-2xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1F3F74] dark:focus:ring-sky-500 disabled:bg-slate-50 dark:disabled:bg-neutral-800/50 disabled:text-slate-400"
-                />
-              </div>
+              {notesDisplay?.kind === 'input' && (
+                <div className="space-y-1.5">
+                  <label
+                    htmlFor="application-rejection-reason"
+                    className="block text-xs font-semibold text-slate-700 dark:text-neutral-300"
+                  >
+                    Rejection reason <span className="text-rose-700 dark:text-rose-300">(required)</span>
+                  </label>
+                  <textarea
+                    id="application-rejection-reason"
+                    rows={3}
+                    value={adminNotes}
+                    onChange={(e) => setAdminNotes(e.target.value)}
+                    required
+                    aria-required="true"
+                    placeholder="Explain what needs to be corrected."
+                    className="min-h-24 w-full border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20 dark:border-neutral-700 dark:bg-black dark:text-white"
+                  />
+                </div>
+              )}
+
+              {notesDisplay?.kind === 'reason' && (
+                <div className="border-l-2 border-rose-600 bg-rose-50 px-4 py-3 dark:border-rose-400 dark:bg-rose-950/30">
+                  <h4 className="text-xs font-semibold text-rose-900 dark:text-rose-200">
+                    Rejection reason
+                  </h4>
+                  <p className="mt-1 whitespace-pre-wrap text-sm text-rose-800 dark:text-rose-300">
+                    {notesDisplay.reason}
+                  </p>
+                </div>
+              )}
             </div>
 
             {/* Modal Footer Actions */}
@@ -691,9 +679,9 @@ export default function AdminApplicationsPage() {
               {selectedApp.status === 'pending' && (
                 <button
                   type="button"
-                  disabled={submitting}
+                  disabled={submitting || !adminNotes.trim()}
                   onClick={() => void handleReject()}
-                  className="px-5 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-bold text-xs rounded-full transition-colors shadow-xs cursor-pointer"
+                  className="px-5 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs rounded-full transition-colors shadow-xs cursor-pointer"
                 >
                   Reject
                 </button>
