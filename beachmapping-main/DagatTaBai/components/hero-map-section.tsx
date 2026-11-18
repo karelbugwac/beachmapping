@@ -5,21 +5,19 @@ import Link from 'next/link';
 import {
   Map,
 } from 'lucide-react';
+import { AdaptiveVideo } from '@/components/ui/adaptive-video';
 
 export function HeroMapSection() {
   return (
     <section className="relative w-full h-[80vh] sm:h-[85vh] lg:h-[90vh] min-h-[500px] overflow-hidden text-slate-900 dark:text-white transition-colors duration-200">
-      {/* Video Background */}
+      {/* Video Background with Adaptive HLS streaming and WebP poster */}
       <div className="absolute inset-0 z-0">
-        <video
-          src="/beach1.mp4"
-          preload="metadata"
-          autoPlay
-          muted
-          loop
-          playsInline
+        <AdaptiveVideo
+          hlsSrc="/videos/beach-hero/master.m3u8"
+          fallbackMp4="/beach1.mp4"
+          poster="/images/beach-hero-poster.webp"
           className="w-full h-full object-cover"
-          style={{ objectPosition: 'center center' }}
+          objectPosition="center center"
         />
         {/* Dark overlay for text readability */}
         <div className="absolute inset-0 bg-black/40 dark:bg-black/60" />

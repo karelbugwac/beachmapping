@@ -54,7 +54,7 @@ export default function HomePage() {
 
   const fetchSystemTestimonials = async () => {
     try {
-      const res = await fetch('/api/platform-feedback', { cache: 'no-store' });
+      const res = await fetch('/api/platform-feedback');
       if (res.ok) {
         const data = await res.json();
         if (Array.isArray(data)) {
@@ -81,24 +81,24 @@ export default function HomePage() {
       window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
     }
 
-    const checkShouldLoadTour = () => {
-      if (window.scrollY <= 120) return false;
-      const el = tourContainerRef.current;
-      if (!el) return false;
-      const rect = el.getBoundingClientRect();
-      return rect.top < window.innerHeight + 250 && rect.bottom > -250;
-    };
+    const el = tourContainerRef.current;
+    if (!el) return;
 
-    const onScroll = () => {
-      if (checkShouldLoadTour()) {
-        setLoadVirtualTour(true);
-      }
-    };
-
-    window.addEventListener('scroll', onScroll, { passive: true });
-    return () => {
-      window.removeEventListener('scroll', onScroll);
-    };
+    if ('IntersectionObserver' in window) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (entries[0]?.isIntersecting) {
+            setLoadVirtualTour(true);
+            observer.disconnect();
+          }
+        },
+        { rootMargin: '250px' }
+      );
+      observer.observe(el);
+      return () => observer.disconnect();
+    } else {
+      setLoadVirtualTour(true);
+    }
   }, []);
 
   useRealtimeSync(() => {
@@ -106,13 +106,21 @@ export default function HomePage() {
   });
 
   useEffect(() => {
+    if (!loadVirtualTour) return;
+
     const panoIframeName = 'tour-embeded';
     let rafId: number | null = null;
+    let lastPostTime = 0;
 
     const handleDeviceMotion = (e: DeviceMotionEvent) => {
+      const now = performance.now();
+      // Throttle to ~15fps (every 66ms) so postMessage does not block main thread
+      if (now - lastPostTime < 66) return;
       if (rafId !== null) return;
+
       rafId = window.requestAnimationFrame(() => {
         rafId = null;
+        lastPostTime = performance.now();
         const iframe = document.getElementById(panoIframeName) as HTMLIFrameElement | null;
         if (iframe && iframe.contentWindow) {
           iframe.contentWindow.postMessage(
@@ -149,7 +157,7 @@ export default function HomePage() {
       if (rafId !== null) window.cancelAnimationFrame(rafId);
       window.removeEventListener('devicemotion', handleDeviceMotion);
     };
-  }, []);
+  }, [loadVirtualTour]);
 
   return (
     <div className="flex flex-col min-h-screen bg-white dark:bg-black text-slate-900 dark:text-white font-sans transition-colors duration-200 selection:bg-blue-100 selection:text-blue-900 overflow-x-hidden">
@@ -275,14 +283,11 @@ export default function HomePage() {
                   id="tour-embeded"
                   name="Raniola"
                   src="https://tour.panoee.net/6ac4b494035368b0747a8077"
-                  frameBorder="0"
                   width="100%"
                   height="100%"
-                  scrolling="no"
                   tabIndex={-1}
-                  sandbox="allow-scripts allow-same-origin"
-                  allow="vr; xr; accelerometer; gyroscope;"
-                  allowFullScreen={false}
+                  sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                  allow="accelerometer; gyroscope; xr-spatial-tracking; fullscreen; unload"
                   className="w-full h-full border-0 block"
                 />
               ) : (
@@ -329,6 +334,11 @@ export default function HomePage() {
                                 <img
                                   src={item.profile_image_url}
                                   alt={`${maskUserName(item.user_name)} profile`}
+                                  width={40}
+                                  height={40}
+                                  loading="lazy"
+                                  decoding="async"
+                                  style={{ aspectRatio: '1 / 1' }}
                                   className="absolute inset-0 h-full w-full object-cover"
                                   onError={(event) => {
                                     event.currentTarget.style.display = 'none';

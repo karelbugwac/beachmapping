@@ -3,8 +3,8 @@
 import { createClient } from '@/lib/supabase/client';
 import { generateUUID } from '@/lib/utils/uuid';
 
-export const MAX_BEACH_IMAGE_SIZE_BYTES = 20 * 1024 * 1024 * 1024;
-const MAX_COMPRESSED_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
+export const MAX_BEACH_IMAGE_SIZE_BYTES = 10 * 1024 * 1024; // 10MB max input as advised by IT experts
+const MAX_COMPRESSED_IMAGE_SIZE_BYTES = 350 * 1024; // Target compressed size strictly in KB
 const MAX_IMAGE_WIDTH = 1600;
 const supportedImageTypes = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp']);
 
@@ -13,7 +13,7 @@ async function compressBeachImage(file: File): Promise<File> {
     throw new Error('Choose a JPG, PNG, or WebP image.');
   }
   if (file.size < 1 || file.size > MAX_BEACH_IMAGE_SIZE_BYTES) {
-    throw new Error('Image files must be larger than 0 bytes and no larger than 20 GB.');
+    throw new Error('Image files must be larger than 0 bytes and no larger than 10 MB.');
   }
 
   let bitmap: ImageBitmap;
@@ -32,8 +32,9 @@ async function compressBeachImage(file: File): Promise<File> {
     if (!context) throw new Error('Image compression is not available in this browser.');
     context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
 
+    // Prefer WebP compression first for maximum storage savings in KB
     for (const outputType of ['image/webp', 'image/jpeg']) {
-      for (const quality of [0.86, 0.76, 0.66, 0.56, 0.46]) {
+      for (const quality of [0.82, 0.72, 0.62, 0.52]) {
         const blob = await new Promise<Blob | null>((resolve) =>
           canvas.toBlob(resolve, outputType, quality)
         );
@@ -48,7 +49,19 @@ async function compressBeachImage(file: File): Promise<File> {
       }
     }
 
-    throw new Error('This image could not be compressed below 5 MB. Choose a smaller image.');
+    // Fallback: take best WebP effort
+    const finalBlob = await new Promise<Blob | null>((resolve) =>
+      canvas.toBlob(resolve, 'image/webp', 0.55)
+    );
+    if (finalBlob) {
+      const baseName = file.name.replace(/\.[^.]+$/, '') || 'beach-image';
+      return new File([finalBlob], `${baseName}.webp`, {
+        type: 'image/webp',
+        lastModified: Date.now(),
+      });
+    }
+
+    throw new Error('This image could not be compressed. Choose a smaller image.');
   } finally {
     bitmap.close();
   }
@@ -87,7 +100,7 @@ export async function uploadBeachImageWithPath(
         headers: {
           apikey: anonKey,
           Authorization: `Bearer ${sessionData.session.access_token}`,
-          'cache-control': 'max-age=3600',
+          'cache-control': 'public, max-age=31536000, immutable',
           'content-type': compressedFile.type,
           'x-upsert': 'false',
         },
@@ -118,7 +131,7 @@ export async function uploadBeachImageWithPath(
     const { error: uploadError } = await supabase.storage
       .from('beach-media')
       .upload(objectName, compressedFile, {
-        cacheControl: '3600',
+        cacheControl: '31536000',
         contentType: compressedFile.type,
         upsert: false,
       });

@@ -96,7 +96,9 @@ export interface BeachRecord {
   updated_at: string;
 }
 
-const BEACH_CACHE_TTL_MS = 0; // Real-time: always fetch live data without stale in-memory caching
+// In-memory cache TTL: 60s prevents repeated DB roundtrips during burst traffic
+// Cache is automatically invalidated upon updates via invalidateBeachesCache()
+const BEACH_CACHE_TTL_MS = 60_000;
 let allBeachesCache: { data: BeachRecord[]; expiresAt: number } | null = null;
 const slugBeachCache = new Map<string, { data: BeachRecord | null; expiresAt: number }>();
 

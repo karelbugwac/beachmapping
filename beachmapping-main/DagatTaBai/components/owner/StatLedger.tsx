@@ -36,6 +36,7 @@ export function StatLedger({
         {/* SEGMENT 1: RATING */}
         <Link
           href="/owner/reviews"
+          prefetch={false}
           className="group p-5 sm:p-6 transition-colors hover:bg-[var(--color-sand-100)]/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#CF4530]"
         >
           <div className="flex items-center justify-between gap-2 mb-2">
@@ -84,6 +85,7 @@ export function StatLedger({
         {/* SEGMENT 2: PHOTOS */}
         <Link
           href="/owner/beach"
+          prefetch={false}
           className="group p-5 sm:p-6 transition-colors hover:bg-[var(--color-sand-100)]/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#CF4530]"
         >
           <div className="flex items-center justify-between gap-2 mb-2">
@@ -122,6 +124,7 @@ export function StatLedger({
         {/* SEGMENT 3: HOURS */}
         <Link
           href="/owner/beach"
+          prefetch={false}
           className="group p-5 sm:p-6 transition-colors hover:bg-[var(--color-sand-100)]/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#CF4530]"
         >
           <div className="flex items-center justify-between gap-2 mb-2">
@@ -148,6 +151,7 @@ export function StatLedger({
         {/* SEGMENT 4: RECOMMENDATION */}
         <Link
           href="/owner/reviews"
+          prefetch={false}
           className="group p-5 sm:p-6 transition-colors hover:bg-[var(--color-sand-100)]/40 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#CF4530]"
         >
           <div className="flex items-center justify-between gap-2 mb-2">

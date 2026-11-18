@@ -65,8 +65,8 @@ function cropAvatarImage(
       const centerX = image.naturalWidth / 2 + offsetX * maxOffsetX;
       const centerY = image.naturalHeight / 2 + offsetY * maxOffsetY;
       const canvas = document.createElement('canvas');
-      canvas.width = 512;
-      canvas.height = 512;
+      canvas.width = 400;
+      canvas.height = 400;
 
       const context = canvas.getContext('2d');
       if (!context) {
@@ -85,7 +85,7 @@ function cropAvatarImage(
         canvas.width,
         canvas.height
       );
-      resolve(canvas.toDataURL('image/jpeg', 0.9));
+      resolve(canvas.toDataURL('image/webp', 0.82));
     };
     image.onerror = () => reject(new Error('Could not load the selected photo.'));
     image.src = imageUrl;
@@ -415,8 +415,8 @@ export default function ProfilePage() {
       return;
     }
 
-    if (file.size > 3 * 1024 * 1024) {
-      showToast('Selected image exceeds 3MB limit. Please choose a smaller photo.', 'error');
+    if (file.size > 2 * 1024 * 1024) {
+      showToast('Selected image exceeds 2MB limit. Please choose a smaller photo.', 'error');
       e.target.value = '';
       return;
     }
@@ -454,10 +454,14 @@ export default function ProfilePage() {
         avatarOffsetX,
         avatarOffsetY
       );
-      const res = await fetch('/api/auth/profile', {
+      // Convert WebP dataURL to Blob for efficient multipart upload
+      const blob = await fetch(croppedImage).then((r) => r.blob());
+      const formData = new FormData();
+      formData.append('file', blob, 'avatar.webp');
+
+      const res = await fetch('/api/auth/profile/avatar', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profile_image_url: croppedImage }),
+        body: formData,
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
@@ -590,6 +594,11 @@ export default function ProfilePage() {
                 key={user.picture}
                 src={user.picture}
                 alt=""
+                width={112}
+                height={112}
+                loading="lazy"
+                decoding="async"
+                style={{ aspectRatio: '1 / 1' }}
                 onError={(event) => {
                   event.currentTarget.style.display = 'none';
                 }}

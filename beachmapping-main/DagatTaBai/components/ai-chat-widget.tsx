@@ -262,8 +262,7 @@ export function AiChatWidget() {
               alt="Bai AI Guide - Click to chat"
               width={64}
               height={64}
-              style={{ width: 'auto', height: 'auto' }}
-              className="object-contain drop-shadow-[0_4px_12px_rgba(31,63,116,0.25)] dark:drop-shadow-[0_4px_16px_rgba(0,0,0,0.5)] group-hover:drop-shadow-[0_8px_18px_rgba(31,63,116,0.35)] transition-all duration-300 pointer-events-none"
+              className="w-12 h-12 sm:w-16 sm:h-16 object-contain drop-shadow-[0_4px_12px_rgba(31,63,116,0.25)] dark:drop-shadow-[0_4px_16px_rgba(0,0,0,0.5)] group-hover:drop-shadow-[0_8px_18px_rgba(31,63,116,0.35)] transition-all duration-300 pointer-events-none"
             />
             {/* Live emerald beacon indicator */}
             <span className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 flex h-2.5 sm:h-3 w-2.5 sm:w-3">
@@ -286,9 +285,9 @@ export function AiChatWidget() {
               <Image
                 src="/images/bai.png"
                 alt="Bai"
-                width={30}
-                height={30}
-                className="h-7 w-7 shrink-0 object-contain"
+                width={28}
+                height={28}
+                className="w-7 h-7 shrink-0 object-contain"
               />
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
@@ -339,7 +338,7 @@ export function AiChatWidget() {
                     alt=""
                     width={24}
                     height={24}
-                    className="mb-4 h-6 w-6 shrink-0 object-contain"
+                    className="mb-4 w-6 h-6 shrink-0 object-contain"
                   />
                 )}
                 <div

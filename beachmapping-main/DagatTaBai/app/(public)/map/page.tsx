@@ -80,7 +80,7 @@ function formatContactPhone(phone: string): string {
 
 const BINONGKALAN_CENTER: [number, number] = [10.6348, 124.0275];
 
-export default function MapPage() {
+function MapPageContent() {
   const searchParams = useSearchParams();
   const selectedSlugFromUrl = searchParams.get('beach');
 
@@ -911,5 +911,19 @@ export default function MapPage() {
         </aside>
       )}
     </div>
+  );
+}
+
+export default function MapPage() {
+  return (
+    <React.Suspense
+      fallback={
+        <div className="flex h-screen w-full items-center justify-center bg-slate-50 dark:bg-black">
+          <Loader2 className="h-8 w-8 animate-spin text-[#1F3F74] dark:text-[#4987BA]" />
+        </div>
+      }
+    >
+      <MapPageContent />
+    </React.Suspense>
   );
 }

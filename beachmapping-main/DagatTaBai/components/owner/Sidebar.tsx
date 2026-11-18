@@ -129,7 +129,7 @@ export function Sidebar({
                     {mobileOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
                   </button>
                 </div>
-                <Link href="/owner/dashboard" className="flex flex-col items-center gap-3" title={beachName}>
+                <Link href="/owner/dashboard" prefetch={false} className="flex flex-col items-center gap-3" title={beachName}>
                   <Image src="/logo.png" alt="Dagat Ta Bai logo" width={64} height={64} className="object-contain" />
                 </Link>
                 <div className="text-center mt-4 space-y-3 w-full">
@@ -164,6 +164,7 @@ export function Sidebar({
                   <Link
                     key={item.href}
                     href={item.href}
+                    prefetch={false}
                     onClick={onClose}
                     aria-current={isActive ? 'page' : undefined}
                     title={collapsed ? item.label : undefined}

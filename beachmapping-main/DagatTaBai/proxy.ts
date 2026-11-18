@@ -14,6 +14,15 @@ export async function proxy(request: NextRequest) {
   
   if (!isAdminRoute && !isOwnerRoute && !isProfileRoute) return NextResponse.next();
 
+  // Avoid burst-loading and rate-limiting during Next.js background prefetching
+  const isPrefetch =
+    request.headers.get('purpose') === 'prefetch' ||
+    request.headers.get('x-purpose') === 'prefetch' ||
+    request.headers.get('sec-purpose') === 'prefetch';
+  if (isPrefetch) {
+    return NextResponse.next({ request });
+  }
+
   let response = NextResponse.next({ request });
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-project.supabase.co',
@@ -62,6 +71,6 @@ export async function proxy(request: NextRequest) {
 
 export const config = {
   matcher: [
-    '/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

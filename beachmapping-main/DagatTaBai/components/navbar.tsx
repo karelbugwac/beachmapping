@@ -284,6 +284,11 @@ export function Navbar() {
                         key={user.profile_image_url}
                         src={user.profile_image_url}
                         alt=""
+                        width={32}
+                        height={32}
+                        loading="lazy"
+                        decoding="async"
+                        style={{ aspectRatio: '1 / 1' }}
                         onError={(event) => {
                           event.currentTarget.style.display = 'none';
                         }}
@@ -350,6 +355,11 @@ export function Navbar() {
                     key={user.profile_image_url}
                     src={user.profile_image_url}
                     alt=""
+                    width={28}
+                    height={28}
+                    loading="lazy"
+                    decoding="async"
+                    style={{ aspectRatio: '1 / 1' }}
                     onError={(event) => {
                       event.currentTarget.style.display = 'none';
                     }}

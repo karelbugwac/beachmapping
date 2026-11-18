@@ -321,6 +321,7 @@ export default function AdminLayout({
 
                 <Link
                   href="/admin/dashboard"
+                  prefetch={false}
                   className="flex flex-col items-center gap-3 group rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600"
                   title="Barangay Binongkalan Admin Portal"
                 >
@@ -358,6 +359,7 @@ export default function AdminLayout({
                   <Link
                     key={item.href}
                     href={item.href}
+                    prefetch={false}
                     onClick={closeMobileMenu}
                     aria-current={isActive ? 'page' : undefined}
                     aria-label={collapsed ? item.label : undefined}

@@ -600,11 +600,11 @@ export default function ManageInformationPage() {
 
   // Upload helper for PNG / JPG only
   const uploadImageFile = async (file: File): Promise<string> => {
-    if (!['image/png', 'image/jpeg', 'image/jpg'].includes(file.type.toLowerCase())) {
-      throw new Error('Please upload an image in PNG or JPG format only.');
+    if (!['image/png', 'image/jpeg', 'image/jpg', 'image/webp'].includes(file.type.toLowerCase())) {
+      throw new Error('Please upload an image in JPG, PNG, or WebP format.');
     }
     if (file.size > MAX_IMAGE_SIZE_BYTES) {
-      throw new Error('Image file size must be 20 GB or less.');
+      throw new Error('Image file size must be 10 MB or less.');
     }
 
     return uploadBeachImage(file, formData.id);
@@ -708,7 +708,7 @@ export default function ManageInformationPage() {
         return;
       }
       if (file.size < 1 || file.size > MAX_IMAGE_SIZE_BYTES) {
-        setCottageModalStatus({ type: 'error', message: 'Choose an image smaller than 20 GB.' });
+        setCottageModalStatus({ type: 'error', message: 'Choose an image smaller than 10 MB.' });
         return;
       }
     }
@@ -1193,7 +1193,7 @@ export default function ManageInformationPage() {
       return;
     }
     if (files.some((file) => file.size < 1 || file.size > MAX_IMAGE_SIZE_BYTES)) {
-      setFacilityModalStatus({ type: 'error', message: 'Choose a non-empty image under 20 GB; photos are optimized to 5 MB.' });
+      setFacilityModalStatus({ type: 'error', message: 'Choose a non-empty image under 10 MB; photos are compressed to WebP (in KB).' });
       return;
     }
     if (!newFacility.title?.trim()) {
@@ -1421,12 +1421,12 @@ export default function ManageInformationPage() {
   const handleGalleryFileSelection = (file?: File) => {
     if (!file) return;
 
-    if (!['image/png', 'image/jpeg', 'image/jpg'].includes(file.type.toLowerCase())) {
-      setToast({ type: 'error', message: 'Please upload an image in PNG or JPG format only.' });
+    if (!['image/png', 'image/jpeg', 'image/jpg', 'image/webp'].includes(file.type.toLowerCase())) {
+      setToast({ type: 'error', message: 'Please upload an image in JPG, PNG, or WebP format.' });
       return;
     }
     if (file.size > MAX_IMAGE_SIZE_BYTES) {
-      setToast({ type: 'error', message: 'Image file size must be 20 GB or less.' });
+      setToast({ type: 'error', message: 'Image file size must be 10 MB or less.' });
       return;
     }
 
@@ -2248,7 +2248,7 @@ export default function ManageInformationPage() {
                     <span>{formData.cover_image ? 'Change Cover' : 'Upload Cover'}</span>
                     <input
                       type="file"
-                      accept="image/png, image/jpeg, image/jpg"
+                      accept="image/png, image/jpeg, image/jpg, image/webp"
                       onChange={handleCoverUpload}
                       disabled={uploadingCover}
                       className="hidden"
@@ -2309,7 +2309,7 @@ export default function ManageInformationPage() {
                     )}
                     <input
                       type="file"
-                      accept="image/png, image/jpeg, image/jpg"
+                      accept="image/png, image/jpeg, image/jpg, image/webp"
                       disabled={uploadingPostImage}
                       onChange={async (e) => {
                         const file = e.target.files?.[0];
