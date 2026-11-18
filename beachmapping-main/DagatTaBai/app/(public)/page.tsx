@@ -287,7 +287,7 @@ export default function HomePage() {
                   height="100%"
                   tabIndex={-1}
                   sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-                  allow="accelerometer; gyroscope; xr-spatial-tracking; fullscreen; unload"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; magnetometer; picture-in-picture; web-share; xr-spatial-tracking; unload"
                   className="w-full h-full border-0 block"
                 />
               ) : (

@@ -1,13 +1,34 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createAdminClient, createServerSupabaseClient } from '@/lib/supabase/server';
+import {
+  getClientRateLimitKey,
+  peekRateLimit,
+  recordRateLimitHit,
+  clearRateLimit,
+} from '@/lib/utils/rate-limit';
+
+const LOGIN_RATE_LIMIT = {
+  maxRequests: 10,
+  windowMs: 15 * 60 * 1000,
+};
 
 export async function GET(request: NextRequest) {
   const { searchParams } = new URL(request.url);
   const code = searchParams.get('code');
   const siteUrl = request.nextUrl.origin;
+  const ipKey = getClientRateLimitKey(request, 'user-login-ip');
+
+  const ipCheck = peekRateLimit(ipKey, LOGIN_RATE_LIMIT);
+  if (!ipCheck.allowed) {
+    return NextResponse.redirect(`${siteUrl}/login?error=rate_limited&retryAfter=${ipCheck.resetInSeconds}`);
+  }
 
   if (!code) {
+    const hit = recordRateLimitHit(ipKey, LOGIN_RATE_LIMIT);
+    if (!hit.allowed) {
+      return NextResponse.redirect(`${siteUrl}/login?error=rate_limited&retryAfter=${hit.resetInSeconds}`);
+    }
     return NextResponse.redirect(`${siteUrl}/login?error=no_auth_code`);
   }
 
@@ -17,8 +38,24 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('Supabase code exchange error:', error);
+      const hit = recordRateLimitHit(ipKey, LOGIN_RATE_LIMIT);
+      if (!hit.allowed) {
+        return NextResponse.redirect(`${siteUrl}/login?error=rate_limited&retryAfter=${hit.resetInSeconds}`);
+      }
       return NextResponse.redirect(`${siteUrl}/login?error=code_exchange_failed`);
     }
+
+    const userEmail = data.user.email;
+    const emailKey = userEmail ? getClientRateLimitKey(request, 'user-login', userEmail) : null;
+    const emailCheck = emailKey ? peekRateLimit(emailKey, LOGIN_RATE_LIMIT) : null;
+
+    if (emailCheck && !emailCheck.allowed) {
+      await supabase.auth.signOut().catch(() => {});
+      return NextResponse.redirect(`${siteUrl}/login?error=rate_limited&retryAfter=${emailCheck.resetInSeconds}`);
+    }
+
+    clearRateLimit(ipKey);
+    if (emailKey) clearRateLimit(emailKey);
 
     // Clean up temporary OAuth code-verifier and state cookies to prevent header bloat
     try {

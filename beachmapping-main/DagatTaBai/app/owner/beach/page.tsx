@@ -2655,6 +2655,7 @@ export default function ManageInformationPage() {
                   src={formData.virtual_tour_url}
                   title="360 Tour"
                   className="w-full h-full border-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; magnetometer; picture-in-picture; web-share; vr; xr-spatial-tracking"
                   allowFullScreen
                 />
               </div>

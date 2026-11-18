@@ -288,6 +288,7 @@ export function Navbar() {
                         height={32}
                         loading="lazy"
                         decoding="async"
+                        referrerPolicy="no-referrer"
                         style={{ aspectRatio: '1 / 1' }}
                         onError={(event) => {
                           event.currentTarget.style.display = 'none';
@@ -359,6 +360,7 @@ export function Navbar() {
                     height={28}
                     loading="lazy"
                     decoding="async"
+                    referrerPolicy="no-referrer"
                     style={{ aspectRatio: '1 / 1' }}
                     onError={(event) => {
                       event.currentTarget.style.display = 'none';

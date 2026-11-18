@@ -364,7 +364,8 @@ export default function BeachProfilePage({
                       src={beach.virtual_tour_url}
                       title={`${beach.name} 360 Tour`}
                       className="w-full h-full border-0"
-                      allow="accelerometer; gyroscope; magnetometer; fullscreen"
+                      allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; magnetometer; picture-in-picture; web-share; vr; xr-spatial-tracking"
+                      allowFullScreen
                     />
                   </div>
                 ) : (

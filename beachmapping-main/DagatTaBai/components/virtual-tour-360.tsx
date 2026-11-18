@@ -93,8 +93,8 @@ export function VirtualTour360({ beachName, virtualTourUrl }: VirtualTour360Prop
           width="100%"
           height="100%"
           scrolling="no"
-          allow="vr; xr; accelerometer; gyroscope; autoplay; fullscreen"
-          allowFullScreen={false}
+          allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; magnetometer; picture-in-picture; web-share; vr; xr-spatial-tracking"
+          allowFullScreen
           loading="lazy"
           className="w-full h-full"
         />

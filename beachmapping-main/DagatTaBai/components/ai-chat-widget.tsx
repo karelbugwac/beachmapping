@@ -24,8 +24,11 @@ interface ChatMessage {
 }
 
 function renderFormattedText(text: string) {
-  // Convert markdown bullets ("* item") to clean bullets, keep **bold**, and strip any other stray asterisks.
-  const cleaned = text.replace(/^[ \t]*\*[ \t]+/gm, '• ');
+  // Convert markdown headings (### Title), bullets (* or -), and backticks into clean readable text while keeping **bold**.
+  const cleaned = text
+    .replace(/^#{1,6}\s+(.+)$/gm, '**$1**')
+    .replace(/^[ \t]*[-*][ \t]+/gm, '• ')
+    .replace(/`([^`]+)`/g, '$1');
   const parts = cleaned.split(/(\*\*[^*]+\*\*)/g);
   return parts.map((part, idx) => {
     if (part.startsWith('**') && part.endsWith('**')) {
@@ -91,7 +94,7 @@ export function AiChatWidget() {
     if (isOpen) {
       scrollToBottom();
     }
-  }, [messages, isOpen]);
+  }, [messages, isOpen, loading]);
 
   // Support opening chat from anywhere via custom event
   useEffect(() => {
@@ -292,8 +295,13 @@ export function AiChatWidget() {
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
                   <h3 className="font-sans text-xs sm:text-sm font-bold leading-tight tracking-tight text-white">Bai</h3>
-                  <span className="h-1.5 w-1.5 rounded-full bg-emerald-400" aria-label="Online" />
-                  <span className="text-[9px] sm:text-[10px] font-medium leading-tight text-blue-100/90">Local Guide</span>
+                  <span
+                    className={`h-1.5 w-1.5 rounded-full ${loading ? 'animate-ping bg-amber-300' : 'bg-emerald-400'}`}
+                    aria-label="Online"
+                  />
+                  <span className="text-[9px] sm:text-[10px] font-medium leading-tight text-blue-100/90">
+                    {loading ? 'Generating answer...' : 'Local Guide'}
+                  </span>
                 </div>
               </div>
             </div>
@@ -403,10 +411,29 @@ export function AiChatWidget() {
             )}
 
             {isThinking && (
-              <div className="ml-7 inline-flex items-center gap-1.5 rounded-2xl rounded-bl-md border border-slate-200 bg-white px-3 py-2 dark:border-slate-800 dark:bg-[#132035]" aria-label="Bai is typing">
-                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#1F3F74] dark:bg-[#4987BA]" />
-                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#1F3F74] [animation-delay:0.2s] dark:bg-[#4987BA]" />
-                <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#1F3F74] [animation-delay:0.4s] dark:bg-[#4987BA]" />
+              <div className="flex items-end gap-1.5 justify-start" aria-label="Bai is generating an answer">
+                <Image
+                  src="/images/bai.png"
+                  alt=""
+                  width={24}
+                  height={24}
+                  className="mb-1 h-6 w-6 shrink-0 object-contain"
+                />
+                <div className="inline-flex flex-col gap-1 rounded-2xl rounded-bl-md border border-slate-200 bg-white px-3.5 py-2.5 shadow-2xs dark:border-slate-800 dark:bg-[#132035]">
+                  <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-1">
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#1F3F74] dark:bg-[#4987BA]" />
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#1F3F74] [animation-delay:0.2s] dark:bg-[#4987BA]" />
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#1F3F74] [animation-delay:0.4s] dark:bg-[#4987BA]" />
+                    </div>
+                    <span className="text-[11px] font-semibold text-[#1F3F74] dark:text-blue-200">
+                      Generating an answer...
+                    </span>
+                  </div>
+                  <span className="text-[10px] text-slate-500 dark:text-slate-400">
+                    It may take a minute or two to respond.
+                  </span>
+                </div>
               </div>
             )}
 
@@ -422,9 +449,10 @@ export function AiChatWidget() {
               type="text"
               value={input}
               onChange={(e) => setInput(e.target.value)}
-              placeholder="Ask about Rañola, Lite Bay, Majestique, Hinagdan..."
+              disabled={loading}
+              placeholder={loading ? 'Generating answer, please wait...' : 'Ask Bai anything...'}
               aria-label="Message Bai"
-              className="min-w-0 flex-1 rounded-full border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 transition focus:border-[#1F3F74] focus:outline-none focus:ring-2 focus:ring-[#1F3F74]/15 dark:border-slate-800 dark:bg-[#132035] dark:text-slate-100 dark:focus:border-[#4987BA] dark:focus:ring-[#4987BA]/20"
+              className="min-w-0 flex-1 rounded-full border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 transition focus:border-[#1F3F74] focus:outline-none focus:ring-2 focus:ring-[#1F3F74]/15 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-[#132035] dark:text-slate-100 dark:focus:border-[#4987BA] dark:focus:ring-[#4987BA]/20"
             />
             <button
               type="submit"
