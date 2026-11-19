@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from 'next';
-import { Inter } from 'next/font/google';
+import { Inter, Cinzel, Montserrat } from 'next/font/google';
 import 'leaflet/dist/leaflet.css';
 import './globals.css';
 import { Navbar } from '@/components/navbar';
@@ -19,6 +19,18 @@ import { Suspense } from 'react';
 const inter = Inter({
   subsets: ['latin'],
   variable: '--font-inter',
+  display: 'swap',
+});
+
+const cinzel = Cinzel({
+  subsets: ['latin'],
+  variable: '--font-cinzel',
+  display: 'swap',
+});
+
+const montserrat = Montserrat({
+  subsets: ['latin'],
+  variable: '--font-montserrat',
   display: 'swap',
 });
 
@@ -48,7 +60,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={`${inter.variable}`}
+      className={`${inter.variable} ${cinzel.variable} ${montserrat.variable}`}
       suppressHydrationWarning
     >
       <body className="flex flex-col min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-zinc-100 transition-colors duration-200">

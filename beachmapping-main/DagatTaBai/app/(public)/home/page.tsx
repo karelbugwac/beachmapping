@@ -147,7 +147,7 @@ export default function AuthenticatedHomePage() {
     <div className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-white font-sans transition-colors duration-200">
       
       {/* ── 1. WELCOME HERO WITH BISAYA GREETING ── */}
-      <section className="relative overflow-hidden bg-gradient-to-br from-[#1F3F74] via-[#16305a] to-[#0c1a30] text-white py-14 sm:py-20 px-4 sm:px-6 lg:px-8 border-b border-white/10">
+      <section className="relative overflow-hidden bg-gradient-to-br from-[#1F3F74] via-[#16305a] to-[#0c1a30] text-white pt-24 sm:pt-28 pb-14 sm:pb-20 px-4 sm:px-6 lg:px-8 border-b border-white/10">
         <div className="absolute inset-0 bg-[radial-gradient(#ffffff0a_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
         
         <div className="max-w-5xl mx-auto relative z-10 space-y-6">

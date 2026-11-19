@@ -98,7 +98,7 @@ export function HeroMapSection({
       </div>
 
       {/* Centered Content */}
-      <div className="relative z-10 flex flex-col items-center justify-center h-full px-4 sm:px-6 lg:px-8 text-center">
+      <div className="relative z-10 flex flex-col items-center justify-center h-full px-4 sm:px-6 lg:px-8 text-center pt-16 sm:pt-20">
         <div className="max-w-3xl mx-auto space-y-4 sm:space-y-5">
           {greeting && (
             <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/25 text-sky-200 text-xs sm:text-sm font-bold shadow-md animate-in fade-in duration-300">
