@@ -57,7 +57,6 @@ function UserLoginForm() {
         const waitText = retrySecs >= 60 ? `${mins} minute${mins > 1 ? 's' : ''}` : `${retrySecs} seconds`;
         const msg = `Too many failed login attempts. Please wait ${waitText} before trying again.`;
         setLoginErrorMessage(msg);
-        showToast(msg, 'error');
         router.replace('/login', { scroll: false });
         return;
       }
@@ -91,10 +90,6 @@ function UserLoginForm() {
     }
 
     if (lockoutSeconds > 0) {
-      const mins = Math.floor(lockoutSeconds / 60);
-      const secs = lockoutSeconds % 60;
-      const waitText = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
-      showToast(`Too many failed login attempts. Please wait ${waitText} before trying again.`, 'error');
       return;
     }
 
@@ -115,14 +110,13 @@ function UserLoginForm() {
         setLockoutSeconds(retrySecs);
         const msg = data.error || 'Too many failed login attempts. Please wait before trying again.';
         setLoginErrorMessage(msg);
-        showToast(msg, 'error');
         return;
       }
 
       if (!res.ok || data.error) {
         const msg = data.error || 'Invalid email or password.';
         setLoginErrorMessage(msg);
-        throw new Error(msg);
+        return;
       }
 
       showToast('Successfully logged in!');
@@ -134,7 +128,7 @@ function UserLoginForm() {
       router.refresh();
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Invalid credentials.';
-      showToast(msg, 'error');
+      setLoginErrorMessage(msg);
     } finally {
       setLoading(false);
     }
@@ -142,10 +136,6 @@ function UserLoginForm() {
 
   const handleGoogleSignIn = () => {
     if (lockoutSeconds > 0) {
-      const mins = Math.floor(lockoutSeconds / 60);
-      const secs = lockoutSeconds % 60;
-      const waitText = mins > 0 ? `${mins}m ${secs}s` : `${secs}s`;
-      showToast(`Too many failed login attempts. Please wait ${waitText} before trying again.`, 'error');
       return;
     }
     const emailQuery = email.trim() ? `?email=${encodeURIComponent(email.trim())}` : '';

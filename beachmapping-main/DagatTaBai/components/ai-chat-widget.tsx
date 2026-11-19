@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   X,
@@ -23,22 +24,156 @@ interface ChatMessage {
   timestamp: string;
 }
 
-function renderFormattedText(text: string) {
-  // Convert markdown headings (### Title), bullets (* or -), and backticks into clean readable text while keeping **bold**.
-  const cleaned = text
+const LINK_TOKEN_REGEX =
+  /\[([^\]]+)\]\((https?:\/\/[^\s)]+|\/[^\s)]+)\)|(https?:\/\/[^\s<>()]+(?:\([^\s<>()]*\)[^\s<>()]*)*)|((?<![a-zA-Z0-9:/._-])\/(?:beaches|map|weather|login|register|apply|profile|faq|contact|feedback|about|owner-requirements|community-guidelines|privacy|terms)(?:\/[a-zA-Z0-9\-_%]+)*(?:\?[^\s),.!?;:]*)?)/g;
+
+function normalizeInternalOrExternalUrl(rawUrl: string): { href: string; isInternal: boolean } {
+  const trimmed = rawUrl.trim().replace(/[.,!?;:]+$/, '');
+  const dagatDomainMatch = trimmed.match(/^https?:\/\/(?:www\.)?dagattabai\.com(\/.*)?$/i);
+  if (dagatDomainMatch) {
+    return { href: dagatDomainMatch[1] || '/', isInternal: true };
+  }
+  if (trimmed.startsWith('/')) {
+    return { href: trimmed, isInternal: true };
+  }
+  return { href: trimmed, isInternal: false };
+}
+
+function renderInlineLinks(text: string, isUser: boolean, keyPrefix: string): React.ReactNode[] {
+  const nodes: React.ReactNode[] = [];
+  let lastIndex = 0;
+  let match: RegExpExecArray | null;
+  const regex = new RegExp(LINK_TOKEN_REGEX.source, 'g');
+  const linkClass = isUser
+    ? 'underline underline-offset-2 font-semibold text-blue-100 hover:text-white break-words'
+    : 'underline underline-offset-2 font-semibold text-[#1F3F74] dark:text-[#60A5FA] hover:opacity-80 break-words';
+
+  while ((match = regex.exec(text)) !== null) {
+    if (match.index > lastIndex) {
+      nodes.push(text.slice(lastIndex, match.index).replace(/\*/g, ''));
+    }
+
+    const mdLabel = match[1];
+    const mdUrl = match[2];
+    const bareExternal = match[3];
+    const bareInternal = match[4];
+
+    if (mdLabel && mdUrl) {
+      const { href, isInternal } = normalizeInternalOrExternalUrl(mdUrl);
+      nodes.push(
+        isInternal ? (
+          <Link key={`${keyPrefix}-${match.index}`} href={href} className={linkClass}>
+            {mdLabel.replace(/\*/g, '')}
+          </Link>
+        ) : (
+          <a
+            key={`${keyPrefix}-${match.index}`}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={linkClass}
+          >
+            {mdLabel.replace(/\*/g, '')}
+          </a>
+        )
+      );
+    } else if (bareExternal) {
+      const cleanExternal = bareExternal.replace(/[.,!?;:)]+$/, '');
+      const trailing = bareExternal.slice(cleanExternal.length);
+      const { href, isInternal } = normalizeInternalOrExternalUrl(cleanExternal);
+      nodes.push(
+        isInternal ? (
+          <Link key={`${keyPrefix}-${match.index}`} href={href} className={linkClass}>
+            {href}
+          </Link>
+        ) : (
+          <a
+            key={`${keyPrefix}-${match.index}`}
+            href={href}
+            target="_blank"
+            rel="noopener noreferrer"
+            className={linkClass}
+          >
+            {cleanExternal}
+          </a>
+        )
+      );
+      if (trailing) nodes.push(trailing);
+    } else if (bareInternal) {
+      nodes.push(
+        <Link key={`${keyPrefix}-${match.index}`} href={bareInternal} className={linkClass}>
+          {bareInternal}
+        </Link>
+      );
+    }
+
+    lastIndex = regex.lastIndex;
+  }
+
+  if (lastIndex < text.length) {
+    nodes.push(text.slice(lastIndex).replace(/\*/g, ''));
+  }
+
+  return nodes;
+}
+
+function convertMarkdownTablesToBullets(text: string): string {
+  const lines = text.split('\n');
+  const out: string[] = [];
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    const isTableRow = /^\|.+\|$/.test(line);
+    const isSeparatorRow = /^\|[\s:-]+(?:\|[\s:-]+)+\|?$/.test(line);
+
+    if (isSeparatorRow) {
+      continue;
+    }
+
+    if (isTableRow) {
+      const nextLine = (lines[i + 1] || '').trim();
+      if (/^\|[\s:-]+(?:\|[\s:-]+)+\|?$/.test(nextLine)) {
+        continue;
+      }
+
+      const cells = line
+        .slice(1, -1)
+        .split('|')
+        .map((c) => c.trim())
+        .filter(Boolean);
+
+      if (cells.length >= 2) {
+        const first = cells[0].startsWith('**') ? cells[0] : `**${cells[0]}**`;
+        out.push(`• ${first}: ${cells.slice(1).join(' — ')}`);
+      } else if (cells.length === 1) {
+        out.push(`• ${cells[0]}`);
+      }
+      continue;
+    }
+
+    out.push(lines[i]);
+  }
+
+  return out.join('\n');
+}
+
+function renderFormattedText(text: string, isUser = false) {
+  // Convert markdown tables, headings (### Title), bullets (* or -), and backticks into clean readable text while keeping **bold** and clickable links.
+  const cleaned = convertMarkdownTablesToBullets(text)
     .replace(/^#{1,6}\s+(.+)$/gm, '**$1**')
     .replace(/^[ \t]*[-*][ \t]+/gm, '• ')
     .replace(/`([^`]+)`/g, '$1');
   const parts = cleaned.split(/(\*\*[^*]+\*\*)/g);
   return parts.map((part, idx) => {
     if (part.startsWith('**') && part.endsWith('**')) {
+      const inner = part.slice(2, -2);
       return (
         <strong key={idx} className="font-bold">
-          {part.slice(2, -2).replace(/\*/g, '')}
+          {renderInlineLinks(inner, isUser, `b-${idx}`)}
         </strong>
       );
     }
-    return <React.Fragment key={idx}>{part.replace(/\*/g, '')}</React.Fragment>;
+    return <React.Fragment key={idx}>{renderInlineLinks(part, isUser, `t-${idx}`)}</React.Fragment>;
   });
 }
 
@@ -55,7 +190,7 @@ export function AiChatWidget() {
     {
       id: 'welcome-1',
       sender: 'assistant',
-      text: "Hello! I'm **Bai**, your Dagat Ta Bai local guide for Barangay Binongkalan, Catmon. Ask me anything about **Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, or **Hinagdan Beach**!",
+      text: "Hello! I'm **Bai**, your Dagat Ta Bai local guide for Barangay Binongkalan, Catmon. Ask me anything about **Rañola Beach**, **Lite Bay Resort**, **Majestique View Resort**, or **Hinagdan Beach**!",
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
     },
   ]);
@@ -358,7 +493,7 @@ export function AiChatWidget() {
                   }`}
                 >
                   <p className="break-words whitespace-pre-line leading-relaxed [overflow-wrap:anywhere] text-[11px] sm:text-xs">
-                    {renderFormattedText(msg.text)}
+                    {renderFormattedText(msg.text, msg.sender === 'user')}
                   </p>
                   <span
                     className={`block text-right text-[9px] font-medium ${

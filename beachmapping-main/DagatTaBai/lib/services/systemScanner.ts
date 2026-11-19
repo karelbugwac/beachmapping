@@ -355,14 +355,14 @@ export function formatSystemScanForAiPrompt(
   lines.push('  - What Dagat Ta Bai Is: A free coastal beach mapping, navigation, and travel guide web system for Barangay Binongkalan, Catmon, Cebu.');
   lines.push('  - Free Public Platform: Dagat Ta Bai is 100% free for beachgoers with no hidden fees, paywalls, or booking markups.');
   lines.push('  - Direct Contact (No Middleman): Visitors view verified rates, 360° virtual tours, live weather/tides, and GPS routes, then call/text resort caretakers directly.');
-  lines.push('  - Beaches Directory (/beaches) & Beach Profile Pages (/beaches/[slug]): Shows verified entrance fees, cottage & room rates, operating hours, real-time Open/Closed status, amenities, activities, photos, 360° virtual tours, visitor reviews & star ratings, peak hours, beach rules, and resort contact numbers/Facebook.');
-  lines.push('  - Interactive Map (/map): Features GPS-verified beach pins along Barangay Binongkalan, Catmon, plus a route planner for Car, Motorcycle, Commute, and Walking with distance and estimated travel time.');
-  lines.push('  - Weather & Live Tides (/weather): Displays live Catmon temperature, wind speed, wave height, UV index, PAGASA heat index, 5-day weather forecast, and astronomical High Tide (taob) / Low Tide (hunas) schedules.');
-  lines.push('  - User Accounts & Reviews (/login, /register, /profile, /profile/reviews): Visitors can sign up or log in (with email or Google) to save AI chat history, post star ratings and reviews on beaches, and manage their profile.');
-  lines.push('  - Beach Owner Registration (/apply & /owner-requirements): Resort owners/caretakers in Binongkalan can apply by submitting personal & resort details, a valid LGU Catmon Mayor/Business Permit, Proof of Ownership or Notarized Lease Contract, and live selfie KYC verification (reviewed in 1–3 business days). Approved owners get an Owner Portal (/owner/dashboard) to manage their beach info, cottages, facilities, posts, and reviews.');
-  lines.push('  - Help, Contact & Feedback (/faq, /contact, /feedback): Visitors can read FAQs, report inaccurate rates or closed roads via the Contact page (or email dagattabai@gmail.com), or submit platform feedback.');
-  lines.push('  - Policies (/community-guidelines, /privacy, /privacy/data-request, /terms): Covers review community guidelines, data privacy & data deletion requests, and terms of service.');
-  lines.push('  - Development Team (/about): Built by the Dagat Ta Bai team: Karel C. Bugwac, Ana Marie Q. Calo, Charisse V. Garbo, Patrick James D. Leswe, Julie Mae G. Matugas, Kimberly Claire M. Parot, Jessica C. Raganas, Jamaica Sulla, and Nathaniel James P. Tiro.');
+  lines.push('  - [Beaches Directory](/beaches): Shows verified entrance fees, cottage & room rates, operating hours, real-time Open/Closed status, amenities, activities, photos, 360° virtual tours, visitor reviews & star ratings, peak hours, beach rules, and resort contact numbers/Facebook.');
+  lines.push('  - [Interactive Map](/map): Features GPS-verified beach pins along Barangay Binongkalan, Catmon, plus a route planner for Car, Motorcycle, Commute, and Walking with distance and estimated travel time.');
+  lines.push('  - [Weather & Live Tides](/weather): Displays live Catmon temperature, wind speed, wave height, UV index, PAGASA heat index, 5-day weather forecast, and astronomical High Tide (taob) / Low Tide (hunas) schedules.');
+  lines.push('  - User Accounts & Reviews ([Login](/login), [Register](/register), [Profile](/profile)): Visitors can sign up or log in (with email or Google) to save AI chat history, post star ratings and reviews on beaches, and manage their profile.');
+  lines.push('  - [Beach Owner Registration](/apply) & [Owner Requirements](/owner-requirements): Resort owners/caretakers in Binongkalan can apply by submitting personal & resort details, a valid LGU Catmon Mayor/Business Permit, Proof of Ownership or Notarized Lease Contract, and live selfie KYC verification (reviewed in 1–3 business days). Approved owners get an Owner Portal to manage their beach info, cottages, facilities, posts, and reviews.');
+  lines.push('  - Help, Contact & Feedback ([FAQ](/faq), [Contact](/contact), [Feedback](/feedback)): Visitors can read FAQs, report inaccurate rates or closed roads via the Contact page (or email dagattabai@gmail.com), or submit platform feedback.');
+  lines.push('  - Policies ([Community Guidelines](/community-guidelines), [Privacy Policy](/privacy), [Terms of Service](/terms)): Covers review community guidelines, data privacy & data deletion requests, and terms of service.');
+  lines.push('  - [Development Team](/about): Built by the Dagat Ta Bai team: Karel C. Bugwac, Ana Marie Q. Calo, Charisse V. Garbo, Patrick James D. Leswe, Julie Mae G. Matugas, Kimberly Claire M. Parot, Jessica C. Raganas, Jamaica Sulla, and Nathaniel James P. Tiro.');
   lines.push(`  - Total Platform Reviews in DB: ${snapshot.platformReviewsCount}`);
 
   return lines.join('\n');
@@ -442,8 +442,8 @@ export function scanSystemForDirectAnswer(
       return `• ${label}: **${formatTideTimeManila(t.time)}** (${t.height.toFixed(2)} m)`;
     });
     return isCeb
-      ? `Mao kini ang schedule sa **taob ug hunas** karon sa **Barangay Binongkalan, Catmon**:\n\n${tideLines.join('\n')}\n\n💡 **Timan-i:** Ang **Lite Bay Resort** ug **Majestique Beach** dili mohunas ug pamaayo bisan low tide, samtang ang **Rañola Beach** ug **Hinagdan Beach** klaro ang paghunas.`
-      : `Here is today's **high tide and low tide schedule** in **Barangay Binongkalan, Catmon**:\n\n${tideLines.join('\n')}\n\n💡 **Note:** **Lite Bay Resort** and **Majestique Beach** stay relatively deep even during low tide, whereas **Rañola Beach** and **Hinagdan Beach** have noticeably exposed shorelines at low tide.`;
+      ? `Mao kini ang schedule sa **taob ug hunas** karon sa **Barangay Binongkalan, Catmon**:\n\n${tideLines.join('\n')}\n\n💡 **Timan-i:** Ang **Lite Bay Resort** ug **Majestique View Resort** dili mohunas ug pamaayo bisan low tide, samtang ang **Rañola Beach** ug **Hinagdan Beach** klaro ang paghunas.`
+      : `Here is today's **high tide and low tide schedule** in **Barangay Binongkalan, Catmon**:\n\n${tideLines.join('\n')}\n\n💡 **Note:** **Lite Bay Resort** and **Majestique View Resort** stay relatively deep even during low tide, whereas **Rañola Beach** and **Hinagdan Beach** have noticeably exposed shorelines at low tide.`;
   }
 
   // 3. RATINGS & VISITOR REVIEWS
@@ -570,9 +570,9 @@ export function scanSystemForDirectAnswer(
     )
   ) {
     if (isCeb) {
-      return `Sa atong sistema (**Dagat Ta Bai**):\n• **Libre para sa tanan:** 100% libre gamiton ang Dagat Ta Bai para sa mga beachgoers.\n• **Pag-apply isip Beach Owner:** Ang mga tag-iya o caretaker sa beach sa Binongkalan pwede mo-apply sa **Apply page (/apply)** pinaagi sa pag-submit sa ilang detalye, **Mayor's / Business Permit (LGU Catmon)**, **Proof of Ownership o Lease Contract**, ug **live selfie KYC verification** (i-review sulod sa 1–3 ka adlaw).`;
+      return `Sa atong sistema (**Dagat Ta Bai**):\n• **Libre para sa tanan:** 100% libre gamiton ang Dagat Ta Bai para sa mga beachgoers.\n• **Pag-apply isip Beach Owner:** Ang mga tag-iya o caretaker sa beach sa Binongkalan pwede mo-apply sa [Apply page](/apply) pinaagi sa pag-submit sa ilang detalye, **Mayor's / Business Permit (LGU Catmon)**, **Proof of Ownership o Lease Contract**, ug **live selfie KYC verification** (i-review sulod sa 1–3 ka adlaw).`;
     }
-    return `In our **Dagat Ta Bai** system:\n• **100% Free for Visitors:** Dagat Ta Bai is completely free to use with no hidden fees or booking markups.\n• **Beach Owner Registration:** Resort owners and caretakers in Barangay Binongkalan can register via the **Apply page (/apply)** by submitting establishment details, a valid **LGU Catmon Business Permit**, **Proof of Ownership or Lease Contract**, and completing the **live selfie KYC verification** (reviewed within 1–3 business days).`;
+    return `In our **Dagat Ta Bai** system:\n• **100% Free for Visitors:** Dagat Ta Bai is completely free to use with no hidden fees or booking markups.\n• **Beach Owner Registration:** Resort owners and caretakers in Barangay Binongkalan can register via the [Apply page](/apply) by submitting establishment details, a valid **LGU Catmon Business Permit**, **Proof of Ownership or Lease Contract**, and completing the **live selfie KYC verification** (reviewed within 1–3 business days).`;
   }
 
   if (
@@ -582,8 +582,8 @@ export function scanSystemForDirectAnswer(
   ) {
     if (/\b(who\s+(made|built|created)|team|developers|about)\b/i.test(lower)) {
       return isCeb
-        ? `Ang **Dagat Ta Bai** usa ka libre nga beach mapping ug travel guide website para sa **Barangay Binongkalan, Catmon, Cebu**. Gihimo kini sa team nila ni **Karel C. Bugwac, Ana Marie Q. Calo, Charisse V. Garbo, Patrick James D. Leswe, Julie Mae G. Matugas, Kimberly Claire M. Parot, Jessica C. Raganas, Jamaica Sulla, ug Nathaniel James P. Tiro**. Makita sab nimo ang dugang detalye sa **About page (/about)**.`
-        : `**Dagat Ta Bai** is a free coastal beach mapping and travel guide website for **Barangay Binongkalan, Catmon, Cebu**. It was developed by **Karel C. Bugwac, Ana Marie Q. Calo, Charisse V. Garbo, Patrick James D. Leswe, Julie Mae G. Matugas, Kimberly Claire M. Parot, Jessica C. Raganas, Jamaica Sulla, and Nathaniel James P. Tiro**. You can learn more on our **About page (/about)**.`;
+        ? `Ang **Dagat Ta Bai** usa ka libre nga beach mapping ug travel guide website para sa **Barangay Binongkalan, Catmon, Cebu**. Gihimo kini sa team nila ni **Karel C. Bugwac, Ana Marie Q. Calo, Charisse V. Garbo, Patrick James D. Leswe, Julie Mae G. Matugas, Kimberly Claire M. Parot, Jessica C. Raganas, Jamaica Sulla, ug Nathaniel James P. Tiro**. Makita sab nimo ang dugang detalye sa [About page](/about).`
+        : `**Dagat Ta Bai** is a free coastal beach mapping and travel guide website for **Barangay Binongkalan, Catmon, Cebu**. It was developed by **Karel C. Bugwac, Ana Marie Q. Calo, Charisse V. Garbo, Patrick James D. Leswe, Julie Mae G. Matugas, Kimberly Claire M. Parot, Jessica C. Raganas, Jamaica Sulla, and Nathaniel James P. Tiro**. You can learn more on our [About page](/about).`;
     }
     if (/\b(book\s+online|online\s+booking|pay\s+online)\b/i.test(lower)) {
       return isCeb
@@ -592,17 +592,17 @@ export function scanSystemForDirectAnswer(
     }
     if (/\b(contact\s+(support|us|admin)|email|feedback|report)\b/i.test(lower)) {
       return isCeb
-        ? `Pwede ka mokontak sa among team pinaagi sa **Contact page (/contact)** o mag-email sa **dagattabai@gmail.com** aron mo-report og sayop nga presyo, sirado nga dalan, o laing concern. Pwede sab ka mohatag og platform feedback sa **Feedback page (/feedback)**.`
-        : `You can reach our team anytime through the **Contact page (/contact)** or by emailing **dagattabai@gmail.com** to report inaccurate rates, closed roads, or other concerns. You can also share suggestions on our **Feedback page (/feedback)**.`;
+        ? `Pwede ka mokontak sa among team pinaagi sa [Contact page](/contact) o mag-email sa **dagattabai@gmail.com** aron mo-report og sayop nga presyo, sirado nga dalan, o laing concern. Pwede sab ka mohatag og platform feedback sa [Feedback page](/feedback).`
+        : `You can reach our team anytime through the [Contact page](/contact) or by emailing **dagattabai@gmail.com** to report inaccurate rates, closed roads, or other concerns. You can also share suggestions on our [Feedback page](/feedback).`;
     }
     if (/\b(login|sign\s+in|register|create\s+account|account|profile)\b/i.test(lower)) {
       return isCeb
-        ? `Pwede ka mag-create og account sa **Register page (/register)** o mo-sign in sa **Login page (/login)** gamit ang email o Google. Kung naka-login ka, ma-save ang imong **AI chat history** ug makabutang ka og **star ratings ug reviews** sa mga beach!`
-        : `You can create an account on the **Register page (/register)** or sign in on the **Login page (/login)** using your email or Google. Signing in lets you save your **AI chat history** and post **star ratings and reviews** for the beaches!`;
+        ? `Pwede ka mag-create og account sa [Register page](/register) o mo-sign in sa [Login page](/login) gamit ang email o Google. Kung naka-login ka, ma-save ang imong **AI chat history** ug makabutang ka og **star ratings ug reviews** sa mga beach!`
+        : `You can create an account on the [Register page](/register) or sign in on the [Login page](/login) using your email or Google. Signing in lets you save your **AI chat history** and post **star ratings and reviews** for the beaches!`;
     }
     return isCeb
-      ? `Ang **Dagat Ta Bai** usa ka libre nga website para sa pagsuroy sa **4 ka verified beaches sa Barangay Binongkalan, Catmon, Cebu**. Mao kini ang mga feature sa sistema:\n• **Beaches Directory (/beaches):** Presyo sa entrance, cottages, kwarto, oras sa pag-abli, 360° virtual tours, ug reviews.\n• **Interactive Map (/map):** GPS beach pins ug route planner (car, motor, commute, o walking).\n• **Weather & Tides (/weather):** Live weather, 5-day forecast, ug schedule sa taob/hunas.\n• **Owner Application (/apply):** Pagparehistro sa mga tag-iya og beach resort.\n• **Bai AI Guide:** Chat assistant para sa beaches, commute, ug sistema.`
-      : `**Dagat Ta Bai** is a 100% free coastal beach mapping and travel guide website for **Barangay Binongkalan, Catmon, Cebu**. Here is what you can do on the system:\n• **Beaches Directory (/beaches):** Browse verified entrance fees, cottage & room rates, real-time open/closed status, 360° virtual tours, and visitor reviews.\n• **Interactive Map (/map):** View GPS-verified beach pins and plan routes by car, motorcycle, commute, or walking.\n• **Weather & Tides (/weather):** Check live weather, wave height, 5-day forecasts, and high/low tide schedules.\n• **User Accounts (/login & /register):** Sign in to save AI chat history and post beach reviews.\n• **Beach Owner Application (/apply):** Resort owners can apply to list and manage their beach.`;
+      ? `Ang **Dagat Ta Bai** usa ka libre nga website para sa pagsuroy sa **4 ka verified beaches sa Barangay Binongkalan, Catmon, Cebu**. Mao kini ang mga feature sa sistema:\n• **[Beaches Directory](/beaches):** Presyo sa entrance, cottages, kwarto, oras sa pag-abli, 360° virtual tours, ug reviews.\n• **[Interactive Map](/map):** GPS beach pins ug route planner (car, motor, commute, o walking).\n• **[Weather & Tides](/weather):** Live weather, 5-day forecast, ug schedule sa taob/hunas.\n• **[Beach Owner Application](/apply):** Pagparehistro sa mga tag-iya og beach resort.\n• **Bai AI Guide:** Chat assistant para sa beaches, commute, ug sistema.`
+      : `**Dagat Ta Bai** is a 100% free coastal beach mapping and travel guide website for **Barangay Binongkalan, Catmon, Cebu**. Here is what you can do on the system:\n• **[Beaches Directory](/beaches):** Browse verified entrance fees, cottage & room rates, real-time open/closed status, 360° virtual tours, and visitor reviews.\n• **[Interactive Map](/map):** View GPS-verified beach pins and plan routes by car, motorcycle, commute, or walking.\n• **[Weather & Tides](/weather):** Check live weather, wave height, 5-day forecasts, and high/low tide schedules.\n• **User Accounts ([Login](/login) & [Register](/register)):** Sign in to save AI chat history and post beach reviews.\n• **[Beach Owner Application](/apply):** Resort owners can apply to list and manage their beach.`;
   }
 
   // 10. DYNAMIC FULL-TEXT MATCH ACROSS DATABASE DESCRIPTIONS, COTTAGES, FACILITIES & AMENITIES

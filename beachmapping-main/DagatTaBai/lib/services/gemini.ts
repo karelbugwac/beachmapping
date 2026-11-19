@@ -104,9 +104,60 @@ async function getScannedDatabaseContext(
   return { contextText, snapshot };
 }
 
+function convertMarkdownTablesToBullets(text: string): string {
+  const lines = text.split('\n');
+  const out: string[] = [];
+  let inTable = false;
+  let skippedHeader = false;
+
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i].trim();
+    const isTableRow = /^\|.+\|$/.test(line);
+    const isSeparatorRow = /^\|[\s:-]+(?:\|[\s:-]+)+\|?$/.test(line);
+
+    if (isSeparatorRow) {
+      inTable = true;
+      skippedHeader = true;
+      continue;
+    }
+
+    if (isTableRow) {
+      // Check if next line is a separator row (meaning this line is the table header)
+      const nextLine = (lines[i + 1] || '').trim();
+      if (/^\|[\s:-]+(?:\|[\s:-]+)+\|?$/.test(nextLine)) {
+        inTable = true;
+        skippedHeader = false;
+        continue;
+      }
+
+      const cells = line
+        .slice(1, -1)
+        .split('|')
+        .map((c) => c.trim())
+        .filter(Boolean);
+
+      if (cells.length >= 2) {
+        const first = cells[0].startsWith('**') ? cells[0] : `**${cells[0]}**`;
+        out.push(`• ${first}: ${cells.slice(1).join(' — ')}`);
+      } else if (cells.length === 1) {
+        out.push(`• ${cells[0]}`);
+      }
+      inTable = true;
+      continue;
+    }
+
+    if (inTable && !line) {
+      inTable = false;
+      skippedHeader = false;
+    }
+    out.push(lines[i]);
+  }
+
+  return out.join('\n');
+}
+
 function formatReadableAiResponse(text: string): string {
-  return text
-    .replace(/\r\n/g, '\n')
+  return convertMarkdownTablesToBullets(text.replace(/\r\n/g, '\n'))
     .replace(/^#{1,6}\s+(.+)$/gm, '**$1**')
     .replace(/^[ \t]*[-*][ \t]+/gm, '• ')
     .replace(/^\s*---+\s*$/gm, '')
@@ -124,8 +175,8 @@ function buildSystemInstruction(
     detectedLang === 'ceb'
       ? 'STRICT LANGUAGE DIRECTIVE FOR THIS TURN: The user wrote their question in BISAYA / CEBUANO. You MUST answer 100% in natural, clear, everyday Bisaya / Cebuano.'
       : detectedLang === 'tl'
-      ? 'STRICT LANGUAGE DIRECTIVE FOR THIS TURN: The user wrote their question in TAGALOG. You MUST answer 100% in natural, clear Tagalog.'
-      : 'STRICT LANGUAGE DIRECTIVE FOR THIS TURN: The user wrote their question in ENGLISH. You MUST answer 100% in clear, natural English (translate any Bisaya terms like "batoon", "sugbaanan", "taob/hunas", or "dali molawm" into plain English instead of leaving untranslated Bisaya words).';
+        ? 'STRICT LANGUAGE DIRECTIVE FOR THIS TURN: The user wrote their question in TAGALOG. You MUST answer 100% in natural, clear Tagalog.'
+        : 'STRICT LANGUAGE DIRECTIVE FOR THIS TURN: The user wrote their question in ENGLISH. You MUST answer 100% in clear, natural English (translate any Bisaya terms like "batoon", "sugbaanan", "taob/hunas", or "dali molawm" into plain English instead of leaving untranslated Bisaya words).';
 
   return [
     'You are Bai, local guide for Dagat Ta Bai in Barangay Binongkalan, Catmon, Cebu. If asked what your name is or who you are, answer that you are "Bai, local guide".',
@@ -133,11 +184,13 @@ function buildSystemInstruction(
     'CLARITY & EASY-TO-UNDERSTAND RULES (VERY IMPORTANT):',
     '• Direct Answer First: Always answer the user’s exact question in the very first 1–2 sentences so they get the point immediately.',
     '• Plain Human Language: Never dump raw database text, pipe-separated values (like "20|30"), JSON, or internal slugs. Always explain prices, hours, and conditions in simple, everyday words.',
-    '• Short & Scannable: Keep answers concise and well-structured. Use short paragraphs and "•" bullet points when listing beaches or steps. Do NOT use "#" markdown headings or long walls of text.',
-    '• Always Name the Beach Clearly: When answering about a beach or comparing options, clearly state the beach name (**Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, or **Hinagdan Beach**) so there is zero confusion.',
+    '• Short & Scannable: Keep answers concise and well-structured. Use short paragraphs and simple "•" bullet points when listing items, tips, or beaches. NEVER use markdown tables ("| ... |"), "#" headings, or long walls of text.',
+    '• Clickable Links: When referring to a website page or beach profile, NEVER show raw paths or file directories like "(/map)" or "(/beaches)" in parentheses. Instead, make the page or beach name itself a clean clickable markdown link such as [Interactive Map](/map), [Beaches Directory](/beaches), [Weather & Tides](/weather), [Beach Owner Application](/apply), or [Lite Bay Resort](/beaches/litebay-resort) (never invent external domains like dagattabai.com).',
+    '• Always Name the Beach Clearly: When answering about a beach or comparing options, clearly state the beach name (**Rañola Beach**, **Lite Bay Resort**, **Majestique View Resort**, or **Hinagdan Beach**) so there is zero confusion.',
     '• End with a Helpful Next Step (Optional): If helpful, finish with one short follow-up question (for example, asking where they are commuting from).',
     'SOURCES & AI FORMULATION (SYSTEM + DATABASE + GEMINI AI): Formulate your answers clearly based on: (1) our Dagat Ta Bai System website pages, features, commute routes, and platform policies, (2) our live Supabase Database records (beaches, cottages, facilities, ratings, reviews, rules, posts, real-time open/closed status, weather, and tides), and (3) your Gemini AI reasoning. You CAN and SHOULD answer questions about the Dagat Ta Bai website itself (e.g., how the map works, accounts/login, reviews, owner applications, weather/tides page, contact/feedback, privacy/terms, and team) as well as the 4 verified beaches in Barangay Binongkalan, Catmon, Cebu (never call Hinagdan Beach "Hinagdan 1", and never mention Turtle Point Beach) and commute routes. Never invent prices, amenities, or unverified beaches.',
-    'NORMAL CONVERSATIONAL AI BEHAVIOR: Have a natural, warm conversation just like ChatGPT or Gemini. Pay close attention to conversation history so follow-up questions ("it", "there", "the first one", "what about the second one?", "why?") are resolved accurately.',
+    'STRICT TOPIC SCOPE (NEVER ANSWER OFF-TOPIC QUESTIONS): You are ONLY a local guide for Dagat Ta Bai in Barangay Binongkalan, Catmon, Cebu. If the user asks ANY off-topic or general knowledge question unrelated to Dagat Ta Bai, the 4 verified beaches, Cebu/Catmon beach trips, commuting/directions, weather/tides, or the Dagat Ta Bai website (for example: world geography like "What is the largest country in the world?", math, coding, science, history, celebrities, news, or general trivia), DO NOT answer the off-topic question at all. Politely decline in the user’s language, explain that you are Bai, local guide for Dagat Ta Bai and can only help with Barangay Binongkalan beaches, commute directions, weather & tides, or the Dagat Ta Bai website, and invite them to ask a beach-related question instead.',
+    'CONVERSATIONAL CONTEXT: Be warm, natural, and helpful for in-scope questions. Pay close attention to conversation history so in-scope follow-up questions ("it", "there", "the first one", "what about the second one?", "why?") are resolved accurately.',
     `The signed-in user's display name is ${userName ? JSON.stringify(userName) : 'not available'}.`,
     `SYSTEM & DATABASE RECORDS:\n${databaseContext}`,
   ].join('\n\n');
@@ -179,12 +232,12 @@ async function callVertexOrRestGenerateContent(
 ): Promise<{ text: string | null; authFailed: boolean }> {
   const endpoints = apiKey.startsWith('AQ.')
     ? [
-        `https://aiplatform.googleapis.com/v1/publishers/google/models/${modelName}:generateContent?key=${encodeURIComponent(apiKey)}`,
-        `https://aiplatform.googleapis.com/v1beta1/publishers/google/models/${modelName}:generateContent?key=${encodeURIComponent(apiKey)}`,
-      ]
+      `https://aiplatform.googleapis.com/v1/publishers/google/models/${modelName}:generateContent?key=${encodeURIComponent(apiKey)}`,
+      `https://aiplatform.googleapis.com/v1beta1/publishers/google/models/${modelName}:generateContent?key=${encodeURIComponent(apiKey)}`,
+    ]
     : [
-        `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(apiKey)}`,
-      ];
+      `https://generativelanguage.googleapis.com/v1beta/models/${modelName}:generateContent?key=${encodeURIComponent(apiKey)}`,
+    ];
 
   const groundedContents = [
     {
@@ -195,7 +248,7 @@ async function callVertexOrRestGenerateContent(
       role: 'model' as const,
       parts: [
         {
-          text: 'Understood! I am Bai, local guide for Dagat Ta Bai in Barangay Binongkalan, Catmon, Cebu. I will have a natural, friendly AI conversation with the user while strictly using only the 4 verified beaches and commute routes in our system.',
+          text: 'Understood! I am Bai, local guide for Dagat Ta Bai in Barangay Binongkalan, Catmon, Cebu. I will answer questions about our 4 verified beaches, commute routes, weather & tides, and the Dagat Ta Bai website, and I will politely decline any unrelated or general-knowledge questions.',
         },
       ],
     },

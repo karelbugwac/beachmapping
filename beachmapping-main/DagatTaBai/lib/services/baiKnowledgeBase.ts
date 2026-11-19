@@ -3,7 +3,7 @@
  * 4 Official Verified Beaches:
  * 1. Rañola Beach (Raniola)
  * 2. Lite Bay Resort (Litebay)
- * 3. Majestique Beach
+ * 3. Majestique View Resort
  * 4. Hinagdan Beach (Hinagdan)
  *
  * Fully supports Bisaya and English questions (both specific per-beach and broad questions).
@@ -11,17 +11,17 @@
 
 export const VERIFIED_BINONGKALAN_KNOWLEDGE_CONTEXT = `
 OFFICIAL VERIFIED BEACH RESORTS IN BARANGAY BINONGKALAN, CATMON, CEBU:
-(Only 4 verified beaches: Rañola Beach, Lite Bay Resort, Majestique Beach, and Hinagdan Beach)
+(Only 4 verified beaches: Rañola Beach, Lite Bay Resort, Majestique View Resort, and Hinagdan Beach)
 
 GENERAL RULES & SPECIFIC ANSWERS FOR BARANGAY BINONGKALAN BEACHES:
 
 1. PINAKADUOL NA BEACH / NEAREST BEACH:
    - Kung gikan sa SOUTH (Cebu City, Talamban, Mandaue, Lapu-Lapu, Consolacion, Liloan, Compostela, Danao, Carmen, Talisay, Minglanilla, Naga, Carcar, Toledo, etc.):
      • Pinakaduol nga beach: Rañola Beach (Raniola) ang unang maagian.
-     • Pagkasunod-sunod: Rañola Beach ➔ Lite Bay Resort ➔ Majestique Beach ➔ Hinagdan Beach.
+     • Pagkasunod-sunod: Rañola Beach ➔ Lite Bay Resort ➔ Majestique View Resort ➔ Hinagdan Beach.
    - Kung gikan sa NORTH (Sogod, Borbon, Tabogon, Bogo City, San Remigio, Medellin, Daanbantayan, Maya, Tabuelan, Tuburan, etc.):
      • Pinakaduol nga beach: Hinagdan Beach ang unang maagian.
-     • Pagkasunod-sunod: Hinagdan Beach ➔ Majestique Beach ➔ Lite Bay Resort ➔ Rañola Beach.
+     • Pagkasunod-sunod: Hinagdan Beach ➔ Majestique View Resort ➔ Lite Bay Resort ➔ Rañola Beach.
    - Broad ("Unsay pinakaduol na beach?"):
      • If sa South gikan: Rañola Beach ang pinakaduol.
      • If sa North gikan: Hinagdan Beach ang pinakaduol.
@@ -29,14 +29,14 @@ GENERAL RULES & SPECIFIC ANSWERS FOR BARANGAY BINONGKALAN BEACHES:
 2. BATOON BA O DILI / ROCKY SHORELINE:
    - Rañola Beach (Raniola): Batoon gamay (slightly rocky with small pebbles/stones).
    - Lite Bay Resort: Batoon gamay (slightly rocky).
-   - Majestique Beach: Dili ra batoon (not rocky).
+   - Majestique View Resort: Dili ra batoon (not rocky).
    - Hinagdan Beach: Dili batoon (sand/balas — natural sandy shoreline).
    - Broad ("Asay batoon na beach?"): Rañola ug Lite Bay kay batoon gamay, samtang ang Majestique dili ra batoon, ug ang Hinagdan kay dili batoon (balas).
 
 3. SUGBAANAN / GRILLING AREA:
    - Rañola Beach: Naay sugbaanan.
    - Lite Bay Resort: Naay sugbaanan.
-   - Majestique Beach: Naay sugbaanan.
+   - Majestique View Resort: Naay sugbaanan.
    - Hinagdan Beach: Naay sugbaanan.
    - Broad ("Asa na beach ang naay sugbaanan?"): Naay sugbaanan ang tanang 4 ka beach (Rañola, Lite Bay, Majestique, Hinagdan).
 
@@ -61,19 +61,19 @@ GENERAL RULES & SPECIFIC ANSWERS FOR BARANGAY BINONGKALAN BEACHES:
 
 9. ACCESSIBLE SA MGA SENIOR CITIZEN:
    - Rañola Beach (Raniola): Yes, accessible sa senior citizens (patag ug dali rang lakton gikan sa highway).
-   - Lite Bay Resort, Majestique Beach, Hinagdan Beach: Dili accessible sa senior citizens tungod kay daghan ug hagdanan, maglisod ang mga senior.
+   - Lite Bay Resort, Majestique View Resort, Hinagdan Beach: Dili accessible sa senior citizens tungod kay daghan ug hagdanan, maglisod ang mga senior.
    - Broad ("Accessible ba sa mga senior citizen?"): Rañola ra ang yes accessible sa seniors; the rest of the beaches (Lite Bay, Majestique, Hinagdan) are not accessible since daghan ug hagdanan, maglisod ang mga senior.
 
 10. SINKHOLE:
     - Rañola Beach: Naay sinkhole pero layo ra sa swimming area (safe ra maligo sa duol).
     - Lite Bay Resort: Naa pero layo ra sad.
-    - Majestique Beach: Wala.
+    - Majestique View Resort: Wala.
     - Hinagdan Beach: Wala.
     - Broad ("Are there any sinkholes in any of the beaches?"): Rañola naay sinkhole pero layo ra, Lite Bay naa pero layo ra sad, Majestique wala, Hinagdan wala.
 
 11. DALI MOLAWM / DEPTH:
     - Lite Bay Resort: Dali molawm kay dili siya mohunas ug pamaayo.
-    - Majestique Beach: Dali molawm kay dili siya mohunas ug pamaayo.
+    - Majestique View Resort: Dali molawm kay dili siya mohunas ug pamaayo.
     - Rañola Beach: Dili ra dali molawm (gradual slope).
     - Hinagdan Beach: Dili ra dali molawm (gradual slope ug balas).
     - Broad ("Asa na beaches ang dali molawm?"): Lite Bay ug Majestique dali ra molawm tungod kay dili sila mohunas ug pamaayo; samtang ang Rañola ug Hinagdan dili ra dali molawm.
@@ -126,7 +126,7 @@ DETAILED BEACH PROFILES:
 - Pets: Pwede magdala og pets.
 - Parking: FREE (Walay bayad).
 
-3. MAJESTIQUE BEACH
+3. MAJESTIQUE VIEW RESORT
 - Location: Barangay Binongkalan, Catmon, Cebu (Along Cebu North National Highway)
 - Contact Number: 0943-622-7972
 - Operating Hours: Day Use: 7:00 AM – 5:00 PM | Overnight: 6:00 PM – 6:00 AM (Open every day).
@@ -311,7 +311,7 @@ const BEACH_DATA: Record<BeachKey, StructuredBeachData> = {
 
   majestique: {
     key: 'majestique',
-    name: 'Majestique Beach',
+    name: 'Majestique View Resort',
     aliases: ['majestique', 'majestic'],
     contact: '0943-622-7972',
     hoursEn: '**7:00 AM to 5:00 PM** (Day use) and **6:00 PM to 6:00 AM** (Overnight), open every day.',
@@ -322,28 +322,28 @@ const BEACH_DATA: Record<BeachKey, StructuredBeachData> = {
     cottagesCeb: '**₱500 hangtod ₱1,000** sa day cottage, ug **₱800 hangtod ₱1,200** sa overnight cottage.',
     roomsEn: '**₱2,000** for regular room and **₱3,500** for air-conditioned (AC) room.',
     roomsCeb: '**₱2,000** sa regular room ug **₱3,500** sa aircon (AC) room.',
-    batoonCeb: 'Ang **Majestique Beach** kay **dili ra batoon** (dili ra kaayo batoon ang baybayon).',
-    batoonEn: '**Majestique Beach** is **not rocky**.',
-    sugbaCeb: 'Oo, **naay sugbaanan** sa **Majestique Beach**.',
-    sugbaEn: 'Yes, **Majestique Beach** has a designated **grilling area**.',
-    safeCeb: 'Oo, **safe maligo sa Majestique Beach**, mag-amping lang gamay tungod kay medyo dali kini molawm. Naay abangan nga life jackets tag **₱50**. Palihug tan-awa sab ang Live Weather update sa among website sa dili pa maligo.',
-    safeEn: 'Yes, **Majestique Beach is safe for swimming**, just take extra care as it gets deep quickly. Life jackets are available for rent for **₱50**. Please check our website Live Weather update before swimming.',
-    lifeguardCeb: '**Walay lifeguard** sa **Majestique Beach** (walay lifeguard ang mga beach sa Binongkalan), pero naay maabangan nga **life jackets tag ₱50**.',
-    lifeguardEn: 'There is **no lifeguard** at **Majestique Beach** (no lifeguards at any Binongkalan beach), but **life jackets are available for rent for ₱50**.',
-    storeCeb: 'Oo, **naay store ug foods** sa **Majestique Beach** ug naa rasad mga tindahan sa duol daplin sa highway, pero **walay mga baligya nga karne (meat)**. Palit daan og karne sa merkado kung magplano mong magsugba.',
-    storeEn: 'Yes, there are **stores and food** at **Majestique Beach** and nearby stores along the highway, but **they do not sell raw meat**. Please buy meat from the market in advance if you plan to grill.',
-    showerCeb: 'Oo, **naay shower / kaligoan** sa **Majestique Beach** (₱10 ang himasa / rinse).',
-    showerEn: 'Yes, **Majestique Beach has showers** and rinse facilities (₱10 for shower / rinse).',
-    seniorCeb: '**Dili accessible sa mga senior citizen ang Majestique Beach** kay **daghan kini ug hagdanan** paubos sa dagat, busa maglisod ang mga senior.',
-    seniorEn: '**Majestique Beach is not accessible for senior citizens** because there are **many steep stairs** leading down to the shore, making it difficult for seniors.',
-    sinkholeCeb: '**Walay sinkhole** sa **Majestique Beach**.',
-    sinkholeEn: 'There is **no sinkhole** at **Majestique Beach**.',
-    molawmCeb: 'Oo, **dali molawm ang Majestique Beach** tungod kay **dili kini mohunas ug pamaayo** bisan kung low tide.',
-    molawmEn: 'Yes, **Majestique Beach gets deep quickly** because the water does not recede deeply even during low tide.',
-    petsCeb: 'Oo, **pwede kaayo magdala og pets** sa **Majestique Beach**! Palihug lang og bantay sa inyong binuhi ug tipigi ang kalimpyo sa palibot.',
-    petsEn: 'Yes, **pets are allowed** at **Majestique Beach**! Please supervise your pets and help maintain cleanliness.',
-    tideCeb: 'Para sa kahimtang sa taob o hunas sa **Majestique Beach**, palihug **i-refer ang Live Tide Status sa Weather section** diri sa among website. Timan-i sab nga ang Majestique kay **dili mohunas ug pamaayo** bisan kung low tide.',
-    tideEn: 'To check if it is high tide or low tide at **Majestique Beach**, please **refer to the Live Tide Status in the Weather section** on our website. Note that Majestique stays relatively deep even during low tide.',
+    batoonCeb: 'Ang **Majestique View Resort** kay **dili ra batoon** (dili ra kaayo batoon ang baybayon).',
+    batoonEn: '**Majestique View Resort** is **not rocky**.',
+    sugbaCeb: 'Oo, **naay sugbaanan** sa **Majestique View Resort**.',
+    sugbaEn: 'Yes, **Majestique View Resort** has a designated **grilling area**.',
+    safeCeb: 'Oo, **safe maligo sa Majestique View Resort**, mag-amping lang gamay tungod kay medyo dali kini molawm. Naay abangan nga life jackets tag **₱50**. Palihug tan-awa sab ang Live Weather update sa among website sa dili pa maligo.',
+    safeEn: 'Yes, **Majestique View Resort is safe for swimming**, just take extra care as it gets deep quickly. Life jackets are available for rent for **₱50**. Please check our website Live Weather update before swimming.',
+    lifeguardCeb: '**Walay lifeguard** sa **Majestique View Resort** (walay lifeguard ang mga beach sa Binongkalan), pero naay maabangan nga **life jackets tag ₱50**.',
+    lifeguardEn: 'There is **no lifeguard** at **Majestique View Resort** (no lifeguards at any Binongkalan beach), but **life jackets are available for rent for ₱50**.',
+    storeCeb: 'Oo, **naay store ug foods** sa **Majestique View Resort** ug naa rasad mga tindahan sa duol daplin sa highway, pero **walay mga baligya nga karne (meat)**. Palit daan og karne sa merkado kung magplano mong magsugba.',
+    storeEn: 'Yes, there are **stores and food** at **Majestique View Resort** and nearby stores along the highway, but **they do not sell raw meat**. Please buy meat from the market in advance if you plan to grill.',
+    showerCeb: 'Oo, **naay shower / kaligoan** sa **Majestique View Resort** (₱10 ang himasa / rinse).',
+    showerEn: 'Yes, **Majestique View Resort has showers** and rinse facilities (₱10 for shower / rinse).',
+    seniorCeb: '**Dili accessible sa mga senior citizen ang Majestique View Resort** kay **daghan kini ug hagdanan** paubos sa dagat, busa maglisod ang mga senior.',
+    seniorEn: '**Majestique View Resort is not accessible for senior citizens** because there are **many steep stairs** leading down to the shore, making it difficult for seniors.',
+    sinkholeCeb: '**Walay sinkhole** sa **Majestique View Resort**.',
+    sinkholeEn: 'There is **no sinkhole** at **Majestique View Resort**.',
+    molawmCeb: 'Oo, **dali molawm ang Majestique View Resort** tungod kay **dili kini mohunas ug pamaayo** bisan kung low tide.',
+    molawmEn: 'Yes, **Majestique View Resort gets deep quickly** because the water does not recede deeply even during low tide.',
+    petsCeb: 'Oo, **pwede kaayo magdala og pets** sa **Majestique View Resort**! Palihug lang og bantay sa inyong binuhi ug tipigi ang kalimpyo sa palibot.',
+    petsEn: 'Yes, **pets are allowed** at **Majestique View Resort**! Please supervise your pets and help maintain cleanliness.',
+    tideCeb: 'Para sa kahimtang sa taob o hunas sa **Majestique View Resort**, palihug **i-refer ang Live Tide Status sa Weather section** diri sa among website. Timan-i sab nga ang Majestique kay **dili mohunas ug pamaayo** bisan kung low tide.',
+    tideEn: 'To check if it is high tide or low tide at **Majestique View Resort**, please **refer to the Live Tide Status in the Weather section** on our website. Note that Majestique stays relatively deep even during low tide.',
     parkingCeb: '**LIBRE** (walay bayad ang parking).',
     parkingEn: '**FREE** (no parking fee).',
     restroomCeb: '**₱10** sa himasa / shower.',
@@ -549,9 +549,9 @@ const SPECIFIC_CEBU_ORIGINS: SpecificOriginRoute[] = [
     label: 'Barangay Duyan / Macaas, Catmon',
     direction: 'south',
     timeEn: '2 to 5 minutes',
-    stepsEn: 'Ride a tricycle, multicab, or northbound bus heading north along the national highway directly to **Rañola Beach, Lite Bay Resort, Majestique Beach, or Hinagdan Beach** in Barangay Binongkalan.',
+    stepsEn: 'Ride a tricycle, multicab, or northbound bus heading north along the national highway directly to **Rañola Beach, Lite Bay Resort, Majestique View Resort, or Hinagdan Beach** in Barangay Binongkalan.',
     timeCeb: '2 hangtod 5 minutos',
-    stepsCeb: 'Sakay lang og tricycle, multicab, o bus pa-Norte subay sa highway diretso sa **Rañola Beach, Lite Bay Resort, Majestique Beach, o Hinagdan Beach** sa Barangay Binongkalan.',
+    stepsCeb: 'Sakay lang og tricycle, multicab, o bus pa-Norte subay sa highway diretso sa **Rañola Beach, Lite Bay Resort, Majestique View Resort, o Hinagdan Beach** sa Barangay Binongkalan.',
   },
   {
     pattern: /\b(catmondaan|flores|corazon|san jose|catmon proper|poblacion catmon)\b/i,
@@ -623,9 +623,9 @@ const SPECIFIC_CEBU_ORIGINS: SpecificOriginRoute[] = [
     label: 'Liloan, Cebu',
     direction: 'south',
     timeEn: '50 minutes to 1 hour 10 minutes',
-    stepsEn: '1. **Where to wait in Liloan:** Wait along the Cebu North National Highway anywhere in Liloan (such as Yati, Jubay, Cotcot, or in front of Gaisano Grand Mall Liloan).\n2. **What to ride:** Board any northbound Ceres bus (aircon or non-aircon) or mini-bus with a signboard for **Sogod, Bogo, San Remigio, Medellin, or Maya**.\n3. **Drop-off instruction:** Tell the conductor to drop you off at **Barangay Binongkalan, Catmon** (or specify: **Rañola Beach, Lite Bay Resort, Majestique Beach, or Hinagdan Beach**).\n4. **Travel route:** The bus travels along Compostela, Danao City, Carmen, and Catmon Town Proper, then immediately enters Barangay Binongkalan.\n5. **First beach reached:** Coming from Liloan (South), the first beach on your right along the highway is **Rañola Beach (Raniola)**, followed by **Lite Bay Resort**, **Majestique Beach**, and **Hinagdan Beach**.',
+    stepsEn: '1. **Where to wait in Liloan:** Wait along the Cebu North National Highway anywhere in Liloan (such as Yati, Jubay, Cotcot, or in front of Gaisano Grand Mall Liloan).\n2. **What to ride:** Board any northbound Ceres bus (aircon or non-aircon) or mini-bus with a signboard for **Sogod, Bogo, San Remigio, Medellin, or Maya**.\n3. **Drop-off instruction:** Tell the conductor to drop you off at **Barangay Binongkalan, Catmon** (or specify: **Rañola Beach, Lite Bay Resort, Majestique View Resort, or Hinagdan Beach**).\n4. **Travel route:** The bus travels along Compostela, Danao City, Carmen, and Catmon Town Proper, then immediately enters Barangay Binongkalan.\n5. **First beach reached:** Coming from Liloan (South), the first beach on your right along the highway is **Rañola Beach (Raniola)**, followed by **Lite Bay Resort**, **Majestique View Resort**, and **Hinagdan Beach**.',
     timeCeb: '50 minutos hangtod 1 ka oras ug 10 minutos',
-    stepsCeb: '1. **Hain Moatang sa Liloan:** Atang daplin sa Cebu North National Highway sa Liloan (sama sa Yati, Jubay, Cotcot, o atbang sa Gaisano Grand Mall Liloan).\n2. **Unsay Sakyan:** Sakay og Ceres bus (aircon o ordinary) o mini-bus pa-Norte nga may karatula nga **Sogod, Bogo, San Remigio, Medellin, o Maya**.\n3. **Pahibalo sa Konduktor:** Ingna ang konduktor nga manaog ka sa **Barangay Binongkalan, Catmon** (o isulti ang specific nga beach: **Rañola Beach, Lite Bay Resort, Majestique Beach, o Hinagdan Beach**).\n4. **Agianan sa Byahe:** Moagi ang bus subay sa Compostela, Danao City, Carmen, ug Catmon Town Proper sa dili pa mosulod sa Barangay Binongkalan.\n5. **Unang Maagian:** Gikan sa Liloan (South), ang pinakaunang maagian sa daplin sa highway kay ang **Rañola Beach (Raniola)**, gisundan dayon sa **Lite Bay Resort**, **Majestique Beach**, ug **Hinagdan Beach**.',
+    stepsCeb: '1. **Hain Moatang sa Liloan:** Atang daplin sa Cebu North National Highway sa Liloan (sama sa Yati, Jubay, Cotcot, o atbang sa Gaisano Grand Mall Liloan).\n2. **Unsay Sakyan:** Sakay og Ceres bus (aircon o ordinary) o mini-bus pa-Norte nga may karatula nga **Sogod, Bogo, San Remigio, Medellin, o Maya**.\n3. **Pahibalo sa Konduktor:** Ingna ang konduktor nga manaog ka sa **Barangay Binongkalan, Catmon** (o isulti ang specific nga beach: **Rañola Beach, Lite Bay Resort, Majestique View Resort, o Hinagdan Beach**).\n4. **Agianan sa Byahe:** Moagi ang bus subay sa Compostela, Danao City, Carmen, ug Catmon Town Proper sa dili pa mosulod sa Barangay Binongkalan.\n5. **Unang Maagian:** Gikan sa Liloan (South), ang pinakaunang maagian sa daplin sa highway kay ang **Rañola Beach (Raniola)**, gisundan dayon sa **Lite Bay Resort**, **Majestique View Resort**, ug **Hinagdan Beach**.',
   },
   {
     pattern: /\b(consolacion|cansaga|pitogo|lamac|tugbungan|nangka|tayud|casili)\b/i,
@@ -892,24 +892,24 @@ function matchNearestBeachFromLocation(userQuery: string): string | null {
 
     if (origin.direction === 'north') {
       if (isCeb) {
-        return `**Pinakaduol nga beach gikan sa ${placeName} (${origin.label}):**\n• Tungod kay gikan ka sa **North**, ang unang maagian ug **pinakaduol nga beach** sa Barangay Binongkalan kay ang **Hinagdan Beach** (gisundan dayon sa **Majestique Beach**, **Lite Bay Resort**, ug **Rañola Beach**).\n• **Oras sa Byahe:** **${origin.timeCeb}**\n• **Unsaon Pag-adto:** ${origin.stepsCeb}`;
+        return `**Pinakaduol nga beach gikan sa ${placeName} (${origin.label}):**\n• Tungod kay gikan ka sa **North**, ang unang maagian ug **pinakaduol nga beach** sa Barangay Binongkalan kay ang **Hinagdan Beach** (gisundan dayon sa **Majestique View Resort**, **Lite Bay Resort**, ug **Rañola Beach**).\n• **Oras sa Byahe:** **${origin.timeCeb}**\n• **Unsaon Pag-adto:** ${origin.stepsCeb}`;
       }
-      return `**Nearest beach from ${placeName} (${origin.label}):**\n• Since you are coming from the **North**, the first and **nearest beach** you reach in Barangay Binongkalan is **Hinagdan Beach** (followed immediately by **Majestique Beach**, **Lite Bay Resort**, and **Rañola Beach**).\n• **Travel Time:** **${origin.timeEn}**\n• **How to Commute:** ${origin.stepsEn}`;
+      return `**Nearest beach from ${placeName} (${origin.label}):**\n• Since you are coming from the **North**, the first and **nearest beach** you reach in Barangay Binongkalan is **Hinagdan Beach** (followed immediately by **Majestique View Resort**, **Lite Bay Resort**, and **Rañola Beach**).\n• **Travel Time:** **${origin.timeEn}**\n• **How to Commute:** ${origin.stepsEn}`;
     }
 
     // South or mountain direction
     if (isCeb) {
-      return `**Pinakaduol nga beach gikan sa ${placeName} (${origin.label}):**\n• Tungod kay gikan ka sa **South**, ang unang maagian ug **pinakaduol nga beach** sa Barangay Binongkalan kay ang **Rañola Beach (Raniola)** (gisundan dayon sa **Lite Bay Resort**, **Majestique Beach**, ug **Hinagdan Beach**).\n• **Oras sa Byahe:** **${origin.timeCeb}**\n• **Unsaon Pag-adto:** ${origin.stepsCeb}`;
+      return `**Pinakaduol nga beach gikan sa ${placeName} (${origin.label}):**\n• Tungod kay gikan ka sa **South**, ang unang maagian ug **pinakaduol nga beach** sa Barangay Binongkalan kay ang **Rañola Beach (Raniola)** (gisundan dayon sa **Lite Bay Resort**, **Majestique View Resort**, ug **Hinagdan Beach**).\n• **Oras sa Byahe:** **${origin.timeCeb}**\n• **Unsaon Pag-adto:** ${origin.stepsCeb}`;
     }
-    return `**Nearest beach from ${placeName} (${origin.label}):**\n• Since you are coming from the **South**, the first and **nearest beach** you reach in Barangay Binongkalan is **Rañola Beach (Raniola)** (followed immediately by **Lite Bay Resort**, **Majestique Beach**, and **Hinagdan Beach**).\n• **Travel Time:** **${origin.timeEn}**\n• **How to Commute:** ${origin.stepsEn}`;
+    return `**Nearest beach from ${placeName} (${origin.label}):**\n• Since you are coming from the **South**, the first and **nearest beach** you reach in Barangay Binongkalan is **Rañola Beach (Raniola)** (followed immediately by **Lite Bay Resort**, **Majestique View Resort**, and **Hinagdan Beach**).\n• **Travel Time:** **${origin.timeEn}**\n• **How to Commute:** ${origin.stepsEn}`;
   }
 
   // Broad query: "Unsay pinakaduol na beach?"
   if (isCeb) {
-    return `Mao kini ang tubag para sa **pinakaduol nga beach** sa Barangay Binongkalan:\n\n• **Kung gikan ka sa South** (sama sa Cebu City, Mandaue, Consolacion, Liloan, Compostela, Danao, Carmen, o Catmon Proper):\n  ➔ Ang pinakaduol ug unang maagian kay ang **Rañola Beach (Raniola)**.\n  ➔ Pagkasunod-sunod sa mga beach: **Rañola Beach** ➔ **Lite Bay Resort** ➔ **Majestique Beach** ➔ **Hinagdan Beach**.\n\n• **Kung gikan ka sa North** (sama sa Sogod, Borbon, Tabogon, Bogo City, San Remigio, Medellin, o Daanbantayan):\n  ➔ Ang pinakaduol ug unang maagian kay ang **Hinagdan Beach**.\n  ➔ Pagkasunod-sunod sa mga beach: **Hinagdan Beach** ➔ **Majestique Beach** ➔ **Lite Bay Resort** ➔ **Rañola Beach**.\n\n💡 **Tip:** Pwede nimong i-type ang imong eksaktong lokasyon (pananglitan: *"Pinakaduol gikan sa Talamban"* o *"Pinakaduol gikan sa Bogo"*) aron mahatagan tika sa eksaktong oras sa byahe ug commute!`;
+    return `Mao kini ang tubag para sa **pinakaduol nga beach** sa Barangay Binongkalan:\n\n• **Kung gikan ka sa South** (sama sa Cebu City, Mandaue, Consolacion, Liloan, Compostela, Danao, Carmen, o Catmon Proper):\n  ➔ Ang pinakaduol ug unang maagian kay ang **Rañola Beach (Raniola)**.\n  ➔ Pagkasunod-sunod sa mga beach: **Rañola Beach** ➔ **Lite Bay Resort** ➔ **Majestique View Resort** ➔ **Hinagdan Beach**.\n\n• **Kung gikan ka sa North** (sama sa Sogod, Borbon, Tabogon, Bogo City, San Remigio, Medellin, o Daanbantayan):\n  ➔ Ang pinakaduol ug unang maagian kay ang **Hinagdan Beach**.\n  ➔ Pagkasunod-sunod sa mga beach: **Hinagdan Beach** ➔ **Majestique View Resort** ➔ **Lite Bay Resort** ➔ **Rañola Beach**.\n\n💡 **Tip:** Pwede nimong i-type ang imong eksaktong lokasyon (pananglitan: *"Pinakaduol gikan sa Talamban"* o *"Pinakaduol gikan sa Bogo"*) aron mahatagan tika sa eksaktong oras sa byahe ug commute!`;
   }
 
-  return `Here is the guide for the **nearest beach** in Barangay Binongkalan:\n\n• **If coming from the South** (such as Cebu City, Mandaue, Consolacion, Liloan, Compostela, Danao, Carmen, or Catmon Proper):\n  ➔ The nearest and first beach reached is **Rañola Beach (Raniola)**.\n  ➔ Order of beaches: **Rañola Beach** ➔ **Lite Bay Resort** ➔ **Majestique Beach** ➔ **Hinagdan Beach**.\n\n• **If coming from the North** (such as Sogod, Borbon, Tabogon, Bogo City, San Remigio, Medellin, or Daanbantayan):\n  ➔ The nearest and first beach reached is **Hinagdan Beach**.\n  ➔ Order of beaches: **Hinagdan Beach** ➔ **Majestique Beach** ➔ **Lite Bay Resort** ➔ **Rañola Beach**.\n\n💡 **Tip:** You can ask with your exact starting location (for example: *"Nearest beach from Talamban"* or *"from Bogo"*) to get the exact travel time and step-by-step commute!`;
+  return `Here is the guide for the **nearest beach** in Barangay Binongkalan:\n\n• **If coming from the South** (such as Cebu City, Mandaue, Consolacion, Liloan, Compostela, Danao, Carmen, or Catmon Proper):\n  ➔ The nearest and first beach reached is **Rañola Beach (Raniola)**.\n  ➔ Order of beaches: **Rañola Beach** ➔ **Lite Bay Resort** ➔ **Majestique View Resort** ➔ **Hinagdan Beach**.\n\n• **If coming from the North** (such as Sogod, Borbon, Tabogon, Bogo City, San Remigio, Medellin, or Daanbantayan):\n  ➔ The nearest and first beach reached is **Hinagdan Beach**.\n  ➔ Order of beaches: **Hinagdan Beach** ➔ **Majestique View Resort** ➔ **Lite Bay Resort** ➔ **Rañola Beach**.\n\n💡 **Tip:** You can ask with your exact starting location (for example: *"Nearest beach from Talamban"* or *"from Bogo"*) to get the exact travel time and step-by-step commute!`;
 }
 
 /**
@@ -1255,23 +1255,23 @@ export function getBaiApologyFallback(userQuery: string, userName?: string | nul
 
   if (isAskingUnverifiedTopic(lower)) {
     if (lang === 'ceb') {
-      return `Maayong pangutana kana${nameSuffix}! 😊 Apan pasensya na, **kana nga detalye kay wala pa sa among beripikadong database** (this information is not available). Isip si **Bai, imong local guide**, ang ako rang mahatag kay ang beripikadong impormasyon bahin sa **4 ka beach sa Barangay Binongkalan, Catmon, Cebu** (**Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, ug **Hinagdan Beach**)—sama sa entrance fee, cottage, kwarto, baybayon, sugbaanan, ug unsaon pag-commute. Gusto ba nimo nga ihatag nako ang ilang contact number aron makapangutana ka diretso nila?`;
+      return `Maayong pangutana kana${nameSuffix}! 😊 Apan pasensya na, **kana nga detalye kay wala pa sa among beripikadong database** (this information is not available). Isip si **Bai, imong local guide**, ang ako rang mahatag kay ang beripikadong impormasyon bahin sa **4 ka beach sa Barangay Binongkalan, Catmon, Cebu** (**Rañola Beach**, **Lite Bay Resort**, **Majestique View Resort**, ug **Hinagdan Beach**)—sama sa entrance fee, cottage, kwarto, baybayon, sugbaanan, ug unsaon pag-commute. Gusto ba nimo nga ihatag nako ang ilang contact number aron makapangutana ka diretso nila?`;
     }
     if (lang === 'tl') {
-      return `Magandang tanong po iyan${nameSuffix}! 😊 Ngunit pasensya na po, **ang impormasyong ito ay wala sa aming beripikadong database** (this information is not available). Bilang si **Bai, local guide**, ang masasagot ko lamang po ay ang mga beripikadong detalye tungkol sa **4 na beach at commute sa Barangay Binongkalan, Catmon, Cebu** (**Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, at **Hinagdan Beach**). Gusto niyo po bang ibigay ko ang contact number ng resort para matawagan niyo sila nang direkta?`;
+      return `Magandang tanong po iyan${nameSuffix}! 😊 Ngunit pasensya na po, **ang impormasyong ito ay wala sa aming beripikadong database** (this information is not available). Bilang si **Bai, local guide**, ang masasagot ko lamang po ay ang mga beripikadong detalye tungkol sa **4 na beach at commute sa Barangay Binongkalan, Catmon, Cebu** (**Rañola Beach**, **Lite Bay Resort**, **Majestique View Resort**, at **Hinagdan Beach**). Gusto niyo po bang ibigay ko ang contact number ng resort para matawagan niyo sila nang direkta?`;
     }
-    return `That's a great thing to check before your trip${nameSuffix}! 😊 However, **this information is not available** in our verified system records right now. As **Bai, your local guide**, I can only provide verified details for the **4 beaches and commute routes in Barangay Binongkalan, Catmon, Cebu** (**Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, and **Hinagdan Beach**)—such as entrance fees, cottages, overnight rooms, shoreline conditions, grilling areas, and commute steps. Would you like me to share their contact numbers so you can ask the resort directly?`;
+    return `That's a great thing to check before your trip${nameSuffix}! 😊 However, **this information is not available** in our verified system records right now. As **Bai, your local guide**, I can only provide verified details for the **4 beaches and commute routes in Barangay Binongkalan, Catmon, Cebu** (**Rañola Beach**, **Lite Bay Resort**, **Majestique View Resort**, and **Hinagdan Beach**)—such as entrance fees, cottages, overnight rooms, shoreline conditions, grilling areas, and commute steps. Would you like me to share their contact numbers so you can ask the resort directly?`;
   }
 
   if (lang === 'ceb') {
-    return `Ganahan unta ko motubag ana${nameSuffix}, apan ako si **Bai, imong local guide** para lang gyud sa **Dagat Ta Bai**! 😊 Ang ako rang matubag kay ang mga pangutana bahin sa **4 ka opisyal nga beach** (**Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, ug **Hinagdan Beach**) ug **unsaon pag-commute** diri sa **Barangay Binongkalan, Catmon, Cebu** (this information is not available outside our beach and commute system).\n\nPwede kaayo ko nimo pangutan-on kung asay pinaka-safe o pinakabarato nga beach, tagpila ang cottages ug kwarto, o unsaon pag-commute gikan sa inyong lugar!`;
+    return `Ganahan unta ko motubag ana${nameSuffix}, apan ako si **Bai, imong local guide** para lang gyud sa **Dagat Ta Bai**! 😊 Ang ako rang matubag kay ang mga pangutana bahin sa **4 ka opisyal nga beach** (**Rañola Beach**, **Lite Bay Resort**, **Majestique View Resort**, ug **Hinagdan Beach**) ug **unsaon pag-commute** diri sa **Barangay Binongkalan, Catmon, Cebu** (this information is not available outside our beach and commute system).\n\nPwede kaayo ko nimo pangutan-on kung asay pinaka-safe o pinakabarato nga beach, tagpila ang cottages ug kwarto, o unsaon pag-commute gikan sa inyong lugar!`;
   }
 
   if (lang === 'tl') {
-    return `Nais ko man pong sagutin iyan${nameSuffix}, ako po si **Bai, ang inyong local guide** para lamang sa **Dagat Ta Bai**! 😊 Ang masasagot ko lamang po ay tungkol sa **4 na opisyal na beach** (**Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, at **Hinagdan Beach**) at **kung paano mag-commute** sa **Barangay Binongkalan, Catmon, Cebu** (this information is not available outside our system).\n\nPwede niyo po akong tanungin tungkol sa entrance fees, cottages, rooms, kung aling beach ang hindi mabato, o paano bumiyahe papunta rito!`;
+    return `Nais ko man pong sagutin iyan${nameSuffix}, ako po si **Bai, ang inyong local guide** para lamang sa **Dagat Ta Bai**! 😊 Ang masasagot ko lamang po ay tungkol sa **4 na opisyal na beach** (**Rañola Beach**, **Lite Bay Resort**, **Majestique View Resort**, at **Hinagdan Beach**) at **kung paano mag-commute** sa **Barangay Binongkalan, Catmon, Cebu** (this information is not available outside our system).\n\nPwede niyo po akong tanungin tungkol sa entrance fees, cottages, rooms, kung aling beach ang hindi mabato, o paano bumiyahe papunta rito!`;
   }
 
-  return `I'd love to chat about that${nameSuffix}, but I'm **Bai, your local guide** built specifically for **Dagat Ta Bai**! 😊 I can only answer questions about the **4 verified beaches** (**Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, and **Hinagdan Beach**) and **commute directions** here in **Barangay Binongkalan, Catmon, Cebu** (this information is not available outside our beach and commute system).\n\nFeel free to ask me which beach fits your trip best, how much entrance fees and cottages cost, or how to commute here from your location!`;
+  return `I'd love to chat about that${nameSuffix}, but I'm **Bai, your local guide** built specifically for **Dagat Ta Bai**! 😊 I can only answer questions about the **4 verified beaches** (**Rañola Beach**, **Lite Bay Resort**, **Majestique View Resort**, and **Hinagdan Beach**) and **commute directions** here in **Barangay Binongkalan, Catmon, Cebu** (this information is not available outside our beach and commute system).\n\nFeel free to ask me which beach fits your trip best, how much entrance fees and cottages cost, or how to commute here from your location!`;
 }
 
 interface ConversationContextState {
@@ -1406,9 +1406,9 @@ function matchTailoredRecommendation(lower: string, isCeb: boolean): string | nu
     )
   ) {
     if (isCeb) {
-      return `Para sa mahilig **mo-ambak (jump) o molangoy sa lawom nga tubig**, akong irekomendar ang **Lite Bay Resort** ug **Majestique Beach**! 🌊🏊‍♂️\n\n• **Lite Bay Resort (Entrance: ₱50):** Dali kini molawm tungod kay dili kini mohunas ug pamaayo bisan low tide. Naa sab silay **kayak (₱200 / 2 hrs)** ug libre nga parking, CR, ug shower.\n• **Majestique Beach (Entrance: ₱30):** Dali sab molawm ang tubig ug **dili ra batoon** ang baybayon, plus naa silay cottages ug overnight rooms.\n\n⚠️ **Safety Reminder:** Walay on-duty lifeguard sa mga beach sa Binongkalan (naay maabangan nga life jackets tag **₱50**), busa pag-amping pirmi ug i-check una ang kalawmon sa dili pa mo-ambak!\n\nAsa aning duha (**Lite Bay Resort** o **Majestique Beach**) ang gusto nimong mahibaw-an pa?`;
+      return `Para sa mahilig **mo-ambak (jump) o molangoy sa lawom nga tubig**, akong irekomendar ang **Lite Bay Resort** ug **Majestique View Resort**! 🌊🏊‍♂️\n\n• **Lite Bay Resort (Entrance: ₱50):** Dali kini molawm tungod kay dili kini mohunas ug pamaayo bisan low tide. Naa sab silay **kayak (₱200 / 2 hrs)** ug libre nga parking, CR, ug shower.\n• **Majestique View Resort (Entrance: ₱30):** Dali sab molawm ang tubig ug **dili ra batoon** ang baybayon, plus naa silay cottages ug overnight rooms.\n\n⚠️ **Safety Reminder:** Walay on-duty lifeguard sa mga beach sa Binongkalan (naay maabangan nga life jackets tag **₱50**), busa pag-amping pirmi ug i-check una ang kalawmon sa dili pa mo-ambak!\n\nAsa aning duha (**Lite Bay Resort** o **Majestique View Resort**) ang gusto nimong mahibaw-an pa?`;
     }
-    return `For someone who loves **jumping in or swimming in deeper water**, I highly recommend **Lite Bay Resort** and **Majestique Beach**! 🌊🏊‍♂️\n\n• **Lite Bay Resort (Entrance: ₱50):** Gets deep quickly because the water stays deep even during low tide. It also offers **kayaking (₱200 / 2 hrs)** and free parking, restroom, and showers.\n• **Majestique Beach (Entrance: ₱30):** Also gets deep quickly with a **non-rocky shoreline**, plus day/overnight cottages and rooms.\n\n⚠️ **Safety Note:** None of the beaches in Binongkalan have lifeguards on duty (life jackets are available for rent at **₱50**), so always check the water depth before jumping in!\n\nWould you like to know more about **Lite Bay Resort** or **Majestique Beach**, or how to commute there?`;
+    return `For someone who loves **jumping in or swimming in deeper water**, I highly recommend **Lite Bay Resort** and **Majestique View Resort**! 🌊🏊‍♂️\n\n• **Lite Bay Resort (Entrance: ₱50):** Gets deep quickly because the water stays deep even during low tide. It also offers **kayaking (₱200 / 2 hrs)** and free parking, restroom, and showers.\n• **Majestique View Resort (Entrance: ₱30):** Also gets deep quickly with a **non-rocky shoreline**, plus day/overnight cottages and rooms.\n\n⚠️ **Safety Note:** None of the beaches in Binongkalan have lifeguards on duty (life jackets are available for rent at **₱50**), so always check the water depth before jumping in!\n\nWould you like to know more about **Lite Bay Resort** or **Majestique View Resort**, or how to commute there?`;
   }
 
   if (!isAskingRecommendation) return null;
@@ -1430,15 +1430,15 @@ function matchTailoredRecommendation(lower: string, isCeb: boolean): string | nu
   // 4. Overnight / staycation / couples / sleeping / rooms / aircon
   if (/\b(overnight|sleep|staycation|couple|couples|date|romantic|room|rooms|aircon|ac|tulog|higda|kwarto|camping|tent)\b/i.test(lower)) {
     return isCeb
-      ? `Para sa **overnight stay o kwarto**, mao kini ang akong irekomendar sa Barangay Binongkalan: 🌙🏖️\n\n• **Hinagdan Beach:** Balas ang baybayon ug naay **short-time room (₱250 / 3 hrs)**, **ordinary room (₱1,000)**, **aircon room (₱2,500)**, ug **overnight cottage (₱700)**.\n• **Majestique Beach:** Dili ra batoon ug naay **regular room (₱2,000)**, **aircon room (₱3,500)**, ug **overnight cottages (₱800–₱1,200)**.\n• **Rañola Beach:** Walay kwarto, apan nindot kung ganahan mo mag-**overnight tent camping** (**₱20–₱30** entrance).\n\nAsa aning tulo ang gusto nimong i-check?`
-      : `For an **overnight stay or room accommodation**, here are the best choices in Barangay Binongkalan: 🌙🏖️\n\n• **Hinagdan Beach:** Sandy shoreline with **short-time rooms (₱250 / 3 hrs)**, **ordinary rooms (₱1,000)**, **aircon rooms (₱2,500)**, and **overnight cottages (₱700)**.\n• **Majestique Beach:** Non-rocky shore with **regular rooms (₱2,000)**, **aircon rooms (₱3,500)**, and **overnight cottages (₱800–₱1,200)**.\n• **Rañola Beach:** No rooms, but great if you love **overnight tent camping** (**₱20–₱30** entrance).\n\nWhich of these fits your overnight plans best?`;
+      ? `Para sa **overnight stay o kwarto**, mao kini ang akong irekomendar sa Barangay Binongkalan: 🌙🏖️\n\n• **Hinagdan Beach:** Balas ang baybayon ug naay **short-time room (₱250 / 3 hrs)**, **ordinary room (₱1,000)**, **aircon room (₱2,500)**, ug **overnight cottage (₱700)**.\n• **Majestique View Resort:** Dili ra batoon ug naay **regular room (₱2,000)**, **aircon room (₱3,500)**, ug **overnight cottages (₱800–₱1,200)**.\n• **Rañola Beach:** Walay kwarto, apan nindot kung ganahan mo mag-**overnight tent camping** (**₱20–₱30** entrance).\n\nAsa aning tulo ang gusto nimong i-check?`
+      : `For an **overnight stay or room accommodation**, here are the best choices in Barangay Binongkalan: 🌙🏖️\n\n• **Hinagdan Beach:** Sandy shoreline with **short-time rooms (₱250 / 3 hrs)**, **ordinary rooms (₱1,000)**, **aircon rooms (₱2,500)**, and **overnight cottages (₱700)**.\n• **Majestique View Resort:** Non-rocky shore with **regular rooms (₱2,000)**, **aircon rooms (₱3,500)**, and **overnight cottages (₱800–₱1,200)**.\n• **Rañola Beach:** No rooms, but great if you love **overnight tent camping** (**₱20–₱30** entrance).\n\nWhich of these fits your overnight plans best?`;
   }
 
   // 5. Barkada / big group / outing / team building / kayaking / adventure
   if (/\b(barkada|friends|group|team\s*building|outing|party|reunion|kayak|adventure|big\s*group|daghan\s*mi|barkadahan)\b/i.test(lower)) {
     return isCeb
-      ? `Para sa **barkada o dakong grupo**, mao kini ang akong irekomendar: 🎉🌊\n\n• **Rañola Beach (Raniola):** Naay dako nga **Side Big Cottage (₱2,500)** nga maigo hangtod **30 ka tawo**, sugbaanan, ug pwede mag-tent camping!\n• **Lite Bay Resort:** Naay **Large Space (₱1,000)**, **kayak rental (₱200 / 2 hrs)**, ug libre ang parking, CR, ug shower.\n• **Hinagdan Beach & Majestique Beach:** Maayo kaayo kung gusto ang barkada mag-overnight sa cottage o kwarto!\n\nPila mo kabuok sa inyong grupo, o asa nga beach ang gusto nimong unahon og tan-aw?`
-      : `For a **barkada trip or group outing**, here are the best options: 🎉🌊\n\n• **Rañola Beach (Raniola):** Features a huge **30-person Side Big Cottage (₱2,500)**, grilling areas, low entrance fees (**₱20** with cottage), and tent camping!\n• **Lite Bay Resort:** Offers a **Large Space (₱1,000)**, **kayak rentals (₱200 / 2 hrs)**, and free parking, restrooms, and showers.\n• **Hinagdan Beach & Majestique Beach:** Great choices if your group wants overnight cottages and air-conditioned rooms!\n\nWhich of these sounds best for your group?`;
+      ? `Para sa **barkada o dakong grupo**, mao kini ang akong irekomendar: 🎉🌊\n\n• **Rañola Beach (Raniola):** Naay dako nga **Side Big Cottage (₱2,500)** nga maigo hangtod **30 ka tawo**, sugbaanan, ug pwede mag-tent camping!\n• **Lite Bay Resort:** Naay **Large Space (₱1,000)**, **kayak rental (₱200 / 2 hrs)**, ug libre ang parking, CR, ug shower.\n• **Hinagdan Beach & Majestique View Resort:** Maayo kaayo kung gusto ang barkada mag-overnight sa cottage o kwarto!\n\nPila mo kabuok sa inyong grupo, o asa nga beach ang gusto nimong unahon og tan-aw?`
+      : `For a **barkada trip or group outing**, here are the best options: 🎉🌊\n\n• **Rañola Beach (Raniola):** Features a huge **30-person Side Big Cottage (₱2,500)**, grilling areas, low entrance fees (**₱20** with cottage), and tent camping!\n• **Lite Bay Resort:** Offers a **Large Space (₱1,000)**, **kayak rentals (₱200 / 2 hrs)**, and free parking, restrooms, and showers.\n• **Hinagdan Beach & Majestique View Resort:** Great choices if your group wants overnight cottages and air-conditioned rooms!\n\nWhich of these sounds best for your group?`;
   }
 
   return null;
@@ -1456,13 +1456,13 @@ function matchWhyOrFollowUpExplanation(
   const prevLower = `${ctx.lastUserText} ${ctx.lastAssistantText}`.toLowerCase();
   if (/\b(senior|stairs|hagdan|accessible)\b/i.test(prevLower)) {
     return isCeb
-      ? `Tungod kay ang **Rañola Beach** patag ra ang agianan gikan sa highway, samtang ang **Lite Bay Resort**, **Majestique Beach**, ug **Hinagdan Beach** naay **daghang hagdanan (steep stairs)** paubos sa baybayon nga lisod naagian sa mga senior citizen.`
-      : `Because **Rañola Beach** has flat, level ground right from the highway, whereas **Lite Bay Resort**, **Majestique Beach**, and **Hinagdan Beach** have **many steep stairs (daghan ug hagdanan)** going down to the shore, which is tough for senior citizens.`;
+      ? `Tungod kay ang **Rañola Beach** patag ra ang agianan gikan sa highway, samtang ang **Lite Bay Resort**, **Majestique View Resort**, ug **Hinagdan Beach** naay **daghang hagdanan (steep stairs)** paubos sa baybayon nga lisod naagian sa mga senior citizen.`
+      : `Because **Rañola Beach** has flat, level ground right from the highway, whereas **Lite Bay Resort**, **Majestique View Resort**, and **Hinagdan Beach** have **many steep stairs (daghan ug hagdanan)** going down to the shore, which is tough for senior citizens.`;
   }
   if (/\b(deep|molawm|jump|hunas|tide)\b/i.test(prevLower)) {
     return isCeb
-      ? `Tungod kay ang **Lite Bay Resort** ug **Majestique Beach** **dili mohunas ug pamaayo** bisan kung low tide, mao nga pabilin nga lawom ang tubig duol sa baybayon. Samtang ang **Rañola Beach** ug **Hinagdan Beach** kay hinay-hinay (gradual) ang paglawm.`
-      : `Because **Lite Bay Resort** and **Majestique Beach** do not recede deeply (**dili mohunas ug pamaayo**) even during low tide, so the water drops off and gets deep quickly near the shore. Meanwhile, **Rañola Beach** and **Hinagdan Beach** have a gentle, gradual slope.`;
+      ? `Tungod kay ang **Lite Bay Resort** ug **Majestique View Resort** **dili mohunas ug pamaayo** bisan kung low tide, mao nga pabilin nga lawom ang tubig duol sa baybayon. Samtang ang **Rañola Beach** ug **Hinagdan Beach** kay hinay-hinay (gradual) ang paglawm.`
+      : `Because **Lite Bay Resort** and **Majestique View Resort** do not recede deeply (**dili mohunas ug pamaayo**) even during low tide, so the water drops off and gets deep quickly near the shore. Meanwhile, **Rañola Beach** and **Hinagdan Beach** have a gentle, gradual slope.`;
   }
   if (/\b(safe|safest|bata|kids)\b/i.test(prevLower)) {
     return isCeb
@@ -1499,7 +1499,7 @@ export function matchBaiInstantAnswer(
       cleanWords
     )
   ) {
-    return `Hello${nameSuffix}! 👋 I'm **Bai, local guide** for **Dagat Ta Bai** in Barangay Binongkalan, Catmon, Cebu. Which beach (**Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, or **Hinagdan Beach**) or commute route would you like to ask about?`;
+    return `Hello${nameSuffix}! 👋 I'm **Bai, local guide** for **Dagat Ta Bai** in Barangay Binongkalan, Catmon, Cebu. Which beach (**Rañola Beach**, **Lite Bay Resort**, **Majestique View Resort**, or **Hinagdan Beach**) or commute route would you like to ask about?`;
   }
 
   if (
@@ -1507,7 +1507,7 @@ export function matchBaiInstantAnswer(
       cleanWords
     )
   ) {
-    return `Maayong adlaw sab kanimo${nameSuffix}! 👋 Okay kaayo ko! Ako si **Bai, local guide** diri sa Barangay Binongkalan, Catmon, Cebu. Makapangutana ka bahin sa **Rañola Beach, Lite Bay Resort, Majestique Beach, o Hinagdan Beach** ug unsaon pag-commute!`;
+    return `Maayong adlaw sab kanimo${nameSuffix}! 👋 Okay kaayo ko! Ako si **Bai, local guide** diri sa Barangay Binongkalan, Catmon, Cebu. Makapangutana ka bahin sa **Rañola Beach, Lite Bay Resort, Majestique View Resort, o Hinagdan Beach** ug unsaon pag-commute!`;
   }
 
   // Casual check-ins ("are u good bro?", "how are you?", "what's up?", "okay ra ka?", "how's your day?")
@@ -1518,8 +1518,8 @@ export function matchBaiInstantAnswer(
   ) {
     const broTerm = /\b(bro|bruh|pre|pare|boss|idol|mate|buddy)\b/i.test(lower) ? ', bro' : nameSuffix;
     return isCeb
-      ? `Okay kaayo ko${broTerm}! Salamat sa pagpangutana! 😊 Ako si **Bai, local guide** diri sa Barangay Binongkalan, Catmon, Cebu. Unsay akong ikatabang nimo karon bahin sa atong mga beach (**Rañola Beach, Lite Bay Resort, Majestique Beach, ug Hinagdan Beach**) o sa pag-commute?`
-      : `I'm doing great${broTerm}! Thanks for asking! 😊 I'm **Bai, local guide** here in Barangay Binongkalan, Catmon, Cebu. How can I help you today with our beaches (**Rañola Beach, Lite Bay Resort, Majestique Beach, and Hinagdan Beach**) or commute directions?`;
+      ? `Okay kaayo ko${broTerm}! Salamat sa pagpangutana! 😊 Ako si **Bai, local guide** diri sa Barangay Binongkalan, Catmon, Cebu. Unsay akong ikatabang nimo karon bahin sa atong mga beach (**Rañola Beach, Lite Bay Resort, Majestique View Resort, ug Hinagdan Beach**) o sa pag-commute?`
+      : `I'm doing great${broTerm}! Thanks for asking! 😊 I'm **Bai, local guide** here in Barangay Binongkalan, Catmon, Cebu. How can I help you today with our beaches (**Rañola Beach, Lite Bay Resort, Majestique View Resort, and Hinagdan Beach**) or commute directions?`;
   }
 
   // Feelings & emotions ("are u happy?", "are you sad?", "are u tired?", "how do you feel?", "nalipay ba ka?")
@@ -1530,12 +1530,12 @@ export function matchBaiInstantAnswer(
   ) {
     if (/\b(sad|tired|bored|angry|mad|lonely|sleepy|gikapoy|kapoy|gimingaw)\b/i.test(lower)) {
       return isCeb
-        ? `Dili gyud ko kapoyon o maguol${nameSuffix} basta makatabang lang ko sa mga bisita nga gustong maligo ug mosuroy diri sa **Barangay Binongkalan, Catmon**! 😄🌊 Ikaw, kumusta man ka? Nagplano ba ka nga moadto sa **Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, o **Hinagdan Beach**?`
-        : `Never tired or sad${nameSuffix}—helping visitors plan their beach getaway here in **Barangay Binongkalan, Catmon** always keeps me energized! 😄🌊 How about you, how are you feeling today? Are you planning a trip to **Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, or **Hinagdan Beach**?`;
+        ? `Dili gyud ko kapoyon o maguol${nameSuffix} basta makatabang lang ko sa mga bisita nga gustong maligo ug mosuroy diri sa **Barangay Binongkalan, Catmon**! 😄🌊 Ikaw, kumusta man ka? Nagplano ba ka nga moadto sa **Rañola Beach**, **Lite Bay Resort**, **Majestique View Resort**, o **Hinagdan Beach**?`
+        : `Never tired or sad${nameSuffix}—helping visitors plan their beach getaway here in **Barangay Binongkalan, Catmon** always keeps me energized! 😄🌊 How about you, how are you feeling today? Are you planning a trip to **Rañola Beach**, **Lite Bay Resort**, **Majestique View Resort**, or **Hinagdan Beach**?`;
     }
     return isCeb
       ? `Oo, lipay kaayo ko${nameSuffix}—labi na kung makatabang ko nimo sa pagplano sa imong beach trip diri sa **Barangay Binongkalan, Catmon, Cebu**! 😄🌊 Nindot kaayo ang hangin sa dagat diri. Ikaw, kumusta man ka karon? Unsa nga beach o commute route ang gusto nimong mahibaw-an?`
-      : `Yes, I'm super happy${nameSuffix}—especially whenever I get to help visitors plan their beach trip here in **Barangay Binongkalan, Catmon, Cebu**! 😄🌊 The sea breeze is always great here. How are you doing today? Would you like to check out **Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, **Hinagdan Beach**, or how to commute here?`;
+      : `Yes, I'm super happy${nameSuffix}—especially whenever I get to help visitors plan their beach trip here in **Barangay Binongkalan, Catmon, Cebu**! 😄🌊 The sea breeze is always great here. How are you doing today? Would you like to check out **Rañola Beach**, **Lite Bay Resort**, **Majestique View Resort**, **Hinagdan Beach**, or how to commute here?`;
   }
 
   // User sharing their own feelings ("i am sad", "i'm stressed", "i'm tired", "i'm bored", "i'm happy")
@@ -1546,8 +1546,8 @@ export function matchBaiInstantAnswer(
   ) {
     if (/\b(sad|stressed|tired|exhausted|bored|lonely|down)\b/i.test(lower)) {
       return isCeb
-        ? `Hala, murag kinahanglan gyud ka og pahulay ug presko nga hangin sa dagat${nameSuffix}! 🏖️🌊 Ang pagkaligo o pag-relax sa baybayon diri sa **Barangay Binongkalan, Catmon** makapawala gyud sa stress. Gusto ba ka nga irekomendar nako ang pinaka-relaxing ug affordable nga beach (**Rañola Beach, Lite Bay Resort, Majestique Beach, o Hinagdan Beach**) ug unsaon pag-commute padulong diri?`
-        : `Sounds like you could really use a relaxing beach break and some fresh ocean breeze${nameSuffix}! 🏖️🌊 A quick getaway here in **Barangay Binongkalan, Catmon** is a great way to unwind. Would you like me to recommend a chill spot among **Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, or **Hinagdan Beach** and show you how to commute here?`;
+        ? `Hala, murag kinahanglan gyud ka og pahulay ug presko nga hangin sa dagat${nameSuffix}! 🏖️🌊 Ang pagkaligo o pag-relax sa baybayon diri sa **Barangay Binongkalan, Catmon** makapawala gyud sa stress. Gusto ba ka nga irekomendar nako ang pinaka-relaxing ug affordable nga beach (**Rañola Beach, Lite Bay Resort, Majestique View Resort, o Hinagdan Beach**) ug unsaon pag-commute padulong diri?`
+        : `Sounds like you could really use a relaxing beach break and some fresh ocean breeze${nameSuffix}! 🏖️🌊 A quick getaway here in **Barangay Binongkalan, Catmon** is a great way to unwind. Would you like me to recommend a chill spot among **Rañola Beach**, **Lite Bay Resort**, **Majestique View Resort**, or **Hinagdan Beach** and show you how to commute here?`;
     }
     return isCeb
       ? `Nindot kaayo na paminawon${nameSuffix}! 😄 Mas мо-nindot pa gyud imong adlaw kung mag-beach trip diri sa **Barangay Binongkalan, Catmon**! Unsa nga beach (**Rañola, Lite Bay, Majestique, o Hinagdan**) o commute route ang gusto nimong tan-awon?`
@@ -1562,8 +1562,8 @@ export function matchBaiInstantAnswer(
     /^(what\s+can\s+you\s+do|help(\s+me)?|unsay\s+imong\s+mahimo|tabang)$/i.test(cleanWords)
   ) {
     return isCeb
-      ? `Maayong pangutana${nameSuffix}! 😊 Isip si **Bai, imong local guide** sa **Barangay Binongkalan, Catmon, Cebu**, mao kini ang mga nindot nimong ipangutana nako bahin sa atong **4 ka verified beaches** (**Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, ug **Hinagdan Beach**) ug **commute**:\n\n• **Presyo ug Kwarto:** *"Tagpila ang entrance fee, cottage, ug overnight rooms?"*\n• **Kahimtang sa Dagat:** *"Batoon ba o balas ang baybayon?"*, *"Asa ang dili dali molawm?"*, o *"Naa bay sinkhole?"*\n• **Safety ug Accessibility:** *"Asay pinaka-safe para sa mga bata?"* o *"Accessible ba sa mga senior citizen?"*\n• **Amenities ug Rules:** *"Naay sugbaanan?"*, *"Pwede magdala og pets?"*, *"Naay tindahan, CR, shower, ug parking?"*\n• **Commute ug Lokasyon:** *"Unsaon pag-commute gikan sa Cebu City / Talamban / Danao / Bogo?"* o *"Unsay pinakaduol nga beach?"*\n\n unsay gusto nimong unahon og pangutana?`
-      : `Great question${nameSuffix}! 😊 Since I'm **Bai, your local guide** for **Barangay Binongkalan, Catmon, Cebu**, here are some helpful questions you can ask me about our **4 verified beaches** (**Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, and **Hinagdan Beach**) and **commute**:\n\n• **Rates & Stays:** *"What are the entrance fees, cottage rates, and overnight room prices?"*\n• **Shoreline & Depth:** *"Which beaches are sandy or rocky?"*, *"Which ones get deep quickly?"*, or *"Are there any sinkholes?"*\n• **Safety & Accessibility:** *"Which beach is the safest for kids?"* or *"Which beach is accessible for senior citizens?"*\n• **Amenities & Rules:** *"Can we grill (sugba) food?"*, *"Are pets allowed?"*, or *"Do they have stores, showers, and free parking?"*\n• **Commute & Travel Time:** *"How do I commute from Cebu City / IT Park / Danao / Bogo?"* or *"Which beach is the nearest?"*\n\nWhich of these would you like to ask about first?`;
+      ? `Maayong pangutana${nameSuffix}! 😊 Isip si **Bai, imong local guide** sa **Barangay Binongkalan, Catmon, Cebu**, mao kini ang mga nindot nimong ipangutana nako bahin sa atong **4 ka verified beaches** (**Rañola Beach**, **Lite Bay Resort**, **Majestique View Resort**, ug **Hinagdan Beach**) ug **commute**:\n\n• **Presyo ug Kwarto:** *"Tagpila ang entrance fee, cottage, ug overnight rooms?"*\n• **Kahimtang sa Dagat:** *"Batoon ba o balas ang baybayon?"*, *"Asa ang dili dali molawm?"*, o *"Naa bay sinkhole?"*\n• **Safety ug Accessibility:** *"Asay pinaka-safe para sa mga bata?"* o *"Accessible ba sa mga senior citizen?"*\n• **Amenities ug Rules:** *"Naay sugbaanan?"*, *"Pwede magdala og pets?"*, *"Naay tindahan, CR, shower, ug parking?"*\n• **Commute ug Lokasyon:** *"Unsaon pag-commute gikan sa Cebu City / Talamban / Danao / Bogo?"* o *"Unsay pinakaduol nga beach?"*\n\n unsay gusto nimong unahon og pangutana?`
+      : `Great question${nameSuffix}! 😊 Since I'm **Bai, your local guide** for **Barangay Binongkalan, Catmon, Cebu**, here are some helpful questions you can ask me about our **4 verified beaches** (**Rañola Beach**, **Lite Bay Resort**, **Majestique View Resort**, and **Hinagdan Beach**) and **commute**:\n\n• **Rates & Stays:** *"What are the entrance fees, cottage rates, and overnight room prices?"*\n• **Shoreline & Depth:** *"Which beaches are sandy or rocky?"*, *"Which ones get deep quickly?"*, or *"Are there any sinkholes?"*\n• **Safety & Accessibility:** *"Which beach is the safest for kids?"* or *"Which beach is accessible for senior citizens?"*\n• **Amenities & Rules:** *"Can we grill (sugba) food?"*, *"Are pets allowed?"*, or *"Do they have stores, showers, and free parking?"*\n• **Commute & Travel Time:** *"How do I commute from Cebu City / IT Park / Danao / Bogo?"* or *"Which beach is the nearest?"*\n\nWhich of these would you like to ask about first?`;
   }
 
   // Favorite beach / "Which beach do you like?" / "Do you like the beach?"
@@ -1573,8 +1573,8 @@ export function matchBaiInstantAnswer(
     )
   ) {
     return isCeb
-      ? `Ganahan kaayo ko sa tanang **4 ka beach** diri sa Barangay Binongkalan kay naa silay tagsa-tagsa ka nindot nga klase! 😊🌊\n• Kung naa moy **bata o senior citizen**, paborito nako irekomendar ang **Rañola Beach** kay patag ug dili dali molawm.\n• Kung ganahan mo og **balas (sandy shoreline)** ug barato nga rooms, nindot kaayo ang **Hinagdan Beach**.\n• Kung gusto mo og **libre nga parking, CR, ug shower** plus kayak, maayo ang **Lite Bay Resort**.\n• Kung gusto mo og **dili batoon ug aircon rooms** para overnight, nindot ang **Majestique Beach**.\n\nPara sa imong trip, unsay imong gipangita?`
-      : `I love all **4 beaches** here in Barangay Binongkalan because each one shines for a different kind of trip! 😊🌊\n• For **families with kids or senior citizens**, **Rañola Beach** is a favorite because it's flat, accessible, and has gradual water depth.\n• For a **sandy shoreline (balas)** and budget-friendly rooms, **Hinagdan Beach** is fantastic.\n• For **free parking, free showers/CR, and kayaking**, **Lite Bay Resort** is a great pick.\n• For **comfortable overnight rooms and a non-rocky shore**, **Majestique Beach** is awesome.\n\nWhat kind of beach vibe are you looking for?`;
+      ? `Ganahan kaayo ko sa tanang **4 ka beach** diri sa Barangay Binongkalan kay naa silay tagsa-tagsa ka nindot nga klase! 😊🌊\n• Kung naa moy **bata o senior citizen**, paborito nako irekomendar ang **Rañola Beach** kay patag ug dili dali molawm.\n• Kung ganahan mo og **balas (sandy shoreline)** ug barato nga rooms, nindot kaayo ang **Hinagdan Beach**.\n• Kung gusto mo og **libre nga parking, CR, ug shower** plus kayak, maayo ang **Lite Bay Resort**.\n• Kung gusto mo og **dili batoon ug aircon rooms** para overnight, nindot ang **Majestique View Resort**.\n\nPara sa imong trip, unsay imong gipangita?`
+      : `I love all **4 beaches** here in Barangay Binongkalan because each one shines for a different kind of trip! 😊🌊\n• For **families with kids or senior citizens**, **Rañola Beach** is a favorite because it's flat, accessible, and has gradual water depth.\n• For a **sandy shoreline (balas)** and budget-friendly rooms, **Hinagdan Beach** is fantastic.\n• For **free parking, free showers/CR, and kayaking**, **Lite Bay Resort** is a great pick.\n• For **comfortable overnight rooms and a non-rocky shore**, **Majestique View Resort** is awesome.\n\nWhat kind of beach vibe are you looking for?`;
   }
 
   // AI / Robot / Human / Creator / Jokes / Compliments
@@ -1584,8 +1584,8 @@ export function matchBaiInstantAnswer(
     )
   ) {
     return isCeb
-      ? `Ako si **Bai, local guide**—ang AI assistant nga gihimo para sa **Dagat Ta Bai** aron matabangan ang mga bisita sa pagsuroy ug pag-commute padulong sa **4 ka verified beaches sa Barangay Binongkalan, Catmon, Cebu** (**Rañola Beach, Lite Bay Resort, Majestique Beach, ug Hinagdan Beach**)! 😊 Unsay gusto nimong mahibaw-an bahin sa atong mga beach?`
-      : `I'm **Bai, local guide**—an AI assistant created for **Dagat Ta Bai** to help visitors explore and commute to the **4 verified beaches in Barangay Binongkalan, Catmon, Cebu** (**Rañola Beach, Lite Bay Resort, Majestique Beach, and Hinagdan Beach**)! 😊 What would you like to know about our beaches or commute routes today?`;
+      ? `Ako si **Bai, local guide**—ang AI assistant nga gihimo para sa **Dagat Ta Bai** aron matabangan ang mga bisita sa pagsuroy ug pag-commute padulong sa **4 ka verified beaches sa Barangay Binongkalan, Catmon, Cebu** (**Rañola Beach, Lite Bay Resort, Majestique View Resort, ug Hinagdan Beach**)! 😊 Unsay gusto nimong mahibaw-an bahin sa atong mga beach?`
+      : `I'm **Bai, local guide**—an AI assistant created for **Dagat Ta Bai** to help visitors explore and commute to the **4 verified beaches in Barangay Binongkalan, Catmon, Cebu** (**Rañola Beach, Lite Bay Resort, Majestique View Resort, and Hinagdan Beach**)! 😊 What would you like to know about our beaches or commute routes today?`;
   }
 
   if (
@@ -1594,8 +1594,8 @@ export function matchBaiInstantAnswer(
     )
   ) {
     return isCeb
-      ? `Haha, sige! 😄 Nganong ang dagat sa Catmon pirmi man mo-kaway? ... Kay pirmi man siyang mo-*wave*! 🌊😂 Speaking of waves, nagplano ba ka nga maligo sa **Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, o **Hinagdan Beach**?`
-      : `Haha, sure! 😄 Why does the ocean in Catmon always say hello? ... Because it always *waves*! 🌊😂 Speaking of waves, are you planning a swim at **Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, or **Hinagdan Beach**?`;
+      ? `Haha, sige! 😄 Nganong ang dagat sa Catmon pirmi man mo-kaway? ... Kay pirmi man siyang mo-*wave*! 🌊😂 Speaking of waves, nagplano ba ka nga maligo sa **Rañola Beach**, **Lite Bay Resort**, **Majestique View Resort**, o **Hinagdan Beach**?`
+      : `Haha, sure! 😄 Why does the ocean in Catmon always say hello? ... Because it always *waves*! 🌊😂 Speaking of waves, are you planning a swim at **Rañola Beach**, **Lite Bay Resort**, **Majestique View Resort**, or **Hinagdan Beach**?`;
   }
 
   if (
@@ -1607,8 +1607,8 @@ export function matchBaiInstantAnswer(
     )
   ) {
     return isCeb
-      ? `Daghang salamat${nameSuffix}! 😊 Lipay kaayo ko nga nakatabang ko nimo. Ingna lang ko bisan unsang orasa kung naa pa kay pangutana bahin sa **Rañola Beach, Lite Bay Resort, Majestique Beach, Hinagdan Beach**, o sa pag-commute!`
-      : `Thank you so much${nameSuffix}! 😊 That means a lot! I'm always here whenever you need help with **Rañola Beach, Lite Bay Resort, Majestique Beach, Hinagdan Beach**, or commute directions in Barangay Binongkalan!`;
+      ? `Daghang salamat${nameSuffix}! 😊 Lipay kaayo ko nga nakatabang ko nimo. Ingna lang ko bisan unsang orasa kung naa pa kay pangutana bahin sa **Rañola Beach, Lite Bay Resort, Majestique View Resort, Hinagdan Beach**, o sa pag-commute!`
+      : `Thank you so much${nameSuffix}! 😊 That means a lot! I'm always here whenever you need help with **Rañola Beach, Lite Bay Resort, Majestique View Resort, Hinagdan Beach**, or commute directions in Barangay Binongkalan!`;
   }
 
   // Follow-up conversational prompts ("tell me more", "what else?", "any tips?")
@@ -1618,8 +1618,8 @@ export function matchBaiInstantAnswer(
     )
   ) {
     return isCeb
-      ? `Mao kini ang pipila ka **local tips** kung mobisita mo sa mga beach sa **Barangay Binongkalan, Catmon**:\n• **Pagkaon ug Sugba:** Naay sugbaanan ug mga tindahan sa tanang 4 ka beach, apan **walay baligya nga hilaw nga karne (meat)**—busa palit daan og karne sa merkado!\n• **Kalawmon ug Taob/Hunas:** Ang **Rañola Beach** ug **Hinagdan Beach** hinay-hinay ra molawm, samtang ang **Lite Bay Resort** ug **Majestique Beach** dali molawm bisan low tide.\n• **Sabado nga Schedule:** Timan-i nga **sirado ang Lite Bay Resort kada Sabado**, samtang ang Rañola, Majestique, ug Hinagdan abli kada adlaw!\n\nUnsa pa nga detalye ang gusto nimong i-check?`
-      : `Here are some handy **local tips** when visiting the beaches in **Barangay Binongkalan, Catmon**:\n• **Grilling & Food:** All 4 beaches have grilling areas (sugbaanan) and stores for snacks, but **none of them sell raw meat**—so buy your meat from the market beforehand!\n• **Water Depth & Tides:** **Rañola Beach** and **Hinagdan Beach** have gradual slopes, while **Lite Bay Resort** and **Majestique Beach** get deep quickly even at low tide.\n• **Saturday Schedule:** Remember that **Lite Bay Resort is closed every Saturday**, while Rañola, Majestique, and Hinagdan are open daily!\n\nWould you like to check specific rates or commute steps next?`;
+      ? `Mao kini ang pipila ka **local tips** kung mobisita mo sa mga beach sa **Barangay Binongkalan, Catmon**:\n• **Pagkaon ug Sugba:** Naay sugbaanan ug mga tindahan sa tanang 4 ka beach, apan **walay baligya nga hilaw nga karne (meat)**—busa palit daan og karne sa merkado!\n• **Kalawmon ug Taob/Hunas:** Ang **Rañola Beach** ug **Hinagdan Beach** hinay-hinay ra molawm, samtang ang **Lite Bay Resort** ug **Majestique View Resort** dali molawm bisan low tide.\n• **Sabado nga Schedule:** Timan-i nga **sirado ang Lite Bay Resort kada Sabado**, samtang ang Rañola, Majestique, ug Hinagdan abli kada adlaw!\n\nUnsa pa nga detalye ang gusto nimong i-check?`
+      : `Here are some handy **local tips** when visiting the beaches in **Barangay Binongkalan, Catmon**:\n• **Grilling & Food:** All 4 beaches have grilling areas (sugbaanan) and stores for snacks, but **none of them sell raw meat**—so buy your meat from the market beforehand!\n• **Water Depth & Tides:** **Rañola Beach** and **Hinagdan Beach** have gradual slopes, while **Lite Bay Resort** and **Majestique View Resort** get deep quickly even at low tide.\n• **Saturday Schedule:** Remember that **Lite Bay Resort is closed every Saturday**, while Rañola, Majestique, and Hinagdan are open daily!\n\nWould you like to check specific rates or commute steps next?`;
   }
 
   // Casual acknowledgments ("okay", "nice", "cool", "got it", "sige", "alright")
@@ -1629,8 +1629,8 @@ export function matchBaiInstantAnswer(
     )
   ) {
     return isCeb
-      ? `Sige${nameSuffix}! 😊 Ingna lang ko kung naa pa kay gustong mahibaw-an bahin sa **Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, **Hinagdan Beach**, o kung unsaon pag-commute padulong diri.`
-      : `Awesome${nameSuffix}! 😊 Just let me know anytime if you have more questions about **Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, **Hinagdan Beach**, or how to commute here.`;
+      ? `Sige${nameSuffix}! 😊 Ingna lang ko kung naa pa kay gustong mahibaw-an bahin sa **Rañola Beach**, **Lite Bay Resort**, **Majestique View Resort**, **Hinagdan Beach**, o kung unsaon pag-commute padulong diri.`
+      : `Awesome${nameSuffix}! 😊 Just let me know anytime if you have more questions about **Rañola Beach**, **Lite Bay Resort**, **Majestique View Resort**, **Hinagdan Beach**, or how to commute here.`;
   }
 
   // Conversational help / trip planning openers ("can you help me", "i want to go to the beach", "ganahan ko maligo")
@@ -1642,8 +1642,8 @@ export function matchBaiInstantAnswer(
     !hasAnyTopic(detectTopicsInText(lower))
   ) {
     return isCeb
-      ? `Oo kaayo${nameSuffix}, tabangan tika! 😊 Naay **4 ka verified beaches** diri sa **Barangay Binongkalan, Catmon, Cebu**:\n• **Rañola Beach (Raniola)** — Pinaka-safe para sa mga bata ug senior citizens (Entrance: **₱20–₱30**)\n• **Lite Bay Resort** — Libre ang parking, CR, ug shower; naay kayak (Entrance: **₱50**)\n• **Majestique Beach** — Dili ra batoon ug naay aircon/regular rooms para overnight (Entrance: **₱30**)\n• **Hinagdan Beach** — Balas (sandy shoreline) ug naay affordable rooms ug cottages (Entrance: **₱30–₱50**)\n\nAsa ka man gikan mag-commute, o unsa nga beach ang gusto nimong unahon og tan-aw?`
-      : `I'd be happy to help you${nameSuffix}! 😊 Here are the **4 verified beaches** in **Barangay Binongkalan, Catmon, Cebu**:\n• **Rañola Beach (Raniola)** — Safest for kids and accessible for senior citizens (Entrance: **₱20–₱30**)\n• **Lite Bay Resort** — Free parking, restroom, and shower; offers kayaking (Entrance: **₱50**)\n• **Majestique Beach** — Not rocky and offers regular/aircon rooms for overnight stays (Entrance: **₱30**)\n• **Hinagdan Beach** — Natural sandy shoreline with affordable rooms and cottages (Entrance: **₱30–₱50**)\n\nWhere will you be commuting from, or which beach would you like to know more about?`;
+      ? `Oo kaayo${nameSuffix}, tabangan tika! 😊 Naay **4 ka verified beaches** diri sa **Barangay Binongkalan, Catmon, Cebu**:\n• **Rañola Beach (Raniola)** — Pinaka-safe para sa mga bata ug senior citizens (Entrance: **₱20–₱30**)\n• **Lite Bay Resort** — Libre ang parking, CR, ug shower; naay kayak (Entrance: **₱50**)\n• **Majestique View Resort** — Dili ra batoon ug naay aircon/regular rooms para overnight (Entrance: **₱30**)\n• **Hinagdan Beach** — Balas (sandy shoreline) ug naay affordable rooms ug cottages (Entrance: **₱30–₱50**)\n\nAsa ka man gikan mag-commute, o unsa nga beach ang gusto nimong unahon og tan-aw?`
+      : `I'd be happy to help you${nameSuffix}! 😊 Here are the **4 verified beaches** in **Barangay Binongkalan, Catmon, Cebu**:\n• **Rañola Beach (Raniola)** — Safest for kids and accessible for senior citizens (Entrance: **₱20–₱30**)\n• **Lite Bay Resort** — Free parking, restroom, and shower; offers kayaking (Entrance: **₱50**)\n• **Majestique View Resort** — Not rocky and offers regular/aircon rooms for overnight stays (Entrance: **₱30**)\n• **Hinagdan Beach** — Natural sandy shoreline with affordable rooms and cottages (Entrance: **₱30–₱50**)\n\nWhere will you be commuting from, or which beach would you like to know more about?`;
   }
 
   if (
@@ -1669,8 +1669,8 @@ export function matchBaiInstantAnswer(
     )
   ) {
     return isCeb
-      ? `Ako si **Bai, local guide** para sa mga beach sa **Barangay Binongkalan, Catmon, Cebu**! Makatubag ko sa imong mga pangutana bahin sa **Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, ug **Hinagdan Beach**.`
-      : `I am **Bai, local guide** for the beaches in **Barangay Binongkalan, Catmon, Cebu**! You can ask me anything about **Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, and **Hinagdan Beach**.`;
+      ? `Ako si **Bai, local guide** para sa mga beach sa **Barangay Binongkalan, Catmon, Cebu**! Makatubag ko sa imong mga pangutana bahin sa **Rañola Beach**, **Lite Bay Resort**, **Majestique View Resort**, ug **Hinagdan Beach**.`
+      : `I am **Bai, local guide** for the beaches in **Barangay Binongkalan, Catmon, Cebu**! You can ask me anything about **Rañola Beach**, **Lite Bay Resort**, **Majestique View Resort**, and **Hinagdan Beach**.`;
   }
 
   if (
@@ -1679,8 +1679,8 @@ export function matchBaiInstantAnswer(
     )
   ) {
     return isCeb
-      ? `Ako si **Bai, local guide** para sa **Barangay Binongkalan, Catmon, Cebu**! Makatubag ko sa imong mga pangutana (sa Bisaya o English) bahin sa **Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, ug **Hinagdan Beach**—sama sa pinakaduol nga beach, batoon ba, sugbaanan, safety, lifeguard, tindahan, shower, commute, senior citizen accessibility, sinkhole, dali molawm, pets, taob/hunas, entrance fee, cottage, ug kwarto.`
-      : `I'm **Bai, local guide** for **Barangay Binongkalan, Catmon, Cebu**! I can answer questions in **Bisaya or English** about **Rañola Beach**, **Lite Bay Resort**, **Majestique Beach**, and **Hinagdan Beach**—including nearest beach, rocky/batoon shoreline, grilling areas (sugbaanan), safety, lifeguards, stores/food, showers, commute, senior citizen accessibility, sinkholes, water depth, pets, tides, entrance fees, cottages, and rooms.`;
+      ? `Ako si **Bai, local guide** para sa **Barangay Binongkalan, Catmon, Cebu**! Makatubag ko sa imong mga pangutana (sa Bisaya o English) bahin sa **Rañola Beach**, **Lite Bay Resort**, **Majestique View Resort**, ug **Hinagdan Beach**—sama sa pinakaduol nga beach, batoon ba, sugbaanan, safety, lifeguard, tindahan, shower, commute, senior citizen accessibility, sinkhole, dali molawm, pets, taob/hunas, entrance fee, cottage, ug kwarto.`
+      : `I'm **Bai, local guide** for **Barangay Binongkalan, Catmon, Cebu**! I can answer questions in **Bisaya or English** about **Rañola Beach**, **Lite Bay Resort**, **Majestique View Resort**, and **Hinagdan Beach**—including nearest beach, rocky/batoon shoreline, grilling areas (sugbaanan), safety, lifeguards, stores/food, showers, commute, senior citizen accessibility, sinkholes, water depth, pets, tides, entrance fees, cottages, and rooms.`;
   }
 
   // 1B. Fast check for random letters / keyboard mash / gibberish
@@ -1793,24 +1793,24 @@ export function matchBaiInstantAnswer(
   // 6A. BATOON BA O DILI / MOST ROCKY (Broad)
   if (topics.asksMostRocky) {
     if (isCeb) {
-      return `Sa mga beach sa Barangay Binongkalan, **walay purong o sobra ka batoon nga beach**, apan ang **Rañola Beach (Raniola)** ug **Lite Bay Resort** ang **batoon gamay** (adunay ginagmay nga bato o pebbles). Samtang ang **Majestique Beach** kay **dili ra batoon**, ug ang **Hinagdan Beach** kay **dili batoon** (balas / sandy shoreline kini).\n\n• **Rañola Beach (Raniola):** Batoon gamay\n• **Lite Bay Resort:** Batoon gamay\n• **Majestique Beach:** Dili ra batoon\n• **Hinagdan Beach:** Dili batoon (balas)`;
+      return `Sa mga beach sa Barangay Binongkalan, **walay purong o sobra ka batoon nga beach**, apan ang **Rañola Beach (Raniola)** ug **Lite Bay Resort** ang **batoon gamay** (adunay ginagmay nga bato o pebbles). Samtang ang **Majestique View Resort** kay **dili ra batoon**, ug ang **Hinagdan Beach** kay **dili batoon** (balas / sandy shoreline kini).\n\n• **Rañola Beach (Raniola):** Batoon gamay\n• **Lite Bay Resort:** Batoon gamay\n• **Majestique View Resort:** Dili ra batoon\n• **Hinagdan Beach:** Dili batoon (balas)`;
     }
-    return `Among the beaches in Barangay Binongkalan, **none of the beaches are excessively or purely rocky**, but **Rañola Beach (Raniola)** and **Lite Bay Resort** are **slightly rocky** with small natural pebbles and stones. Meanwhile, **Majestique Beach** is **not rocky**, and **Hinagdan Beach** has a **natural sandy shoreline**.\n\n• **Rañola Beach (Raniola):** Slightly rocky\n• **Lite Bay Resort:** Slightly rocky\n• **Majestique Beach:** Not rocky\n• **Hinagdan Beach:** Not rocky (sandy shoreline)`;
+    return `Among the beaches in Barangay Binongkalan, **none of the beaches are excessively or purely rocky**, but **Rañola Beach (Raniola)** and **Lite Bay Resort** are **slightly rocky** with small natural pebbles and stones. Meanwhile, **Majestique View Resort** is **not rocky**, and **Hinagdan Beach** has a **natural sandy shoreline**.\n\n• **Rañola Beach (Raniola):** Slightly rocky\n• **Lite Bay Resort:** Slightly rocky\n• **Majestique View Resort:** Not rocky\n• **Hinagdan Beach:** Not rocky (sandy shoreline)`;
   }
 
   if (topics.asksBatoon) {
     if (isCeb) {
-      return `Mao kini ang kahimtang sa baybayon (kung **batoon o dili**) sa mga beach sa Barangay Binongkalan:\n• **Rañola Beach (Raniola):** **Batoon gamay**\n• **Lite Bay Resort:** **Batoon gamay**\n• **Majestique Beach:** **Dili ra batoon**\n• **Hinagdan Beach:** **Dili batoon** (sand / balas ang baybayon)`;
+      return `Mao kini ang kahimtang sa baybayon (kung **batoon o dili**) sa mga beach sa Barangay Binongkalan:\n• **Rañola Beach (Raniola):** **Batoon gamay**\n• **Lite Bay Resort:** **Batoon gamay**\n• **Majestique View Resort:** **Dili ra batoon**\n• **Hinagdan Beach:** **Dili batoon** (sand / balas ang baybayon)`;
     }
-    return `Here is the shoreline condition (**rocky or sandy**) for the beaches in Barangay Binongkalan:\n• **Rañola Beach (Raniola):** **Slightly rocky** (with small natural pebbles)\n• **Lite Bay Resort:** **Slightly rocky** (with small natural pebbles)\n• **Majestique Beach:** **Not rocky**\n• **Hinagdan Beach:** **Not rocky** — features a natural **sandy shoreline**`;
+    return `Here is the shoreline condition (**rocky or sandy**) for the beaches in Barangay Binongkalan:\n• **Rañola Beach (Raniola):** **Slightly rocky** (with small natural pebbles)\n• **Lite Bay Resort:** **Slightly rocky** (with small natural pebbles)\n• **Majestique View Resort:** **Not rocky**\n• **Hinagdan Beach:** **Not rocky** — features a natural **sandy shoreline**`;
   }
 
   // 6B. SUGBAANAN (Broad)
   if (topics.asksSugba) {
     if (isCeb) {
-      return `**Naay sugbaanan ang tanang 4 ka beach** sa Barangay Binongkalan:\n• **Rañola Beach (Raniola):** Naay sugbaanan\n• **Lite Bay Resort:** Naay sugbaanan\n• **Majestique Beach:** Naay sugbaanan\n• **Hinagdan Beach:** Naay sugbaanan\n\n💡 Pwede kaayo mag-ihaw o magsugba sa ilang cottages/tables basta magpabilin lang nga limpyo ang palibot.`;
+      return `**Naay sugbaanan ang tanang 4 ka beach** sa Barangay Binongkalan:\n• **Rañola Beach (Raniola):** Naay sugbaanan\n• **Lite Bay Resort:** Naay sugbaanan\n• **Majestique View Resort:** Naay sugbaanan\n• **Hinagdan Beach:** Naay sugbaanan\n\n💡 Pwede kaayo mag-ihaw o magsugba sa ilang cottages/tables basta magpabilin lang nga limpyo ang palibot.`;
     }
-    return `**All 4 beaches in Barangay Binongkalan have grilling areas**:\n• **Rañola Beach (Raniola):** Has a grilling area\n• **Lite Bay Resort:** Has a grilling area\n• **Majestique Beach:** Has a grilling area\n• **Hinagdan Beach:** Has a grilling area\n\n💡 Grilling is permitted at their cottages and tables as long as guests clean up after use.`;
+    return `**All 4 beaches in Barangay Binongkalan have grilling areas**:\n• **Rañola Beach (Raniola):** Has a grilling area\n• **Lite Bay Resort:** Has a grilling area\n• **Majestique View Resort:** Has a grilling area\n• **Hinagdan Beach:** Has a grilling area\n\n💡 Grilling is permitted at their cottages and tables as long as guests clean up after use.`;
   }
 
   // 6C. ASAY PINAKA-SAFE NA BEACH / SAFE BA ANG MGA BEACH (Broad)
@@ -1840,120 +1840,120 @@ export function matchBaiInstantAnswer(
   // 6F. SHOWER / KALIGOAN (Broad)
   if (topics.asksShower) {
     if (isCeb) {
-      return `Oo, **naay shower / kaligoan ang mga beach** sa Barangay Binongkalan:\n• **Rañola Beach (Raniola):** Naay shower (₱10 ligo/shower)\n• **Lite Bay Resort:** Naay shower (**LIBRE** / walay bayad)\n• **Majestique Beach:** Naay shower (₱10 himasa/rinse)\n• **Hinagdan Beach:** Naay shower para kaligo ug banlaw`;
+      return `Oo, **naay shower / kaligoan ang mga beach** sa Barangay Binongkalan:\n• **Rañola Beach (Raniola):** Naay shower (₱10 ligo/shower)\n• **Lite Bay Resort:** Naay shower (**LIBRE** / walay bayad)\n• **Majestique View Resort:** Naay shower (₱10 himasa/rinse)\n• **Hinagdan Beach:** Naay shower para kaligo ug banlaw`;
     }
-    return `Yes, **all beaches in Barangay Binongkalan have shower and rinse facilities**:\n• **Rañola Beach (Raniola):** Has showers (₱10 for shower)\n• **Lite Bay Resort:** Has showers (**FREE** of charge)\n• **Majestique Beach:** Has showers (₱10 for rinse)\n• **Hinagdan Beach:** Has showers and rinse facilities`;
+    return `Yes, **all beaches in Barangay Binongkalan have shower and rinse facilities**:\n• **Rañola Beach (Raniola):** Has showers (₱10 for shower)\n• **Lite Bay Resort:** Has showers (**FREE** of charge)\n• **Majestique View Resort:** Has showers (₱10 for rinse)\n• **Hinagdan Beach:** Has showers and rinse facilities`;
   }
 
   // 6G. SENIOR CITIZEN ACCESSIBILITY (Broad)
   if (topics.asksSenior) {
     if (isCeb) {
-      return `• **Rañola Beach (Raniola):** **Yes, accessible sa mga senior citizen** kay patag kini ug dali rang sudlon gikan sa highway nga walay lisod nga mga hagdanan.\n• **Lite Bay Resort, Majestique Beach, ug Hinagdan Beach:** **Dili accessible sa mga senior citizen** tungod kay **daghan ug hagdanan** paubos sa dagat, busa maglisod ang mga senior.`;
+      return `• **Rañola Beach (Raniola):** **Yes, accessible sa mga senior citizen** kay patag kini ug dali rang sudlon gikan sa highway nga walay lisod nga mga hagdanan.\n• **Lite Bay Resort, Majestique View Resort, ug Hinagdan Beach:** **Dili accessible sa mga senior citizen** tungod kay **daghan ug hagdanan** paubos sa dagat, busa maglisod ang mga senior.`;
     }
-    return `• **Rañola Beach (Raniola):** **Yes, accessible for senior citizens** because it is flat and easy to enter from the highway without steep stairs.\n• **Lite Bay Resort, Majestique Beach, and Hinagdan Beach:** **Not accessible for senior citizens** because there are **many steep stairs** leading down to the shore, making it difficult for seniors.`;
+    return `• **Rañola Beach (Raniola):** **Yes, accessible for senior citizens** because it is flat and easy to enter from the highway without steep stairs.\n• **Lite Bay Resort, Majestique View Resort, and Hinagdan Beach:** **Not accessible for senior citizens** because there are **many steep stairs** leading down to the shore, making it difficult for seniors.`;
   }
 
   // 6H. SINKHOLE (Broad)
   if (topics.asksSinkhole) {
     if (isCeb) {
-      return `Mao kini ang bahin sa sinkhole sa tanang 4 ka beach sa Barangay Binongkalan:\n• **Rañola Beach (Raniola):** Naay sinkhole pero **layo ra** sa swimming area (safe ra maligo sa duol)\n• **Lite Bay Resort:** Naay sinkhole pero **layo ra sad**\n• **Majestique Beach:** **Wala** (walay sinkhole)\n• **Hinagdan Beach:** **Wala** (walay sinkhole)`;
+      return `Mao kini ang bahin sa sinkhole sa tanang 4 ka beach sa Barangay Binongkalan:\n• **Rañola Beach (Raniola):** Naay sinkhole pero **layo ra** sa swimming area (safe ra maligo sa duol)\n• **Lite Bay Resort:** Naay sinkhole pero **layo ra sad**\n• **Majestique View Resort:** **Wala** (walay sinkhole)\n• **Hinagdan Beach:** **Wala** (walay sinkhole)`;
     }
-    return `Here is the sinkhole information for all 4 beaches in Barangay Binongkalan:\n• **Rañola Beach (Raniola):** Has a sinkhole, but it is **far out** from the swimming area (safe to swim near the shore)\n• **Lite Bay Resort:** Has a sinkhole, but it is **also far out**\n• **Majestique Beach:** **None**\n• **Hinagdan Beach:** **None**`;
+    return `Here is the sinkhole information for all 4 beaches in Barangay Binongkalan:\n• **Rañola Beach (Raniola):** Has a sinkhole, but it is **far out** from the swimming area (safe to swim near the shore)\n• **Lite Bay Resort:** Has a sinkhole, but it is **also far out**\n• **Majestique View Resort:** **None**\n• **Hinagdan Beach:** **None**`;
   }
 
   // 6I. DALI MOLAWM / DEPTH (Broad)
   if (topics.asksMolawm) {
     if (isCeb) {
-      return `Mao kini ang bahin sa kalawmon sa mga beach sa Barangay Binongkalan:\n• **Lite Bay Resort ug Majestique Beach:** **Dali ra molawm** tungod kay **dili sila mohunas ug pamaayo** bisan kung low tide.\n• **Rañola Beach ug Hinagdan Beach:** **Dili ra dali molawm** (hinay-hinay ra ang paglawm ug mas angay sa mga bata).`;
+      return `Mao kini ang bahin sa kalawmon sa mga beach sa Barangay Binongkalan:\n• **Lite Bay Resort ug Majestique View Resort:** **Dali ra molawm** tungod kay **dili sila mohunas ug pamaayo** bisan kung low tide.\n• **Rañola Beach ug Hinagdan Beach:** **Dili ra dali molawm** (hinay-hinay ra ang paglawm ug mas angay sa mga bata).`;
     }
-    return `Here is the water depth information for the beaches in Barangay Binongkalan:\n• **Lite Bay Resort and Majestique Beach:** **Get deep quickly** because the water does not recede deeply even at low tide.\n• **Rañola Beach and Hinagdan Beach:** **Do not get deep quickly** (they have a gradual slope and are safer for kids).`;
+    return `Here is the water depth information for the beaches in Barangay Binongkalan:\n• **Lite Bay Resort and Majestique View Resort:** **Get deep quickly** because the water does not recede deeply even at low tide.\n• **Rañola Beach and Hinagdan Beach:** **Do not get deep quickly** (they have a gradual slope and are safer for kids).`;
   }
 
   // 6J. PETS (Broad)
   if (topics.asksPets) {
     if (isCeb) {
-      return `Oo, **pwede magdala og pets sa tanang 4 ka beach** sa Barangay Binongkalan (**Rañola Beach, Lite Bay Resort, Majestique Beach, ug Hinagdan Beach**)! Palihug lang og bantay sa inyong mga binuhi ug tipigi ang kalimpyo sa baybayon.`;
+      return `Oo, **pwede magdala og pets sa tanang 4 ka beach** sa Barangay Binongkalan (**Rañola Beach, Lite Bay Resort, Majestique View Resort, ug Hinagdan Beach**)! Palihug lang og bantay sa inyong mga binuhi ug tipigi ang kalimpyo sa baybayon.`;
     }
-    return `Yes, **pets are allowed at all 4 beaches** in Barangay Binongkalan (**Rañola Beach, Lite Bay Resort, Majestique Beach, and Hinagdan Beach**)! Please keep your pets supervised and clean up after them.`;
+    return `Yes, **pets are allowed at all 4 beaches** in Barangay Binongkalan (**Rañola Beach, Lite Bay Resort, Majestique View Resort, and Hinagdan Beach**)! Please keep your pets supervised and clean up after them.`;
   }
 
   // 6K. TAOB OR HUNAS / TIDES (Broad)
   if (topics.asksTide) {
     if (isCeb) {
-      return `Ang kahimtang sa taob (high tide) ug hunas (low tide) kay **nag-agad sa Live Tide Schedule sa Weather section** diri sa among website (nga nagpakita sa real-time nga gihabugon sa tubig karong adlawa).\n\n💡 **Timan-i:** Ang **Lite Bay Resort ug Majestique Beach** kay **dili kaayo mohunas ug pamaayo** bisan kung low tide, samtang ang **Rañola Beach ug Hinagdan Beach** kay klaro kaayo ang paghunas.`;
+      return `Ang kahimtang sa taob (high tide) ug hunas (low tide) kay **nag-agad sa Live Tide Schedule sa Weather section** diri sa among website (nga nagpakita sa real-time nga gihabugon sa tubig karong adlawa).\n\n💡 **Timan-i:** Ang **Lite Bay Resort ug Majestique View Resort** kay **dili kaayo mohunas ug pamaayo** bisan kung low tide, samtang ang **Rañola Beach ug Hinagdan Beach** kay klaro kaayo ang paghunas.`;
     }
-    return `Tide conditions (high tide or low tide) follow the **Live Tide Schedule in the Weather section** on our website (showing real-time water levels and schedules for today).\n\n💡 **Note:** **Lite Bay Resort and Majestique Beach** stay relatively deep even during low tide, whereas **Rañola Beach and Hinagdan Beach** have noticeably exposed shorelines during low tide.`;
+    return `Tide conditions (high tide or low tide) follow the **Live Tide Schedule in the Weather section** on our website (showing real-time water levels and schedules for today).\n\n💡 **Note:** **Lite Bay Resort and Majestique View Resort** stay relatively deep even during low tide, whereas **Rañola Beach and Hinagdan Beach** have noticeably exposed shorelines during low tide.`;
   }
 
   // 6L. ENTRANCE & COTTAGE FEES (Broad)
   if (topics.asksEntrance && topics.asksCottage) {
     if (isCeb) {
-      return `Mao kini ang **entrance fee ug cottage rates** sa 4 ka beach sa Barangay Binongkalan:\n• **Rañola Beach:** Entrance ₱20 (naay cottage) / ₱30 (walay cottage) | Cottage ₱500–₱2,500\n• **Lite Bay Resort:** Entrance ₱50 | Table ₱300, Cottage ₱800–₱1,000\n• **Majestique Beach:** Entrance ₱30 | Day Cottage ₱500–₱1,000, Overnight ₱800–₱1,200\n• **Hinagdan Beach:** Entrance ₱30 (day w/ cottage) / ₱50 (walay cottage/overnight) | Cottage ₱600–₱700`;
+      return `Mao kini ang **entrance fee ug cottage rates** sa 4 ka beach sa Barangay Binongkalan:\n• **Rañola Beach:** Entrance ₱20 (naay cottage) / ₱30 (walay cottage) | Cottage ₱500–₱2,500\n• **Lite Bay Resort:** Entrance ₱50 | Table ₱300, Cottage ₱800–₱1,000\n• **Majestique View Resort:** Entrance ₱30 | Day Cottage ₱500–₱1,000, Overnight ₱800–₱1,200\n• **Hinagdan Beach:** Entrance ₱30 (day w/ cottage) / ₱50 (walay cottage/overnight) | Cottage ₱600–₱700`;
     }
-    return `Here are the **entrance fees and cottage rates** for all 4 beaches in Barangay Binongkalan:\n• **Rañola Beach:** Entrance ₱20 (with cottage) / ₱30 (without) | Cottages ₱500–₱2,500\n• **Lite Bay Resort:** Entrance ₱50 | Table ₱300, Cottage ₱800–₱1,000\n• **Majestique Beach:** Entrance ₱30 | Day Cottage ₱500–₱1,000, Overnight ₱800–₱1,200\n• **Hinagdan Beach:** Entrance ₱30 (day with cottage) / ₱50 (without/overnight) | Cottages ₱600–₱700`;
+    return `Here are the **entrance fees and cottage rates** for all 4 beaches in Barangay Binongkalan:\n• **Rañola Beach:** Entrance ₱20 (with cottage) / ₱30 (without) | Cottages ₱500–₱2,500\n• **Lite Bay Resort:** Entrance ₱50 | Table ₱300, Cottage ₱800–₱1,000\n• **Majestique View Resort:** Entrance ₱30 | Day Cottage ₱500–₱1,000, Overnight ₱800–₱1,200\n• **Hinagdan Beach:** Entrance ₱30 (day with cottage) / ₱50 (without/overnight) | Cottages ₱600–₱700`;
   }
 
   if (topics.asksEntrance) {
     if (isCeb) {
-      return `Mao kini ang **entrance fee kada tawo** sa tanang 4 ka beach sa Barangay Binongkalan:\n• **Rañola Beach:** ₱20 (naay cottage) | ₱30 (walay cottage)\n• **Majestique Beach:** ₱30 kada tawo\n• **Hinagdan Beach:** ₱30 (day use naay cottage) | ₱50 (walay cottage / overnight)\n• **Lite Bay Resort:** ₱50 kada tawo`;
+      return `Mao kini ang **entrance fee kada tawo** sa tanang 4 ka beach sa Barangay Binongkalan:\n• **Rañola Beach:** ₱20 (naay cottage) | ₱30 (walay cottage)\n• **Majestique View Resort:** ₱30 kada tawo\n• **Hinagdan Beach:** ₱30 (day use naay cottage) | ₱50 (walay cottage / overnight)\n• **Lite Bay Resort:** ₱50 kada tawo`;
     }
-    return `Here are the **entrance fees per person** for all 4 beaches in Barangay Binongkalan:\n• **Rañola Beach:** ₱20 (with cottage) | ₱30 (without cottage)\n• **Majestique Beach:** ₱30 per person\n• **Hinagdan Beach:** ₱30 (day with cottage) | ₱50 (without cottage / overnight)\n• **Lite Bay Resort:** ₱50 per person`;
+    return `Here are the **entrance fees per person** for all 4 beaches in Barangay Binongkalan:\n• **Rañola Beach:** ₱20 (with cottage) | ₱30 (without cottage)\n• **Majestique View Resort:** ₱30 per person\n• **Hinagdan Beach:** ₱30 (day with cottage) | ₱50 (without cottage / overnight)\n• **Lite Bay Resort:** ₱50 per person`;
   }
 
   // 6M. COTTAGES / TABLES (Broad)
   if (topics.asksCottage) {
     if (isCeb) {
-      return `Mao kini ang presyo sa **cottage ug table** sa mga beach sa Barangay Binongkalan:\n• **Lite Bay Resort:** ₱300 (Table) | ₱800 (Cottage) | ₱1,000 (Dako nga space)\n• **Rañola Beach:** ₱500 (Small) | ₱2,000 (Middle) | ₱2,500 (Big cottage for 30 persons)\n• **Majestique Beach:** ₱500–₱1,000 (Day cottage) | ₱800–₱1,200 (Overnight)\n• **Hinagdan Beach:** ₱600 (Day cottage) | ₱700 (Overnight)`;
+      return `Mao kini ang presyo sa **cottage ug table** sa mga beach sa Barangay Binongkalan:\n• **Lite Bay Resort:** ₱300 (Table) | ₱800 (Cottage) | ₱1,000 (Dako nga space)\n• **Rañola Beach:** ₱500 (Small) | ₱2,000 (Middle) | ₱2,500 (Big cottage for 30 persons)\n• **Majestique View Resort:** ₱500–₱1,000 (Day cottage) | ₱800–₱1,200 (Overnight)\n• **Hinagdan Beach:** ₱600 (Day cottage) | ₱700 (Overnight)`;
     }
-    return `Here are the **cottage and table rates** for the 4 beaches in Barangay Binongkalan:\n• **Lite Bay Resort:** ₱300 (Table) | ₱800 (Cottage) | ₱1,000 (Large space)\n• **Rañola Beach:** ₱500 (Small) | ₱2,000 (Middle) | ₱2,500 (Big 30-person cottage)\n• **Majestique Beach:** ₱500–₱1,000 (Day cottage) | ₱800–₱1,200 (Overnight)\n• **Hinagdan Beach:** ₱600 (Day cottage) | ₱700 (Overnight)`;
+    return `Here are the **cottage and table rates** for the 4 beaches in Barangay Binongkalan:\n• **Lite Bay Resort:** ₱300 (Table) | ₱800 (Cottage) | ₱1,000 (Large space)\n• **Rañola Beach:** ₱500 (Small) | ₱2,000 (Middle) | ₱2,500 (Big 30-person cottage)\n• **Majestique View Resort:** ₱500–₱1,000 (Day cottage) | ₱800–₱1,200 (Overnight)\n• **Hinagdan Beach:** ₱600 (Day cottage) | ₱700 (Overnight)`;
   }
 
   // 6N. ROOMS / OVERNIGHT (Broad)
   if (topics.asksRoom) {
     if (isCeb) {
-      return `Mao kini ang mga kapilian sa **kwarto ug overnight** sa Barangay Binongkalan:\n• **Hinagdan Beach:** ₱250 (3-hr short-time room), ₱1,000 (Ordinary room), ₱2,500 (Aircon room)\n• **Majestique Beach:** ₱2,000 (Regular room), ₱3,500 (Aircon room)\n• **Rañola Beach:** Walay kwarto, pero pwede mag-overnight tent camping sa regular nga presyo\n• **Lite Bay Resort:** Walay kwarto ug walay overnight (day use ra)`;
+      return `Mao kini ang mga kapilian sa **kwarto ug overnight** sa Barangay Binongkalan:\n• **Hinagdan Beach:** ₱250 (3-hr short-time room), ₱1,000 (Ordinary room), ₱2,500 (Aircon room)\n• **Majestique View Resort:** ₱2,000 (Regular room), ₱3,500 (Aircon room)\n• **Rañola Beach:** Walay kwarto, pero pwede mag-overnight tent camping sa regular nga presyo\n• **Lite Bay Resort:** Walay kwarto ug walay overnight (day use ra)`;
     }
-    return `Here are the **room and overnight options** in Barangay Binongkalan:\n• **Hinagdan Beach:** ₱250 (3-hr short-time room), ₱1,000 (Ordinary room), ₱2,500 (AC room)\n• **Majestique Beach:** ₱2,000 (Regular room), ₱3,500 (AC room)\n• **Rañola Beach:** No rooms, but overnight tent camping is allowed at the regular rate\n• **Lite Bay Resort:** No rooms or overnight stays (day use only)`;
+    return `Here are the **room and overnight options** in Barangay Binongkalan:\n• **Hinagdan Beach:** ₱250 (3-hr short-time room), ₱1,000 (Ordinary room), ₱2,500 (AC room)\n• **Majestique View Resort:** ₱2,000 (Regular room), ₱3,500 (AC room)\n• **Rañola Beach:** No rooms, but overnight tent camping is allowed at the regular rate\n• **Lite Bay Resort:** No rooms or overnight stays (day use only)`;
   }
 
   // 6O. OPERATING HOURS (Broad)
   if (topics.asksHours) {
     if (isCeb) {
-      return `Mao kini ang **oras sa pag-abli (operating hours)** sa 4 ka beach sa Barangay Binongkalan:\n• **Rañola Beach:** 6:00 AM – 7:00 PM (Abli kada adlaw; pwede overnight tent camping)\n• **Lite Bay Resort:** 6:00 AM – 8:00 PM (Sun–Thu), 6:00 AM – 5:00 PM (Fri), **SIRADO kada Sabado**\n• **Majestique Beach:** 7:00 AM – 5:00 PM (Day use) | 6:00 PM – 6:00 AM (Overnight), abli kada adlaw\n• **Hinagdan Beach:** 6:00 AM – 7:00 PM (Day use) | Abli tibuok gabii para sa overnight (abli kada adlaw)`;
+      return `Mao kini ang **oras sa pag-abli (operating hours)** sa 4 ka beach sa Barangay Binongkalan:\n• **Rañola Beach:** 6:00 AM – 7:00 PM (Abli kada adlaw; pwede overnight tent camping)\n• **Lite Bay Resort:** 6:00 AM – 8:00 PM (Sun–Thu), 6:00 AM – 5:00 PM (Fri), **SIRADO kada Sabado**\n• **Majestique View Resort:** 7:00 AM – 5:00 PM (Day use) | 6:00 PM – 6:00 AM (Overnight), abli kada adlaw\n• **Hinagdan Beach:** 6:00 AM – 7:00 PM (Day use) | Abli tibuok gabii para sa overnight (abli kada adlaw)`;
     }
-    return `Here are the **operating hours** for all 4 beaches in Barangay Binongkalan:\n• **Rañola Beach:** 6:00 AM – 7:00 PM (Open daily; overnight tent camping allowed)\n• **Lite Bay Resort:** 6:00 AM – 8:00 PM (Sun–Thu), 6:00 AM – 5:00 PM (Fri), **CLOSED every Saturday**\n• **Majestique Beach:** 7:00 AM – 5:00 PM (Day use) | 6:00 PM – 6:00 AM (Overnight), open daily\n• **Hinagdan Beach:** 6:00 AM – 7:00 PM (Day use) | Open whole night for overnight stays (open daily)`;
+    return `Here are the **operating hours** for all 4 beaches in Barangay Binongkalan:\n• **Rañola Beach:** 6:00 AM – 7:00 PM (Open daily; overnight tent camping allowed)\n• **Lite Bay Resort:** 6:00 AM – 8:00 PM (Sun–Thu), 6:00 AM – 5:00 PM (Fri), **CLOSED every Saturday**\n• **Majestique View Resort:** 7:00 AM – 5:00 PM (Day use) | 6:00 PM – 6:00 AM (Overnight), open daily\n• **Hinagdan Beach:** 6:00 AM – 7:00 PM (Day use) | Open whole night for overnight stays (open daily)`;
   }
 
   // 6P. CONTACT NUMBERS (Broad)
   if (topics.asksContact) {
     if (isCeb) {
-      return `Mao kini ang **contact numbers** sa 4 ka beach sa Barangay Binongkalan:\n• **Rañola Beach:** 0935-724-1824 / 0960-326-7698\n• **Lite Bay Resort:** 0953-411-7454\n• **Majestique Beach:** 0943-622-7972\n• **Hinagdan Beach:** 0975-086-2570 / 0963-654-0904 / 0926-234-5373`;
+      return `Mao kini ang **contact numbers** sa 4 ka beach sa Barangay Binongkalan:\n• **Rañola Beach:** 0935-724-1824 / 0960-326-7698\n• **Lite Bay Resort:** 0953-411-7454\n• **Majestique View Resort:** 0943-622-7972\n• **Hinagdan Beach:** 0975-086-2570 / 0963-654-0904 / 0926-234-5373`;
     }
-    return `Here are the **contact numbers** for all 4 beaches in Barangay Binongkalan:\n• **Rañola Beach:** 0935-724-1824 / 0960-326-7698\n• **Lite Bay Resort:** 0953-411-7454\n• **Majestique Beach:** 0943-622-7972\n• **Hinagdan Beach:** 0975-086-2570 / 0963-654-0904 / 0926-234-5373`;
+    return `Here are the **contact numbers** for all 4 beaches in Barangay Binongkalan:\n• **Rañola Beach:** 0935-724-1824 / 0960-326-7698\n• **Lite Bay Resort:** 0953-411-7454\n• **Majestique View Resort:** 0943-622-7972\n• **Hinagdan Beach:** 0975-086-2570 / 0963-654-0904 / 0926-234-5373`;
   }
 
   // 6Q. PARKING (Broad)
   if (topics.asksParking) {
     if (isCeb) {
-      return `Mao kini ang **parking fee** sa mga beach sa Barangay Binongkalan:\n• **Rañola Beach:** ₱50 (Sakyanan/Car) | ₱20 (Motor)\n• **Lite Bay Resort:** **LIBRE** (Walay bayad)\n• **Majestique Beach:** **LIBRE** (Walay bayad)\n• **Hinagdan Beach:** Wala pa ma-lista sa among database (this information is not available)`;
+      return `Mao kini ang **parking fee** sa mga beach sa Barangay Binongkalan:\n• **Rañola Beach:** ₱50 (Sakyanan/Car) | ₱20 (Motor)\n• **Lite Bay Resort:** **LIBRE** (Walay bayad)\n• **Majestique View Resort:** **LIBRE** (Walay bayad)\n• **Hinagdan Beach:** Wala pa ma-lista sa among database (this information is not available)`;
     }
-    return `Here are the **parking fees** for the beaches in Barangay Binongkalan:\n• **Rañola Beach:** ₱50 (Car) | ₱20 (Motorcycle)\n• **Lite Bay Resort:** **FREE** (No parking fee)\n• **Majestique Beach:** **FREE** (No parking fee)\n• **Hinagdan Beach:** Not listed in our verified database (this information is not available)`;
+    return `Here are the **parking fees** for the beaches in Barangay Binongkalan:\n• **Rañola Beach:** ₱50 (Car) | ₱20 (Motorcycle)\n• **Lite Bay Resort:** **FREE** (No parking fee)\n• **Majestique View Resort:** **FREE** (No parking fee)\n• **Hinagdan Beach:** Not listed in our verified database (this information is not available)`;
   }
 
   // 6R. RESTROOM / CR (Broad)
   if (topics.asksRestroom) {
     if (isCeb) {
-      return `Mao kini ang detalye sa **CR / Restroom ug Shower** sa mga beach sa Barangay Binongkalan:\n• **Rañola Beach:** ₱5 (ihi) | ₱10 (kaligo/shower)\n• **Lite Bay Resort:** **LIBRE** (Walay bayad ang CR ug shower)\n• **Majestique Beach:** ₱10 (himasa/shower)\n• **Hinagdan Beach:** Naay shower ug kaligoan (wala ma-lista ang specific CR fee sa database)`;
+      return `Mao kini ang detalye sa **CR / Restroom ug Shower** sa mga beach sa Barangay Binongkalan:\n• **Rañola Beach:** ₱5 (ihi) | ₱10 (kaligo/shower)\n• **Lite Bay Resort:** **LIBRE** (Walay bayad ang CR ug shower)\n• **Majestique View Resort:** ₱10 (himasa/shower)\n• **Hinagdan Beach:** Naay shower ug kaligoan (wala ma-lista ang specific CR fee sa database)`;
     }
-    return `Here is the **restroom (CR) and shower** information for the beaches in Barangay Binongkalan:\n• **Rañola Beach:** ₱5 (restroom) | ₱10 (shower)\n• **Lite Bay Resort:** **FREE** (No restroom or shower fee)\n• **Majestique Beach:** ₱10 (rinse/shower)\n• **Hinagdan Beach:** Has showers and restrooms (specific restroom fee is not listed in our database)`;
+    return `Here is the **restroom (CR) and shower** information for the beaches in Barangay Binongkalan:\n• **Rañola Beach:** ₱5 (restroom) | ₱10 (shower)\n• **Lite Bay Resort:** **FREE** (No restroom or shower fee)\n• **Majestique View Resort:** ₱10 (rinse/shower)\n• **Hinagdan Beach:** Has showers and restrooms (specific restroom fee is not listed in our database)`;
   }
 
   // 6S. ACTIVITIES & RENTALS (Broad)
   if (topics.asksActivities || topics.asksRentals) {
     if (isCeb) {
-      return `Mao kini ang mga **activities ug abangan (rentals)** sa mga beach sa Barangay Binongkalan:\n• **Rañola Beach:** Swimming, sugba, overnight tent camping | Salbabida rental: **₱30**\n• **Lite Bay Resort:** Swimming, sugba, **Kayak (₱200 / 2 hrs)** | Life jacket rental: **₱50**\n• **Majestique Beach:** Swimming, sugba, overnight stay | Life jacket rental: **₱50**\n• **Hinagdan Beach:** Swimming, sugba, overnight stay | Salbabida: **₱50**, Life jacket: **₱50–₱100**`;
+      return `Mao kini ang mga **activities ug abangan (rentals)** sa mga beach sa Barangay Binongkalan:\n• **Rañola Beach:** Swimming, sugba, overnight tent camping | Salbabida rental: **₱30**\n• **Lite Bay Resort:** Swimming, sugba, **Kayak (₱200 / 2 hrs)** | Life jacket rental: **₱50**\n• **Majestique View Resort:** Swimming, sugba, overnight stay | Life jacket rental: **₱50**\n• **Hinagdan Beach:** Swimming, sugba, overnight stay | Salbabida: **₱50**, Life jacket: **₱50–₱100**`;
     }
-    return `Here are the **activities and equipment rentals** at the beaches in Barangay Binongkalan:\n• **Rañola Beach:** Swimming, grilling, overnight tent camping | Floater (salbabida): **₱30**\n• **Lite Bay Resort:** Swimming, grilling, **Kayaking (₱200 / 2 hrs)** | Life jacket: **₱50**\n• **Majestique Beach:** Swimming, grilling, overnight stays | Life jacket: **₱50**\n• **Hinagdan Beach:** Swimming, grilling, overnight stays | Floater: **₱50**, Life jacket: **₱50–₱100**`;
+    return `Here are the **activities and equipment rentals** at the beaches in Barangay Binongkalan:\n• **Rañola Beach:** Swimming, grilling, overnight tent camping | Floater (salbabida): **₱30**\n• **Lite Bay Resort:** Swimming, grilling, **Kayaking (₱200 / 2 hrs)** | Life jacket: **₱50**\n• **Majestique View Resort:** Swimming, grilling, overnight stays | Life jacket: **₱50**\n• **Hinagdan Beach:** Swimming, grilling, overnight stays | Floater: **₱50**, Life jacket: **₱50–₱100**`;
   }
 
   // 6T. PRIVATE BOOKING / WALK-INS (Broad)
@@ -1975,9 +1975,9 @@ export function matchBaiInstantAnswer(
   // 6V. LOCATION (Broad)
   if (topics.asksLocation) {
     if (isCeb) {
-      return `Ang tanang 4 ka verified beaches (**Rañola Beach, Lite Bay Resort, Majestique Beach, ug Hinagdan Beach**) kay nahimutang sa **Barangay Binongkalan, Catmon, Cebu**, daplin ra mismo sa **Cebu North National Highway**.`;
+      return `Ang tanang 4 ka verified beaches (**Rañola Beach, Lite Bay Resort, Majestique View Resort, ug Hinagdan Beach**) kay nahimutang sa **Barangay Binongkalan, Catmon, Cebu**, daplin ra mismo sa **Cebu North National Highway**.`;
     }
-    return `All 4 verified beaches (**Rañola Beach, Lite Bay Resort, Majestique Beach, and Hinagdan Beach**) are located in **Barangay Binongkalan, Catmon, Cebu**, right along the **Cebu North National Highway**.`;
+    return `All 4 verified beaches (**Rañola Beach, Lite Bay Resort, Majestique View Resort, and Hinagdan Beach**) are located in **Barangay Binongkalan, Catmon, Cebu**, right along the **Cebu North National Highway**.`;
   }
 
   // 6W. LIST ALL BEACHES / RECOMMENDATIONS
@@ -1995,8 +1995,8 @@ export function matchBaiInstantAnswer(
     lower.includes('beaches in')
   ) {
     return isCeb
-      ? `Naay **4 ka verified beaches** sa Barangay Binongkalan, Catmon, Cebu:\n1. **Rañola Beach (Raniola)** — Pinaka-safe para sa mga bata ug accessible sa senior citizens (Entrance: ₱20–₱30)\n2. **Lite Bay Resort** — Libre ang parking, CR, ug shower; naay kayak (Entrance: ₱50)\n3. **Majestique Beach** — Dili ra batoon ug naay aircon/regular rooms para overnight (Entrance: ₱30)\n4. **Hinagdan Beach** — Dili batoon (balas / sandy shoreline) ug naay affordable rooms ug cottages (Entrance: ₱30–₱50)\n\nUnsa nga beach o detalye ang gusto nimong mahibaw-an?`
-      : `There are **4 verified beaches** in Barangay Binongkalan, Catmon, Cebu:\n1. **Rañola Beach (Raniola)** — Safest for kids and accessible for senior citizens (Entrance: ₱20–₱30)\n2. **Lite Bay Resort** — Free parking, restroom, and shower; offers kayaking (Entrance: ₱50)\n3. **Majestique Beach** — Not rocky and offers regular/aircon rooms for overnight stays (Entrance: ₱30)\n4. **Hinagdan Beach** — Natural sandy shoreline with affordable rooms and cottages (Entrance: ₱30–₱50)\n\nWhich beach or question would you like to ask about?`;
+      ? `Naay **4 ka verified beaches** sa Barangay Binongkalan, Catmon, Cebu:\n1. **Rañola Beach (Raniola)** — Pinaka-safe para sa mga bata ug accessible sa senior citizens (Entrance: ₱20–₱30)\n2. **Lite Bay Resort** — Libre ang parking, CR, ug shower; naay kayak (Entrance: ₱50)\n3. **Majestique View Resort** — Dili ra batoon ug naay aircon/regular rooms para overnight (Entrance: ₱30)\n4. **Hinagdan Beach** — Dili batoon (balas / sandy shoreline) ug naay affordable rooms ug cottages (Entrance: ₱30–₱50)\n\nUnsa nga beach o detalye ang gusto nimong mahibaw-an?`
+      : `There are **4 verified beaches** in Barangay Binongkalan, Catmon, Cebu:\n1. **Rañola Beach (Raniola)** — Safest for kids and accessible for senior citizens (Entrance: ₱20–₱30)\n2. **Lite Bay Resort** — Free parking, restroom, and shower; offers kayaking (Entrance: ₱50)\n3. **Majestique View Resort** — Not rocky and offers regular/aircon rooms for overnight stays (Entrance: ₱30)\n4. **Hinagdan Beach** — Natural sandy shoreline with affordable rooms and cottages (Entrance: ₱30–₱50)\n\nWhich beach or question would you like to ask about?`;
   }
 
   // 6X. CONVERSATIONAL FOLLOW-UP CONTINUATION (when chatting across turns)
