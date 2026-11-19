@@ -42,14 +42,18 @@ const globalForGemini = globalThis as unknown as {
 };
 
 function resolveGeminiApiKey(): string | null {
+  const envKey = process.env.GEMINI_API_KEY?.trim();
+  if (envKey && envKey !== 'your-gemini-api-key-here') {
+    return envKey;
+  }
+
   const candidatePaths = [
     path.join(process.cwd(), '.env.local'),
-    path.join(process.cwd(), 'beachmapping', 'beachmapping-main', 'DagatTaBai', '.env.local'),
   ];
   for (const envPath of candidatePaths) {
     try {
-      if (!fs.existsSync(envPath)) continue;
-      const content = fs.readFileSync(envPath, 'utf8');
+      if (!fs.existsSync(/*turbopackIgnore: true*/ envPath)) continue;
+      const content = fs.readFileSync(/*turbopackIgnore: true*/ envPath, 'utf8');
       const match = content.match(/^\s*GEMINI_API_KEY\s*=\s*([^\r\n#]+)/m);
       if (match?.[1]) {
         const parsed = match[1].trim().replace(/^['"]|['"]$/g, '');
@@ -62,8 +66,7 @@ function resolveGeminiApiKey(): string | null {
       // Ignore file read errors
     }
   }
-  const envKey = process.env.GEMINI_API_KEY?.trim();
-  return envKey && envKey !== 'your-gemini-api-key-here' ? envKey : null;
+  return null;
 }
 
 function getOrderedModelCandidates(): string[] {

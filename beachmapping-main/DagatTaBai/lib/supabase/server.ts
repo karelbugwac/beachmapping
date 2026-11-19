@@ -1,4 +1,5 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createClient, type SupabaseClient } from '@supabase/supabase-js';
 import { cookies } from 'next/headers';
 import type { Database } from './types';
 
@@ -38,20 +39,25 @@ export async function createServerSupabaseClient() {
   );
 }
 
+let cachedAdminClient: SupabaseClient<any> | null = null;
+
 /**
  * Admin / Service Role Client (Bypasses RLS).
+ * Uses a high-performance singleton from @supabase/supabase-js without cookie overhead.
  * NEVER expose this to client components!
  */
-export function createAdminClient() {
+export function createAdminClient(): SupabaseClient<any> {
   const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-project.supabase.co';
   const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-key';
 
-  return createServerClient<Database>(supabaseUrl, serviceRoleKey, {
-    cookies: {
-      getAll() {
-        return [];
+  if (!cachedAdminClient) {
+    cachedAdminClient = createClient<any>(supabaseUrl, serviceRoleKey, {
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
       },
-      setAll() {},
-    },
-  });
+    });
+  }
+  return cachedAdminClient;
 }

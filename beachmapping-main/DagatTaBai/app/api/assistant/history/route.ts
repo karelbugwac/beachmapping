@@ -23,11 +23,15 @@ export async function GET(req: NextRequest) {
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(200);
-    if (error) throw error;
+    if (error) {
+      console.warn('[AssistantHistory] Query notice:', error);
+      return NextResponse.json({ signedIn: true, messages: [] }, { headers: { 'Cache-Control': 'no-store' } });
+    }
     return NextResponse.json({ signedIn: true, messages: (data || []).reverse() }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Could not load conversation history.';
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.warn('[AssistantHistory] Safe fallback:', message);
+    return NextResponse.json({ signedIn: true, messages: [] }, { headers: { 'Cache-Control': 'no-store' } });
   }
 }
 
