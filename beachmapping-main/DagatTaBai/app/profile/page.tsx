@@ -32,6 +32,7 @@ import { formatImageSize } from '@/lib/utils/image-upload-config';
 import { prepareImageForUpload } from '@/lib/utils/image-compression';
 import { validateImageFile } from '@/lib/utils/image-validation';
 import { filterFullNameInput, validateFullName } from '@/lib/validation/fullName';
+import { notifyRealtimeSync, useRealtimeSync } from '@/lib/realtime-sync';
 
 interface ProfileData {
   id: string;
@@ -309,6 +310,7 @@ export default function ProfilePage() {
             detail: { full_name: data.user.full_name },
           })
         );
+        notifyRealtimeSync('users');
         setProfileSaveState('saved');
       } catch (error: unknown) {
         setProfileSaveState('error');
@@ -319,11 +321,9 @@ export default function ProfilePage() {
     return () => window.clearTimeout(timer);
   }, [name, nameInputError, user, userLocation]);
 
-  useEffect(() => {
-    if (activeCategory !== 'reviews' || !user?.id) return;
-
-    let isMounted = true;
-    setReviewsLoading(true);
+  const fetchUserReviews = (silent = false) => {
+    if (!user?.id) return;
+    if (!silent) setReviewsLoading(true);
     fetch(`/api/profile/reviews?userId=${encodeURIComponent(user.id)}`, { cache: 'no-store' })
       .then(async (response) => {
         const result = await response.json();
@@ -331,22 +331,29 @@ export default function ProfilePage() {
         return result;
       })
       .then((result: unknown) => {
-        if (isMounted && Array.isArray(result)) setReviews(result as UserReview[]);
+        if (Array.isArray(result)) setReviews(result as UserReview[]);
       })
       .catch((error: unknown) => {
-        if (isMounted) {
+        if (!silent) {
           setReviews([]);
           showToast(error instanceof Error ? error.message : 'Could not load your reviews.', 'error');
         }
       })
       .finally(() => {
-        if (isMounted) setReviewsLoading(false);
+        if (!silent) setReviewsLoading(false);
       });
+  };
 
-    return () => {
-      isMounted = false;
-    };
+  useEffect(() => {
+    if (activeCategory !== 'reviews' || !user?.id) return;
+    fetchUserReviews(false);
   }, [activeCategory, user?.id]);
+
+  useRealtimeSync(() => {
+    if (activeCategory === 'reviews' && user?.id) {
+      fetchUserReviews(true);
+    }
+  });
 
   const handleDeleteReview = async (reviewId: string) => {
     if (!await confirmAction({ title: 'Delete Review', message: 'Are you sure you want to delete this review?' })) return;
@@ -359,6 +366,7 @@ export default function ProfilePage() {
         throw new Error(result.error || 'Failed to delete review.');
       }
       setReviews((previous) => previous.filter((review) => review.id !== reviewId));
+      notifyRealtimeSync('reviews');
       showToast('Review deleted.', 'destructive');
     } catch (error: unknown) {
       showToast(error instanceof Error ? error.message : 'Failed to delete review.', 'error');
@@ -585,6 +593,12 @@ export default function ProfilePage() {
                 key={user.picture}
                 src={user.picture}
                 alt=""
+                width={112}
+                height={112}
+                loading="lazy"
+                decoding="async"
+                referrerPolicy="no-referrer"
+                style={{ aspectRatio: '1 / 1' }}
                 onError={(event) => {
                   event.currentTarget.style.display = 'none';
                 }}
@@ -1109,33 +1123,43 @@ export default function ProfilePage() {
               }}
             >
               {avatarDraft || user.picture ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  ref={avatarPreviewImageRef}
-                  src={avatarDraft || user.picture || ''}
-                  alt="Profile photo preview"
-                  draggable={false}
-                  onLoad={(event) => {
-                    if (avatarDraft) {
-                      setAvatarImageSize({
-                        width: event.currentTarget.naturalWidth,
-                        height: event.currentTarget.naturalHeight,
-                      });
-                    }
-                  }}
-                  className={`absolute left-1/2 top-1/2 max-w-none ${
-                    avatarDraft ? '' : 'h-full w-full object-cover'
-                  }`}
-                  style={avatarDraft && avatarImageSize
-                    ? {
-                        width: `${AVATAR_PREVIEW_SIZE * (avatarImageSize.width / Math.min(avatarImageSize.width, avatarImageSize.height)) * avatarZoom}px`,
-                        height: `${AVATAR_PREVIEW_SIZE * (avatarImageSize.height / Math.min(avatarImageSize.width, avatarImageSize.height)) * avatarZoom}px`,
-                        transform: `translate(calc(-50% - ${avatarOffsetX * Math.max(0, (AVATAR_PREVIEW_SIZE * (avatarImageSize.width / Math.min(avatarImageSize.width, avatarImageSize.height)) * avatarZoom - AVATAR_PREVIEW_SIZE) / 2)}px), calc(-50% - ${avatarOffsetY * Math.max(0, (AVATAR_PREVIEW_SIZE * (avatarImageSize.height / Math.min(avatarImageSize.width, avatarImageSize.height)) * avatarZoom - AVATAR_PREVIEW_SIZE) / 2)}px))`,
+                <>
+                  <span>{user.name.charAt(0).toUpperCase()}</span>
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    ref={avatarPreviewImageRef}
+                    key={avatarDraft || user.picture}
+                    src={avatarDraft || user.picture || ''}
+                    alt="Profile photo preview"
+                    referrerPolicy="no-referrer"
+                    draggable={false}
+                    onLoad={(event) => {
+                      if (avatarDraft) {
+                        setAvatarImageSize({
+                          width: event.currentTarget.naturalWidth,
+                          height: event.currentTarget.naturalHeight,
+                        });
                       }
-                    : avatarDraft
-                      ? { width: '100%', height: '100%', objectFit: 'cover' }
-                      : undefined}
-                />
+                    }}
+                    onError={(event) => {
+                      event.currentTarget.style.display = 'none';
+                    }}
+                    className={
+                      avatarDraft && avatarImageSize
+                        ? 'absolute left-1/2 top-1/2 max-w-none'
+                        : 'absolute inset-0 h-full w-full object-cover'
+                    }
+                    style={
+                      avatarDraft && avatarImageSize
+                        ? {
+                            width: `${AVATAR_PREVIEW_SIZE * (avatarImageSize.width / Math.min(avatarImageSize.width, avatarImageSize.height)) * avatarZoom}px`,
+                            height: `${AVATAR_PREVIEW_SIZE * (avatarImageSize.height / Math.min(avatarImageSize.width, avatarImageSize.height)) * avatarZoom}px`,
+                            transform: `translate(calc(-50% - ${avatarOffsetX * Math.max(0, (AVATAR_PREVIEW_SIZE * (avatarImageSize.width / Math.min(avatarImageSize.width, avatarImageSize.height)) * avatarZoom - AVATAR_PREVIEW_SIZE) / 2)}px), calc(-50% - ${avatarOffsetY * Math.max(0, (AVATAR_PREVIEW_SIZE * (avatarImageSize.height / Math.min(avatarImageSize.width, avatarImageSize.height)) * avatarZoom - AVATAR_PREVIEW_SIZE) / 2)}px))`,
+                          }
+                        : undefined
+                    }
+                  />
+                </>
               ) : (
                 user.name.charAt(0).toUpperCase()
               )}

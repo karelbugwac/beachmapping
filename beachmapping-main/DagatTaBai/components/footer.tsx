@@ -23,7 +23,7 @@ export function Footer() {
             <Link href="/" className="inline-flex items-center gap-2.5">
               <div className="relative w-8 h-8 flex-shrink-0 flex items-center justify-center">
                 <Image
-                  src="/images/logo.png"
+                  src="/logo.png"
                   alt="Dagat Ta Bai"
                   width={34}
                   height={34}
@@ -127,7 +127,7 @@ export function Footer() {
                     href="mailto:support@dagattabai.ph"
                     className="hover:text-brand-navy-500 dark:hover:text-brand-teal-300 font-medium transition-colors"
                   >
-                    support@dagattabai.ph
+                    support.dagattabai@gmail.com
                   </a>
                 </div>
                 <div className="flex items-start gap-2.5">

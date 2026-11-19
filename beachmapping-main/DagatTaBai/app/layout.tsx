@@ -28,10 +28,10 @@ export const metadata: Metadata = {
     'Find beaches, not filters. Discover local beach resorts and coastlines in Barangay Binongkalan, Catmon, Cebu with verified rates, 360° tours, and an interactive map.',
   icons: {
     icon: [
-      { url: '/images/logo.png', type: 'image/png' },
+      { url: '/logo.png', type: 'image/png' },
     ],
-    shortcut: '/images/logo.png',
-    apple: '/images/logo.png',
+    shortcut: '/logo.png',
+    apple: '/logo.png',
   },
 };
 

@@ -1,85 +1,134 @@
 import type { TideExtreme } from './tide-interpolation';
 
-interface WorldTidesExtreme {
-  dt?: unknown;
-  date?: unknown;
-  height?: unknown;
-  type?: unknown;
+interface OpenWatersExtreme {
+  time?: unknown;
+  level?: unknown;
+  high?: unknown;
+  low?: unknown;
+  label?: unknown;
 }
 
-interface WorldTidesResponse {
-  status: number;
-  error?: string;
-  copyright?: string;
-  extremes?: unknown[];
+interface OpenWatersStation {
+  name?: unknown;
+  source?: { name?: unknown };
+  attribution?: unknown;
 }
 
-export interface WorldTidesResult {
+interface OpenWatersResponse {
+  extremes?: unknown;
+  station?: OpenWatersStation;
+  message?: unknown;
+}
+
+export interface OpenWatersTidesResult {
   extremes: TideExtreme[];
   copyright: string;
 }
 
-export async function fetchWorldTides(
+const TIDES_CACHE_TTL_MS = 5 * 60 * 1000; // 5 minutes
+const globalForTides = globalThis as unknown as {
+  __dagatTidesCache?: Map<string, { data: OpenWatersTidesResult; expiresAt: number }>;
+  __dagatTidesInFlight?: Map<string, Promise<OpenWatersTidesResult>>;
+};
+const tidesCache =
+  globalForTides.__dagatTidesCache ??
+  (globalForTides.__dagatTidesCache = new Map());
+const tidesInFlight =
+  globalForTides.__dagatTidesInFlight ??
+  (globalForTides.__dagatTidesInFlight = new Map());
+
+export async function fetchOpenWatersTides(
   latitude: number,
   longitude: number
-): Promise<WorldTidesResult> {
-  const apiKey = process.env.WORLDTIDES_API_KEY?.trim();
-  if (!apiKey) {
-    throw new Error('Tide data is not configured. Add WORLDTIDES_API_KEY to .env.local and restart the app.');
+): Promise<OpenWatersTidesResult> {
+  const cacheKey = `${latitude.toFixed(4)},${longitude.toFixed(4)}`;
+  const now = Date.now();
+  const cached = tidesCache.get(cacheKey);
+  if (cached && cached.expiresAt > now) {
+    return cached.data;
   }
 
-  const url = new URL('https://www.worldtides.info/api/v3');
-  url.searchParams.set('extremes', '');
-  url.searchParams.set('lat', String(latitude));
-  url.searchParams.set('lon', String(longitude));
-  url.searchParams.set('days', '2');
-  url.searchParams.set('localtime', '');
-  url.searchParams.set('key', apiKey);
+  const existingInFlight = tidesInFlight.get(cacheKey);
+  if (existingInFlight) {
+    return existingInFlight;
+  }
 
-  const response = await fetch(url, {
-    next: { revalidate: 1800 },
-    signal: AbortSignal.timeout(10000),
-  });
-  const data = (await response.json().catch(() => null)) as WorldTidesResponse | null;
+  const requestPromise = (async (): Promise<OpenWatersTidesResult> => {
+    try {
+      const start = new Date();
+      start.setHours(0, 0, 0, 0);
+      const end = new Date(start);
+      end.setDate(end.getDate() + 2);
 
-  if (!response.ok || !data || data.status !== 200) {
-    const reason = data?.error || `WorldTides request failed (HTTP ${response.status}).`;
+      const url = new URL('https://api.openwaters.io/tides/extremes');
+      url.searchParams.set('latitude', String(latitude));
+      url.searchParams.set('longitude', String(longitude));
+      url.searchParams.set('start', start.toISOString());
+      url.searchParams.set('end', end.toISOString());
+      url.searchParams.set('units', 'meters');
+
+      const response = await fetch(url, {
+        next: { revalidate: 300 },
+        signal: AbortSignal.timeout(10000),
+      });
+  const data = (await response.json().catch(() => null)) as OpenWatersResponse | null;
+
+  if (!response.ok) {
+    const reason = typeof data?.message === 'string'
+      ? data.message
+      : `OpenWaters tides request failed (HTTP ${response.status}).`;
     throw new Error(reason);
   }
 
-  if (!Array.isArray(data.extremes)) {
-    throw new Error('WorldTides did not return tide extremes for this location.');
+  if (!Array.isArray(data?.extremes)) {
+    throw new Error('OpenWaters did not return tide extremes for this location.');
   }
 
   const extremes = data.extremes.flatMap((value): TideExtreme[] => {
     if (typeof value !== 'object' || value === null) return [];
-    const item = value as WorldTidesExtreme;
-    const time =
-      typeof item.date === 'string'
-        ? item.date
-        : typeof item.dt === 'number' && Number.isFinite(item.dt)
-          ? new Date(item.dt * 1000).toISOString()
-          : '';
-    const type = typeof item.type === 'string' ? item.type.toLowerCase() : '';
+    const item = value as OpenWatersExtreme;
+    const time = typeof item.time === 'string' ? item.time : '';
+    const label = typeof item.label === 'string' ? item.label.toLowerCase() : '';
+    const type = item.high === true || label === 'high'
+      ? 'high'
+      : item.low === true || label === 'low'
+        ? 'low'
+        : null;
+
     if (
       !time ||
       !Number.isFinite(new Date(time).getTime()) ||
-      typeof item.height !== 'number' ||
-      !Number.isFinite(item.height) ||
-      (type !== 'high' && type !== 'low')
+      typeof item.level !== 'number' ||
+      !Number.isFinite(item.level) ||
+      !type
     ) {
       return [];
     }
 
-    return [{ time, height: item.height, type }];
+    return [{ time, height: item.level, type }];
   });
 
   if (extremes.length < 2) {
-    throw new Error('WorldTides returned insufficient tide data for this location.');
+    throw new Error('OpenWaters returned insufficient tide data for this location.');
   }
 
-  return {
+  const sourceName = typeof data.station?.source?.name === 'string'
+    ? data.station.source.name
+    : '';
+  const stationName = typeof data.station?.name === 'string' ? ` for ${data.station.name}` : '';
+
+  const result: OpenWatersTidesResult = {
     extremes,
-    copyright: data.copyright || 'Tide predictions provided by WorldTides.info',
+    copyright: `Tides: OpenWaters${stationName}${sourceName ? ` · ${sourceName}` : ''} (Hart-Davis et al., 2025) · CC BY 4.0`,
   };
+
+      tidesCache.set(cacheKey, { data: result, expiresAt: Date.now() + TIDES_CACHE_TTL_MS });
+      return result;
+    } finally {
+      tidesInFlight.delete(cacheKey);
+    }
+  })();
+
+  tidesInFlight.set(cacheKey, requestPromise);
+  return requestPromise;
 }

@@ -11,10 +11,24 @@ export function VisitorTracker() {
 
   useEffect(() => {
     try {
+      if (!pathname || typeof window === 'undefined') return;
+
+      // Skip internal / dashboard / auth routes directly on client to avoid unnecessary network calls
+      if (/^\/(admin|owner|staff|profile|login|register|forgot-password|reset-password)(\/|$)/.test(pathname)) {
+        return;
+      }
+
       let sessionId = sessionStorage.getItem(SESSION_STORAGE_KEY);
       if (!sessionId) {
         sessionId = generateUUID();
         sessionStorage.setItem(SESSION_STORAGE_KEY, sessionId);
+      }
+
+      // Check client-side deduplication for today
+      const today = new Date().toISOString().slice(0, 10);
+      const trackMarker = `vtrack_${sessionId.slice(0, 8)}_${pathname}_${today}`;
+      if (sessionStorage.getItem(trackMarker)) {
+        return;
       }
 
       void fetch('/api/analytics/track', {
@@ -22,9 +36,15 @@ export function VisitorTracker() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ sessionId, path: pathname }),
         keepalive: true,
-      }).catch(() => undefined);
+      })
+        .then((res) => {
+          if (res.ok) {
+            sessionStorage.setItem(trackMarker, '1');
+          }
+        })
+        .catch(() => undefined);
     } catch {
-      // Analytics are optional; browsing must work when storage is unavailable.
+      // Analytics are optional; browsing must work smoothly even if storage is disabled.
     }
   }, [pathname]);
 

@@ -362,3 +362,86 @@ export async function getTourRequestForAdmin(requestId: string): Promise<TourReq
     owner,
   } as TourRequestWithBeach;
 }
+
+/**
+ * Approves a pending tour request: sets beaches.virtual_tour_url and updates request status.
+ */
+export async function approveTourRequest(params: {
+  beachId: string;
+  reviewerId?: string | null;
+  overrideTourUrl?: string | null;
+}): Promise<{ success: boolean; tourUrl: string }> {
+  const { beachId, reviewerId, overrideTourUrl } = params;
+  const admin = getAdminSupabase();
+  const now = new Date().toISOString();
+
+  const currentReq = await getTourRequestForBeach(beachId);
+  if (!currentReq || !currentReq.requested_tour_url) {
+    throw new Error('No pending 360 tour request found for this beach.');
+  }
+
+  const candidateUrl =
+    typeof overrideTourUrl === 'string' && overrideTourUrl.trim()
+      ? extractTourEmbedUrl(overrideTourUrl.trim()) || overrideTourUrl.trim()
+      : currentReq.requested_tour_url;
+  const isRecapturePlaceholder = candidateUrl === 'Recapture Request';
+
+  if (!isRecapturePlaceholder) {
+    const { error: beachError } = await (admin.from('beaches') as any)
+      .update({
+        virtual_tour_url: candidateUrl,
+        updated_at: now,
+      })
+      .eq('id', beachId);
+
+    if (beachError) {
+      throw beachError;
+    }
+
+    invalidateBeachesCache();
+  }
+
+  await (admin.from('beach_tour_requests') as any)
+    .update({
+      status: 'approved',
+      reviewed_by: reviewerId || null,
+      reviewed_at: now,
+      approved_at: now,
+      updated_at: now,
+    })
+    .eq('beach_id', beachId)
+    .eq('status', currentReq.status);
+
+  return { success: true, tourUrl: candidateUrl };
+}
+
+export async function rejectTourRequest(params: {
+  beachId: string;
+  rejectionReason: string;
+  reviewerId?: string | null;
+}): Promise<boolean> {
+  const { beachId, rejectionReason, reviewerId } = params;
+  const admin = getAdminSupabase();
+  const now = new Date().toISOString();
+
+  await (admin.from('beach_tour_requests') as any)
+    .update({
+      status: 'in_progress',
+      status_note: rejectionReason,
+      reviewed_by: reviewerId || null,
+      reviewed_at: now,
+      updated_at: now,
+    })
+    .eq('beach_id', beachId);
+
+  return true;
+}
+
+export async function cancelTourRequest(params: { beachId: string }): Promise<boolean> {
+  const admin = getAdminSupabase();
+  await (admin.from('beach_tour_requests') as any)
+    .delete()
+    .eq('beach_id', params.beachId)
+    .eq('status', 'in_progress');
+  return true;
+}

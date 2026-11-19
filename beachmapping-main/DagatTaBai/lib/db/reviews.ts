@@ -1,4 +1,32 @@
 import { createServerSupabaseClient, createAdminClient } from '@/lib/supabase/server';
+import { invalidateBeachesCache } from '@/lib/db/beaches';
+
+export async function syncBeachAverageRating(beachId: string): Promise<void> {
+  if (!beachId || beachId === 'platform') return;
+  try {
+    const adminSupabase = createAdminClient();
+    const { data: rows } = await (adminSupabase.from('beach_reviews') as any)
+      .select('rating')
+      .eq('beach_id', beachId);
+
+    const ratings = Array.isArray(rows)
+      ? rows.map((r: any) => Number(r.rating)).filter((n: number) => Number.isFinite(n) && n > 0)
+      : [];
+
+    const avg =
+      ratings.length > 0
+        ? Math.round((ratings.reduce((sum: number, val: number) => sum + val, 0) / ratings.length) * 10) / 10
+        : 0;
+
+    await (adminSupabase.from('beaches') as any)
+      .update({ average_rating: avg, updated_at: new Date().toISOString() })
+      .eq('id', beachId);
+
+    invalidateBeachesCache();
+  } catch {
+    // Non-fatal if rating sync fails
+  }
+}
 
 export interface ReviewRecord {
   id: string;
@@ -104,6 +132,8 @@ export async function createReview(payload: {
     .single();
   if (error) throw error;
 
+  await syncBeachAverageRating(payload.beachId);
+
   return {
     id: data.id,
     beach_id: data.beach_id,
@@ -120,12 +150,18 @@ export async function createReview(payload: {
 
 export async function deleteReview(reviewId: string, userId: string): Promise<boolean> {
   const supabase = createAdminClient();
+  await (supabase.from('beach_review_reports') as any).delete().eq('review_id', reviewId);
   const { data: beachDeleted } = await (supabase.from('beach_reviews') as any)
     .delete()
     .eq('id', reviewId)
     .eq('user_id', userId)
-    .select('id');
-  if (Array.isArray(beachDeleted) && beachDeleted.length > 0) return true;
+    .select('id, beach_id');
+  if (Array.isArray(beachDeleted) && beachDeleted.length > 0) {
+    if (beachDeleted[0]?.beach_id) {
+      await syncBeachAverageRating(beachDeleted[0].beach_id);
+    }
+    return true;
+  }
 
   const { data: platformDeleted } = await (supabase.from('platform_reviews') as any)
     .delete()

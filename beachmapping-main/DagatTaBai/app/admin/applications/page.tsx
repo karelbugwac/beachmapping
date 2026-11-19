@@ -7,11 +7,7 @@ import {
   Eye,
   Loader2,
   Search,
-  Filter,
-  ChevronDown,
   RefreshCw,
-  Clock,
-  CheckCircle2,
   XCircle,
   ZoomIn,
   ZoomOut,
@@ -22,9 +18,16 @@ import {
   ChevronRight,
   X,
   Palmtree,
+  Clock,
+  CheckCircle2,
+  Filter,
+  ChevronDown,
 } from 'lucide-react';
 import { showToast } from '@/components/ui/feedback-toasts';
 import { filterAdminSearchInput, SAFE_TEXT_MESSAGES, validateSafeText } from '@/lib/validation/safe-text';
+import { CoastalEmptyState } from '@/components/ui/coastal-empty-state';
+import { notifyRealtimeSync, useRealtimeSync } from '@/lib/realtime-sync';
+import { getApplicationNotesDisplay } from '@/lib/utils/application-review-notes';
 
 interface ApplicationItem {
   id: string;
@@ -265,7 +268,8 @@ export default function AdminApplicationsPage() {
   const closeDetailsRef = useRef<() => void>(() => {});
   const selectedApplicationId = selectedApp?.id;
 
-  const fetchApplications = async () => {
+  const fetchApplications = async (): Promise<boolean> => {
+    setLoading(true);
     try {
       const res = await fetch('/api/applications', { cache: 'no-store' });
       const data = await res.json();
@@ -273,9 +277,11 @@ export default function AdminApplicationsPage() {
       if (!Array.isArray(data?.applications)) throw new Error('The applications response was invalid.');
       setApplications(data.applications);
       setLoadError(null);
+      return true;
     } catch (err) {
       console.error('Failed to fetch applications:', err);
       setLoadError(err instanceof Error ? err.message : 'Failed to load applications.');
+      return false;
     } finally {
       setLoading(false);
     }
@@ -283,14 +289,21 @@ export default function AdminApplicationsPage() {
 
   const handleRefresh = async () => {
     setRefreshing(true);
-    await fetchApplications();
+    const refreshed = await fetchApplications();
     setRefreshing(false);
-    showToast('Applications refreshed.');
+    showToast(
+      refreshed ? 'Applications refreshed.' : 'Applications could not be refreshed. Please try again.',
+      refreshed ? 'success' : 'error'
+    );
   };
 
   useEffect(() => {
-    void Promise.resolve().then(fetchApplications);
+    void fetchApplications();
   }, []);
+
+  useRealtimeSync(() => {
+    void fetchApplications();
+  });
 
   useEffect(() => {
     if (!selectedApplicationId) return;
@@ -392,6 +405,10 @@ export default function AdminApplicationsPage() {
     });
   }, [applications, statusFilter, searchQuery]);
 
+  const notesDisplay = selectedApp
+    ? getApplicationNotesDisplay(selectedApp.status, selectedApp.rejection_reason)
+    : null;
+
   // Open View Modal & load signed document URLs
   const closeDetails = useCallback(() => {
     if (selectedApp && (selectedApp.status === 'pending' || selectedApp.status === 'under_review') && adminNotes !== initialNotes) {
@@ -468,13 +485,14 @@ export default function AdminApplicationsPage() {
       if (!res.ok) throw new Error(data.error || 'Failed to approve application');
 
       if (!isResend) {
-        const updated = data.application;
+        const updated = data.application || { status: 'approved' };
         setApplications((prev) =>
           prev.map((a) => (a.id === selectedApp.id ? { ...a, ...updated } : a))
         );
         setSelectedApp((prev) => (prev ? { ...prev, ...updated } : null));
       }
-      showToast(isResend ? 'A new PIN was emailed to the applicant.' : 'Application approved and PIN emailed.', 'success');
+      notifyRealtimeSync('all');
+      showToast(isResend ? 'A new PIN was emailed to the applicant.' : `Approved! 6-digit PIN emailed to ${selectedApp.applicant_email}.`, 'success');
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Approval failed', 'error');
     } finally {
@@ -511,6 +529,7 @@ export default function AdminApplicationsPage() {
       setSelectedApp((prev) => prev ? { ...prev, ...updated } : null);
       setAdminNotes(updated.status_note || '');
       setNotesError('');
+      notifyRealtimeSync('applications');
       showToast(
         action === 'start_review' ? 'Application moved to review.' :
           action === 'request_changes' ? 'Changes requested from applicant.' : 'Application rejected.',
@@ -637,10 +656,10 @@ export default function AdminApplicationsPage() {
         </button>
       </div>
 
-      {/* Search Bar and Filter Dropdown */}
+      {/* Search and Filters */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
         <div className="relative flex-1">
-          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
+          <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" aria-hidden="true" />
           <input
             type="text"
             placeholder="Search applicant or beach..."
@@ -651,6 +670,7 @@ export default function AdminApplicationsPage() {
               setSearchQuery(filtered.value);
               setSearchError(filtered.rejected ? SAFE_TEXT_MESSAGES.invalid : '');
             }}
+            aria-label="Search owner applications"
             className="w-full pl-10 pr-4 py-2.5 rounded-full border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-900 dark:text-white text-xs sm:text-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:ring-2 focus:ring-brand-teal-400 dark:focus:ring-brand-teal-400 placeholder:text-slate-400 shadow-2xs"
           />
           {searchError && <p role="alert" className="mt-1 px-4 text-xs text-rose-600">{searchError}</p>}
@@ -678,17 +698,17 @@ export default function AdminApplicationsPage() {
             </select>
             <ChevronDown className="absolute right-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
           </div>
-
           {(searchQuery || statusFilter !== 'all') && (
             <button
               type="button"
               onClick={() => {
                 setSearchQuery('');
                 setStatusFilter('all');
+                setSearchError('');
               }}
-              className="px-3.5 py-2.5 text-xs font-bold text-rose-600 hover:text-rose-700 dark:text-rose-400 bg-rose-50/80 hover:bg-rose-100 dark:bg-rose-950/30 dark:hover:bg-rose-950/50 rounded-full transition-colors cursor-pointer whitespace-nowrap"
+              className="px-4 py-2 rounded-full border border-slate-200 dark:border-neutral-800 text-xs font-bold text-slate-700 dark:text-neutral-200 hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors"
             >
-              Reset
+              Reset filters
             </button>
           )}
         </div>
@@ -696,41 +716,53 @@ export default function AdminApplicationsPage() {
 
       {/* Main List Table */}
       <div className="bg-white dark:bg-neutral-900 rounded-3xl border border-slate-200 dark:border-neutral-800 shadow-xs overflow-hidden">
-        {loading && applications.length === 0 ? (
-          <div className="py-20 text-center">
+        {loadError && applications.length === 0 ? (
+          <div className="py-12">
+            <CoastalEmptyState
+              variant="error"
+              title="Applications are unavailable"
+              description="The application list could not be loaded. Try again."
+              action={
+                <button
+                  type="button"
+                  onClick={() => void fetchApplications()}
+                  disabled={loading}
+                  className="min-h-11 rounded-full border border-brand-teal-600 px-4 text-sm font-semibold text-brand-teal-700 transition-colors hover:bg-slate-100 active:bg-slate-200 disabled:opacity-60 dark:text-brand-teal-300 dark:hover:bg-neutral-800"
+                >
+                  {loading ? 'Retrying...' : 'Retry'}
+                </button>
+              }
+            />
+          </div>
+        ) : loading && applications.length === 0 ? (
+          <div className="py-20 text-center" role="status" aria-label="Loading applications">
             <Loader2 className="w-7 h-7 animate-spin mx-auto text-brand-navy-500 dark:text-brand-teal-300" />
+            <p className="mt-3 text-sm text-slate-600 dark:text-neutral-400">Loading applications...</p>
           </div>
         ) : filteredApplications.length === 0 ? (
-          <div className="py-20 text-center text-slate-400 space-y-2">
-            <FileText className="w-9 h-9 mx-auto text-slate-300 dark:text-neutral-700" />
-            {loadError ? (
-              <>
-                <p className="text-sm font-bold text-rose-600 dark:text-rose-400">Could not load applications</p>
-                <p className="text-xs">{loadError}</p>
-              </>
-            ) : (
-              <>
-                <p className="text-sm font-bold text-brand-navy-500 dark:text-brand-teal-300">No applications found</p>
-                <p className="text-xs">Existing beach listings are managed separately.</p>
-                <Link
-                  href="/admin/beaches"
-                  className="inline-flex mt-2 text-xs font-bold text-brand-teal-700 dark:text-brand-teal-300 hover:underline"
-                >
-                  View beach listings
-                </Link>
-              </>
-            )}
+          <div className="py-12">
+            <CoastalEmptyState
+              title="No applications found"
+              description="Try adjusting the filters or check back when new owner applications arrive."
+            />
           </div>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-xs">
+            <table className="w-full min-w-[880px] table-fixed text-xs">
+              <colgroup>
+                <col className="w-[34%]" />
+                <col className="w-[26%]" />
+                <col className="w-[14%]" />
+                <col className="w-[16%]" />
+                <col className="w-[10%]" />
+              </colgroup>
               <thead className="bg-slate-50/80 dark:bg-black/40 border-b border-slate-200 dark:border-neutral-800 text-slate-500 dark:text-neutral-400 uppercase tracking-wider font-bold text-[11px]">
                 <tr>
-                  <th className="py-4 px-6">Applicant</th>
-                  <th className="py-4 px-6 whitespace-nowrap">Beach</th>
-                  <th className="py-4 px-6 whitespace-nowrap">Application Status</th>
-                  <th className="py-4 px-6 whitespace-nowrap">Date</th>
-                  <th className="py-4 px-6 text-right whitespace-nowrap">Actions</th>
+                  <th scope="col" className="py-4 px-6">Applicant</th>
+                  <th scope="col" className="py-4 px-6 whitespace-nowrap">Beach</th>
+                  <th scope="col" className="py-4 px-6 text-center whitespace-nowrap">Status</th>
+                  <th scope="col" className="py-4 px-6 text-center whitespace-nowrap">Date</th>
+                  <th scope="col" className="py-4 px-6 text-right whitespace-nowrap">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-neutral-800/80 text-slate-700 dark:text-neutral-300">
@@ -780,7 +812,7 @@ export default function AdminApplicationsPage() {
                       </span>
                     </td>
 
-                    <td className="py-4 px-6 whitespace-nowrap">
+                    <td className="py-4 px-6 text-center whitespace-nowrap">
                       <span
                         className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[11px] font-bold capitalize ${
                           app.status === 'approved'
@@ -803,7 +835,7 @@ export default function AdminApplicationsPage() {
                       </span>
                     </td>
 
-                    <td className="py-4 px-6 whitespace-nowrap text-slate-500 dark:text-neutral-400 font-medium">
+                    <td className="py-4 px-6 text-center whitespace-nowrap text-slate-500 dark:text-neutral-400 font-medium tabular-nums">
                       {new Date(app.created_at).toLocaleDateString(undefined, {
                         year: 'numeric',
                         month: 'short',
@@ -954,7 +986,7 @@ export default function AdminApplicationsPage() {
                     />
                   ))}
                 </div>
-                </section>
+              </section>
 
               <section aria-labelledby="application-history-title" className="space-y-3">
                 <h4 id="application-history-title" className="text-sm font-extrabold text-brand-navy-500 dark:text-white">What happened so far</h4>
@@ -987,32 +1019,45 @@ export default function AdminApplicationsPage() {
                 )}
               </section>
 
-              {/* Notes */}
-              <div className="space-y-1.5">
-                <label htmlFor="application-admin-notes" className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-                  Notes
-                </label>
-                <textarea
-                  id="application-admin-notes"
-                  rows={2}
-                  value={adminNotes}
-                  maxLength={500}
-                  onChange={(e) => {
-                    setAdminNotes(e.target.value);
-                    const validation = validateSafeText(e.target.value, { max: 500 });
-                    setNotesError(validation.ok ? '' : validation.error);
-                  }}
-                  disabled={selectedApp.status !== 'pending' && selectedApp.status !== 'under_review'}
-                  placeholder="Optional notes or rejection reason..."
-                  className="w-full px-4 py-2.5 text-xs rounded-2xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-slate-900 dark:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:ring-2 focus:ring-brand-teal-400 dark:focus:ring-brand-teal-400 disabled:bg-slate-50 dark:disabled:bg-neutral-800/50 disabled:text-slate-400"
-                />
-                {notesError && <p role="alert" className="text-xs text-rose-600">{notesError}</p>}
-                <p className="text-right text-[10px] text-slate-400">{adminNotes.length}/500</p>
-            </div>
+              {/* Rejection reason banner */}
+              {notesDisplay?.kind === 'reason' && (
+                <div className="border-l-2 border-rose-600 bg-rose-50 px-4 py-3 dark:border-rose-400 dark:bg-rose-950/30">
+                  <h4 className="text-xs font-semibold text-rose-900 dark:text-rose-200">
+                    Rejection / Change reason
+                  </h4>
+                  <p className="mt-1 whitespace-pre-wrap text-sm text-rose-800 dark:text-rose-300">
+                    {notesDisplay.reason}
+                  </p>
+                </div>
+              )}
+
+              {/* Review notes input */}
+              {(selectedApp.status === 'pending' || selectedApp.status === 'under_review') && (
+                <div className="space-y-1.5">
+                  <label htmlFor="application-admin-notes" className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
+                    Notes
+                  </label>
+                  <textarea
+                    id="application-admin-notes"
+                    rows={2}
+                    value={adminNotes}
+                    maxLength={500}
+                    onChange={(e) => {
+                      setAdminNotes(e.target.value);
+                      const validation = validateSafeText(e.target.value, { max: 500 });
+                      setNotesError(validation.ok ? '' : validation.error);
+                    }}
+                    placeholder="Optional notes or rejection reason..."
+                    className="w-full px-4 py-2.5 text-xs rounded-2xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-slate-900 dark:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:ring-2 focus:ring-brand-teal-400 dark:focus:ring-brand-teal-400"
+                  />
+                  {notesError && <p role="alert" className="text-xs text-rose-600">{notesError}</p>}
+                  <p className="text-right text-[10px] text-slate-400">{adminNotes.length}/500</p>
+                </div>
+              )}
             </div>
 
             <footer className="flex flex-shrink-0 flex-wrap items-center justify-end gap-2.5 border-t border-slate-100 bg-slate-50/70 px-5 py-4 dark:border-neutral-800 dark:bg-black/30 sm:px-6">
-            {selectedApp.status === 'pending' && (
+              {selectedApp.status === 'pending' && (
                 <button
                   type="button"
                   disabled={submitting}

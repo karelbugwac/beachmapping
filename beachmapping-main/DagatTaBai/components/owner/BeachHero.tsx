@@ -169,7 +169,8 @@ export function BeachHero({ beach, loading = false }: BeachHeroProps) {
             {/* Primary Action Button (Coral with white text) */}
             <Link
               href="/owner/beach"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-sans font-semibold text-white transition-colors shadow-xs min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus-visible:ring-2 focus-visible:ring-brand-teal-400"
+              prefetch={false}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-sans font-semibold text-white transition-colors shadow-xs min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400"
               style={{
                 backgroundColor: 'var(--color-coral)',
               }}
@@ -182,6 +183,7 @@ export function BeachHero({ beach, loading = false }: BeachHeroProps) {
             {isConfigured && publicSlug && (
               <Link
                 href={`/beaches/${publicSlug}`}
+                prefetch={false}
                 target="_blank"
                 className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg text-xs font-sans font-medium border transition-colors min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus-visible:ring-2 focus-visible:ring-brand-teal-400"
                 style={{

@@ -31,6 +31,7 @@ import {
 import { validateSafeText } from '@/lib/validation/safe-text';
 import { ADMIN_MESSAGES, SUSPENSION_REASON_TYPES } from '@/lib/validation/admin-messages';
 import { validateSuspensionEndDate } from '@/lib/validation/suspension-date';
+import { notifyRealtimeSync, useRealtimeSync } from '@/lib/realtime-sync';
 
 export interface AdminUser {
   id: string;
@@ -183,6 +184,10 @@ export function UserModerationHub(_props: UserModerationHubProps) {
     };
   }, []);
 
+  useRealtimeSync(() => {
+    void loadUsers();
+  });
+
   // Copy ID
   const copyToClipboard = (text: string) => {
     navigator.clipboard.writeText(text);
@@ -284,6 +289,7 @@ export function UserModerationHub(_props: UserModerationHubProps) {
       }
 
       showToast('User details updated.');
+      notifyRealtimeSync('users');
       setEditingUser(null);
     } catch (error: unknown) {
       showToast(error instanceof Error ? error.message : 'Failed to update user.', 'error');
@@ -526,6 +532,7 @@ export function UserModerationHub(_props: UserModerationHubProps) {
       }
 
       showToast(`Account updated to ${newStatus}.`);
+      notifyRealtimeSync('users');
       setStatusModalUser(null);
     } catch (error: unknown) {
       showToast(error instanceof Error ? error.message : 'Failed to update account status.', 'error');
@@ -595,6 +602,7 @@ export function UserModerationHub(_props: UserModerationHubProps) {
       }
 
       showToast('User account deleted.', 'destructive');
+      notifyRealtimeSync('all');
       setDeleteModalUser(null);
     } catch (error: unknown) {
       showToast(error instanceof Error ? error.message : 'Failed to delete user account.', 'error');
@@ -631,6 +639,7 @@ export function UserModerationHub(_props: UserModerationHubProps) {
       );
 
       showToast('6-digit PIN reset.');
+      notifyRealtimeSync('users');
       setResetPinUser(null);
       setNewPin('');
     } catch (error: unknown) {
@@ -686,86 +695,65 @@ export function UserModerationHub(_props: UserModerationHubProps) {
         </button>
       </div>
 
-      {/* KPI Cards Grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+      <div
+        role="group"
+        aria-label="Filter users by account group"
+        className="grid grid-cols-2 border-y border-slate-200 bg-white dark:border-neutral-800 dark:bg-neutral-900 sm:grid-cols-4"
+      >
         <button
           type="button"
           onClick={() => setStatusFilter(statusFilter === 'active' ? 'all' : 'active')}
-          className={`p-4 rounded-2xl bg-white dark:bg-neutral-900 border text-left transition-all cursor-pointer ${
+          aria-pressed={statusFilter === 'active'}
+          className={`flex min-h-14 items-center justify-between gap-3 border-b border-slate-200 px-4 text-left text-sm transition-colors hover:bg-slate-50 active:bg-slate-100 dark:border-neutral-800 dark:hover:bg-neutral-800 dark:active:bg-neutral-700 sm:border-b-0 sm:border-r ${
             statusFilter === 'active'
-              ? 'border-brand-teal-600 bg-brand-teal-50/60 dark:bg-brand-teal-700/20 ring-2 ring-brand-teal-400/20'
-              : 'border-slate-200/80 dark:border-neutral-800 hover:border-slate-300'
+              ? 'border-l-2 border-l-brand-600 bg-slate-50 font-semibold text-brand-700 dark:bg-neutral-800 dark:text-sky-300'
+              : 'text-slate-600 dark:text-neutral-300'
           }`}
         >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 dark:text-neutral-400">
-              Active
-            </span>
-            <UserCheck className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-          </div>
-          <div className="mt-1 text-2xl font-extrabold text-emerald-600 dark:text-emerald-400">
-            {loadingUsers ? '...' : stats.active}
-          </div>
+          <span>Active</span>
+          <span className="tabular-nums text-slate-500 dark:text-neutral-400">{loadingUsers ? '...' : stats.active}</span>
         </button>
 
         <button
           type="button"
           onClick={() => setRoleFilter(roleFilter === 'beach_owner' ? 'all' : 'beach_owner')}
-          className={`p-4 rounded-2xl bg-white dark:bg-neutral-900 border text-left transition-all cursor-pointer ${
+          aria-pressed={roleFilter === 'beach_owner'}
+          className={`flex min-h-14 items-center justify-between gap-3 border-b border-slate-200 px-4 text-left text-sm transition-colors hover:bg-slate-50 active:bg-slate-100 dark:border-neutral-800 dark:hover:bg-neutral-800 dark:active:bg-neutral-700 sm:border-b-0 sm:border-r ${
             roleFilter === 'beach_owner'
-              ? 'border-brand-teal-600 bg-brand-teal-50/60 dark:bg-brand-teal-700/20 ring-2 ring-brand-teal-400/20'
-              : 'border-slate-200/80 dark:border-neutral-800 hover:border-slate-300'
+              ? 'border-l-2 border-l-brand-600 bg-slate-50 font-semibold text-brand-700 dark:bg-neutral-800 dark:text-sky-300'
+              : 'text-slate-600 dark:text-neutral-300'
           }`}
         >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 dark:text-neutral-400">
-              Beach Owners
-            </span>
-            <Palmtree className="w-4 h-4 text-brand-teal-600 dark:text-brand-teal-400" />
-          </div>
-          <div className="mt-1 text-2xl font-extrabold text-brand-teal-600 dark:text-brand-teal-400">
-            {loadingUsers ? '...' : stats.owners}
-          </div>
+          <span>Beach owners</span>
+          <span className="tabular-nums text-slate-500 dark:text-neutral-400">{loadingUsers ? '...' : stats.owners}</span>
         </button>
 
         <button
           type="button"
           onClick={() => setStatusFilter(statusFilter === 'deactivated' ? 'all' : 'deactivated')}
-          className={`p-4 rounded-2xl bg-white dark:bg-neutral-900 border text-left transition-all cursor-pointer ${
+          aria-pressed={statusFilter === 'deactivated'}
+          className={`flex min-h-14 items-center justify-between gap-3 border-b border-slate-200 px-4 text-left text-sm transition-colors hover:bg-slate-50 active:bg-slate-100 dark:border-neutral-800 dark:hover:bg-neutral-800 dark:active:bg-neutral-700 sm:border-b-0 sm:border-r ${
             statusFilter === 'deactivated'
-              ? 'border-brand-teal-600 bg-brand-teal-50/60 dark:bg-brand-teal-700/20 ring-2 ring-brand-teal-400/20'
-              : 'border-slate-200/80 dark:border-neutral-800 hover:border-slate-300'
+              ? 'border-l-2 border-l-brand-600 bg-slate-50 font-semibold text-brand-700 dark:bg-neutral-800 dark:text-sky-300'
+              : 'text-slate-600 dark:text-neutral-300'
           }`}
         >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 dark:text-neutral-400">
-              Deactivated
-            </span>
-            <Clock className="w-4 h-4 text-slate-500 dark:text-neutral-400" />
-          </div>
-          <div className="mt-1 text-2xl font-extrabold text-slate-700 dark:text-neutral-300">
-            {loadingUsers ? '...' : stats.deactivated}
-          </div>
+          <span>Deactivated</span>
+          <span className="tabular-nums text-slate-500 dark:text-neutral-400">{loadingUsers ? '...' : stats.deactivated}</span>
         </button>
 
         <button
           type="button"
           onClick={() => setStatusFilter(statusFilter === 'suspended' ? 'all' : 'suspended')}
-          className={`p-4 rounded-2xl bg-white dark:bg-neutral-900 border text-left transition-all cursor-pointer ${
+          aria-pressed={statusFilter === 'suspended'}
+          className={`flex min-h-14 items-center justify-between gap-3 border-b border-slate-200 px-4 text-left text-sm transition-colors hover:bg-slate-50 active:bg-slate-100 dark:border-neutral-800 dark:hover:bg-neutral-800 dark:active:bg-neutral-700 sm:border-b-0 sm:last:border-r-0 ${
             statusFilter === 'suspended'
-              ? 'border-brand-teal-600 bg-brand-teal-50/60 dark:bg-brand-teal-700/20 ring-2 ring-brand-teal-400/20'
-              : 'border-slate-200/80 dark:border-neutral-800 hover:border-slate-300'
+              ? 'border-l-2 border-l-brand-600 bg-slate-50 font-semibold text-brand-700 dark:bg-neutral-800 dark:text-sky-300'
+              : 'text-slate-600 dark:text-neutral-300'
           }`}
         >
-          <div className="flex items-center justify-between">
-            <span className="text-xs font-semibold text-slate-500 dark:text-neutral-400">
-              Suspended
-            </span>
-            <ShieldAlert className="w-4 h-4 text-rose-600 dark:text-rose-400" />
-          </div>
-          <div className="mt-1 text-2xl font-extrabold text-rose-600 dark:text-rose-400">
-            {loadingUsers ? '...' : stats.suspended}
-          </div>
+          <span>Suspended</span>
+          <span className="tabular-nums text-slate-500 dark:text-neutral-400">{loadingUsers ? '...' : stats.suspended}</span>
         </button>
       </div>
 
@@ -837,14 +825,21 @@ export function UserModerationHub(_props: UserModerationHubProps) {
 
         {/* User Table */}
         <div className="overflow-x-auto">
-          <table className="w-full text-left text-xs border-collapse">
+          <table className="w-full min-w-[800px] table-fixed border-collapse text-left text-xs">
+            <colgroup>
+              <col className="w-[36%]" />
+              <col className="w-[18%]" />
+              <col className="w-[18%]" />
+              <col className="w-[18%]" />
+              <col className="w-[10%]" />
+            </colgroup>
             <thead>
               <tr className="bg-slate-50/80 dark:bg-neutral-950/60 border-b border-slate-100 dark:border-neutral-800 text-slate-500 dark:text-neutral-400 uppercase tracking-wider font-bold text-[11px]">
-                <th className="py-3.5 px-5">User</th>
-                <th className="py-3.5 px-5 whitespace-nowrap">Role</th>
-                <th className="py-3.5 px-5 whitespace-nowrap">Status</th>
-                <th className="py-3.5 px-5 whitespace-nowrap">Joined</th>
-                <th className="py-3.5 px-5 text-right whitespace-nowrap">Action</th>
+                <th scope="col" className="py-3.5 px-5">User</th>
+                <th scope="col" className="py-3.5 px-5">Role</th>
+                <th scope="col" className="py-3.5 px-5 text-center">Status</th>
+                <th scope="col" className="py-3.5 px-5 text-center">Joined</th>
+                <th scope="col" className="py-3.5 px-5 text-right">Action</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-slate-100 dark:divide-neutral-800/80 text-slate-700 dark:text-neutral-300">
@@ -921,7 +916,7 @@ export function UserModerationHub(_props: UserModerationHubProps) {
                       </td>
 
                       {/* Status */}
-                      <td className="py-3.5 px-5 whitespace-nowrap">
+                      <td className="py-3.5 px-5 text-center whitespace-nowrap">
                         <span
                           className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold capitalize ${
                             u.status === 'active'
@@ -945,7 +940,7 @@ export function UserModerationHub(_props: UserModerationHubProps) {
                       </td>
 
                       {/* Joined Date */}
-                      <td className="py-3.5 px-5 whitespace-nowrap text-slate-500 dark:text-neutral-400">
+                      <td className="py-3.5 px-5 text-center whitespace-nowrap text-slate-500 dark:text-neutral-400 tabular-nums">
                         {new Date(u.joined).toLocaleDateString(undefined, {
                           year: 'numeric',
                           month: 'short',

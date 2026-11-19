@@ -6,6 +6,7 @@ import {
   ChevronDown,
 } from 'lucide-react';
 import { ScrollReveal } from '@/components/ui/scroll-reveal';
+import { CoastalEmptyState } from '@/components/ui/coastal-empty-state';
 
 interface FaqItem {
   q: string;
@@ -126,13 +127,11 @@ export default function FaqPage() {
         {/* ── FAQ Accordion List (Frameless, Clean Divided Rows) ─────── */}
         <div className="divide-y divide-slate-200 dark:divide-neutral-800 pt-2">
           {filteredFaqs.length === 0 ? (
-            <div className="py-12 text-center space-y-2">
-              <p className="text-sm font-semibold text-slate-700 dark:text-slate-300">
-                No matching questions found
-              </p>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
-                Try another category or select &quot;All Questions&quot;.
-              </p>
+            <div className="py-10">
+              <CoastalEmptyState
+                title="No matching questions found"
+                description={'Try another category or select "All Questions".'}
+              />
             </div>
           ) : (
             filteredFaqs.map((faq, index) => {

@@ -1,9 +1,9 @@
 'use client';
 
 import { useEffect } from 'react';
-import { AlertTriangle, RefreshCw } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
 
-export default function Error({
+export default function GlobalError({
   error,
   reset,
 }: {
@@ -11,26 +11,23 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('App Error Boundary caught:', error);
+    // Log the error to an error reporting service
+    console.error('Unhandled Global Error:', error);
   }, [error]);
 
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-4 py-16">
-      <div className="text-center max-w-md bg-white p-8 rounded-xl border border-slate-200 shadow-sm">
-        <div className="w-14 h-14 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto mb-4">
-          <AlertTriangle className="w-7 h-7" />
-        </div>
-        <h2 className="text-xl font-bold text-slate-900 mb-2">Something Went Wrong</h2>
+      <div className="text-center max-w-md">
+        <h1 className="text-4xl font-black text-slate-900 mb-2">Something went wrong</h1>
         <p className="text-sm text-slate-600 mb-6">
-          An unexpected error occurred while rendering this page.
+          An unexpected error occurred while loading this page. Our lifeguards are looking into it.
         </p>
         <button
-          type="button"
           onClick={() => reset()}
-          className="inline-flex items-center gap-2 px-5 py-2.5 bg-brand-teal-600 text-white font-medium rounded-md hover:bg-brand-teal-700 transition-colors"
+          className="inline-flex min-h-11 items-center gap-2 rounded-lg bg-brand-600 px-5 py-2.5 font-medium text-white transition-colors hover:bg-brand-700 active:bg-brand-800"
         >
-          <RefreshCw className="w-4 h-4" />
-          <span>Try Again</span>
+          <RotateCcw className="w-4 h-4" />
+          <span>Try again</span>
         </button>
       </div>
     </div>

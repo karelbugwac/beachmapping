@@ -4,6 +4,8 @@ import React, { useState, useEffect, use, useRef } from 'react';
 import Link from 'next/link';
 import { showToast } from '@/components/ui/feedback-toasts';
 import { validateSafeText } from '@/lib/validation/safe-text';
+import { notifyRealtimeSync, useRealtimeSync } from '@/lib/realtime-sync';
+import { getApplicationNotesDisplay } from '@/lib/utils/application-review-notes';
 import {
   ChevronLeft,
   Camera,
@@ -125,28 +127,38 @@ export default function AdminApplicationDetailPage({
     if (!previewDocument) previewTriggerRef.current?.focus();
   }, [previewDocument]);
 
-  useEffect(() => {
-    const fetchDetail = async () => {
-      setLoading(true);
-      try {
-        const res = await fetch(`/api/admin/applications/${resolvedParams.id}`, { cache: 'no-store' });
-        const data = await res.json();
-        if (res.ok && data.application) {
-          setApplication(data.application);
-          setStatus(data.application.status || 'pending');
-          if (data.application.rejection_reason) {
-            setAdminNotes(data.application.rejection_reason);
-          }
-        }
-      } catch (err) {
-        console.error('Failed to load application detail:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+  const notesDisplay = application
+    ? getApplicationNotesDisplay(status, application.rejection_reason)
+    : null;
 
-    void fetchDetail();
+  const fetchDetail = async (silent = false) => {
+    if (!silent) setLoading(true);
+    try {
+      const res = await fetch(`/api/admin/applications/${resolvedParams.id}`, { cache: 'no-store' });
+      const data = await res.json();
+      if (res.ok && data.application) {
+        setApplication(data.application);
+        setStatus(data.application.status || 'pending');
+        if (!silent) {
+          setAdminNotes(
+            data.application.status === 'pending' ? '' : data.application.rejection_reason || ''
+          );
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load application detail:', err);
+    } finally {
+      if (!silent) setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    void fetchDetail(false);
   }, [resolvedParams.id]);
+
+  useRealtimeSync(() => {
+    void fetchDetail(true);
+  });
 
   const handleApprove = async () => {
     if (!application) return;
@@ -158,8 +170,6 @@ export default function AdminApplicationDetailPage({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'approve',
-          applicant_email: application.applicant_email,
-          applicant_name: application.applicant_full_name || application.applicant_name || 'Beach Owner',
         }),
       });
 
@@ -167,6 +177,7 @@ export default function AdminApplicationDetailPage({
       if (!res.ok) throw new Error(data.error || 'Failed to approve application');
 
       setStatus('approved');
+      notifyRealtimeSync('all');
       showToast(`Approved! 6-digit PIN emailed to ${application.applicant_email}.`, 'success');
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Approval failed', 'error');
@@ -177,7 +188,12 @@ export default function AdminApplicationDetailPage({
 
   const handleReject = async () => {
     if (!application) return;
-    const validation = validateSafeText(adminNotes, { max: 500 });
+    const reason = adminNotes.trim();
+    if (!reason) {
+      showToast('Add a rejection reason in Notes before rejecting.', 'error');
+      return;
+    }
+    const validation = validateSafeText(reason, { max: 500 });
     if (!validation.ok) {
       setNotesError(validation.error);
       return;
@@ -190,9 +206,8 @@ export default function AdminApplicationDetailPage({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'reject',
-          applicant_email: application.applicant_email,
-          applicant_name: application.applicant_full_name || application.applicant_name || 'Beach Owner',
-          rejection_reason: validation.value || 'Incomplete business permits or permit mismatch.',
+          rejection_reason: validation.value,
+          note: validation.value,
         }),
       });
 
@@ -200,6 +215,10 @@ export default function AdminApplicationDetailPage({
       if (!res.ok) throw new Error(data.error || 'Failed to reject application');
 
       setStatus('rejected');
+      setApplication((current) =>
+        current ? { ...current, rejection_reason: reason } : current
+      );
+      notifyRealtimeSync('applications');
       showToast('Application rejected.', 'error');
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Rejection failed', 'error');
@@ -406,7 +425,7 @@ export default function AdminApplicationDetailPage({
                 type="button"
                 onClick={() =>
                   openDocument(
-                    application.liveness_snapshot_url,
+                    application.liveness_snapshot_url || application.live_selfie_url || application.live_selfie_path || '/logo.png',
                     'Live verification snapshot'
                   )
                 }
@@ -459,27 +478,43 @@ export default function AdminApplicationDetailPage({
             </div>
           </div>
 
-          {/* Notes */}
-          <div className="space-y-1.5">
-            <label className="block text-[10px] font-bold uppercase tracking-wider text-slate-400">
-              Notes
-            </label>
-            <textarea
-              rows={2}
-              value={adminNotes}
-              maxLength={500}
-              onChange={(e) => {
-                setAdminNotes(e.target.value);
-                const validation = validateSafeText(e.target.value, { max: 500 });
-                setNotesError(validation.ok ? '' : validation.error);
-              }}
-              disabled={status !== 'pending'}
-              placeholder="Optional notes or rejection reason..."
-              className="w-full px-4 py-2.5 text-xs rounded-2xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-slate-900 dark:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:ring-2 focus:ring-brand-teal-400 dark:focus:ring-brand-teal-400 disabled:bg-slate-50 dark:disabled:bg-neutral-800/50 disabled:text-slate-400"
-            />
-            {notesError && <p role="alert" className="text-xs text-rose-600">{notesError}</p>}
-            <p className="text-right text-[10px] text-slate-400">{adminNotes.length}/500</p>
-          </div>
+          {notesDisplay?.kind === 'input' && (
+            <div className="space-y-1.5">
+              <label
+                htmlFor="application-rejection-reason"
+                className="block text-xs font-semibold text-slate-700 dark:text-neutral-300"
+              >
+                Rejection reason <span className="text-rose-700 dark:text-rose-300">(required for rejection)</span>
+              </label>
+              <textarea
+                id="application-rejection-reason"
+                rows={3}
+                value={adminNotes}
+                maxLength={500}
+                onChange={(e) => {
+                  setAdminNotes(e.target.value);
+                  const validation = validateSafeText(e.target.value, { max: 500 });
+                  setNotesError(validation.ok ? '' : validation.error);
+                }}
+                disabled={status !== 'pending'}
+                placeholder="Explain what needs to be corrected if rejecting."
+                className="min-h-24 w-full rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-900 placeholder:text-slate-500 focus:border-brand-600 focus:outline-none focus:ring-2 focus:ring-brand-600/20 dark:border-neutral-700 dark:bg-black dark:text-white"
+              />
+              {notesError && <p role="alert" className="text-xs text-rose-600">{notesError}</p>}
+              <p className="text-right text-[10px] text-slate-400">{adminNotes.length}/500</p>
+            </div>
+          )}
+
+          {notesDisplay?.kind === 'reason' && (
+            <div className="border-l-2 border-rose-600 bg-rose-50 px-4 py-3 dark:border-rose-400 dark:bg-rose-950/30">
+              <h2 className="text-xs font-semibold text-rose-900 dark:text-rose-200">
+                Rejection reason
+              </h2>
+              <p className="mt-1 whitespace-pre-wrap text-sm text-rose-800 dark:text-rose-300">
+                {notesDisplay.reason}
+              </p>
+            </div>
+          )}
         </div>
 
         {/* Footer Actions */}
@@ -488,9 +523,9 @@ export default function AdminApplicationDetailPage({
             {status === 'pending' && (
               <button
                 type="button"
-                disabled={submitting || Boolean(notesError)}
+                disabled={submitting || !adminNotes.trim() || Boolean(notesError)}
                 onClick={handleReject}
-                className="px-5 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white font-bold text-xs rounded-full transition-colors shadow-xs cursor-pointer"
+                className="px-5 py-2 bg-rose-600 hover:bg-rose-700 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs rounded-full transition-colors shadow-xs cursor-pointer"
               >
                 Reject
               </button>

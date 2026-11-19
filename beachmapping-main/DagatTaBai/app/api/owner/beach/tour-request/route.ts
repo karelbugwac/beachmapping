@@ -47,22 +47,35 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     const beachId = typeof body.beach_id === 'string' ? body.beach_id : '';
-    const action = body.action;
+    const action = body.action || 'submit_for_review';
     if (!beachId || (action !== 'save' && action !== 'submit_for_review')) {
       return NextResponse.json({ error: 'Choose a valid tour action and beach.' }, { status: 400, headers: noStoreHeaders });
     }
     if (!await authorizeBeach(auth, beachId)) {
       return NextResponse.json({ error: 'You are not authorized to update this tour.' }, { status: 403, headers: noStoreHeaders });
     }
-    if (typeof body.requested_tour_url !== 'string' || !body.requested_tour_url.trim()) {
+
+    const tourUrl = (typeof body.requested_tour_url === 'string' && body.requested_tour_url.trim())
+      ? body.requested_tour_url.trim()
+      : (body.is_recapture ? 'Recapture Request' : '');
+
+    if (!tourUrl) {
       return NextResponse.json({ error: 'Add a 360° tour link before submitting for review.' }, { status: 400, headers: noStoreHeaders });
     }
+
+    const combinedNote =
+      typeof body.requester_note === 'string' && body.requester_note.trim()
+        ? body.requester_note.trim()
+        : [body.reason, body.notes]
+            .map((part) => (typeof part === 'string' ? part.trim() : ''))
+            .filter(Boolean)
+            .join(' — ') || null;
 
     const draft = await saveTourDraft({
       beachId,
       ownerId: auth.user.id,
-      requestedUrl: body.requested_tour_url,
-      requesterNote: typeof body.requester_note === 'string' ? body.requester_note : null,
+      requestedUrl: tourUrl,
+      requesterNote: combinedNote,
     });
 
     const tour = action === 'submit_for_review'

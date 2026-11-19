@@ -129,8 +129,8 @@ export async function updateSessionUser(updates: {
   if (!current) return null;
 
   try {
-    const supabase = await createServerSupabaseClient();
-    const { data: profile, error: profileError } = await (supabase.from('profiles') as any)
+    const adminSupabase = createAdminClient();
+    const { data: profile, error: profileError } = await (adminSupabase.from('profiles') as any)
       .update({ ...updates, updated_at: new Date().toISOString() })
       .eq('id', current.id)
       .select('id, full_name, email, role, profile_image_url, location, account_status, status_reason, suspended_until, status_changed_at, status, suspension_reason, suspended_at, suspension_ends_at, created_at')

@@ -1,15 +1,16 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import dynamic from 'next/dynamic';
 import {
   Star,
   Map,
   CloudSun,
   Bot,
 } from 'lucide-react';
+import { HeroMapSection } from '@/components/hero-map-section';
 import { ScrollReveal } from '@/components/ui/scroll-reveal';
+import { useRealtimeSync } from '@/lib/realtime-sync';
 
 interface SystemTestimonial {
   id: string;
@@ -20,16 +21,6 @@ interface SystemTestimonial {
   comment: string;
   created_at: string;
 }
-
-const HeroMapSection = dynamic(
-  () => import('@/components/hero-map-section').then((mod) => mod.HeroMapSection),
-  {
-    ssr: false,
-    loading: () => (
-      <div className="w-full min-h-[500px] bg-slate-100 dark:bg-neutral-950 animate-pulse" />
-    ),
-  }
-);
 
 // Helper function to mask user name: e.g. "Charisse Villamor" -> "C*** V***"
 function maskUserName(name: string): string {
@@ -58,36 +49,78 @@ function formatRole(role: string | undefined): string {
 
 export default function HomePage() {
   const [systemTestimonials, setSystemTestimonials] = useState<SystemTestimonial[]>([]);
+  const [loadVirtualTour, setLoadVirtualTour] = useState(false);
+  const tourContainerRef = useRef<HTMLDivElement | null>(null);
+
+  const fetchSystemTestimonials = async () => {
+    try {
+      const res = await fetch('/api/platform-feedback');
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          const highRated = data.filter(
+            (item: SystemTestimonial) => item.rating >= 4 && item.rating <= 5
+          );
+          setSystemTestimonials(highRated);
+        }
+      }
+    } catch {
+      setSystemTestimonials([]);
+    }
+  };
 
   useEffect(() => {
-    const fetchSystemTestimonials = async () => {
-      try {
-        const res = await fetch('/api/platform-feedback');
-        if (res.ok) {
-          const data = await res.json();
-          if (Array.isArray(data)) {
-            const highRated = data.filter(
-              (item: SystemTestimonial) => item.rating >= 4 && item.rating <= 5
-            );
-            setSystemTestimonials(highRated);
-          }
-        }
-      } catch {
-        setSystemTestimonials([]);
-      }
-    };
-
-    fetchSystemTestimonials();
+    void fetchSystemTestimonials();
   }, []);
 
   useEffect(() => {
+    if ('scrollRestoration' in window.history) {
+      window.history.scrollRestoration = 'manual';
+    }
+    if (!window.location.hash) {
+      window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
+    }
+
+    const el = tourContainerRef.current;
+    if (!el) return;
+
+    if ('IntersectionObserver' in window) {
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (entries[0]?.isIntersecting) {
+            setLoadVirtualTour(true);
+            observer.disconnect();
+          }
+        },
+        { rootMargin: '250px' }
+      );
+      observer.observe(el);
+      return () => observer.disconnect();
+    } else {
+      setLoadVirtualTour(true);
+    }
+  }, []);
+
+  useRealtimeSync(() => {
+    void fetchSystemTestimonials();
+  });
+
+  useEffect(() => {
+    if (!loadVirtualTour) return;
+
     const panoIframeName = 'tour-embeded';
     let rafId: number | null = null;
+    let lastPostTime = 0;
 
     const handleDeviceMotion = (e: DeviceMotionEvent) => {
+      const now = performance.now();
+      // Throttle to ~15fps (every 66ms) so postMessage does not block main thread
+      if (now - lastPostTime < 66) return;
       if (rafId !== null) return;
+
       rafId = window.requestAnimationFrame(() => {
         rafId = null;
+        lastPostTime = performance.now();
         const iframe = document.getElementById(panoIframeName) as HTMLIFrameElement | null;
         if (iframe && iframe.contentWindow) {
           iframe.contentWindow.postMessage(
@@ -124,7 +157,7 @@ export default function HomePage() {
       if (rafId !== null) window.cancelAnimationFrame(rafId);
       window.removeEventListener('devicemotion', handleDeviceMotion);
     };
-  }, []);
+  }, [loadVirtualTour]);
 
   return (
     <div className="flex flex-col min-h-screen bg-white dark:bg-black text-slate-900 dark:text-white font-sans transition-colors duration-200 selection:bg-brand-navy-100 selection:text-brand-navy-900 overflow-x-hidden">
@@ -240,20 +273,28 @@ export default function HomePage() {
 
           {/* Virtual Tour Container: Centered Below, 90-degree straight corners */}
           <ScrollReveal direction="up" delay={150} duration={650} className="w-full max-w-5xl mx-auto">
-            <div className="relative overflow-hidden shadow-2xl border border-white/20 bg-black w-full h-[360px] sm:h-[460px] lg:h-[520px]">
-              <iframe
-                id="tour-embeded"
-                name="Raniola"
-                src="https://tour.panoee.net/6ac4b494035368b0747a8077"
-                frameBorder="0"
-                width="100%"
-                height="100%"
-                scrolling="no"
-                allow="vr; xr; accelerometer; gyroscope; autoplay;"
-                allowFullScreen={false}
-                loading="lazy"
-                className="w-full h-full border-0 block"
-              />
+            <div
+              ref={tourContainerRef}
+              onClick={() => setLoadVirtualTour(true)}
+              className="relative overflow-hidden shadow-2xl border border-white/20 bg-black w-full h-[360px] sm:h-[460px] lg:h-[520px]"
+            >
+              {loadVirtualTour ? (
+                <iframe
+                  id="tour-embeded"
+                  name="Raniola"
+                  src="https://tour.panoee.net/6ac4b494035368b0747a8077"
+                  width="100%"
+                  height="100%"
+                  tabIndex={-1}
+                  sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; magnetometer; picture-in-picture; web-share; xr-spatial-tracking; unload"
+                  className="w-full h-full border-0 block"
+                />
+              ) : (
+                <div className="flex h-full w-full items-center justify-center bg-slate-950 text-xs sm:text-sm text-blue-100/80">
+                  Loading 360° Virtual Tour…
+                </div>
+              )}
             </div>
           </ScrollReveal>
         </div>
@@ -293,6 +334,11 @@ export default function HomePage() {
                                 <img
                                   src={item.profile_image_url}
                                   alt={`${maskUserName(item.user_name)} profile`}
+                                  width={40}
+                                  height={40}
+                                  loading="lazy"
+                                  decoding="async"
+                                  style={{ aspectRatio: '1 / 1' }}
                                   className="absolute inset-0 h-full w-full object-cover"
                                   onError={(event) => {
                                     event.currentTarget.style.display = 'none';

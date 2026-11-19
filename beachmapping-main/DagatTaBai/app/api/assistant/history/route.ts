@@ -1,8 +1,18 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentSession } from '@/lib/db/auth';
 import { createAdminClient } from '@/lib/supabase/server';
+import { checkRateLimit, rateLimitExceededResponse } from '@/lib/utils/rate-limit';
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const rateLimit = checkRateLimit(req, {
+    keyPrefix: 'api-assistant-history',
+    maxRequests: 30,
+    windowMs: 60 * 1000,
+  });
+  if (!rateLimit.allowed) {
+    return rateLimitExceededResponse(rateLimit);
+  }
+
   const user = await getCurrentSession();
   if (!user) return NextResponse.json({ signedIn: false, messages: [] }, { headers: { 'Cache-Control': 'no-store' } });
 
@@ -13,11 +23,15 @@ export async function GET() {
       .eq('user_id', user.id)
       .order('created_at', { ascending: false })
       .limit(200);
-    if (error) throw error;
+    if (error) {
+      console.warn('[AssistantHistory] Query notice:', error);
+      return NextResponse.json({ signedIn: true, messages: [] }, { headers: { 'Cache-Control': 'no-store' } });
+    }
     return NextResponse.json({ signedIn: true, messages: (data || []).reverse() }, { headers: { 'Cache-Control': 'no-store' } });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Could not load conversation history.';
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.warn('[AssistantHistory] Safe fallback:', message);
+    return NextResponse.json({ signedIn: true, messages: [] }, { headers: { 'Cache-Control': 'no-store' } });
   }
 }
 

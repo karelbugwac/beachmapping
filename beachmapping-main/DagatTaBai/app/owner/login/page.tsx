@@ -234,7 +234,7 @@ export default function OwnerLoginPage() {
         <header className="flex flex-col items-center text-center mb-12">
           <div className="relative w-16 h-16 flex items-center justify-center mb-4">
             <Image
-              src="/images/logo.png"
+              src="/logo.png"
               alt="Dagat Ta Bai logo"
               width={64}
               height={64}

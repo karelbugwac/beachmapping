@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { provisionBeachOwner } from '@/lib/services/ownerProvisioning';
+import { sendOwnerApplicationStatusEmail } from '@/lib/services/ownerApplicationEmails';
 import { createAdminClient } from '@/lib/supabase/server';
 import { authorizeRoles } from '@/lib/supabase/authorization';
 import { validateAdminMutationRequest, noStoreHeaders } from '@/lib/server/admin-request';
@@ -36,7 +37,7 @@ export async function POST(
     const adminSupabase = createAdminClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { data: application, error: applicationError } = await (adminSupabase.from('owner_applications') as any)
-      .select('id, status, status_updated_at, liveness_status, applicant_email, applicant_full_name')
+      .select('id, status, status_updated_at, liveness_status, applicant_email, applicant_full_name, beach_name, business_name')
       .eq('id', id)
       .maybeSingle();
     if (applicationError) throw applicationError;
@@ -166,6 +167,17 @@ export async function POST(
         { error: 'Someone else already changed this application. Refresh and try again.' },
         { status: 409, headers: noStoreHeaders() }
       );
+    }
+
+    if (action === 'reject' && note) {
+      const beachName = application.beach_name || application.business_name || application.applicant_full_name || 'Beach Resort';
+      await sendOwnerApplicationStatusEmail({
+        status: 'rejected',
+        recipientEmail: application.applicant_email,
+        applicantName: application.applicant_full_name || 'Applicant',
+        beachName,
+        rejectionReason: note,
+      }).catch((emailErr) => console.warn('Failed to send rejection email:', emailErr));
     }
 
     return NextResponse.json({ success: true, application: updatedApplication }, { headers: noStoreHeaders() });

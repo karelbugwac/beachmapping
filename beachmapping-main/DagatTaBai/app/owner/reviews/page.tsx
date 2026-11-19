@@ -12,6 +12,7 @@ import {
   CheckCircle2,
 } from 'lucide-react';
 import { maskReviewerName } from '@/lib/utils/mask-reviewer-name';
+import { useRealtimeSync, notifyRealtimeSync } from '@/lib/realtime-sync';
 
 interface OwnerReviewItem {
   id: string;
@@ -90,13 +91,14 @@ export default function OwnerReviewsPage() {
 
   useEffect(() => {
     const initialLoad = window.setTimeout(() => fetchAnalytics(), 0);
-    // Automatic refresh every 30 seconds
-    const interval = window.setInterval(() => fetchAnalytics(), 30000);
     return () => {
       window.clearTimeout(initialLoad);
-      window.clearInterval(interval);
     };
   }, []);
+
+  useRealtimeSync(() => {
+    fetchAnalytics(false);
+  });
 
   const handleOpenReportModal = (review: OwnerReviewItem) => {
     setReportingReview(review);
@@ -135,6 +137,7 @@ export default function OwnerReviewsPage() {
       }
 
       handleCloseReportModal();
+      notifyRealtimeSync('reviews');
       setToast({
         type: 'success',
         message: 'Submitted successfully!',

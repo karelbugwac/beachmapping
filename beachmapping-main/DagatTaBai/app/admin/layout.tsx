@@ -5,19 +5,21 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
 import {
-  ChevronLeft,
-  ChevronRight,
-  LayoutDashboard,
-  FileCheck,
-  Palmtree,
   Settings,
   LogOut,
   Menu,
+  LayoutDashboard,
   Users,
+  ChevronLeft,
+  ChevronRight,
+  FileCheck,
+  Palmtree,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { showToast } from '@/components/ui/feedback-toasts';
 import { signOutAndClearClientState } from '@/lib/client/logout';
+import { useRealtimeSync } from '@/lib/realtime-sync';
+import { ShorelineMarker, VerifiedSanctuary } from '@/components/ui/coastal-icons';
 
 export default function AdminLayout({
   children,
@@ -31,6 +33,11 @@ export default function AdminLayout({
   const [pendingTourCount, setPendingTourCount] = useState<number>(0);
   const [pendingCoordCount, setPendingCoordCount] = useState<number>(0);
   const [sidebarTooltip, setSidebarTooltip] = useState<{ label: string; left: number; top: number } | null>(null);
+  const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
+  const sidebarRef = useRef<HTMLElement>(null);
+  const isInitialLoadRef = useRef(true);
+  const previousPendingCountRef = useRef(0);
+
   // Server middleware (proxy.ts) already guards /admin/* routes, so render immediately
   // while verifying session/email in the background in parallel with child page fetches.
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -42,49 +49,47 @@ export default function AdminLayout({
   // Check authentication once on client side (do not re-query DB on every internal admin page click)
   useEffect(() => {
     if (shouldRenderLogin) {
-      authVerifiedRef.current = false;
-      return;
-    }
-
-    if (authVerifiedRef.current) {
       setIsAuthenticated(true);
       return;
     }
 
+    if (authVerifiedRef.current) return;
+
     const checkAuth = async () => {
       try {
         const supabase = createClient();
-        const { data: { user: sessionUser } } = await supabase.auth.getUser();
+        const { data: { session } } = await supabase.auth.getSession();
 
-        if (!sessionUser) {
+        if (!session?.user) {
           setIsAuthenticated(false);
           window.location.replace('/admin/login');
           return;
         }
 
-        const email = sessionUser.email?.toLowerCase().trim() || '';
-        setUserEmail(email);
+        const role = (session.user.user_metadata?.role as string) || (session.user.app_metadata?.role as string);
+        if (role === 'admin') {
+          authVerifiedRef.current = true;
+          setUserEmail(session.user.email || 'Admin');
+          setIsAuthenticated(true);
+          return;
+        }
 
-        const { data: profileData } = await supabase.from('profiles')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const { data: profile } = await (supabase.from('profiles') as any)
           .select('role')
-          .eq('id', sessionUser.id)
+          .eq('id', session.user.id)
           .maybeSingle();
-        const profile = profileData as { role: string | null } | null;
 
-        const isAdmin = profile?.role === 'admin';
-
-        if (!isAdmin) {
-          console.warn('Non-admin user attempted to access admin console. Redirecting to login.');
-          await supabase.auth.signOut();
+        if (profile?.role === 'admin') {
+          authVerifiedRef.current = true;
+          setUserEmail(session.user.email || 'Admin');
+          setIsAuthenticated(true);
+        } else {
           setIsAuthenticated(false);
           window.location.replace('/admin/login');
-          return;
         }
-
-        authVerifiedRef.current = true;
-        setIsAuthenticated(true);
       } catch (error) {
-        console.error('Auth verification error:', error);
+        console.error('Error verifying admin authorization:', error);
         setIsAuthenticated(false);
         window.location.replace('/admin/login');
       }
@@ -93,25 +98,97 @@ export default function AdminLayout({
     void checkAuth();
   }, [shouldRenderLogin]);
 
-  // Load sidebar badge counts once when the admin area opens.
-  useEffect(() => {
+  const fetchCounts = () => {
     if (shouldRenderLogin || !isAuthenticated) return;
 
-    let active = true;
-    Promise.all([
-      fetch('/api/applications', { cache: 'no-store' }).then((res) => res.ok ? res.json() : null),
-      fetch('/api/admin/beaches/tour-requests', { cache: 'no-store' }).then((res) => res.ok ? res.json() : null),
-      fetch('/api/admin/beaches/coordinate-requests', { cache: 'no-store' }).then((res) => res.ok ? res.json() : null),
-    ]).then(([applicationsData, tourData, coordinateData]) => {
-      if (!active) return;
-      if (Array.isArray(applicationsData?.applications)) {
-        setPendingCount(applicationsData.applications.filter((application: { status?: string }) => application.status === 'pending').length);
-      }
-      if (typeof tourData?.pendingCount === 'number') setPendingTourCount(tourData.pendingCount);
-      if (typeof coordinateData?.pendingCount === 'number') setPendingCoordCount(coordinateData.pendingCount);
-    }).catch(() => {});
-    return () => { active = false; };
+    fetch('/api/applications', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.applications && Array.isArray(data.applications)) {
+          const count = data.applications.filter((a: any) => a.status === 'pending').length;
+          setPendingCount(count);
+
+          if (!isInitialLoadRef.current) {
+            if (count > previousPendingCountRef.current) {
+              showToast(
+                `New application received! ${count - previousPendingCountRef.current} new pending application(s).`,
+                'success'
+              );
+            }
+          }
+          previousPendingCountRef.current = count;
+          isInitialLoadRef.current = false;
+        }
+      })
+      .catch(() => {});
+
+    fetch('/api/admin/beaches/tour-requests', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (typeof data?.pendingCount === 'number') {
+          setPendingTourCount(data.pendingCount);
+        }
+      })
+      .catch(() => {});
+
+    fetch('/api/admin/beaches/coordinate-requests', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (typeof data?.pendingCount === 'number') {
+          setPendingCoordCount(data.pendingCount);
+        }
+      })
+      .catch(() => {});
+  };
+
+  useEffect(() => {
+    if (shouldRenderLogin || !isAuthenticated) return;
+    fetchCounts();
   }, [shouldRenderLogin, isAuthenticated]);
+
+  useRealtimeSync(() => {
+    fetchCounts();
+  }, { enabled: !shouldRenderLogin && isAuthenticated });
+
+  useEffect(() => {
+    if (!mobileOpen) return;
+
+    const sidebar = sidebarRef.current;
+    const firstControl = sidebar?.querySelector<HTMLElement>('[aria-label="Collapse sidebar"]');
+    firstControl?.focus();
+
+    const handleMenuKeydown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setMobileOpen(false);
+        mobileMenuButtonRef.current?.focus();
+        return;
+      }
+
+      if (event.key !== 'Tab' || !sidebar) return;
+      const focusable = Array.from(
+        sidebar.querySelectorAll<HTMLElement>('a[href], button:not(:disabled)')
+      ).filter((element) => element.offsetParent !== null);
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (!first || !last) return;
+
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first.focus();
+      }
+    };
+
+    sidebar?.addEventListener('keydown', handleMenuKeydown);
+    return () => sidebar?.removeEventListener('keydown', handleMenuKeydown);
+  }, [mobileOpen]);
+
+  const closeMobileMenu = () => {
+    setMobileOpen(false);
+    mobileMenuButtonRef.current?.focus();
+  };
 
   useEffect(() => () => {
     if (tooltipTimerRef.current !== null) window.clearTimeout(tooltipTimerRef.current);
@@ -175,13 +252,13 @@ export default function AdminLayout({
     {
       label: 'Owner Applications',
       href: '/admin/applications',
-      icon: FileCheck,
+      icon: VerifiedSanctuary,
       count: pendingCount,
     },
     {
       label: 'Manage Beaches',
       href: '/admin/beaches',
-      icon: Palmtree,
+      icon: ShorelineMarker,
       count: pendingTourCount + pendingCoordCount,
     },
     {
@@ -199,24 +276,28 @@ export default function AdminLayout({
   ];
 
   return (
-    <div className="h-screen w-full flex overflow-hidden bg-slate-50 dark:bg-black font-sans text-slate-900 dark:text-neutral-100">
+    <div className="admin-console h-screen h-[100dvh] w-full flex overflow-hidden bg-slate-50 dark:bg-black font-sans text-slate-900 dark:text-neutral-100">
       {/* Mobile Backdrop */}
       {mobileOpen && (
-        <div
-          className="fixed inset-0 bg-black/60 backdrop-blur-xs z-40 lg:hidden"
-          onClick={() => setMobileOpen(false)}
-          aria-hidden="true"
+        <button
+          type="button"
+          className="fixed inset-0 z-40 bg-black/60 backdrop-blur-xs transition-colors active:bg-black/70 lg:hidden focus-visible:outline focus-visible:outline-2 focus-visible:outline-white"
+          onClick={closeMobileMenu}
+          aria-label="Close navigation"
         />
       )}
 
       {/* Admin Sidebar: Fixed height, does NOT scroll with main content */}
       <aside
-        className={`fixed lg:static relative top-0 h-screen flex-shrink-0 flex flex-col justify-between z-50 transition-all duration-300 ease-in-out border-r border-slate-200 dark:border-neutral-800 bg-white dark:bg-black overflow-visible ${
+        ref={sidebarRef}
+        className={`fixed lg:static top-0 h-screen h-[100dvh] flex-shrink-0 flex flex-col justify-between z-50 transition-all duration-300 ease-in-out border-r border-slate-200 dark:border-neutral-800 bg-white dark:bg-black overflow-visible ${
           collapsed ? 'w-[76px]' : 'w-[280px]'
         } ${
-          mobileOpen ? 'translate-x-0 w-[280px]' : '-translate-x-full lg:translate-x-0'
+          mobileOpen ? 'visible translate-x-0 w-[280px]' : 'invisible -translate-x-full lg:visible lg:translate-x-0'
         }`}
         aria-label="Barangay Admin Navigation"
+        role={mobileOpen ? 'dialog' : undefined}
+        aria-modal={mobileOpen ? true : undefined}
       >
         <button
           type="button"
@@ -240,19 +321,52 @@ export default function AdminLayout({
               collapsed ? 'justify-center' : 'justify-center'
             } transition-all`}
           >
-            {!collapsed && (
+            {collapsed ? (
+              <button
+                type="button"
+                onClick={() => setCollapsed(false)}
+                className="flex min-h-11 min-w-11 items-center justify-center rounded-xl p-2 text-slate-600 transition-colors hover:bg-slate-100 hover:text-brand-700 active:bg-slate-200 dark:text-neutral-300 dark:hover:bg-neutral-900 dark:hover:text-sky-300 dark:active:bg-neutral-800"
+                title="Expand sidebar"
+                aria-label="Expand sidebar"
+                aria-expanded={false}
+                aria-controls="admin-navigation"
+              >
+                <ChevronRight className="w-5 h-5" aria-hidden="true" />
+              </button>
+            ) : (
               <>
+                <div className="flex items-center justify-end w-full mb-3">
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (mobileOpen) {
+                        closeMobileMenu();
+                      } else {
+                        setCollapsed(true);
+                      }
+                    }}
+                    className="flex min-h-11 min-w-11 items-center justify-center rounded-lg p-1.5 text-slate-500 transition-colors hover:bg-slate-100 hover:text-brand-700 active:bg-slate-200 dark:text-neutral-400 dark:hover:bg-neutral-900 dark:hover:text-sky-300 dark:active:bg-neutral-800"
+                    title="Collapse sidebar"
+                    aria-label="Collapse sidebar"
+                    aria-expanded={true}
+                    aria-controls="admin-navigation"
+                  >
+                    <ChevronLeft className="w-5 h-5" aria-hidden="true" />
+                  </button>
+                </div>
+
                 <Link
                   href="/admin/dashboard"
-                  className="flex flex-col items-center gap-3 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400"
+                  prefetch={false}
+                  className="flex flex-col items-center gap-3 group rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600"
                   title="Barangay Binongkalan Admin Portal"
                 >
                   <Image
-                    src="/images/logo.png"
+                    src="/logo.png"
                     alt="Dagat Ta Bai Logo"
                     width={64}
                     height={64}
-                    className="object-contain"
+                    className="rounded-xl bg-sand-50 p-1.5 object-contain"
                   />
                 </Link>
 
@@ -260,24 +374,16 @@ export default function AdminLayout({
                   <p className="text-xs font-medium text-slate-600 dark:text-neutral-400">
                     {userEmail}
                   </p>
-                  <p className="text-[10px] font-bold text-brand-navy-500 dark:text-brand-teal-300 uppercase tracking-wider">
+                  <p className="text-[10px] font-bold text-brand-700 dark:text-sky-300 uppercase tracking-wider">
                     Administrator
                   </p>
-                  <button
-                    type="button"
-                    onClick={handleLogout}
-                    className="w-full flex items-center justify-center gap-2 py-2 px-3 text-xs font-semibold text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/30 rounded-full transition-colors cursor-pointer border border-rose-200 dark:border-rose-900"
-                  >
-                    <LogOut className="w-3.5 h-3.5 flex-shrink-0" />
-                    <span>Sign Out</span>
-                  </button>
                 </div>
               </>
             )}
           </div>
 
           {/* Navigation Links: Spacious, well-utilized vertical layout */}
-          <nav className="p-4 space-y-6 pt-8 flex-1 flex flex-col" aria-label="Primary">
+          <nav id="admin-navigation" className="p-4 space-y-6 pt-8 flex-1 flex flex-col" aria-label="Primary">
             <div className="space-y-4">
               {navItems.map((item) => {
                 const Icon = item.icon;
@@ -289,7 +395,8 @@ export default function AdminLayout({
                   <Link
                     key={item.href}
                     href={item.href}
-                    onClick={() => setMobileOpen(false)}
+                    prefetch={false}
+                    onClick={closeMobileMenu}
                     aria-current={isActive ? 'page' : undefined}
                     aria-label={collapsed ? item.label : undefined}
                     onPointerEnter={(event) => openSidebarTooltip(event, item.label)}
@@ -299,12 +406,13 @@ export default function AdminLayout({
                     onKeyDown={(event) => {
                       if (event.key === 'Escape') closeSidebarTooltip();
                     }}
+                    title={collapsed ? item.label : undefined}
                     className={`group relative flex items-center ${
                       collapsed ? 'justify-center px-2 py-4' : 'justify-between px-4 py-4'
-                    } rounded-2xl text-xs sm:text-sm font-medium transition-all ${
+                    } rounded-2xl text-xs sm:text-sm font-medium transition-all focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600 ${
                       isActive
-                        ? 'bg-brand-navy-500 text-white shadow-md font-semibold'
-                        : 'text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-900 hover:text-brand-navy-500 dark:hover:text-white'
+                        ? 'bg-brand-700 text-white shadow-md font-semibold'
+                        : 'text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-900 hover:text-brand-700 dark:hover:text-white'
                     }`}
                   >
                     <div className="flex items-center gap-3.5 min-w-0">
@@ -312,9 +420,10 @@ export default function AdminLayout({
                         className={`w-5 h-5 flex-shrink-0 transition-colors ${
                           isActive
                             ? 'text-white'
-                            : 'text-slate-500 dark:text-neutral-400 group-hover:text-brand-navy-500 dark:group-hover:text-brand-teal-300'
+                            : 'text-slate-500 dark:text-neutral-400 group-hover:text-brand-700 dark:group-hover:text-sky-300'
                         }`}
                         strokeWidth={1.8}
+                        aria-hidden="true"
                       />
                       {!collapsed && <span className="truncate">{item.label}</span>}
                     </div>
@@ -334,6 +443,19 @@ export default function AdminLayout({
             </div>
           </nav>
         </div>
+
+        <div className={`p-4 border-t border-slate-200 dark:border-neutral-800 ${collapsed ? 'flex justify-center' : ''}`}>
+          <button
+            type="button"
+            onClick={handleLogout}
+            className="min-h-11 w-full flex items-center justify-center gap-2 rounded-xl px-3 py-2.5 text-xs font-semibold text-rose-700 transition-colors hover:bg-rose-50 active:bg-rose-100 dark:text-rose-300 dark:hover:bg-rose-950/30 dark:active:bg-rose-950/50"
+            title={collapsed ? 'Sign out' : undefined}
+            aria-label="Sign out"
+          >
+            <LogOut className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
+            {!collapsed && <span>Sign Out</span>}
+          </button>
+        </div>
       </aside>
 
       {collapsed && sidebarTooltip && (
@@ -348,18 +470,25 @@ export default function AdminLayout({
       )}
 
       {/* Main Content Area: Independent scroll container so sidebar NEVER scrolls with content */}
-      <div className="flex-1 flex flex-col h-screen min-w-0 overflow-hidden">
+      <div className="flex-1 flex flex-col h-screen h-[100dvh] min-w-0 overflow-hidden">
         {/* Mobile Header Toggle */}
         <div className="lg:hidden p-4 border-b border-slate-200 dark:border-neutral-800 bg-white dark:bg-black flex items-center justify-between flex-shrink-0">
           <button
             type="button"
-            onClick={() => setMobileOpen(true)}
-            className="p-2 rounded-xl text-slate-700 dark:text-neutral-200 hover:bg-slate-100 dark:hover:bg-neutral-900 cursor-pointer"
+            ref={mobileMenuButtonRef}
+            onClick={() => {
+              setCollapsed(false);
+              setMobileOpen(true);
+            }}
+            className="flex min-h-11 items-center gap-2 rounded-xl px-3 text-slate-700 transition-colors hover:bg-slate-100 active:bg-slate-200 dark:text-neutral-200 dark:hover:bg-neutral-900 dark:active:bg-neutral-800"
             aria-label="Open sidebar"
+            aria-expanded={mobileOpen}
+            aria-controls="admin-navigation"
           >
-            <Menu className="w-5 h-5" />
+            <Menu className="w-5 h-5" aria-hidden="true" />
+            <span className="text-sm font-semibold">Menu</span>
           </button>
-          <span className="font-bold text-sm text-brand-navy-500 dark:text-brand-teal-300">
+          <span className="font-bold text-sm text-brand-700 dark:text-sky-300">
             Admin Portal
           </span>
         </div>

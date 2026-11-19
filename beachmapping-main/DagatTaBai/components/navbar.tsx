@@ -9,7 +9,10 @@ import {
   X,
   LogOut,
   Bell,
+  Sun,
+  Moon,
 } from 'lucide-react';
+import { useTheme } from '@/components/theme-provider';
 import type { AuthUser } from '@/lib/db/auth';
 import { publishAuthSession, updateAuthSessionUser } from '@/lib/client/auth-session-store';
 import { signOutAndClearClientState } from '@/lib/client/logout';
@@ -28,6 +31,7 @@ export function Navbar() {
 
   const pathname = usePathname();
   const isHomePage = pathname === '/';
+  const { theme, toggleTheme } = useTheme();
 
   const isDedicatedPortal =
     pathname?.startsWith('/admin') ||
@@ -235,7 +239,7 @@ export function Navbar() {
           >
             <div className="relative w-9 h-9 sm:w-10 sm:h-10 transition-transform duration-200 group-hover:scale-105">
               <Image
-                src="/images/logo.png"
+                src="/logo.png"
                 alt="Dagat Ta Bai Logo"
                 fill
                 sizes="(max-width: 640px) 36px, 40px"
@@ -283,6 +287,21 @@ export function Navbar() {
 
           {/* Right Controls: User Avatar Circle (links directly to /profile) + Direct Sign Out Button */}
           <div className="hidden md:flex items-center gap-3 flex-shrink-0">
+            {/* Theme Toggle Button with Ocean Wave Transition */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="relative p-2 rounded-full text-slate-600 dark:text-slate-300 hover:text-[#1F3F74] dark:hover:text-[#4987BA] hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+              aria-label={theme === 'dark' ? 'Switch to light mode (Sunlit Shore)' : 'Switch to dark mode (Night Tide)'}
+              title={theme === 'dark' ? 'Switch to Sunlit Shore (Light)' : 'Switch to Night Tide (Dark)'}
+            >
+              {theme === 'dark' ? (
+                <Sun className="h-[18px] w-[18px] text-amber-400" />
+              ) : (
+                <Moon className="h-[18px] w-[18px] text-[#1F3F74]" />
+              )}
+            </button>
+
             {user ? (
               <div className="flex items-center gap-3">
                 <Link
@@ -317,6 +336,12 @@ export function Navbar() {
                         key={user.profile_image_url}
                         src={user.profile_image_url}
                         alt=""
+                        width={32}
+                        height={32}
+                        loading="lazy"
+                        decoding="async"
+                        referrerPolicy="no-referrer"
+                        style={{ aspectRatio: '1 / 1' }}
                         onError={(event) => {
                           event.currentTarget.style.display = 'none';
                         }}
@@ -385,6 +410,12 @@ export function Navbar() {
                     key={user.profile_image_url}
                     src={user.profile_image_url}
                     alt=""
+                    width={28}
+                    height={28}
+                    loading="lazy"
+                    decoding="async"
+                    referrerPolicy="no-referrer"
+                    style={{ aspectRatio: '1 / 1' }}
                     onError={(event) => {
                       event.currentTarget.style.display = 'none';
                     }}
@@ -394,6 +425,21 @@ export function Navbar() {
               </Link>
             </>
             )}
+
+            {/* Mobile Theme Toggle Button */}
+            <button
+              type="button"
+              onClick={toggleTheme}
+              className="p-1.5 rounded-full text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors"
+              aria-label={theme === 'dark' ? 'Switch to Sunlit Shore (Light)' : 'Switch to Night Tide (Dark)'}
+              title={theme === 'dark' ? 'Switch to Sunlit Shore (Light)' : 'Switch to Night Tide (Dark)'}
+            >
+              {theme === 'dark' ? (
+                <Sun className="h-[18px] w-[18px] text-amber-400" />
+              ) : (
+                <Moon className="h-[18px] w-[18px] text-[#1F3F74]" />
+              )}
+            </button>
 
             <button
               type="button"
@@ -440,6 +486,25 @@ export function Navbar() {
           </div>
 
           <div className="pt-2 border-t border-slate-100 dark:border-neutral-800 space-y-2">
+            {/* Mobile Drawer Theme Switcher */}
+            <button
+              type="button"
+              onClick={() => {
+                toggleTheme();
+                setMobileMenuOpen(false);
+              }}
+              className="w-full flex items-center justify-between px-3.5 py-2 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-neutral-800 rounded-xl transition-colors cursor-pointer"
+            >
+              <span className="flex items-center gap-2">
+                {theme === 'dark' ? (
+                  <Sun className="w-4 h-4 text-amber-400" />
+                ) : (
+                  <Moon className="w-4 h-4 text-[#1F3F74]" />
+                )}
+                <span>{theme === 'dark' ? 'Sunlit Shore (Light)' : 'Night Tide (Dark)'}</span>
+              </span>
+              <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">Theme</span>
+            </button>
             {user ? (
               <div>
                 <button

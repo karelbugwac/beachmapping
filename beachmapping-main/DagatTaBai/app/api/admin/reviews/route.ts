@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authorizeRoles } from '@/lib/supabase/authorization';
 import { validateAdminMutationRequest, noStoreHeaders } from '@/lib/server/admin-request';
 import { ADMIN_MESSAGES } from '@/lib/validation/admin-messages';
+import { syncBeachAverageRating } from '@/lib/db/reviews';
 
 export async function GET() {
   try {
@@ -137,13 +138,22 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Choose a valid review type.' }, { status: 400, headers: noStoreHeaders() });
     }
 
-    const reviewType = reviewTypeValue === 'platform' ? 'platform_reviews' : 'beach_reviews';
+    const reviewType = (reviewTypeValue || (request.nextUrl.searchParams.get('type') === 'platform' ? 'platform' : 'beach')) === 'platform'
+      ? 'platform_reviews'
+      : 'beach_reviews';
+    if (reviewType === 'beach_reviews') {
+      await (auth.adminClient.from('beach_review_reports') as any).delete().eq('review_id', reviewId);
+    }
     const { data, error } = await (auth.adminClient.from(reviewType) as any)
       .delete()
       .eq('id', reviewId)
-      .select('id');
+      .select(reviewType === 'beach_reviews' ? 'id, beach_id' : 'id');
     if (error) throw error;
     if (!data?.length) return NextResponse.json({ error: 'Review not found.' }, { status: 404, headers: noStoreHeaders() });
+
+    if (reviewType === 'beach_reviews' && data[0]?.beach_id) {
+      await syncBeachAverageRating(data[0].beach_id);
+    }
 
     return NextResponse.json({ success: true }, { headers: noStoreHeaders() });
   } catch (error: unknown) {

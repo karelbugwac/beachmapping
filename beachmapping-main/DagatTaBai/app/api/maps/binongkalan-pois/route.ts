@@ -1,4 +1,5 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
+import { checkRateLimit, rateLimitExceededResponse } from '@/lib/utils/rate-limit';
 
 const BINONGKALAN = { latitude: 10.6341356, longitude: 124.0278661 };
 const SEARCH_RADIUS_METERS = 8000;
@@ -21,7 +22,16 @@ function unavailableResponse() {
   );
 }
 
-export async function GET() {
+export async function GET(req: NextRequest) {
+  const rateLimit = checkRateLimit(req, {
+    keyPrefix: 'api-maps-pois',
+    maxRequests: 20,
+    windowMs: 60 * 1000,
+  });
+  if (!rateLimit.allowed) {
+    return rateLimitExceededResponse(rateLimit);
+  }
+
   const { latitude, longitude } = BINONGKALAN;
   const query = `
     [out:json][timeout:20];

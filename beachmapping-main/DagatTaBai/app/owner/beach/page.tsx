@@ -37,6 +37,7 @@ import { IMAGE_UPLOAD_CONFIG } from '@/lib/utils/image-upload-config';
 import { validateImageFile } from '@/lib/utils/image-validation';
 import { generateUUID } from '@/lib/utils/uuid';
 import { confirmAction } from '@/components/ui/confirm-dialog';
+import { useRealtimeSync, notifyRealtimeSync } from '@/lib/realtime-sync';
 
 interface CottageItem {
   id: string;
@@ -457,6 +458,24 @@ export default function ManageInformationPage() {
       });
   }, []);
 
+  useRealtimeSync(() => {
+    fetch('/api/owner/beach', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : []))
+      .then((data) => {
+        if (Array.isArray(data) && data.length > 0) {
+          const b = data[0];
+          setBeach(b);
+          setFormData((current) => ({
+            ...current,
+            virtual_tour_url: b.virtual_tour_url || current.virtual_tour_url,
+            latitude: b.latitude != null ? String(b.latitude) : current.latitude,
+            longitude: b.longitude != null ? String(b.longitude) : current.longitude,
+          }));
+        }
+      })
+      .catch(() => {});
+  });
+
   const saveCatalogItem = async <T,>(type: 'cottage' | 'facility' | 'post', item: object): Promise<T> => {
     const response = await fetch('/api/owner/beach/catalog', {
       method: 'POST',
@@ -465,6 +484,7 @@ export default function ManageInformationPage() {
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Failed to save listing.');
+    notifyRealtimeSync('beaches');
     return data.item as T;
   };
 
@@ -473,6 +493,7 @@ export default function ManageInformationPage() {
     const response = await fetch(`/api/owner/beach/catalog?${params}`, { method: 'DELETE' });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Failed to remove listing.');
+    notifyRealtimeSync('beaches');
   };
 
   // Validation
@@ -517,6 +538,7 @@ export default function ManageInformationPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       });
+      if (res.ok) notifyRealtimeSync('beaches');
       const data = await res.json();
       if (Array.isArray(data.storage_cleanup_warnings) && data.storage_cleanup_warnings.length) {
         setToast({ type: 'error', message: data.storage_cleanup_warnings[0] });
@@ -574,6 +596,7 @@ export default function ManageInformationPage() {
         }));
       }
 
+      notifyRealtimeSync('beaches');
       setToast({
         type: data.storage_cleanup_warnings?.length ? 'error' : 'success',
         message: data.storage_cleanup_warnings?.[0] || 'Changes saved!',
@@ -1616,6 +1639,7 @@ export default function ManageInformationPage() {
       });
       const result = await response.json();
       if (!response.ok) throw new Error(result.error || 'Could not update your tour.');
+      notifyRealtimeSync('requests');
       const record = result.request as TourRequestData;
       tourCacheRef.current.set(formData.id, { request: record, fetchedAt: Date.now() });
       tourHistoryCacheRef.current.delete(record.id);
@@ -2882,6 +2906,19 @@ export default function ManageInformationPage() {
               )}
             </div>
 
+            {formData.virtual_tour_url && (
+              <div className="relative aspect-16/9 overflow-hidden rounded-2xl border border-slate-200 dark:border-neutral-800 bg-black">
+                <iframe
+                  src={formData.virtual_tour_url}
+                  title="360 Tour"
+                  className="w-full h-full border-0"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; magnetometer; picture-in-picture; web-share; vr; xr-spatial-tracking"
+                  allowFullScreen
+                />
+              </div>
+            )}
+            </div>
+
             {tourRequest && (
               <section className="border-t border-slate-200 pt-4 dark:border-neutral-800">
                 <button
@@ -2917,7 +2954,6 @@ export default function ManageInformationPage() {
               </section>
             )}
           </div>
-        </div>
       )}
 
       {/* ── BOTTOM SAVE CHANGES BUTTON (Oblong, Dive Blue, Strictly NO icon inside) ── */}
@@ -3840,6 +3876,7 @@ export default function ManageInformationPage() {
             if (!response.ok) {
               throw new Error(data.error || 'Failed to submit map location request.');
             }
+            notifyRealtimeSync('requests');
             setToast({ type: 'success', message: data.message || 'Map location request sent for admin approval.' });
             return;
           }

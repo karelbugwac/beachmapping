@@ -515,13 +515,28 @@ export function LocationPickerModal({
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
           {/* Interactive Leaflet Map Box */}
           <div className="space-y-1.5">
-            <div className="flex items-center justify-between text-xs">
+            <div className="flex items-center justify-between text-xs gap-2">
               <span className="font-semibold text-gray-700 dark:text-gray-300">
                 Map Pin
               </span>
-              <span className="text-[11px] text-gray-500 dark:text-gray-400">
-                Click map or drag the marker to your shoreline
-              </span>
+              <div className="flex items-center gap-2">
+                <span className="hidden sm:inline text-[11px] text-gray-500 dark:text-gray-400">
+                  Click map or drag the marker to your shoreline
+                </span>
+                <button
+                  type="button"
+                  onClick={() => {
+                    leafletMapRef.current?.flyTo(
+                      [BINONGKALAN_CENTER.latitude, BINONGKALAN_CENTER.longitude],
+                      15,
+                      { duration: 0.8 }
+                    );
+                  }}
+                  className="px-2.5 py-1 rounded-full bg-[#1F3F74]/10 hover:bg-[#1F3F74]/20 dark:bg-blue-950/60 dark:hover:bg-blue-900/60 text-[#1F3F74] dark:text-[#38BDF8] text-[11px] font-bold transition-colors cursor-pointer"
+                >
+                  Go back to Binongkalan
+                </button>
+              </div>
             </div>
             <div className="relative w-full h-72 sm:h-80 rounded-xl overflow-hidden border border-gray-200 dark:border-gray-700 shadow-xs bg-gray-100 dark:bg-gray-800">
               <div ref={mapContainerRef} className="w-full h-full" />

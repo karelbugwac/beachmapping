@@ -61,7 +61,7 @@ export function CottageCard({
     <article className="group relative flex min-h-[110px] sm:min-h-[130px] items-center gap-2.5 sm:gap-3 rounded-2xl border border-slate-200 bg-white p-2.5 sm:p-3 shadow-none transition hover:border-brand-navy-500/35 hover:shadow-sm dark:border-neutral-800 dark:bg-neutral-950 dark:hover:border-brand-teal-600/40">
       {canView ? (
         <button type="button" onClick={onView} aria-label={`View photos of ${name}`} className={viewButtonClasses}>
-          <span className="relative aspect-[4/3] w-20 sm:w-32 shrink-0 overflow-hidden rounded-xl">
+          <span className="relative block aspect-[4/3] w-20 sm:w-32 shrink-0 overflow-hidden rounded-xl">
             {imageUrl && !imageFailed ? (
               <>
                 <Image
@@ -102,7 +102,7 @@ export function CottageCard({
         </button>
       ) : (
         <>
-          <span className="relative aspect-[4/3] w-20 sm:w-32 shrink-0 overflow-hidden rounded-xl">
+          <span className="relative block aspect-[4/3] w-20 sm:w-32 shrink-0 overflow-hidden rounded-xl">
             {imageUrl && !imageFailed ? (
               <>
                 <Image

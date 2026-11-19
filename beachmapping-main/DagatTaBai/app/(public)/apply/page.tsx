@@ -32,6 +32,7 @@ import {
   getApplicationNamePrefill,
 } from '@/lib/utils/application-name-prefill';
 import { PENDING_APPLICATION_MESSAGE } from '@/lib/validation/application-submission';
+import { notifyRealtimeSync } from '@/lib/realtime-sync';
 
 interface FilePreviewState {
   file: File;
@@ -521,6 +522,7 @@ export default function BeachOwnerApplicationPage() {
       }
 
       // Smoothly switch to confirmation view without showing any floating message
+      notifyRealtimeSync('applications');
       if (authSession.user) {
         const draftKey = `owner-application-draft:${authSession.user.id}`;
         window.localStorage.removeItem(draftKey);

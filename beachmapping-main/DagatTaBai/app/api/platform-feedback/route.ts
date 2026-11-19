@@ -28,7 +28,7 @@ export async function GET() {
       rating: Number(review.rating),
       comment: review.comment,
       created_at: review.created_at,
-    })), { headers: { 'Cache-Control': 'no-store, max-age=0' } });
+    })), { headers: { 'Cache-Control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=600' } });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Could not load platform feedback.';
     return NextResponse.json({ error: message }, { status: 500 });

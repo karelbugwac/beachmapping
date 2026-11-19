@@ -26,11 +26,7 @@ export async function POST(req: NextRequest) {
       (!old_record || old_record.status !== 'approved') &&
       !record.applicant_user_id
     ) {
-      const result = await provisionBeachOwner(
-        record.applicant_email,
-        record.applicant_full_name || record.applicant_name || 'Beach Owner',
-        record.id
-      );
+      const result = await provisionBeachOwner(record.id);
 
       if (!result.success) {
         return NextResponse.json({ error: result.error }, { status: result.invalidName ? 400 : 500 });
