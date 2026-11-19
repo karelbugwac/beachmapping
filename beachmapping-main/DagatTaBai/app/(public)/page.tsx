@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import {
   Star,
   Map,
@@ -48,9 +49,21 @@ function formatRole(role: string | undefined): string {
 }
 
 export default function HomePage() {
+  const router = useRouter();
   const [systemTestimonials, setSystemTestimonials] = useState<SystemTestimonial[]>([]);
   const [loadVirtualTour, setLoadVirtualTour] = useState(false);
   const tourContainerRef = useRef<HTMLDivElement | null>(null);
+
+  useEffect(() => {
+    fetch('/api/auth/session', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        if (data?.user) {
+          router.replace('/home');
+        }
+      })
+      .catch(() => {});
+  }, [router]);
 
   const fetchSystemTestimonials = async () => {
     try {
@@ -162,7 +175,11 @@ export default function HomePage() {
   return (
     <div className="flex flex-col min-h-screen bg-white dark:bg-black text-slate-900 dark:text-white font-sans transition-colors duration-200 selection:bg-brand-navy-100 selection:text-brand-navy-900 overflow-x-hidden">
       {/* Hero Section */}
-      <HeroMapSection />
+      <HeroMapSection
+        isAuthenticated={false}
+        ctaText="Sign In to Explore Beaches"
+        ctaHref="/login?redirect=/map"
+      />
 
       {/* Section 1: See Beyond the Pictures (DARK DIVE BLUE Background #124168 - Harmonious Balanced Spacing) */}
       <section className="w-full bg-brand-navy-500 dark:bg-brand-navy-700 text-white transition-colors duration-200 relative z-20">
@@ -224,6 +241,14 @@ export default function HomePage() {
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-xs">
                 Explore verified beach resorts, inspect cottage amenities, check terrain conditions, and view authentic coastal routes across Binongkalan.
               </p>
+              <div className="pt-2">
+                <Link
+                  href="/login?redirect=/map"
+                  className="inline-flex items-center justify-center px-4 py-2 rounded-full bg-[#1F3F74] hover:bg-[#285091] text-white text-xs font-bold transition shadow-xs"
+                >
+                  Sign In to Explore Beaches
+                </Link>
+              </div>
             </ScrollReveal>
 
             {/* Column 2: Weather Forecast (CloudSun Icon - Sun & Clouds) */}
@@ -237,6 +262,14 @@ export default function HomePage() {
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-xs">
                 Stay updated with real-time wave telemetry, tide levels, wind advisories, and marine weather forecasts for safe and well-planned beach trips.
               </p>
+              <div className="pt-2">
+                <Link
+                  href="/weather"
+                  className="inline-flex items-center justify-center px-4 py-2 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-[#1F3F74] dark:text-[#4987BA] text-xs font-bold transition shadow-2xs"
+                >
+                  View Weather Forecast
+                </Link>
+              </div>
             </ScrollReveal>
 
             {/* Column 3: Bai Coastal Chatbot (Bot Icon) */}
@@ -250,6 +283,15 @@ export default function HomePage() {
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-xs">
                 Ask our 24/7 local AI guide about entrance fees, cottage reservations, travel guidelines, and local Catmon tips right when you need them.
               </p>
+              <div className="pt-2">
+                <button
+                  type="button"
+                  onClick={() => window.dispatchEvent(new CustomEvent('open-bai-chat'))}
+                  className="inline-flex items-center justify-center px-4 py-2 rounded-full bg-[#1F3F74] hover:bg-[#285091] text-white text-xs font-bold transition shadow-xs cursor-pointer"
+                >
+                  Talk with Bai
+                </button>
+              </div>
             </ScrollReveal>
           </div>
         </div>
@@ -440,12 +482,12 @@ export default function HomePage() {
               </p>
 
               <div className="pt-5 sm:pt-6">
-                {/* Blue button on white background */}
+                {/* Sign in to review button */}
                 <Link
-                  href="/feedback"
-                  className="inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-brand-navy-500 hover:bg-brand-navy-600 dark:bg-brand-navy-500 dark:hover:bg-brand-navy-600 text-white text-xs sm:text-sm font-bold shadow-md transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
+                  href="/login?redirect=/feedback"
+                  className="inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-[#1F3F74] hover:bg-[#285091] dark:bg-[#1F3F74] dark:hover:bg-[#285091] text-white text-xs sm:text-sm font-bold shadow-md transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
                 >
-                  <span>Review Dagat Ta Bai</span>
+                  <span>Sign In to Review</span>
                 </Link>
               </div>
             </div>

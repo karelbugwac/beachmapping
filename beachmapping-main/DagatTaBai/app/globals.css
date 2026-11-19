@@ -527,118 +527,99 @@ a.bg-brand-navy-500:active {
 }
 
 /* ========================================================
-   Ocean Wave Theme Transition Keyframes & Utilities
+   Sailboat Wave Theme Transition (View Transitions API)
    ======================================================== */
-@keyframes dtbWaveSurgeUp {
-  0% {
-    transform: translate3d(0, 102%, 0);
-  }
-  38% {
-    transform: translate3d(0, 0%, 0);
-  }
-  58% {
-    transform: translate3d(0, 0%, 0);
-  }
-  100% {
-    transform: translate3d(0, -102%, 0);
-  }
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
 }
 
-@keyframes dtbWaveSurgeDown {
-  0% {
-    transform: translate3d(0, -102%, 0);
-  }
-  38% {
-    transform: translate3d(0, 0%, 0);
-  }
-  58% {
-    transform: translate3d(0, 0%, 0);
-  }
-  100% {
-    transform: translate3d(0, 102%, 0);
-  }
+::view-transition-old(sea),
+::view-transition-new(sea),
+::view-transition-old(foam),
+::view-transition-new(foam),
+::view-transition-old(boat),
+::view-transition-new(boat),
+::view-transition-group(root),
+::view-transition-group(sea),
+::view-transition-group(foam),
+::view-transition-group(boat) {
+  animation: none;
 }
 
-@keyframes dtbWaveDriftA {
-  0% {
-    transform: translate3d(0, 0, 0);
-  }
-  100% {
-    transform: translate3d(-50%, 0, 0);
-  }
+::view-transition-old(sea),
+::view-transition-old(foam),
+::view-transition-old(boat) {
+  display: none;
 }
 
-@keyframes dtbWaveDriftB {
-  0% {
-    transform: translate3d(-50%, 0, 0);
-  }
-  100% {
-    transform: translate3d(0, 0, 0);
-  }
+::view-transition-old(root) {
+  z-index: 1;
 }
 
-@keyframes dtbWaveSpray {
-  0%, 100% {
-    opacity: 0.65;
-    transform: scale(0.96) translateY(0);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1.08) translateY(-6px);
-  }
+::view-transition-new(root) {
+  z-index: 2;
 }
 
-@keyframes dtbWaveBadgeFade {
-  0% {
-    opacity: 0;
-    transform: scale(0.88) translateY(12px);
-  }
-  32%, 68% {
-    opacity: 1;
-    transform: scale(1) translateY(0);
-  }
-  100% {
-    opacity: 0;
-    transform: scale(0.94) translateY(-12px);
-  }
+::view-transition-group(sea),
+::view-transition-new(sea) {
+  z-index: 3;
 }
 
-.animate-wave-surge-up {
-  animation: dtbWaveSurgeUp 900ms cubic-bezier(0.38, 0, 0.22, 1) forwards;
-  will-change: transform;
+::view-transition-group(foam),
+::view-transition-new(foam) {
+  z-index: 4;
 }
 
-.animate-wave-surge-down {
-  animation: dtbWaveSurgeDown 900ms cubic-bezier(0.38, 0, 0.22, 1) forwards;
-  will-change: transform;
+::view-transition-group(boat) {
+  z-index: 5;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.35));
 }
 
-.animate-wave-drift-a {
-  animation: dtbWaveDriftA 2.6s linear infinite;
-  will-change: transform;
+/* Helper elements dynamically injected during View Transition */
+html.wave-transitioning *,
+html.wave-transitioning *::before,
+html.wave-transitioning *::after {
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
 }
 
-.animate-wave-drift-b {
-  animation: dtbWaveDriftB 3.4s linear infinite;
-  will-change: transform;
+.wave-transition-sea {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(180deg, #14b8a6 0%, #0d9488 40%, #0f766e 100%);
+  pointer-events: none;
+  view-transition-name: sea;
 }
 
-.animate-wave-spray {
-  animation: dtbWaveSpray 1.2s ease-in-out infinite;
+.wave-transition-foam {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #ffffff;
+  pointer-events: none;
+  view-transition-name: foam;
+  filter: drop-shadow(0 -1px 2px rgba(15, 23, 42, 0.25));
 }
 
-.animate-wave-badge {
-  animation: dtbWaveBadgeFade 900ms cubic-bezier(0.38, 0, 0.22, 1) forwards;
+.wave-transition-boat {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 64px;
+  height: 64px;
+  pointer-events: none;
+  view-transition-name: boat;
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .animate-wave-surge-up,
-  .animate-wave-surge-down,
-  .animate-wave-drift-a,
-  .animate-wave-drift-b,
-  .animate-wave-spray,
-  .animate-wave-badge {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
     animation: none !important;
-    display: none !important;
   }
 }

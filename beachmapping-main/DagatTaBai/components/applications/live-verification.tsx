@@ -463,11 +463,11 @@ export default function LiveVerification({ onVerified }: LiveVerificationProps) 
         priorBoxRef.current = normalizedBox;
         faceSinceRef.current ||= now;
 
-        const points = face.flatMap((point) => [point.x, point.y]);
+        const points = face.flatMap((point: any) => [point.x, point.y]);
         const history = faceHistoryRef.current;
         if (history.length) {
           const previous = history[history.length - 1];
-          const jitter = points.reduce((sum, value, index) => sum + Math.abs(value - previous[index]), 0) / points.length;
+          const jitter = points.reduce((sum: number, value: number, index: number) => sum + Math.abs(value - previous[index]), 0) / points.length;
           if (jitter > 0.00015) {
             history.push(points);
             movementStartedAtRef.current = now;

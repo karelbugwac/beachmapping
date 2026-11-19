@@ -20,6 +20,8 @@ import {
   AlertTriangle,
   MessageSquare,
   Ticket,
+  Calendar,
+  Route,
 } from 'lucide-react';
 import type { BeachRecord } from '@/lib/db/beaches';
 import { VirtualTourModal } from '@/components/virtual-tour-modal';
@@ -31,6 +33,7 @@ import { OpeningStatusPill } from '@/components/opening-status-pill';
 import { formatOpeningHoursGroups } from '@/lib/utils/opening-status';
 import { getFacilityFeeItems } from '@/lib/utils/facility-pricing';
 import { maskReviewerName } from '@/lib/utils/mask-reviewer-name';
+import { BeachTripPlanner } from '@/components/beach-trip-planner';
 import { showToast } from '@/components/ui/feedback-toasts';
 import { useRealtimeSync, notifyRealtimeSync } from '@/lib/realtime-sync';
 
@@ -102,7 +105,7 @@ export default function BeachProfilePage({
   const [reviewCount, setReviewCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [activeTab, setActiveTab] = useState<'general' | 'posts' | 'cottages' | 'facilities' | 'dos' | 'reviews'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'planner' | 'posts' | 'cottages' | 'facilities' | 'dos' | 'reviews'>('general');
   const [showTourModal, setShowTourModal] = useState(false);
   const [selectedDetail, setSelectedDetail] = useState<PhotoViewerItem | null>(null);
 
@@ -315,6 +318,37 @@ export default function BeachProfilePage({
               </a>
             )}
           </div>
+
+          {/* Action Row: Calculate Route & Google Maps Directions & Trip Planner */}
+          <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap pt-2">
+            <Link
+              href={`/map?beach=${encodeURIComponent(beach.slug)}&route=true`}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#1F3F74] hover:bg-[#285091] dark:bg-[#1F3F74] dark:hover:bg-[#285091] text-white text-xs font-bold transition shadow-sm hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+            >
+              <Route className="w-4 h-4" />
+              <span>Calculate Route</span>
+            </Link>
+
+            <a
+              href={`https://www.google.com/maps/dir/?api=1&destination=${beach.latitude},${beach.longitude}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-white dark:bg-neutral-900 border border-slate-300 dark:border-neutral-700 hover:bg-slate-50 dark:hover:bg-neutral-800 text-slate-800 dark:text-neutral-100 text-xs font-bold transition shadow-2xs hover:-translate-y-0.5 active:translate-y-0"
+            >
+              <MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+              <span>Get Directions</span>
+              <ExternalLink className="w-3 h-3 text-slate-400" />
+            </a>
+
+            <button
+              type="button"
+              onClick={() => setActiveTab('planner')}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/60 hover:bg-sky-100 dark:hover:bg-sky-900/40 text-[#1F3F74] dark:text-sky-300 text-xs font-bold transition shadow-2xs hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+            >
+              <Calendar className="w-3.5 h-3.5" />
+              <span>Trip Planner (4-Day Weather)</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -323,6 +357,7 @@ export default function BeachProfilePage({
         <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-200 dark:border-neutral-800 no-scrollbar">
           {[
             { id: 'general', label: 'General Info', icon: Info },
+            { id: 'planner', label: 'Trip Planner & Forecast', icon: Calendar },
             { id: 'posts', label: 'Posts', icon: Images },
             { id: 'cottages', label: 'Cottage & Tables', icon: Home },
             { id: 'facilities', label: 'Facilities', icon: ShieldCheck },
@@ -447,6 +482,26 @@ export default function BeachProfilePage({
                   )}
                 </div>
               )}
+
+              {/* Integrated Beach Trip Planner in General Info */}
+              <div className="pt-2">
+                <BeachTripPlanner
+                  beachName={beach.name}
+                  latitude={beach.latitude}
+                  longitude={beach.longitude}
+                />
+              </div>
+            </div>
+          )}
+
+          {/* ── TAB: TRIP PLANNER & 4-DAY FORECAST ── */}
+          {activeTab === 'planner' && (
+            <div className="space-y-6">
+              <BeachTripPlanner
+                beachName={beach.name}
+                latitude={beach.latitude}
+                longitude={beach.longitude}
+              />
             </div>
           )}
 
@@ -842,8 +897,8 @@ export default function BeachProfilePage({
                       <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">Sign in to drop your verified rating and review.</p>
                     </div>
                     <Link
-                      href="/login"
-                      className="inline-flex items-center justify-center px-5 py-2 bg-brand-navy-500 hover:bg-brand-navy-600 text-white text-xs font-bold rounded-full transition shadow-xs shrink-0"
+                      href={`/login?redirect=/beaches/${encodeURIComponent(beach.slug)}`}
+                      className="inline-flex items-center justify-center px-5 py-2 bg-[#1F3F74] hover:bg-[#285091] text-white text-xs font-bold rounded-full transition shadow-xs shrink-0"
                     >
                       Sign In to Review
                     </Link>

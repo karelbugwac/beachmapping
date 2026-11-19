@@ -135,7 +135,7 @@ function UserLoginForm() {
       window.dispatchEvent(new CustomEvent('dtb_login_completed', {
         detail: { userId: data.user.id },
       }));
-      const redirectUrl = getSafeInternalRedirect(searchParams.get('redirect'));
+      const redirectUrl = getSafeInternalRedirect(searchParams.get('redirect'), '/home');
       router.push(redirectUrl);
       router.refresh();
     } catch (err: unknown) {

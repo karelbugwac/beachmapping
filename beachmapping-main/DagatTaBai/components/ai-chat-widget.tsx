@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   X,
@@ -63,6 +64,22 @@ export function AiChatWidget() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const historyLoadedRef = useRef(false);
 
+  // Check auth session on mount and listen to auth events
+  useEffect(() => {
+    const checkAuth = () => {
+      fetch('/api/auth/session', { cache: 'no-store' })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          setSignedIn(Boolean(data?.user));
+        })
+        .catch(() => setSignedIn(false));
+    };
+
+    checkAuth();
+    window.addEventListener('dtb_login_completed', checkAuth);
+    return () => window.removeEventListener('dtb_login_completed', checkAuth);
+  }, []);
+
   // Lazy-load history only when the chat widget is actually opened
   useEffect(() => {
     if (isPortal || isMap || !isOpen || historyLoadedRef.current) return;
@@ -111,6 +128,11 @@ export function AiChatWidget() {
   }, []);
 
   const submitQuestion = async (questionText: string) => {
+    if (!signedIn) {
+      showToast('Please sign in to chat with Bai.', 'error');
+      window.location.href = '/login';
+      return;
+    }
     if (!questionText.trim() || loading) return;
 
     const recentHistory = messages
@@ -440,29 +462,48 @@ export function AiChatWidget() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Compact docked message composer */}
-          <form
-            onSubmit={handleSend}
-            className="flex shrink-0 items-center gap-2 border-t border-slate-200 bg-white p-2.5 dark:border-neutral-800 dark:bg-brand-navy-900 sm:p-3"
-          >
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              disabled={loading}
-              placeholder={loading ? 'Generating answer, please wait...' : 'Ask Bai anything...'}
-              aria-label="Message Bai"
-              className="min-w-0 flex-1 rounded-full border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 transition focus:border-brand-navy-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-brand-navy-800 dark:text-slate-100 dark:focus:border-brand-teal-400"
-            />
-            <button
-              type="submit"
-              disabled={loading || !input.trim()}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-brand-navy-500 text-white shadow-xs transition hover:bg-brand-navy-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus-visible:ring-offset-2 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 dark:focus-visible:ring-offset-[#0c1424]"
-              aria-label="Send message"
+          {/* Compact docked message composer or Sign In prompt */}
+          {!signedIn ? (
+            <div className="flex flex-col items-center justify-center p-3.5 border-t border-slate-200 dark:border-neutral-800 bg-slate-50 dark:bg-[#0c1424] text-center space-y-2">
+              <div className="space-y-0.5">
+                <p className="text-xs font-bold text-slate-900 dark:text-white">
+                  Sign in to talk with Bai
+                </p>
+                <p className="text-[11px] text-slate-500 dark:text-neutral-400 max-w-xs leading-relaxed">
+                  Sign in to ask questions about beaches, directions, entrance fees, and local tips in Binongkalan.
+                </p>
+              </div>
+              <Link
+                href="/login"
+                className="inline-flex items-center justify-center px-5 py-2 rounded-full bg-[#1F3F74] hover:bg-[#285091] text-white text-xs font-bold shadow-md transition-all hover:scale-105 cursor-pointer"
+              >
+                Sign In to Talk with Bai
+              </Link>
+            </div>
+          ) : (
+            <form
+              onSubmit={handleSend}
+              className="flex shrink-0 items-center gap-2 border-t border-slate-200 bg-white p-2.5 dark:border-neutral-800 dark:bg-[#0c1424] sm:p-3"
             >
-              <Send size={14} />
-            </button>
-          </form>
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                disabled={loading}
+                placeholder={loading ? 'Generating answer, please wait...' : 'Ask Bai anything...'}
+                aria-label="Message Bai"
+                className="min-w-0 flex-1 rounded-full border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 transition focus:border-[#1F3F74] focus:outline-none focus:ring-2 focus:ring-[#1F3F74]/15 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-[#132035] dark:text-slate-100 dark:focus:border-[#4987BA] dark:focus:ring-[#4987BA]/20"
+              />
+              <button
+                type="submit"
+                disabled={loading || !input.trim()}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1F3F74] text-white shadow-xs transition hover:bg-[#16305a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74] focus-visible:ring-offset-2 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 dark:focus-visible:ring-offset-[#0c1424]"
+                aria-label="Send message"
+              >
+                <Send size={14} />
+              </button>
+            </form>
+          )}
 
         </section>
       )}

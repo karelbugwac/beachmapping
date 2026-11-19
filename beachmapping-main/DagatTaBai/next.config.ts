@@ -9,6 +9,7 @@ const nextConfig: NextConfig = {
   // Allow access from your phone through local network
   allowedDevOrigins: ["10.240.253.248"],
 
+
   experimental: {
     optimizePackageImports: ["lucide-react", "@supabase/supabase-js"],
     proxyClientMaxBodySize: "25mb",

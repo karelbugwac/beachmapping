@@ -124,8 +124,11 @@ export function Footer() {
                 <div className="flex items-start gap-2.5">
                   <Mail className="w-3.5 h-3.5 text-brand-navy-500 dark:text-brand-teal-300 flex-shrink-0 mt-0.5" />
                   <a
-                    href="mailto:support@dagattabai.ph"
-                    className="hover:text-brand-navy-500 dark:hover:text-brand-teal-300 font-medium transition-colors"
+                    href="https://mail.google.com/mail/?view=cm&fs=1&to=support.dagattabai@gmail.com&su=Inquiry%20-%20Dagat%20Ta%20Bai&body=Hello%20Dagat%20Ta%20Bai%20Support,%0A%0AMy%20concern%20is:%20"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Compose email directly in Gmail"
+                    className="hover:text-brand-navy-500 dark:hover:text-brand-teal-300 font-medium transition-colors hover:underline"
                   >
                     support.dagattabai@gmail.com
                   </a>

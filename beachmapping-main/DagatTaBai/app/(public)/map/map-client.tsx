@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useSearchParams } from 'next/navigation';
@@ -81,7 +81,9 @@ function formatContactPhone(phone: string): string {
 export default function MapPageClient() {
   const searchParams = useSearchParams();
   const selectedSlugFromUrl = searchParams.get('beach');
+  const routeFromUrl = searchParams.get('route') === 'true';
 
+  const [signedIn, setSignedIn] = useState<boolean | null>(null);
   const [beaches, setBeaches] = useState<BeachRecord[]>([]);
   const [selectedBeach, setSelectedBeach] = useState<BeachRecord | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -100,6 +102,17 @@ export default function MapPageClient() {
   const [routeData, setRouteData] = useState<RouteResult | null>(null);
   const [routingLoading, setRoutingLoading] = useState(false);
   const [watchId, setWatchId] = useState<number | null>(null);
+  const hasTriggeredInitialRouteRef = useRef(false);
+
+  // Auth session check
+  useEffect(() => {
+    fetch('/api/auth/session', { cache: 'no-store' })
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data) => {
+        setSignedIn(Boolean(data?.user));
+      })
+      .catch(() => setSignedIn(false));
+  }, []);
 
   // Refresh from the database so owner edits appear without redeploying or reloading the map.
   useEffect(() => {
@@ -281,6 +294,13 @@ export default function MapPageClient() {
 
   // Explicit User Action: Calculate Route
   const handleCalculateRoute = () => {
+    if (signedIn === false) {
+      const redirectTarget = selectedBeach
+        ? `/map?beach=${encodeURIComponent(selectedBeach.slug)}&route=true`
+        : '/map';
+      window.location.href = `/login?redirect=${encodeURIComponent(redirectTarget)}`;
+      return;
+    }
     if (!selectedBeach) return;
     if (!getValidBeachCoordinates(selectedBeach.latitude, selectedBeach.longitude)) {
       setLocationError('This beach does not have verified map coordinates yet.');
@@ -295,6 +315,14 @@ export default function MapPageClient() {
       });
     }
   };
+
+  // Auto-calculate route if redirected from beach profile with ?route=true
+  useEffect(() => {
+    if (selectedBeach && routeFromUrl && !hasTriggeredInitialRouteRef.current) {
+      hasTriggeredInitialRouteRef.current = true;
+      handleCalculateRoute();
+    }
+  }, [selectedBeach, routeFromUrl]);
 
   // Explicit User Action: Clear Route - stays cleared permanently
   const handleClearRoute = () => {

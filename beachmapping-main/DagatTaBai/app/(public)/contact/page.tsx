@@ -5,6 +5,7 @@ import Link from 'next/link';
 import {
   Check,
   AlertCircle,
+  Mail,
 } from 'lucide-react';
 import { ScrollReveal } from '@/components/ui/scroll-reveal';
 import {
@@ -139,6 +140,27 @@ export default function ContactPage() {
 
       {/* ── Clean, Centered, Well-Spaced Form Layout (Frameless, NO Containers) ── */}
       <div className="max-w-xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
+
+        {/* Direct Gmail Shortcut */}
+        <div className="mb-6 p-4 rounded-2xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40 flex items-center justify-between gap-3 flex-wrap">
+          <div className="space-y-0.5">
+            <span className="text-xs font-bold text-[#1F3F74] dark:text-sky-300">
+              Prefer typing directly in Gmail?
+            </span>
+            <p className="text-[11px] text-slate-600 dark:text-slate-400">
+              Opens Gmail compose to <span className="font-semibold text-slate-900 dark:text-white">support.dagattabai@gmail.com</span> ready for your concern.
+            </p>
+          </div>
+          <a
+            href="https://mail.google.com/mail/?view=cm&fs=1&to=support.dagattabai@gmail.com&su=Inquiry%20-%20Dagat%20Ta%20Bai&body=Hello%20Dagat%20Ta%20Bai%20Support,%0A%0AMy%20concern%20is:%20"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#1F3F74] hover:bg-[#285091] text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
+          >
+            <Mail className="w-3.5 h-3.5" />
+            <span>Open in Gmail</span>
+          </a>
+        </div>
         
         {submitted ? (
           /* Frameless Confirmation View with Bold Circle Checkmark */

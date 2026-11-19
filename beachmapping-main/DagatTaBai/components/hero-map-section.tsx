@@ -3,14 +3,27 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import {
-  ArrowRight,
   Map,
   Store,
 } from 'lucide-react';
 import { AdaptiveVideo } from '@/components/ui/adaptive-video';
 
-export function HeroMapSection() {
-  const [userRole, setUserRole] = useState<'visitor' | 'owner' | 'other'>('visitor');
+interface HeroMapSectionProps {
+  isAuthenticated?: boolean;
+  ctaText?: string;
+  ctaHref?: string;
+  greeting?: string;
+  subGreeting?: string;
+}
+
+export function HeroMapSection({
+  isAuthenticated = false,
+  ctaText,
+  ctaHref,
+  greeting,
+  subGreeting,
+}: HeroMapSectionProps) {
+  const [userRole, setUserRole] = useState<'visitor' | 'owner' | 'other'>(isAuthenticated ? 'other' : 'visitor');
 
   useEffect(() => {
     let isMounted = true;
@@ -66,6 +79,8 @@ export function HeroMapSection() {
   }, []);
 
   const showOwnerButton = userRole === 'owner';
+  const resolvedCtaText = ctaText || (isAuthenticated || userRole !== 'visitor' ? 'Explore Beaches' : 'Sign In to Explore Beaches');
+  const resolvedCtaHref = ctaHref || (isAuthenticated || userRole !== 'visitor' ? '/map' : '/login?redirect=/map');
 
   return (
     <section className="relative w-full h-[80vh] sm:h-[85vh] lg:h-[90vh] min-h-[500px] overflow-hidden text-slate-900 dark:text-white transition-colors duration-200">
@@ -84,50 +99,38 @@ export function HeroMapSection() {
 
       {/* Centered Content */}
       <div className="relative z-10 flex flex-col items-center justify-center h-full px-4 sm:px-6 lg:px-8 text-center">
-        <div className="max-w-3xl mx-auto">
-          <div className="space-y-4 sm:space-y-5">
-            <h1 className="font-sans font-extrabold tracking-tight text-white leading-[1.2] text-2xl sm:text-3xl lg:text-4xl drop-shadow-lg">
-              Discover the Coastal Paradise of Binongkalan
-            </h1>
-
-            <p className="text-xs sm:text-sm text-white/90 leading-relaxed max-w-2xl mx-auto drop-shadow-md">
-              There&apos;s more to every destination than meets the eye.
-            </p>
-          </div>
-
-          <div className="mt-7 min-h-[160px] sm:min-h-[108px]">
-            <div className="flex flex-col flex-wrap items-center justify-center gap-3 sm:flex-row">
-              <Link
-                href="/map"
-                className="inline-flex min-h-[44px] w-full max-w-xs items-center justify-center gap-2 px-7 py-3 rounded-full bg-brand-navy-500 hover:bg-brand-navy-600 dark:bg-brand-navy-500 dark:hover:bg-brand-navy-600 text-white font-bold text-xs sm:text-sm transition-all duration-200 shadow-xl shadow-brand-navy-900/30 hover:shadow-brand-navy-900/50 hover:-translate-y-0.5 active:translate-y-0 group border border-white/20 cursor-pointer sm:w-auto sm:max-w-none"
-              >
-                <Map className="w-4 h-4 transition-transform group-hover:scale-110" />
-                <span>Explore Beaches</span>
-              </Link>
-              {showOwnerButton && (
-                <Link
-                  href="/owner/dashboard"
-                  className="inline-flex min-h-[44px] w-full max-w-xs items-center justify-center gap-2 rounded-full border border-white/70 bg-white/10 px-6 py-3 font-medium text-xs text-white backdrop-blur-sm transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent sm:w-auto sm:max-w-none sm:text-sm"
-                >
-                  <Store size={18} className="shrink-0" />
-                  <span>Go to Dashboard</span>
-                </Link>
-              )}
+        <div className="max-w-3xl mx-auto space-y-4 sm:space-y-5">
+          {greeting && (
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/15 backdrop-blur-md border border-white/25 text-sky-200 text-xs sm:text-sm font-bold shadow-md animate-in fade-in duration-300">
+              <span>{greeting}</span>
             </div>
-            {userRole === 'visitor' && (
-              <p className="mt-5 text-sm text-white/90 drop-shadow-md sm:text-base">
-                Want to showcase your resort in Binongkalan?{' '}
-                <Link
-                  href="/apply"
-                  className="group/apply inline-flex whitespace-nowrap items-center gap-1 font-semibold text-brand-sun-400 underline underline-offset-4 hover:text-brand-sun-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent"
-                >
-                  Apply as Beach Owner
-                  <ArrowRight
-                    size={14}
-                    className="transition-transform group-hover/apply:translate-x-0.5"
-                  />
-                </Link>
-              </p>
+          )}
+
+          <h1 className="font-sans font-extrabold tracking-tight text-white leading-[1.2] text-2xl sm:text-3xl lg:text-4xl drop-shadow-lg">
+            {subGreeting || 'Discover the Coastal Paradise of Binongkalan'}
+          </h1>
+
+          <p className="text-xs sm:text-sm text-white/90 leading-relaxed max-w-2xl mx-auto drop-shadow-md">
+            There&apos;s more to every destination than meets the eye.
+          </p>
+
+          <div className="pt-6 sm:pt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
+            <Link
+              href={resolvedCtaHref}
+              className="inline-flex items-center justify-center gap-2 px-7 py-3 rounded-full bg-brand-navy-500 hover:bg-brand-navy-600 dark:bg-brand-navy-500 dark:hover:bg-brand-navy-600 text-white font-bold text-xs sm:text-sm transition-all duration-200 shadow-xl shadow-brand-navy-900/30 hover:shadow-brand-navy-900/50 hover:-translate-y-0.5 active:translate-y-0 group border border-white/20 cursor-pointer"
+            >
+              <Map className="w-4 h-4 transition-transform group-hover:scale-110" />
+              <span>{resolvedCtaText}</span>
+            </Link>
+
+            {showOwnerButton && (
+              <Link
+                href="/owner/dashboard"
+                className="inline-flex min-h-[44px] w-full max-w-xs items-center justify-center gap-2 rounded-full border border-white/70 bg-white/10 px-6 py-3 font-medium text-xs text-white backdrop-blur-sm transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent sm:w-auto sm:max-w-none sm:text-sm"
+              >
+                <Store size={18} className="shrink-0" />
+                <span>Go to Dashboard</span>
+              </Link>
             )}
           </div>
         </div>
