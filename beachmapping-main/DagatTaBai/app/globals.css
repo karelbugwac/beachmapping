@@ -6,6 +6,37 @@
 
 @layer base {
   :root {
+    --navbar-height: 4.0625rem;
+    --brand-navy-50: 234 241 247;
+    --brand-navy-100: 208 223 236;
+    --brand-navy-200: 163 191 215;
+    --brand-navy-300: 111 151 186;
+    --brand-navy-400: 63 110 150;
+    --brand-navy-500: 18 65 104;
+    --brand-navy-600: 15 55 87;
+    --brand-navy-700: 12 45 71;
+    --brand-navy-800: 9 35 54;
+    --brand-navy-900: 6 24 38;
+    --brand-sun-50: 255 248 230;
+    --brand-sun-100: 254 237 191;
+    --brand-sun-200: 253 223 146;
+    --brand-sun-300: 252 208 115;
+    --brand-sun-400: 252 194 85;
+    --brand-sun-500: 232 169 46;
+    --brand-sun-600: 201 138 20;
+    --brand-sun-700: 163 106 0;
+    --brand-sand-50: 252 247 238;
+    --brand-sand-100: 249 238 218;
+    --brand-sand-200: 246 220 177;
+    --brand-sand-300: 235 200 133;
+    --brand-teal-50: 238 246 247;
+    --brand-teal-100: 217 235 238;
+    --brand-teal-200: 183 216 221;
+    --brand-teal-300: 147 194 202;
+    --brand-teal-400: 106 171 181;
+    --brand-teal-500: 74 143 155;
+    --brand-teal-600: 47 122 135;
+    --brand-teal-700: 37 99 110;
     --background: 40 56% 96%;
     --foreground: 190 36% 13%;
     --surface: 45 100% 99%;
@@ -20,9 +51,9 @@
   }
 
   body {
-    @apply bg-slate-50 text-slate-900 antialiased min-h-screen flex flex-col transition-colors duration-300;
+    @apply bg-brand-sand-50 text-slate-900 antialiased min-h-screen flex flex-col transition-colors duration-300;
     font-family: var(--font-inter), system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-    overflow-x: hidden;
+    overflow-x: clip;
     width: 100%;
     max-width: 100vw;
   }
@@ -36,6 +67,11 @@
     font-weight: 700;
   }
 
+  :where(button, a, input, select, textarea, [tabindex]):focus-visible {
+    outline: 2px solid rgb(var(--brand-teal-400)) !important;
+    outline-offset: 2px !important;
+  }
+
   .dark body {
     background-color: var(--color-sand-50);
     color: var(--color-text);
@@ -47,9 +83,20 @@
 
   html {
     scroll-behavior: auto;
-    overflow-x: hidden;
+    overflow-x: clip;
     width: 100%;
     max-width: 100vw;
+    scroll-padding-top: var(--navbar-height);
+  }
+
+  :where([id]) {
+    scroll-margin-top: var(--navbar-height);
+  }
+}
+
+@media (min-width: 768px) {
+  :root {
+    --navbar-height: 4.5625rem;
   }
 
   a[href],
@@ -133,6 +180,50 @@
   animation: floatSlow 7s ease-in-out 1.5s infinite;
 }
 
+@keyframes cookieConsentRise {
+  from {
+    opacity: 0;
+    transform: translateY(calc(100% + 1rem));
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.cookie-consent-enter {
+  animation: cookieConsentRise 500ms cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+@media (max-width: 767px) {
+  [role="alert"] {
+    font-size: 0.75rem;
+    font-weight: 400;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+
+  p[class*="text-red-"],
+  p[class*="text-rose-"] {
+    font-size: 0.75rem;
+    font-weight: 400;
+    line-height: 1.3;
+    overflow-wrap: anywhere;
+  }
+
+  div[role="alert"],
+  section[role="alert"] {
+    padding: 0.5rem 0.75rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .cookie-consent-enter {
+    animation: none;
+  }
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 7px;
@@ -199,6 +290,11 @@
 
 .beach-map-label::before {
   display: none !important;
+}
+
+button.bg-brand-navy-500:active,
+a.bg-brand-navy-500:active {
+  background-color: rgb(var(--brand-navy-700));
 }
 
 @layer utilities {
@@ -430,3 +526,100 @@
   }
 }
 
+/* ========================================================
+   Sailboat Wave Theme Transition (View Transitions API)
+   ======================================================== */
+::view-transition-old(root),
+::view-transition-new(root) {
+  animation: none;
+  mix-blend-mode: normal;
+}
+
+::view-transition-old(sea),
+::view-transition-new(sea),
+::view-transition-old(foam),
+::view-transition-new(foam),
+::view-transition-old(boat),
+::view-transition-new(boat),
+::view-transition-group(root),
+::view-transition-group(sea),
+::view-transition-group(foam),
+::view-transition-group(boat) {
+  animation: none;
+}
+
+::view-transition-old(sea),
+::view-transition-old(foam),
+::view-transition-old(boat) {
+  display: none;
+}
+
+::view-transition-old(root) {
+  z-index: 1;
+}
+
+::view-transition-new(root) {
+  z-index: 2;
+}
+
+::view-transition-group(sea),
+::view-transition-new(sea) {
+  z-index: 3;
+}
+
+::view-transition-group(foam),
+::view-transition-new(foam) {
+  z-index: 4;
+}
+
+::view-transition-group(boat) {
+  z-index: 5;
+  filter: drop-shadow(0 4px 8px rgba(0, 0, 0, 0.35));
+}
+
+/* Helper elements dynamically injected during View Transition */
+html.wave-transitioning *,
+html.wave-transitioning *::before,
+html.wave-transitioning *::after {
+  transition-duration: 0s !important;
+  transition-delay: 0s !important;
+}
+
+.wave-transition-sea {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background: linear-gradient(180deg, #14b8a6 0%, #0d9488 40%, #0f766e 100%);
+  pointer-events: none;
+  view-transition-name: sea;
+}
+
+.wave-transition-foam {
+  position: fixed;
+  inset: 0;
+  width: 100vw;
+  height: 100vh;
+  background: #ffffff;
+  pointer-events: none;
+  view-transition-name: foam;
+  filter: drop-shadow(0 -1px 2px rgba(15, 23, 42, 0.25));
+}
+
+.wave-transition-boat {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 64px;
+  height: 64px;
+  pointer-events: none;
+  view-transition-name: boat;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  ::view-transition-group(*),
+  ::view-transition-old(*),
+  ::view-transition-new(*) {
+    animation: none !important;
+  }
+}

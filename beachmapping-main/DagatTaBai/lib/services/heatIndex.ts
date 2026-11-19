@@ -22,7 +22,7 @@ export function calculateHeatIndex(temperatureC: number, relativeHumidity: numbe
       heatIndexCelsius: Math.round(temperatureC),
       category: 'Caution',
       advisory: 'Comfortable conditions.',
-      badgeColorClass: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+      badgeColorClass: 'bg-brand-sun-100 text-brand-navy-700 border-brand-sun-300',
     };
   }
 
@@ -79,14 +79,14 @@ export function calculateHeatIndex(temperatureC: number, relativeHumidity: numbe
       heatIndexCelsius: heatIndexC,
       category: 'Extreme Caution',
       advisory: 'Heat cramps and heat exhaustion possible with prolonged exposure.',
-      badgeColorClass: 'bg-amber-100 text-amber-800 border-amber-300',
+      badgeColorClass: 'bg-brand-sun-100 text-brand-navy-700 border-brand-sun-300',
     };
   } else {
     return {
       heatIndexCelsius: heatIndexC,
       category: 'Caution',
       advisory: 'Fatigue possible with prolonged exposure and physical activity.',
-      badgeColorClass: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+      badgeColorClass: 'bg-brand-sun-100 text-brand-navy-700 border-brand-sun-300',
     };
   }
 }

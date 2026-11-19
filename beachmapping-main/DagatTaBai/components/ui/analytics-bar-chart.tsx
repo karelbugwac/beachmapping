@@ -65,7 +65,7 @@ export function AnalyticsBarChart({
           className="relative grid h-56 grid-cols-7 items-end gap-2 sm:gap-3 px-4"
           aria-label="Daily visitor counts"
         >
-          {points.map((point, index) => {
+          {points.map((point) => {
             const day = new Date(`${point.date}T12:00:00`);
             const label = new Intl.DateTimeFormat('en', { weekday: 'short' }).format(day);
             const formattedDate = new Intl.DateTimeFormat('en', { month: 'short', day: 'numeric' }).format(day);
@@ -86,9 +86,9 @@ export function AnalyticsBarChart({
                 </span>
 
                 <div
-                  className={`w-full max-w-14 ${
+                  className={`w-full max-w-14 rounded-t-lg transition-all duration-300 ${
                     isPeak
-                      ? 'bg-brand-700'
+                      ? 'bg-brand-700 dark:bg-sky-500'
                       : 'bg-slate-400 dark:bg-neutral-600'
                   }`}
                   style={{ height: `${height}%` }}

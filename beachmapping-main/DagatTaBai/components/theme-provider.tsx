@@ -1,75 +1,25 @@
 'use client';
 
-import React, { createContext, useContext, useEffect, useState } from 'react';
+import React, { createContext, useContext } from 'react';
+import { useWaveThemeToggle, type Theme } from '@/lib/hooks/use-wave-theme';
 
-type Theme = 'light' | 'dark';
+export type { Theme };
 
 interface ThemeContextType {
   theme: Theme;
   toggleTheme: () => void;
   setTheme: (theme: Theme) => void;
+  isTransitioning: boolean;
+  mounted: boolean;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>('light');
-  const [mounted, setMounted] = useState(false);
-
-  useEffect(() => {
-    setMounted(true);
-    const savedTheme = localStorage.getItem('dtb_theme') as Theme | null;
-    const initialTheme =
-      savedTheme === 'dark' || savedTheme === 'light'
-        ? savedTheme
-        : window.matchMedia('(prefers-color-scheme: dark)').matches
-        ? 'dark'
-        : 'light';
-
-    setThemeState(initialTheme);
-    document.documentElement.setAttribute('data-theme', initialTheme);
-    if (initialTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-
-    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
-    const handleChange = (e: MediaQueryListEvent) => {
-      if (!localStorage.getItem('dtb_theme')) {
-        const autoTheme: Theme = e.matches ? 'dark' : 'light';
-        setThemeState(autoTheme);
-        document.documentElement.setAttribute('data-theme', autoTheme);
-        if (autoTheme === 'dark') {
-          document.documentElement.classList.add('dark');
-        } else {
-          document.documentElement.classList.remove('dark');
-        }
-      }
-    };
-
-    mediaQuery.addEventListener('change', handleChange);
-    return () => mediaQuery.removeEventListener('change', handleChange);
-  }, []);
-
-  const setTheme = (newTheme: Theme) => {
-    setThemeState(newTheme);
-    localStorage.setItem('dtb_theme', newTheme);
-    document.documentElement.setAttribute('data-theme', newTheme);
-    if (newTheme === 'dark') {
-      document.documentElement.classList.add('dark');
-    } else {
-      document.documentElement.classList.remove('dark');
-    }
-  };
-
-  const toggleTheme = () => {
-    const nextTheme = theme === 'light' ? 'dark' : 'light';
-    setTheme(nextTheme);
-  };
+  const waveTheme = useWaveThemeToggle();
 
   return (
-    <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
+    <ThemeContext.Provider value={waveTheme}>
       {children}
     </ThemeContext.Provider>
   );
@@ -82,6 +32,8 @@ export function useTheme() {
       theme: 'light' as Theme,
       toggleTheme: () => {},
       setTheme: () => {},
+      isTransitioning: false,
+      mounted: false,
     };
   }
   return context;

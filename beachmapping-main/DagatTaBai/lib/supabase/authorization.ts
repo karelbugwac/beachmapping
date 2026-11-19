@@ -1,93 +1,62 @@
-import { cookies } from 'next/headers';
 import { createAdminClient, createServerSupabaseClient } from '@/lib/supabase/server';
+import { isAccountSuspended } from '@/lib/utils/account-suspension';
 
-interface CachedAuth {
-  user: any;
-  role: string;
-  expiresAt: number;
-}
-
-const AUTH_CACHE_TTL_MS = 15_000; // 15 seconds short-lived burst cache
-const authCache = new Map<string, CachedAuth>();
-
-async function getSessionCacheKey(): Promise<string | null> {
-  try {
-    const cookieStore = await cookies();
-    const authCookies = cookieStore
-      .getAll()
-      .filter((c) => c.name.includes('auth-token'))
-      .map((c) => `${c.name}=${c.value}`)
-      .join(';');
-    return authCookies || null;
-  } catch {
-    return null;
-  }
+export function roleAuthorizationFailureStatus(
+  role: string | null | undefined,
+  allowedRoles: string[]
+): 403 | null {
+  return role && allowedRoles.includes(role) ? null : 403;
 }
 
 export async function authorizeRoles(allowedRoles: string[]) {
   const adminClient = createAdminClient();
-  const cacheKey = await getSessionCacheKey();
-  const now = Date.now();
-
-  if (cacheKey) {
-    const cached = authCache.get(cacheKey);
-    if (cached && cached.expiresAt > now) {
-      if (!cached.role || !allowedRoles.includes(cached.role)) {
-        return { authorized: false as const, status: 403, message: 'You do not have permission to perform this action.' };
-      }
-      return { authorized: true as const, user: cached.user, role: cached.role, adminClient };
-    }
-  }
 
   const sessionClient = await createServerSupabaseClient();
   const { data, error } = await sessionClient.auth.getUser();
   if (error || !data.user) {
-    if (cacheKey) authCache.delete(cacheKey);
     return { authorized: false as const, status: 401, message: 'Authentication required.' };
   }
 
-  const userEmail = data.user.email?.toLowerCase().trim() || '';
-  const allowedAdminEmails = (process.env.ADMIN_ALLOWED_EMAILS || 'official.dagattabai@gmail.com,admin@dagattabai.ph')
-    .split(',')
-    .map((e) => e.trim().toLowerCase());
+  const metadata = (data.user.user_metadata || {}) as Record<string, unknown>;
 
-  const { data: profile, error: profileError } = await (adminClient.from('profiles') as any)
-    .select('role')
+  const { data: initialProfile, error: profileError } = await (adminClient.from('profiles') as any)
+    .select('role, status, suspension_reason, suspended_at, suspension_ends_at')
     .eq('id', data.user.id)
     .maybeSingle();
+  let profile = initialProfile;
 
   if (profileError) {
-    return { authorized: false as const, status: 500, message: 'Could not verify account permissions.' };
-  }
-
-  let resolvedRole: string = profile?.role || data.user.user_metadata?.role || '';
-
-  // Check if user is whitelisted admin
-  if (allowedAdminEmails.includes(userEmail)) {
-    resolvedRole = 'admin';
-    if (profile?.role !== 'admin') {
-      // Sync profile role to admin if missing
-      await (adminClient.from('profiles') as any)
-        .update({ role: 'admin' })
-        .eq('id', data.user.id);
+    if (profileError.code !== '42703' && profileError.code !== 'PGRST204') {
+      console.error('Failed to verify account permissions:', profileError);
+      return { authorized: false as const, status: 500, message: 'Could not verify account permissions.' };
     }
-  }
 
-  if (cacheKey && resolvedRole) {
-    if (authCache.size > 100) {
-      for (const [key, val] of authCache.entries()) {
-        if (val.expiresAt <= now) authCache.delete(key);
-      }
+    console.warn('Account suspension columns are unavailable; apply the account-suspensions migration.');
+    const legacyProfile = await (adminClient.from('profiles') as any)
+      .select('role')
+      .eq('id', data.user.id)
+      .maybeSingle();
+    if (legacyProfile.error) {
+      console.error('Failed to verify account role:', legacyProfile.error);
+      return { authorized: false as const, status: 500, message: 'Could not verify account permissions.' };
     }
-    authCache.set(cacheKey, {
-      user: data.user,
-      role: resolvedRole,
-      expiresAt: now + AUTH_CACHE_TTL_MS,
-    });
+    profile = {
+      ...legacyProfile.data,
+      status: metadata.status === 'suspended' ? 'suspended' : 'active',
+      suspension_ends_at: typeof metadata.suspension_ends_at === 'string'
+        ? metadata.suspension_ends_at
+        : null,
+    };
+  }
+  if (isAccountSuspended(profile)) {
+    return { authorized: false as const, status: 403, message: 'Your account has been suspended.' };
   }
 
-  if (!resolvedRole || !allowedRoles.includes(resolvedRole)) {
-    return { authorized: false as const, status: 403, message: 'You do not have permission to perform this action.' };
+  const resolvedRole: string = profile?.role || '';
+
+  const failureStatus = roleAuthorizationFailureStatus(resolvedRole, allowedRoles);
+  if (failureStatus) {
+    return { authorized: false as const, status: failureStatus, message: 'You do not have permission to perform this action.' };
   }
 
   return { authorized: true as const, user: data.user, role: resolvedRole, adminClient };

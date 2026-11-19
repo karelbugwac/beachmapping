@@ -542,7 +542,7 @@ export function LocationPickerModal({
               <div ref={mapContainerRef} className="w-full h-full" />
               {!mapLoaded && (
                 <div className="absolute inset-0 flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-xs text-gray-500 gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin text-blue-600" />
+                  <Loader2 className="w-4 h-4 animate-spin text-brand-navy-500" />
                   <span>Loading interactive map...</span>
                 </div>
               )}
@@ -566,7 +566,7 @@ export function LocationPickerModal({
                     updateMapMarker(e.target.value, tempLng);
                   }}
                   placeholder="e.g. 10.634800"
-                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm font-mono bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1F3F74] text-gray-900 dark:text-white"
+                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm font-mono bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:ring-2 focus:ring-brand-navy-500 text-gray-900 dark:text-white"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-gray-400">
                   LAT
@@ -589,7 +589,7 @@ export function LocationPickerModal({
                     updateMapMarker(tempLat, e.target.value);
                   }}
                   placeholder="e.g. 124.027500"
-                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm font-mono bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1F3F74] text-gray-900 dark:text-white"
+                  className="w-full px-3.5 py-2.5 text-xs sm:text-sm font-mono bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:ring-2 focus:ring-brand-navy-500 text-gray-900 dark:text-white"
                 />
                 <span className="absolute right-3 top-1/2 -translate-y-1/2 text-[11px] font-semibold text-gray-400">
                   LNG
@@ -609,7 +609,7 @@ export function LocationPickerModal({
                 value={tempLocation}
                 onChange={(e) => setTempLocation(e.target.value)}
                 placeholder="e.g. Binongkalan, Catmon, Cebu, Philippines"
-                className="flex-1 px-3.5 py-2.5 text-xs sm:text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1F3F74] text-gray-900 dark:text-white"
+                className="flex-1 px-3.5 py-2.5 text-xs sm:text-sm bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:ring-2 focus:ring-brand-navy-500 text-gray-900 dark:text-white"
               />
               <div className="flex gap-2">
                 <button
@@ -625,7 +625,7 @@ export function LocationPickerModal({
                   type="button"
                   onClick={handleUseCurrentGps}
                   disabled={isLocating}
-                  className="px-4 py-2.5 bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5 flex-shrink-0 cursor-pointer disabled:opacity-50"
+                  className="px-4 py-2.5 bg-brand-navy-500 hover:bg-brand-navy-600 text-white text-xs font-semibold rounded-xl transition-colors flex items-center justify-center gap-1.5 flex-shrink-0 cursor-pointer disabled:opacity-50"
                 >
                   {isLocating && <Loader2 size={13} className="animate-spin" />}
                   <span>Use GPS Location</span>
@@ -644,7 +644,7 @@ export function LocationPickerModal({
                 value={requesterNote}
                 onChange={(e) => setRequesterNote(e.target.value)}
                 placeholder="e.g. Moved pin to our main shoreline entrance gate and beachfront parking area."
-                className="w-full px-3.5 py-2 text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1F3F74] text-gray-900 dark:text-white resize-none"
+                className="w-full px-3.5 py-2 text-xs bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:ring-2 focus:ring-brand-navy-500 text-gray-900 dark:text-white resize-none"
               />
             </div>
           )}
@@ -672,7 +672,7 @@ export function LocationPickerModal({
               type="button"
               onClick={handleSave}
               disabled={isSaving || !pinConfirmed}
-              className="px-5 py-2.5 bg-[#1F3F74] hover:bg-[#183460] text-white rounded-xl text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
+              className="px-5 py-2.5 bg-brand-navy-500 hover:bg-brand-navy-600 text-white rounded-xl text-xs font-bold transition-colors shadow-xs flex items-center gap-1.5 disabled:opacity-50 cursor-pointer"
             >
               {isSaving ? (
                 <>

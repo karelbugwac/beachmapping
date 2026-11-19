@@ -32,8 +32,8 @@ export default function OwnerLayout({
     if (isLoginPage) return;
 
     Promise.all([
-      fetch('/api/owner/beach', { cache: 'no-store' }).then((res) => (res.ok ? res.json() : [])),
-      fetch('/api/owner/reviews', { cache: 'no-store' }).then((res) => (res.ok ? res.json() : null)),
+      fetch('/api/owner/beach').then((res) => (res.ok ? res.json() : [])),
+      fetch('/api/owner/reviews').then((res) => (res.ok ? res.json() : null)),
     ])
       .then(([beaches, reviews]) => {
         if (Array.isArray(beaches) && beaches.length > 0) {

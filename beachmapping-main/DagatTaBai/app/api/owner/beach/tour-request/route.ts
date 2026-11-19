@@ -2,11 +2,18 @@ import { NextRequest, NextResponse } from 'next/server';
 import { authorizeRoles } from '@/lib/supabase/authorization';
 import {
   getTourRequestForBeach,
-  submitTourRequest,
-  cancelTourRequest,
+  getTourBeachOwnerId,
+  saveTourDraft,
+  transitionTourRequest,
 } from '@/lib/services/tourRequests';
+import { TourWorkflowError } from '@/lib/services/tourTransitions';
 
 const noStoreHeaders = { 'Cache-Control': 'no-store, max-age=0' };
+
+async function authorizeBeach(auth: Extract<Awaited<ReturnType<typeof authorizeRoles>>, { authorized: true }>, beachId: string) {
+  if (auth.role === 'admin') return true;
+  return await getTourBeachOwnerId(beachId) === auth.user.id;
+}
 
 export async function GET(request: NextRequest) {
   try {
@@ -15,152 +22,85 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: auth.message }, { status: auth.status, headers: noStoreHeaders });
     }
 
-    const { searchParams } = new URL(request.url);
-    const beachId = searchParams.get('beach_id');
-
+    const beachId = new URL(request.url).searchParams.get('beach_id');
     if (!beachId) {
-      return NextResponse.json(
-        { error: 'A beach_id query parameter is required.' },
-        { status: 400, headers: noStoreHeaders }
-      );
+      return NextResponse.json({ error: 'A beach_id query parameter is required.' }, { status: 400, headers: noStoreHeaders });
+    }
+    if (!await authorizeBeach(auth, beachId)) {
+      return NextResponse.json({ error: 'You are not authorized to view this tour.' }, { status: 403, headers: noStoreHeaders });
     }
 
-    // Verify ownership if not admin
-    if (auth.role !== 'admin') {
-      const { data: beach } = await (auth.adminClient.from('beaches') as any)
-        .select('id, owner_id')
-        .eq('id', beachId)
-        .maybeSingle();
-
-      if (!beach || beach.owner_id !== auth.user.id) {
-        return NextResponse.json(
-          { error: 'You are not authorized to view requests for this beach.' },
-          { status: 403, headers: noStoreHeaders }
-        );
-      }
-    }
-
-    const requestData = await getTourRequestForBeach(beachId);
-
-    return NextResponse.json({ success: true, request: requestData }, { headers: noStoreHeaders });
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Failed to fetch tour request.';
-    return NextResponse.json({ error: message }, { status: 500, headers: noStoreHeaders });
+    const tour = await getTourRequestForBeach(beachId);
+    return NextResponse.json({ success: true, request: tour }, { headers: noStoreHeaders });
+  } catch (error) {
+    console.error('Failed to load owner tour status:', error);
+    return NextResponse.json({ error: 'Failed to load tour status.' }, { status: 500, headers: noStoreHeaders });
   }
 }
 
 export async function POST(request: NextRequest) {
   try {
-    const auth = await authorizeRoles(['beach_owner', 'beach_manager', 'admin']);
+    const auth = await authorizeRoles(['beach_owner', 'beach_manager']);
     if (!auth.authorized) {
       return NextResponse.json({ error: auth.message }, { status: auth.status, headers: noStoreHeaders });
     }
 
     const body = await request.json();
-    const { beach_id, requested_tour_url, requester_note, reason, notes, is_recapture } = body;
-
-    if (!beach_id || typeof beach_id !== 'string') {
-      return NextResponse.json(
-        { error: 'beach_id is required.' },
-        { status: 400, headers: noStoreHeaders }
-      );
+    const beachId = typeof body.beach_id === 'string' ? body.beach_id : '';
+    const action = body.action || 'submit_for_review';
+    if (!beachId || (action !== 'save' && action !== 'submit_for_review')) {
+      return NextResponse.json({ error: 'Choose a valid tour action and beach.' }, { status: 400, headers: noStoreHeaders });
+    }
+    if (!await authorizeBeach(auth, beachId)) {
+      return NextResponse.json({ error: 'You are not authorized to update this tour.' }, { status: 403, headers: noStoreHeaders });
     }
 
-    const tourUrl = (typeof requested_tour_url === 'string' && requested_tour_url.trim())
-      ? requested_tour_url.trim()
-      : (is_recapture ? 'Recapture Request' : '');
+    const tourUrl = (typeof body.requested_tour_url === 'string' && body.requested_tour_url.trim())
+      ? body.requested_tour_url.trim()
+      : (body.is_recapture ? 'Recapture Request' : '');
 
     if (!tourUrl) {
-      return NextResponse.json(
-        { error: 'A 360 Virtual Tour URL or recapture description is required.' },
-        { status: 400, headers: noStoreHeaders }
-      );
+      return NextResponse.json({ error: 'Add a 360° tour link before submitting for review.' }, { status: 400, headers: noStoreHeaders });
     }
 
     const combinedNote =
-      typeof requester_note === 'string' && requester_note.trim()
-        ? requester_note.trim()
-        : [reason, notes]
+      typeof body.requester_note === 'string' && body.requester_note.trim()
+        ? body.requester_note.trim()
+        : [body.reason, body.notes]
             .map((part) => (typeof part === 'string' ? part.trim() : ''))
             .filter(Boolean)
-            .join(' — ') || undefined;
+            .join(' — ') || null;
 
-    // Verify ownership if not admin
-    if (auth.role !== 'admin') {
-      const { data: beach } = await (auth.adminClient.from('beaches') as any)
-        .select('id, owner_id')
-        .eq('id', beach_id)
-        .maybeSingle();
-
-      if (!beach || beach.owner_id !== auth.user.id) {
-        return NextResponse.json(
-          { error: 'You are not authorized to submit requests for this beach.' },
-          { status: 403, headers: noStoreHeaders }
-        );
-      }
-    }
-
-    const savedRequest = await submitTourRequest({
-      beachId: beach_id,
+    const draft = await saveTourDraft({
+      beachId,
       ownerId: auth.user.id,
       requestedUrl: tourUrl,
       requesterNote: combinedNote,
     });
 
+    const tour = action === 'submit_for_review'
+      ? await transitionTourRequest({
+          requestId: draft.id,
+          toStatus: 'review',
+          actor: 'owner',
+          actorId: auth.user.id,
+        })
+      : draft;
+
+    return NextResponse.json({ success: true, request: tour }, { headers: noStoreHeaders });
+  } catch (error) {
+    if (!(error instanceof TourWorkflowError)) console.error('Failed to save owner tour:', error);
+    const message = error instanceof TourWorkflowError ? error.message : 'We could not save the tour. Please try again.';
     return NextResponse.json(
-      {
-        success: true,
-        message: '360° Virtual Tour request submitted to Admin for approval.',
-        request: savedRequest,
-      },
-      { headers: noStoreHeaders }
+      { error: message },
+      { status: error instanceof TourWorkflowError ? 400 : 500, headers: noStoreHeaders }
     );
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Failed to submit tour request.';
-    return NextResponse.json({ error: message }, { status: 500, headers: noStoreHeaders });
   }
 }
 
-export async function DELETE(request: NextRequest) {
-  try {
-    const auth = await authorizeRoles(['beach_owner', 'beach_manager', 'admin']);
-    if (!auth.authorized) {
-      return NextResponse.json({ error: auth.message }, { status: auth.status, headers: noStoreHeaders });
-    }
-
-    const { searchParams } = new URL(request.url);
-    const beachId = searchParams.get('beach_id');
-
-    if (!beachId) {
-      return NextResponse.json(
-        { error: 'A beach_id query parameter is required.' },
-        { status: 400, headers: noStoreHeaders }
-      );
-    }
-
-    // Verify ownership if not admin
-    if (auth.role !== 'admin') {
-      const { data: beach } = await (auth.adminClient.from('beaches') as any)
-        .select('id, owner_id')
-        .eq('id', beachId)
-        .maybeSingle();
-
-      if (!beach || beach.owner_id !== auth.user.id) {
-        return NextResponse.json(
-          { error: 'You are not authorized to cancel requests for this beach.' },
-          { status: 403, headers: noStoreHeaders }
-        );
-      }
-    }
-
-    await cancelTourRequest({ beachId, ownerId: auth.user.id });
-
-    return NextResponse.json(
-      { success: true, message: '360° Virtual Tour request cancelled.' },
-      { headers: noStoreHeaders }
-    );
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Failed to cancel tour request.';
-    return NextResponse.json({ error: message }, { status: 500, headers: noStoreHeaders });
-  }
+export async function DELETE() {
+  return NextResponse.json(
+    { error: 'Tour requests cannot be deleted.' },
+    { status: 405, headers: noStoreHeaders }
+  );
 }

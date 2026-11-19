@@ -5,7 +5,7 @@ export default function UnauthorizedPage() {
   return (
     <div className="min-h-[70vh] flex items-center justify-center px-4 py-16">
       <div className="text-center max-w-md bg-white p-8 rounded-xl border border-slate-200 shadow-sm">
-        <div className="w-14 h-14 bg-amber-100 text-amber-600 rounded-full flex items-center justify-center mx-auto mb-4">
+        <div className="w-14 h-14 bg-brand-sun-100 text-brand-navy-700 rounded-full flex items-center justify-center mx-auto mb-4">
           <ShieldAlert className="w-7 h-7" />
         </div>
         <h1 className="text-2xl font-bold text-slate-900 mb-2">403 — Access Restricted</h1>
@@ -22,7 +22,7 @@ export default function UnauthorizedPage() {
           </Link>
           <Link
             href="/owner/login"
-            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 bg-sky-600 text-white font-medium rounded-md hover:bg-sky-700 transition-colors text-sm"
+            className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2 bg-brand-teal-600 text-white font-medium rounded-md hover:bg-brand-teal-700 transition-colors text-sm"
           >
             <LogIn className="w-4 h-4" />
             <span>Owner Login</span>

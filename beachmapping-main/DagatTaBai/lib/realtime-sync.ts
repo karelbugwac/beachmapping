@@ -81,8 +81,9 @@ export function useRealtimeSync(
   const onSyncRef = useRef(onSync);
   onSyncRef.current = onSync;
 
-  const pollIntervalMs = options?.pollIntervalMs ?? 5000;
-  const debounceMs = options?.debounceMs ?? 250;
+  // Default to 0 (disabled). Senior backend rule: avoid continuous polling when using real-time WebSockets & events.
+  const pollIntervalMs = options?.pollIntervalMs ?? 0;
+  const debounceMs = options?.debounceMs ?? 400;
   const enabled = options?.enabled ?? true;
 
   useEffect(() => {

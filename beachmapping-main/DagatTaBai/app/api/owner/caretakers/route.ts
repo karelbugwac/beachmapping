@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
 import { authorizeRoles } from '@/lib/supabase/authorization';
+import { FULL_NAME_MESSAGES, validateFullName } from '@/lib/validation/fullName';
 
 const noStoreHeaders = { 'Cache-Control': 'no-store, max-age=0' };
 
@@ -51,17 +52,25 @@ export async function GET(request: Request) {
 
     return NextResponse.json({ items: (data || []).map(toCaretaker) }, { headers: noStoreHeaders });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Failed to load caretaker invitations.';
-    console.error('Caretaker invitation GET error:', message);
-    return NextResponse.json({ error: message }, { status: 500, headers: noStoreHeaders });
+    console.error('Caretaker invitation GET error:', error);
+    return NextResponse.json(
+      { error: 'Could not load caretaker invitations.' },
+      { status: 500, headers: noStoreHeaders }
+    );
   }
 }
 
 export async function POST(request: Request) {
   try {
-    const auth = await authorizeRoles(['beach_owner', 'beach_manager', 'admin']);
     const body = await request.json();
-    const name = typeof body.name === 'string' ? body.name.trim() : '';
+    const nameValidation = validateFullName(body.name);
+    if (!nameValidation.ok) {
+      return NextResponse.json(
+        { error: FULL_NAME_MESSAGES.serverRejected },
+        { status: 400, headers: noStoreHeaders }
+      );
+    }
+    const name = nameValidation.value;
     const email = typeof body.email === 'string' ? body.email.trim().toLowerCase() : '';
     const role = typeof body.role === 'string' ? body.role.trim() : '';
     const permissions = Array.isArray(body.permissions)
@@ -74,6 +83,7 @@ export async function POST(request: Request) {
       );
     }
 
+    const auth = await authorizeRoles(['beach_owner', 'beach_manager', 'admin']);
     const beachResult = await getAuthorizedBeach(auth, typeof body.beach_id === 'string' ? body.beach_id : null);
     if ('response' in beachResult) return beachResult.response;
     const { data, error } = await (beachResult.auth.adminClient.from('beach_caretaker_invitations') as any)
@@ -119,9 +129,11 @@ export async function POST(request: Request) {
         : 'Invitation recorded, but email was not sent. Portal access has not been granted.',
     }, { status: 201, headers: noStoreHeaders });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Failed to record caretaker invitation.';
-    console.error('Caretaker invitation POST error:', message);
-    return NextResponse.json({ error: message }, { status: 500, headers: noStoreHeaders });
+    console.error('Caretaker invitation POST error:', error);
+    return NextResponse.json(
+      { error: 'Could not record caretaker invitation.' },
+      { status: 500, headers: noStoreHeaders }
+    );
   }
 }
 

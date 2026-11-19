@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { AlertCircle, CheckCircle2, Trash2 } from 'lucide-react';
 
 type ToastKind = 'success' | 'error' | 'destructive';
-type ToastItem = { id: number; kind: ToastKind; message: string };
+type ToastItem = { id: number; kind: ToastKind; message: string; mobileMessage: string };
 type ToastEventDetail = { kind: ToastKind; message: string };
 
 export function showToast(message: string, kind: ToastKind = 'success') {
@@ -47,6 +47,19 @@ function canonicalToastMessage(raw: string, kind: ToastKind): string {
   return trimmed;
 }
 
+export function compactMobileError(message: string): string {
+  if (/internet|network|offline/i.test(message)) return 'Offline';
+  if (/server|unavailable/i.test(message)) return 'Try again';
+  if (/save/i.test(message)) return 'Save failed';
+  if (/add/i.test(message)) return 'Add failed';
+  if (/delete/i.test(message)) return 'Delete failed';
+  if (/update/i.test(message)) return 'Update failed';
+  if (/submit|submission/i.test(message)) return 'Submit failed';
+  if (/field|required|empty/i.test(message)) return 'Check fields';
+  if (/invalid|input|latitude|longitude/i.test(message)) return 'Check input';
+  return 'Try again';
+}
+
 export function FeedbackToasts() {
   const [toasts, setToasts] = useState<ToastItem[]>([]);
 
@@ -58,7 +71,12 @@ export function FeedbackToasts() {
       const { kind, message } = (event as CustomEvent<ToastEventDetail>).detail;
       const normalizedMessage = canonicalToastMessage(message, kind);
       const id = ++nextId;
-      setToasts((current) => [...current, { id, kind, message: normalizedMessage }]);
+      setToasts((current) => [...current, {
+        id,
+        kind,
+        message: normalizedMessage,
+        mobileMessage: kind === 'error' ? compactMobileError(normalizedMessage) : normalizedMessage,
+      }]);
       
       // Auto-dismiss after exactly 5 seconds
       timers.set(
@@ -71,6 +89,17 @@ export function FeedbackToasts() {
     };
 
     window.addEventListener('dagattabai:toast', handleToast);
+    try {
+      const pendingMessage = window.sessionStorage.getItem('dtb:pending-toast');
+      if (pendingMessage) {
+        window.sessionStorage.removeItem('dtb:pending-toast');
+        handleToast(new CustomEvent<ToastEventDetail>('dagattabai:toast', {
+          detail: { kind: 'success', message: pendingMessage },
+        }));
+      }
+    } catch {
+      // Session storage can be unavailable in restricted browser contexts.
+    }
     return () => {
       window.removeEventListener('dagattabai:toast', handleToast);
       timers.forEach(clearTimeout);
@@ -94,7 +123,11 @@ export function FeedbackToasts() {
           <div
             key={toast.id}
             role={toast.kind === 'error' ? 'alert' : 'status'}
-            className={`pointer-events-auto flex w-fit max-w-[calc(100vw-2rem)] items-center gap-2 rounded-full border px-4 py-1.5 sm:px-5 sm:py-2 text-center text-xs font-semibold shadow-lg animate-in fade-in slide-in-from-top-3 duration-200 ${
+            className={`pointer-events-auto flex w-fit max-w-[calc(100vw-2rem)] items-center gap-2 rounded-full border ${
+              toast.kind === 'error'
+                ? 'px-3 py-1 font-normal sm:px-5 sm:py-2 sm:font-semibold'
+                : 'px-4 py-1.5 font-semibold sm:px-5 sm:py-2'
+            } text-center text-xs shadow-lg animate-in fade-in slide-in-from-top-3 duration-200 ${
               isDestructive
                 ? 'border-rose-700 bg-rose-600 text-white shadow-rose-950/25'
                 : isSuccess
@@ -103,7 +136,14 @@ export function FeedbackToasts() {
             }`}
           >
             <Icon className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            <span className="min-w-0 truncate">{formattedMsg}</span>
+            {toast.kind === 'error' ? (
+              <>
+                <span className="min-w-0 truncate sm:hidden">{toast.mobileMessage}</span>
+                <span className="hidden min-w-0 sm:inline">{formattedMsg}</span>
+              </>
+            ) : (
+              <span className="min-w-0 truncate">{formattedMsg}</span>
+            )}
           </div>
         );
       })}

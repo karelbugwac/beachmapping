@@ -9,18 +9,14 @@ import {
   Pencil,
   Trash2,
   Plus,
-  ExternalLink,
   Upload,
   Camera,
-  Compass,
-  MapPin,
-  ChevronDown,
-  Clock,
   Share2,
   XCircle,
   X,
 } from 'lucide-react';
 import type { BeachRecord, BeachPhoto, FacilityRate } from '@/lib/db/beaches';
+import type { TourHistoryItem, TourRequestData } from '@/lib/services/tourRequests';
 import { LocationPickerModal } from '@/components/map/location-picker-modal';
 import { VirtualTourModal } from '@/components/virtual-tour-modal';
 import { PhotoViewerModal, type CottagePhoto } from '@/components/cottages/cottage-photos-modal';
@@ -31,7 +27,14 @@ import { PhotoUploadGrid } from '@/components/owner/PhotoUploadGrid';
 import { type FacilityCategory, getFacilityCategoryLabel } from '@/lib/utils/facility-categories';
 import { getFacilityFeeItems } from '@/lib/utils/facility-pricing';
 import { getValidBeachCoordinates } from '@/lib/utils/beach-coordinates';
-import { MAX_BEACH_IMAGE_SIZE_BYTES, removeBeachImageByPath, uploadBeachImage, uploadBeachImageWithPath } from '@/lib/utils/beach-image-upload';
+import {
+  formatUploadSizeSummary,
+  removeBeachImageByPath,
+  uploadBeachImage,
+  uploadBeachImageWithPath,
+} from '@/lib/utils/beach-image-upload';
+import { IMAGE_UPLOAD_CONFIG } from '@/lib/utils/image-upload-config';
+import { validateImageFile } from '@/lib/utils/image-validation';
 import { generateUUID } from '@/lib/utils/uuid';
 import { confirmAction } from '@/components/ui/confirm-dialog';
 import { useRealtimeSync, notifyRealtimeSync } from '@/lib/realtime-sync';
@@ -51,6 +54,7 @@ interface CottagePhotoDraft extends CottagePhoto {
   previewUrl?: string;
   file?: File;
   error?: string;
+  sizeSummary?: string;
   progress: number;
   status: 'uploading' | 'saved' | 'error';
 }
@@ -71,6 +75,7 @@ interface FacilityPhotoDraft extends FacilityCardPhoto {
   previewUrl?: string;
   file?: File;
   error?: string;
+  sizeSummary?: string;
   progress: number;
   status: 'uploading' | 'saved' | 'error';
 }
@@ -148,8 +153,6 @@ function ModalStatusBanner({ status }: { status: ModalStatus | null }) {
 }
 
 const DEFAULT_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
-const MAX_IMAGE_SIZE_BYTES = MAX_BEACH_IMAGE_SIZE_BYTES;
-
 export default function ManageInformationPage() {
   const [activeTab, setActiveTab] = useState<'basic' | 'cottages' | 'facilities' | 'hours' | 'photos' | 'dos' | 'tour'>('basic');
   const [loading, setLoading] = useState(true);
@@ -308,12 +311,16 @@ export default function ManageInformationPage() {
     return () => URL.revokeObjectURL(galleryPreview);
   }, [galleryPreview]);
 
-  // 360 Virtual Tour Recapture Modal State
-  const [showRecaptureModal, setShowRecaptureModal] = useState(false);
-  const [recaptureReason, setRecaptureReason] = useState('New cottage/building added');
-  const [recaptureNotes, setRecaptureNotes] = useState('');
-  const [submittingRecapture, setSubmittingRecapture] = useState(false);
   const [showTourPreview, setShowTourPreview] = useState(false);
+  const [tourRequest, setTourRequest] = useState<TourRequestData | null>(null);
+  const [tourUrl, setTourUrl] = useState('');
+  const [tourNote, setTourNote] = useState('');
+  const [tourBusy, setTourBusy] = useState(false);
+  const [tourHistory, setTourHistory] = useState<TourHistoryItem[]>([]);
+  const [tourHistoryExpanded, setTourHistoryExpanded] = useState(false);
+  const [tourHistoryLoading, setTourHistoryLoading] = useState(false);
+  const tourCacheRef = useRef(new Map<string, { request: TourRequestData | null; fetchedAt: number }>());
+  const tourHistoryCacheRef = useRef(new Map<string, TourHistoryItem[]>());
 
   // Photos Sub-Category: 'branding' | 'posts'
   const [photoSubTab, setPhotoSubTab] = useState<'branding' | 'posts'>('branding');
@@ -532,6 +539,11 @@ export default function ManageInformationPage() {
         body: JSON.stringify(payload),
       });
       if (res.ok) notifyRealtimeSync('beaches');
+      const data = await res.json();
+      if (Array.isArray(data.storage_cleanup_warnings) && data.storage_cleanup_warnings.length) {
+        setToast({ type: 'error', message: data.storage_cleanup_warnings[0] });
+        return false;
+      }
       return res.ok;
     } catch {
       return false;
@@ -586,12 +598,15 @@ export default function ManageInformationPage() {
 
       notifyRealtimeSync('beaches');
       setToast({
-        type: 'success',
-        message: 'Changes saved!',
+        type: data.storage_cleanup_warnings?.length ? 'error' : 'success',
+        message: data.storage_cleanup_warnings?.[0] || 'Changes saved!',
       });
       return true;
     } catch (err: unknown) {
-      setToast({ type: 'error', message: 'Unable to save changes.' });
+      setToast({
+        type: 'error',
+        message: err instanceof Error ? err.message : 'Unable to save changes.',
+      });
       return false;
     } finally {
       setSaving(false);
@@ -599,31 +614,35 @@ export default function ManageInformationPage() {
   };
 
   // Upload helper for PNG / JPG only
-  const uploadImageFile = async (file: File): Promise<string> => {
-    if (!['image/png', 'image/jpeg', 'image/jpg'].includes(file.type.toLowerCase())) {
-      throw new Error('Please upload an image in PNG or JPG format only.');
-    }
-    if (file.size > MAX_IMAGE_SIZE_BYTES) {
-      throw new Error('Image file size must be 20 GB or less.');
-    }
-
-    return uploadBeachImage(file, formData.id);
+  const uploadImageFile = async (
+    file: File,
+    onCompressed?: (summary: string) => void
+  ): Promise<string> => {
+    return uploadBeachImage(file, formData.id, undefined, (sizes) => {
+      onCompressed?.(formatUploadSizeSummary(sizes));
+    });
   };
 
   const uploadCottagePhotoDraft = async (photo: CottagePhotoDraft, cottageId: string): Promise<boolean> => {
     if (!photo.file) return false;
-    const timer = setInterval(() => {
-      setCottagePhotos((current) => current.map((item) => item.localId === photo.localId
-        ? { ...item, progress: Math.min(90, item.progress + 5), status: 'uploading' }
-        : item));
-    }, 200);
 
     try {
       const uploaded = await uploadBeachImageWithPath(
         photo.file,
         formData.id,
         'cottages',
-        cottageUploadAbortControllerRef.current?.signal
+        cottageUploadAbortControllerRef.current?.signal,
+        (sizes) => {
+          const sizeSummary = formatUploadSizeSummary(sizes);
+          setCottagePhotos((current) => current.map((item) => item.localId === photo.localId
+            ? { ...item, sizeSummary, progress: 5 }
+            : item));
+        },
+        (progress) => {
+          setCottagePhotos((current) => current.map((item) => item.localId === photo.localId
+            ? { ...item, progress: 5 + Math.round(progress * 0.95), status: 'uploading' }
+            : item));
+        }
       );
       cottageSessionStoragePathsRef.current.set(uploaded.storagePath, null);
       if (cottageDiscardingRef.current) {
@@ -690,25 +709,27 @@ export default function ManageInformationPage() {
         });
       }
       return false;
-    } finally {
-      clearInterval(timer);
     }
   };
 
   const handleCottagePhotoFiles = async (files: File[]) => {
     if (!files.length) return;
-    if (cottagePhotos.length + files.length > 10) {
-      setCottageModalStatus({ type: 'error', message: 'A cottage can have up to 10 photos.' });
+    if (cottagePhotos.length + files.length > IMAGE_UPLOAD_CONFIG.maxPhotosPerItem) {
+      setCottageModalStatus({
+        type: 'error',
+        message: `A cottage can have up to ${IMAGE_UPLOAD_CONFIG.maxPhotosPerItem} photos.`,
+      });
       return;
     }
 
     for (const file of files) {
-      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-        setCottageModalStatus({ type: 'error', message: 'Choose JPG, PNG, or WebP photos only.' });
-        return;
-      }
-      if (file.size < 1 || file.size > MAX_IMAGE_SIZE_BYTES) {
-        setCottageModalStatus({ type: 'error', message: 'Choose an image smaller than 20 GB.' });
+      try {
+        await validateImageFile(file, 'resort');
+      } catch (error: unknown) {
+        setCottageModalStatus({
+          type: 'error',
+          message: error instanceof Error ? error.message : 'Choose a JPG, PNG, or WebP photo.',
+        });
         return;
       }
     }
@@ -1110,17 +1131,23 @@ export default function ManageInformationPage() {
 
   const saveFacilityPhotoDraft = async (photo: FacilityPhotoDraft, facilityId: string): Promise<boolean> => {
     if (!photo.file) return false;
-    const timer = setInterval(() => {
-      setFacilityPhotos((current) => current.map((item) => item.localId === photo.localId
-        ? { ...item, progress: Math.min(90, item.progress + 5), status: 'uploading' }
-        : item));
-    }, 200);
     try {
       const uploaded = await uploadBeachImageWithPath(
         photo.file,
         formData.id,
         'facilities',
-        facilityUploadAbortControllerRef.current?.signal
+        facilityUploadAbortControllerRef.current?.signal,
+        (sizes) => {
+          const sizeSummary = formatUploadSizeSummary(sizes);
+          setFacilityPhotos((current) => current.map((item) => item.localId === photo.localId
+            ? { ...item, sizeSummary, progress: 5 }
+            : item));
+        },
+        (progress) => {
+          setFacilityPhotos((current) => current.map((item) => item.localId === photo.localId
+            ? { ...item, progress: 5 + Math.round(progress * 0.95), status: 'uploading' }
+            : item));
+        }
       );
       facilitySessionPhotosRef.current.set(uploaded.storagePath, null);
       if (facilityDiscardingRef.current) {
@@ -1177,24 +1204,28 @@ export default function ManageInformationPage() {
         setFacilityModalStatus({ type: 'error', message });
       }
       return false;
-    } finally {
-      clearInterval(timer);
     }
   };
 
   const handleFacilityPhotoFiles = async (files: File[]) => {
     if (!files.length) return;
-    if (facilityPhotos.length + files.length > 10) {
-      setFacilityModalStatus({ type: 'error', message: 'A facility can have up to 10 photos.' });
+    if (facilityPhotos.length + files.length > IMAGE_UPLOAD_CONFIG.maxPhotosPerItem) {
+      setFacilityModalStatus({
+        type: 'error',
+        message: `A facility can have up to ${IMAGE_UPLOAD_CONFIG.maxPhotosPerItem} photos.`,
+      });
       return;
     }
-    if (files.some((file) => !['image/jpeg', 'image/png', 'image/webp'].includes(file.type))) {
-      setFacilityModalStatus({ type: 'error', message: 'Choose JPG, PNG, or WebP photos only.' });
-      return;
-    }
-    if (files.some((file) => file.size < 1 || file.size > MAX_IMAGE_SIZE_BYTES)) {
-      setFacilityModalStatus({ type: 'error', message: 'Choose a non-empty image under 20 GB; photos are optimized to 5 MB.' });
-      return;
+    for (const file of files) {
+      try {
+        await validateImageFile(file, 'resort');
+      } catch (error: unknown) {
+        setFacilityModalStatus({
+          type: 'error',
+          message: error instanceof Error ? error.message : 'Choose a JPG, PNG, or WebP photo.',
+        });
+        return;
+      }
     }
     if (!newFacility.title?.trim()) {
       setFacilityFieldError('Facility name is required before adding photos.');
@@ -1418,15 +1449,23 @@ export default function ManageInformationPage() {
     return () => window.removeEventListener('keydown', handleKeyDown);
   }, [showAddFacility, savingFacility, showDiscardFacilityConfirmation]);
 
-  const handleGalleryFileSelection = (file?: File) => {
+  const handleGalleryFileSelection = async (file?: File) => {
     if (!file) return;
 
-    if (!['image/png', 'image/jpeg', 'image/jpg'].includes(file.type.toLowerCase())) {
-      setToast({ type: 'error', message: 'Please upload an image in PNG or JPG format only.' });
+    if (formData.images.length >= IMAGE_UPLOAD_CONFIG.maxPhotosPerItem) {
+      setToast({
+        type: 'error',
+        message: `A beach gallery can have up to ${IMAGE_UPLOAD_CONFIG.maxPhotosPerItem} photos.`,
+      });
       return;
     }
-    if (file.size > MAX_IMAGE_SIZE_BYTES) {
-      setToast({ type: 'error', message: 'Image file size must be 20 GB or less.' });
+    try {
+      await validateImageFile(file, 'resort');
+    } catch (error: unknown) {
+      setToast({
+        type: 'error',
+        message: error instanceof Error ? error.message : 'Choose a JPG, PNG, or WebP image.',
+      });
       return;
     }
 
@@ -1440,7 +1479,10 @@ export default function ManageInformationPage() {
 
     setUploadingImage(true);
     try {
-      const newImageUrl = await uploadImageFile(galleryFile);
+      let sizeSummary = '';
+      const newImageUrl = await uploadImageFile(galleryFile, (summary) => {
+        sizeSummary = summary;
+      });
       const nextImages: BeachPhoto[] = [
         ...formData.images.map((img) =>
           typeof img === 'string'
@@ -1463,9 +1505,9 @@ export default function ManageInformationPage() {
       setFormData((prev) => ({ ...prev, images: nextImages }));
       setGalleryFile(null);
       setGalleryPreview('');
-      setToast({ type: 'success', message: 'Upload complete!' });
+      setToast({ type: 'success', message: `Upload complete (${sizeSummary}).` });
     } catch (err: unknown) {
-      setToast({ type: 'error', message: 'Something went wrong.' });
+      setToast({ type: 'error', message: err instanceof Error ? err.message : 'Image upload failed.' });
     } finally {
       setUploadingImage(false);
     }
@@ -1478,11 +1520,14 @@ export default function ManageInformationPage() {
 
     setUploadingProfile(true);
     try {
-      const url = await uploadImageFile(file);
+      let sizeSummary = '';
+      const url = await uploadImageFile(file, (summary) => {
+        sizeSummary = summary;
+      });
       setFormData((prev) => ({ ...prev, profile_image: url }));
-      setToast({ type: 'success', message: 'Upload complete!' });
+      setToast({ type: 'success', message: `Upload complete (${sizeSummary}).` });
     } catch (err: unknown) {
-      setToast({ type: 'error', message: 'Something went wrong.' });
+      setToast({ type: 'error', message: err instanceof Error ? err.message : 'Image upload failed.' });
     } finally {
       setUploadingProfile(false);
       e.target.value = '';
@@ -1496,11 +1541,14 @@ export default function ManageInformationPage() {
 
     setUploadingCover(true);
     try {
-      const url = await uploadImageFile(file);
+      let sizeSummary = '';
+      const url = await uploadImageFile(file, (summary) => {
+        sizeSummary = summary;
+      });
       setFormData((prev) => ({ ...prev, cover_image: url }));
-      setToast({ type: 'success', message: 'Upload complete!' });
+      setToast({ type: 'success', message: `Upload complete (${sizeSummary}).` });
     } catch (err: unknown) {
-      setToast({ type: 'error', message: 'Something went wrong.' });
+      setToast({ type: 'error', message: err instanceof Error ? err.message : 'Image upload failed.' });
     } finally {
       setUploadingCover(false);
       e.target.value = '';
@@ -1537,48 +1585,126 @@ export default function ManageInformationPage() {
     setToast({ type: 'delete', message: 'Deleted successfully!' });
   };
 
-  // Recapture Tour Request
-  const handleSubmitRecapture = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setSubmittingRecapture(true);
+  const loadTourRequest = React.useCallback(async (beachId: string, force = false) => {
+    if (!beachId) return;
+    const cached = tourCacheRef.current.get(beachId);
+    if (!force && cached && Date.now() - cached.fetchedAt < 60_000) {
+      setTourRequest(cached.request);
+      setTourUrl(cached.request?.requested_tour_url || '');
+      setTourNote(cached.request?.requester_note || '');
+      return;
+    }
+
     try {
-      const res = await fetch('/api/owner/beach/tour-request', {
+      const response = await fetch(`/api/owner/beach/tour-request?beach_id=${encodeURIComponent(beachId)}`, {
+        cache: 'no-store',
+      });
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Could not load tour status.');
+      const record = (result.request || null) as TourRequestData | null;
+      tourCacheRef.current.set(beachId, { request: record, fetchedAt: Date.now() });
+      setTourRequest(record);
+      setTourUrl(record?.requested_tour_url || '');
+      setTourNote(record?.requester_note || '');
+    } catch (error) {
+      setToast({ type: 'error', message: error instanceof Error ? error.message : 'Could not load tour status.' });
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!formData.id) return;
+    void loadTourRequest(formData.id, true);
+    const refreshIfStale = () => {
+      const cached = tourCacheRef.current.get(formData.id);
+      if (!cached || Date.now() - cached.fetchedAt >= 60_000) {
+        void loadTourRequest(formData.id, true);
+      }
+    };
+    window.addEventListener('focus', refreshIfStale);
+    return () => window.removeEventListener('focus', refreshIfStale);
+  }, [formData.id, loadTourRequest]);
+
+  const handleTourAction = async (action: 'save' | 'submit_for_review') => {
+    setTourBusy(true);
+    try {
+      const response = await fetch('/api/owner/beach/tour-request', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
+          action,
           beach_id: formData.id,
-          reason: recaptureReason,
-          notes: recaptureNotes,
-          is_recapture: true,
+          requested_tour_url: tourUrl,
+          requester_note: tourNote,
         }),
       });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || 'Submission failed.');
-      }
-
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Could not update your tour.');
       notifyRealtimeSync('requests');
+      const record = result.request as TourRequestData;
+      tourCacheRef.current.set(formData.id, { request: record, fetchedAt: Date.now() });
+      tourHistoryCacheRef.current.delete(record.id);
+      setTourHistory([]);
+      setTourRequest(record);
+      setTourUrl(record.requested_tour_url);
+      setTourNote(record.requester_note || '');
       setToast({
         type: 'success',
-        message: 'Submitted successfully!',
+        message: action === 'submit_for_review' ? 'Your tour was submitted for review.' : 'Tour details saved.',
       });
-      setShowRecaptureModal(false);
-      setRecaptureNotes('');
-    } catch (err: unknown) {
-      setToast({ type: 'error', message: 'Submission failed.' });
+    } catch (error) {
+      setToast({ type: 'error', message: error instanceof Error ? error.message : 'Could not update your tour.' });
     } finally {
-      setSubmittingRecapture(false);
+      setTourBusy(false);
+    }
+  };
+
+  const loadTourHistory = async () => {
+    if (!formData.id || !tourRequest) return;
+    const cached = tourHistoryCacheRef.current.get(tourRequest.id);
+    if (cached) {
+      setTourHistory(cached);
+      return;
+    }
+    setTourHistoryLoading(true);
+    try {
+      const response = await fetch(
+        `/api/owner/beach/tour-request/history?beach_id=${encodeURIComponent(formData.id)}`,
+        { cache: 'no-store' }
+      );
+      const result = await response.json();
+      if (!response.ok) throw new Error(result.error || 'Could not load tour history.');
+      const history = (result.history || []) as TourHistoryItem[];
+      tourHistoryCacheRef.current.set(tourRequest.id, history);
+      setTourHistory(history);
+    } catch (error) {
+      setToast({ type: 'error', message: error instanceof Error ? error.message : 'Could not load tour history.' });
+      setTourHistoryExpanded(false);
+    } finally {
+      setTourHistoryLoading(false);
     }
   };
 
   if (loading) {
     return (
       <div className="pt-36 pb-24 flex flex-col items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#1F3F74] border-t-transparent dark:border-sky-400" />
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-brand-navy-500 border-t-transparent dark:border-brand-teal-400" />
       </div>
     );
-  }
+  };
+
+  const tourSteps: Array<{ status: TourRequestData['status']; label: string }> = [
+    { status: 'in_progress', label: 'In progress' },
+    { status: 'review', label: 'Review' },
+    { status: 'approved', label: 'Approved' },
+  ];
+  const currentTourStatus = tourRequest?.status || 'in_progress';
+  const currentTourStep = tourSteps.findIndex((step) => step.status === currentTourStatus);
+  const tourHelperText: Record<TourRequestData['status'], string> = {
+    in_progress: 'Upload your 360 photos, then submit for review.',
+    review: 'An admin is reviewing your tour.',
+    approved: 'Your tour is live.',
+  };
+  const tourUpdatedAt = tourRequest?.updated_at || tourRequest?.status_updated_at;
 
   return (
     <div className="space-y-5 max-w-5xl mx-auto pb-20">
@@ -1607,7 +1733,7 @@ export default function ManageInformationPage() {
 
       {/* ── Header: Manage Information (No back arrow, Blue header, clean divider) ── */}
       <div className="pb-4 border-b border-slate-200 dark:border-neutral-800">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1F3F74] dark:text-[#4987BA] tracking-tight font-sans">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-brand-navy-500 dark:text-brand-teal-300 tracking-tight font-sans">
           Manage Information
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 dark:text-neutral-400 mt-1 font-medium">
@@ -1631,14 +1757,22 @@ export default function ManageInformationPage() {
             <button
               key={tab.key}
               type="button"
-              onClick={() => setActiveTab(tab.key as typeof activeTab)}
+              onClick={() => {
+                setActiveTab(tab.key as typeof activeTab);
+                if (tab.key === 'tour' && formData.id) void loadTourRequest(formData.id);
+              }}
               className={`shrink-0 whitespace-nowrap min-h-9 px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
                 isActive
-                  ? 'bg-[#1F3F74] text-white shadow-xs'
-                  : 'bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-300 border border-slate-200 dark:border-neutral-800 hover:border-[#1F3F74]/50 hover:text-[#1F3F74] dark:hover:text-white'
+                  ? 'bg-brand-navy-500 text-white shadow-xs'
+                  : 'bg-white dark:bg-neutral-900 text-slate-600 dark:text-neutral-300 border border-slate-200 dark:border-neutral-800 hover:border-brand-navy-500/50 hover:text-brand-navy-500 dark:hover:text-white'
               }`}
             >
               {tab.label}
+              {tab.key === 'tour' && tourRequest && (
+                <span className="ml-1.5 rounded-full bg-brand-sun-100 px-2 py-0.5 text-[9px] font-bold text-brand-navy-700 dark:bg-brand-navy-800 dark:text-brand-sun-300">
+                  {currentTourStatus === 'in_progress' ? 'In progress' : currentTourStatus === 'review' ? 'Review' : 'Approved'}
+                </span>
+              )}
             </button>
           );
         })}
@@ -1659,10 +1793,10 @@ export default function ManageInformationPage() {
                 value={formData.name}
                 onChange={(e) => setFormData({ ...formData, name: e.target.value })}
                 placeholder="e.g. Catmon Coral Beach Resort"
-                className={`w-full rounded-full border bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus:outline-none transition-all ${
+                className={`w-full rounded-full border bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 transition-all ${
                   errors.name
                     ? 'border-red-500 ring-1 ring-red-500/20'
-                    : 'border-slate-300 dark:border-neutral-700 focus:border-[#1F3F74] focus:ring-2 focus:ring-[#1F3F74]/20'
+                    : 'border-slate-300 dark:border-neutral-700 focus:border-brand-navy-500 focus:ring-2 focus:ring-brand-teal-400/20'
                 }`}
               />
               {errors.name && (
@@ -1680,7 +1814,7 @@ export default function ManageInformationPage() {
                 value={formData.description}
                 onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 placeholder="Describe what makes your beach unique, sea condition, sand quality, and guest policies..."
-                className="w-full rounded-2xl border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 p-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus:outline-none focus:border-[#1F3F74] focus:ring-2 focus:ring-[#1F3F74]/20 transition-all leading-relaxed"
+                className="w-full rounded-2xl border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 p-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-navy-500 focus:ring-2 focus:ring-brand-teal-400/20 transition-all leading-relaxed"
               />
             </div>
 
@@ -1689,7 +1823,7 @@ export default function ManageInformationPage() {
               <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
                 Official Contact Phone
               </label>
-              <div className="flex items-center w-full bg-white dark:bg-neutral-950 border border-slate-300 dark:border-neutral-700 rounded-full overflow-hidden focus-within:ring-2 focus-within:ring-[#1F3F74]/20 focus-within:border-[#1F3F74] transition-all">
+              <div className="flex items-center w-full bg-white dark:bg-neutral-950 border border-slate-300 dark:border-neutral-700 rounded-full overflow-hidden focus-within:ring-2 focus-within:ring-brand-teal-400/20 focus-within:border-brand-navy-500 transition-all">
                 <span className="px-4 py-2.5 bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-slate-300 font-bold text-xs sm:text-sm border-r border-slate-200 dark:border-neutral-700 select-none">
                   +63
                 </span>
@@ -1706,7 +1840,7 @@ export default function ManageInformationPage() {
                     setFormData({ ...formData, contact_phone: cleaned });
                   }}
                   placeholder="917 123 4567"
-                  className="w-full min-w-0 px-4 py-2.5 text-xs sm:text-sm bg-transparent placeholder:italic placeholder:text-slate-400 font-normal text-slate-900 dark:text-white focus:outline-none"
+                  className="w-full min-w-0 px-4 py-2.5 text-xs sm:text-sm bg-transparent placeholder:italic placeholder:text-slate-400 font-normal text-slate-900 dark:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400"
                 />
               </div>
               <span className="text-[10.5px] text-slate-400 pl-3">Enter 10-digit mobile number (e.g. 9123456789)</span>
@@ -1722,10 +1856,10 @@ export default function ManageInformationPage() {
                 value={formData.contact_email}
                 onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
                 placeholder="e.g. info@catmonbeach.ph"
-                className={`w-full rounded-full border bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus:outline-none transition-all ${
+                className={`w-full rounded-full border bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 transition-all ${
                   errors.contact_email
                     ? 'border-red-500 ring-1 ring-red-500/20'
-                    : 'border-slate-300 dark:border-neutral-700 focus:border-[#1F3F74] focus:ring-2 focus:ring-[#1F3F74]/20'
+                    : 'border-slate-300 dark:border-neutral-700 focus:border-brand-navy-500 focus:ring-2 focus:ring-brand-teal-400/20'
                 }`}
               />
               {errors.contact_email && (
@@ -1736,7 +1870,7 @@ export default function ManageInformationPage() {
             {/* Facebook Page URL */}
             <div className="space-y-1.5">
               <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300 flex items-center gap-1.5">
-                <Share2 className="w-3.5 h-3.5 text-[#1F3F74] dark:text-[#4987BA]" />
+                <Share2 className="w-3.5 h-3.5 text-brand-navy-500 dark:text-brand-teal-300" />
                 <span>Official Facebook Page</span>
               </label>
               <input
@@ -1744,14 +1878,14 @@ export default function ManageInformationPage() {
                 value={formData.facebook_url}
                 onChange={(e) => setFormData({ ...formData, facebook_url: e.target.value })}
                 placeholder="https://facebook.com/your-resort-page"
-                className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus:outline-none focus:border-[#1F3F74] focus:ring-2 focus:ring-[#1F3F74]/20 transition-all"
+                className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-navy-500 focus:ring-2 focus:ring-brand-teal-400/20 transition-all"
               />
             </div>
 
             {/* Instagram / Social Media Link */}
             <div className="space-y-1.5">
               <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300 flex items-center gap-1.5">
-                <Share2 className="w-3.5 h-3.5 text-[#1F3F74] dark:text-[#4987BA]" />
+                <Share2 className="w-3.5 h-3.5 text-brand-navy-500 dark:text-brand-teal-300" />
                 <span>Instagram / Website Link</span>
               </label>
               <input
@@ -1759,7 +1893,7 @@ export default function ManageInformationPage() {
                 value={formData.instagram_url}
                 onChange={(e) => setFormData({ ...formData, instagram_url: e.target.value })}
                 placeholder="https://instagram.com/your-resort"
-                className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus:outline-none focus:border-[#1F3F74] focus:ring-2 focus:ring-[#1F3F74]/20 transition-all"
+                className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-navy-500 focus:ring-2 focus:ring-brand-teal-400/20 transition-all"
               />
             </div>
 
@@ -1774,10 +1908,10 @@ export default function ManageInformationPage() {
                 value={formData.location}
                 onChange={(e) => setFormData({ ...formData, location: e.target.value })}
                 placeholder="e.g. Binongkalan, Catmon, Cebu"
-                className={`w-full rounded-full border bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus:outline-none transition-all ${
+                className={`w-full rounded-full border bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 transition-all ${
                   errors.location
                     ? 'border-red-500 ring-1 ring-red-500/20'
-                    : 'border-slate-300 dark:border-neutral-700 focus:border-[#1F3F74] focus:ring-2 focus:ring-[#1F3F74]/20'
+                    : 'border-slate-300 dark:border-neutral-700 focus:border-brand-navy-500 focus:ring-2 focus:ring-brand-teal-400/20'
                 }`}
               />
               <p className="pl-3 text-[11px] text-slate-500 dark:text-neutral-400">
@@ -1803,13 +1937,13 @@ export default function ManageInformationPage() {
                     Adult Entrance Fee
                   </label>
                   <div className="relative flex items-center">
-                    <span className="absolute left-4 text-sm font-bold text-[#1F3F74] dark:text-[#4987BA]">₱</span>
+                    <span className="absolute left-4 text-sm font-bold text-brand-navy-500 dark:text-brand-teal-300">₱</span>
                     <input
                       type="number"
                       value={formData.entrance_fee_adults}
                       onChange={(e) => setFormData({ ...formData, entrance_fee_adults: e.target.value })}
                       placeholder="50"
-                      className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 pl-9 pr-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus:outline-none focus:border-[#1F3F74] focus:ring-2 focus:ring-[#1F3F74]/20 transition-all"
+                      className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 pl-9 pr-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-navy-500 focus:ring-2 focus:ring-brand-teal-400/20 transition-all"
                     />
                   </div>
                 </div>
@@ -1819,13 +1953,13 @@ export default function ManageInformationPage() {
                     Children Entrance Fee
                   </label>
                   <div className="relative flex items-center">
-                    <span className="absolute left-4 text-sm font-bold text-[#1F3F74] dark:text-[#4987BA]">₱</span>
+                    <span className="absolute left-4 text-sm font-bold text-brand-navy-500 dark:text-brand-teal-300">₱</span>
                     <input
                       type="number"
                       value={formData.entrance_fee_children}
                       onChange={(e) => setFormData({ ...formData, entrance_fee_children: e.target.value })}
                       placeholder="25"
-                      className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 pl-9 pr-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus:outline-none focus:border-[#1F3F74] focus:ring-2 focus:ring-[#1F3F74]/20 transition-all"
+                      className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 pl-9 pr-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-navy-500 focus:ring-2 focus:ring-brand-teal-400/20 transition-all"
                     />
                   </div>
                 </div>
@@ -1835,13 +1969,13 @@ export default function ManageInformationPage() {
                     Senior Citizen Entrance Fee
                   </label>
                   <div className="relative flex items-center">
-                    <span className="absolute left-4 text-sm font-bold text-[#1F3F74] dark:text-[#4987BA]">₱</span>
+                    <span className="absolute left-4 text-sm font-bold text-brand-navy-500 dark:text-brand-teal-300">₱</span>
                     <input
                       type="number"
                       value={formData.entrance_fee_senior}
                       onChange={(e) => setFormData({ ...formData, entrance_fee_senior: e.target.value })}
                       placeholder="25"
-                      className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 pl-9 pr-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus:outline-none focus:border-[#1F3F74] focus:ring-2 focus:ring-[#1F3F74]/20 transition-all"
+                      className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 pl-9 pr-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-navy-500 focus:ring-2 focus:ring-brand-teal-400/20 transition-all"
                     />
                   </div>
                 </div>
@@ -1860,7 +1994,7 @@ export default function ManageInformationPage() {
                 <button
                   type="button"
                   onClick={() => setShowLocationPicker(true)}
-                  className="inline-flex items-center justify-center rounded-full bg-[#1F3F74] px-5 py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#183460] cursor-pointer shadow-xs"
+                  className="inline-flex items-center justify-center rounded-full bg-brand-navy-500 px-5 py-2.5 text-xs font-bold text-white transition-colors hover:bg-brand-navy-600 cursor-pointer shadow-xs"
                 >
                   {!hasMapPin ? 'Set Map Pin' : formData.id ? 'Request Map Pin Change' : 'Choose on Map'}
                 </button>
@@ -1929,7 +2063,7 @@ export default function ManageInformationPage() {
                   setNewCottage({ name: '', price: '', capacity: '', description: '', image_url: '' });
                   setShowAddCottage(true);
                 }}
-                className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-[#1F3F74] hover:bg-[#183460] text-white shadow-xs cursor-pointer transition-all"
+                className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-brand-navy-500 hover:bg-brand-navy-600 text-white shadow-xs cursor-pointer transition-all"
                 title="Add Cottage/Table"
                 aria-label="Add Cottage/Table"
               >
@@ -2013,7 +2147,7 @@ export default function ManageInformationPage() {
             <button
               type="button"
               onClick={() => startFacilityEditor()}
-              className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-[#1F3F74] hover:bg-[#183460] text-white shadow-xs cursor-pointer transition-all"
+              className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-brand-navy-500 hover:bg-brand-navy-600 text-white shadow-xs cursor-pointer transition-all"
               title="Add Facility"
               aria-label="Add Facility"
             >
@@ -2062,7 +2196,7 @@ export default function ManageInformationPage() {
           {/* Peak Days & Visiting Hours Section */}
           <div className="space-y-4 pb-8 border-b border-slate-200 dark:border-neutral-800">
             <div>
-              <h2 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
+              <h2 className="text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300 font-sans">
                 Peak Days &amp; Recommended Visiting Hours
               </h2>
               <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
@@ -2080,7 +2214,7 @@ export default function ManageInformationPage() {
                   value={formData.peak_days}
                   onChange={(e) => setFormData({ ...formData, peak_days: e.target.value })}
                   placeholder="e.g. Saturdays, Sundays & Holidays"
-                  className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic focus:outline-none focus:border-[#1F3F74]"
+                  className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-navy-500"
                 />
               </div>
 
@@ -2093,7 +2227,7 @@ export default function ManageInformationPage() {
                   value={formData.peak_hours}
                   onChange={(e) => setFormData({ ...formData, peak_hours: e.target.value })}
                   placeholder="e.g. 10:00 AM – 3:00 PM"
-                  className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic focus:outline-none focus:border-[#1F3F74]"
+                  className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-navy-500"
                 />
               </div>
 
@@ -2106,7 +2240,7 @@ export default function ManageInformationPage() {
                   value={formData.best_visiting_time}
                   onChange={(e) => setFormData({ ...formData, best_visiting_time: e.target.value })}
                   placeholder="e.g. Morning low tide"
-                  className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic focus:outline-none focus:border-[#1F3F74]"
+                  className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-navy-500"
                 />
               </div>
             </div>
@@ -2115,7 +2249,7 @@ export default function ManageInformationPage() {
           {/* Daily Schedule (Frameless, Flat layout with clean dividers) */}
           <div className="space-y-4">
             <div>
-              <h2 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
+              <h2 className="text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300 font-sans">
                 Daily Operating Schedule
               </h2>
               <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
@@ -2155,7 +2289,7 @@ export default function ManageInformationPage() {
                           }}
                           className="sr-only peer"
                         />
-                        <div className="w-9 h-5 bg-slate-300 dark:bg-neutral-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-[#1F3F74]" />
+                        <div className="w-9 h-5 bg-slate-300 dark:bg-neutral-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-brand-navy-500" />
                       </label>
 
                       <div className="min-w-28">
@@ -2184,7 +2318,7 @@ export default function ManageInformationPage() {
                             });
                           }}
                           placeholder="08:00 AM"
-                          className="w-28 rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-1.5 px-3 text-xs text-center font-medium placeholder:italic text-slate-900 dark:text-white focus:outline-none focus:border-[#1F3F74]"
+                          className="w-28 rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-1.5 px-3 text-xs text-center font-medium placeholder:italic text-slate-900 dark:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-navy-500"
                         />
                         <span className="text-xs text-slate-400 font-bold">to</span>
                         <input
@@ -2197,7 +2331,7 @@ export default function ManageInformationPage() {
                             });
                           }}
                           placeholder="06:00 PM"
-                          className="w-28 rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-1.5 px-3 text-xs text-center font-medium placeholder:italic text-slate-900 dark:text-white focus:outline-none focus:border-[#1F3F74]"
+                          className="w-28 rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-1.5 px-3 text-xs text-center font-medium placeholder:italic text-slate-900 dark:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-navy-500"
                         />
                       </div>
                     ) : (
@@ -2228,7 +2362,7 @@ export default function ManageInformationPage() {
                 onClick={() => setPhotoSubTab(sub.key as any)}
                 className={`px-4 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
                   photoSubTab === sub.key
-                    ? 'bg-[#1F3F74] text-white shadow-xs'
+                    ? 'bg-brand-navy-500 text-white shadow-xs'
                     : 'bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300 hover:bg-slate-200 dark:hover:bg-neutral-700'
                 }`}
               >
@@ -2243,12 +2377,12 @@ export default function ManageInformationPage() {
               {/* Cover Banner */}
               <div className="space-y-2">
                 <div className="flex justify-end">
-                  <label className="px-5 py-2 rounded-full bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-bold cursor-pointer transition-all inline-flex items-center gap-1.5">
+                  <label className="px-5 py-2 rounded-full bg-brand-navy-500 hover:bg-brand-navy-600 text-white text-xs font-bold cursor-pointer transition-all inline-flex items-center gap-1.5">
                     {uploadingCover ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Upload className="w-3.5 h-3.5" />}
                     <span>{formData.cover_image ? 'Change Cover' : 'Upload Cover'}</span>
                     <input
                       type="file"
-                      accept="image/png, image/jpeg, image/jpg"
+                      accept="image/png, image/jpeg, image/jpg, image/webp"
                       onChange={handleCoverUpload}
                       disabled={uploadingCover}
                       className="hidden"
@@ -2281,7 +2415,7 @@ export default function ManageInformationPage() {
               {/* Post Composer (FB Style) */}
               <div className="p-5 rounded-2xl bg-white dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 shadow-2xs space-y-3">
                 <div className="flex items-center gap-3">
-                  <div className="w-9 h-9 rounded-full bg-[#1F3F74] text-white flex items-center justify-center font-bold text-xs">
+                  <div className="w-9 h-9 rounded-full bg-brand-navy-500 text-white flex items-center justify-center font-bold text-xs">
                     {formData.name ? formData.name.charAt(0) : 'R'}
                   </div>
                   <span className="text-xs font-bold text-slate-800 dark:text-slate-200">
@@ -2294,22 +2428,22 @@ export default function ManageInformationPage() {
                   value={newPostCaption}
                   onChange={(e) => setNewPostCaption(e.target.value)}
                   placeholder="Share recent ocean conditions, food specials, cottage availability, or upcoming weekend events..."
-                  className="w-full rounded-2xl border border-slate-200 dark:border-neutral-800 bg-slate-50/50 dark:bg-neutral-900 p-3.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic focus:outline-none focus:border-[#1F3F74]"
+                  className="w-full rounded-2xl border border-slate-200 dark:border-neutral-800 bg-slate-50/50 dark:bg-neutral-900 p-3.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-navy-500"
                 />
 
                 <div className="relative">
-                  <label className={`relative flex h-48 w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-dashed border-slate-300 bg-slate-50 text-xs font-semibold text-slate-500 transition hover:border-[#1F3F74] hover:bg-slate-100 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 ${uploadingPostImage ? 'pointer-events-none opacity-60' : ''}`}>
+                  <label className={`relative flex h-48 w-full cursor-pointer items-center justify-center overflow-hidden rounded-xl border border-dashed border-slate-300 bg-slate-50 text-xs font-semibold text-slate-500 transition hover:border-brand-navy-500 hover:bg-slate-100 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-400 dark:hover:bg-neutral-800 ${uploadingPostImage ? 'pointer-events-none opacity-60' : ''}`}>
                     {newPostImage ? (
                       <Image src={newPostImage} alt="Resort update cover preview" fill className="object-cover" />
                     ) : (
                       <span className="flex flex-col items-center gap-2">
-                        {uploadingPostImage ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5 text-[#1F3F74] dark:text-[#4987BA]" />}
+                        {uploadingPostImage ? <Loader2 className="h-5 w-5 animate-spin" /> : <Camera className="h-5 w-5 text-brand-navy-500 dark:text-brand-teal-300" />}
                         {uploadingPostImage ? 'Uploading image...' : 'Click to upload update cover image'}
                       </span>
                     )}
                     <input
                       type="file"
-                      accept="image/png, image/jpeg, image/jpg"
+                      accept="image/png, image/jpeg, image/jpg, image/webp"
                       disabled={uploadingPostImage}
                       onChange={async (e) => {
                         const file = e.target.files?.[0];
@@ -2345,7 +2479,7 @@ export default function ManageInformationPage() {
                     type="button"
                     onClick={handlePublishPost}
                     disabled={uploadingPostImage}
-                    className="ml-auto px-6 py-2 rounded-full bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50"
+                    className="ml-auto px-6 py-2 rounded-full bg-brand-navy-500 hover:bg-brand-navy-600 text-white text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50"
                   >
                     Publish
                   </button>
@@ -2361,7 +2495,7 @@ export default function ManageInformationPage() {
                   >
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2.5">
-                        <div className="w-8 h-8 rounded-full bg-[#1F3F74] text-white flex items-center justify-center font-bold text-xs">
+                        <div className="w-8 h-8 rounded-full bg-brand-navy-500 text-white flex items-center justify-center font-bold text-xs">
                           {formData.name ? formData.name.charAt(0) : 'R'}
                         </div>
                         <div>
@@ -2420,7 +2554,7 @@ export default function ManageInformationPage() {
         <div className="space-y-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <h2 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
+              <h2 className="text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300 font-sans">
                 Resort Guidelines &amp; Regulations (Do&apos;s &amp; Dont&apos;s)
               </h2>
               <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
@@ -2435,7 +2569,7 @@ export default function ManageInformationPage() {
                 setNewRule({ type: 'do', title: '', description: '', category: 'General' });
                 setShowAddRule(true);
               }}
-              className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-[#1F3F74] hover:bg-[#183460] text-white shadow-xs cursor-pointer transition-all self-end sm:self-auto"
+              className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-brand-navy-500 hover:bg-brand-navy-600 text-white shadow-xs cursor-pointer transition-all self-end sm:self-auto"
               title="Add Rule"
               aria-label="Add Rule"
             >
@@ -2449,11 +2583,11 @@ export default function ManageInformationPage() {
             <div className="space-y-4">
               <div className="flex items-center justify-between pb-2 border-b border-emerald-200 dark:border-emerald-900/60">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-sm font-extrabold text-emerald-800 dark:text-emerald-300 uppercase tracking-wider">
+                  <h3 className="text-sm font-extrabold text-brand-teal-700 dark:text-brand-teal-300 uppercase tracking-wider">
                     Do&apos;s
                   </h3>
                 </div>
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 dark:bg-emerald-950/60 text-emerald-700 dark:text-emerald-300">
+                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-brand-teal-100 dark:bg-brand-teal-700/20 text-brand-teal-700 dark:text-brand-teal-300">
                   {rules.filter((r) => r.type === 'do').length} Guidelines
                 </span>
               </div>
@@ -2492,7 +2626,7 @@ export default function ManageInformationPage() {
                           });
                           setShowAddRule(true);
                         }}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-[#1F3F74] hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-brand-navy-500 hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
                         title="Edit guideline"
                         aria-label={`Edit guideline: ${rule.title}`}
                       >
@@ -2576,7 +2710,7 @@ export default function ManageInformationPage() {
                           });
                           setShowAddRule(true);
                         }}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-[#1F3F74] hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-brand-navy-500 hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
                         title="Edit restriction"
                         aria-label={`Edit restriction: ${rule.title}`}
                       >
@@ -2619,38 +2753,161 @@ export default function ManageInformationPage() {
       {/* ── TAB 6: 360° VIRTUAL TOUR ── */}
       {activeTab === 'tour' && (
         <div className="space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex flex-col gap-5">
             <div>
-              <h2 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
-                360° Virtual Tour Panorama
+              <h2 className="text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300 font-sans">
+                360° Virtual Tour
               </h2>
               <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
-                Immersive 360° panoramic scan of your resort coastline powered by Panoee.
+                Track your tour from preparation through admin review and publication.
               </p>
             </div>
-          </div>
 
-          {formData.virtual_tour_url ? (
-            <div className="space-y-4">
-              <div className="p-4 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  <span className="text-xs font-bold text-emerald-900 dark:text-emerald-200">
-                    Active 360° Virtual Tour Published
-                  </span>
-                </div>
+            <div className="flex flex-wrap items-center gap-3">
+              <span className={`rounded-full px-3 py-1 text-[11px] font-bold ${
+                currentTourStatus === 'approved'
+                  ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300'
+                  : currentTourStatus === 'review'
+                    ? 'bg-brand-sun-100 text-brand-navy-700 dark:bg-brand-navy-800 dark:text-brand-sun-300'
+                    : 'bg-brand-teal-50 text-brand-teal-800 dark:bg-brand-teal-700/30 dark:text-brand-teal-200'
+              }`}>
+                {currentTourStatus === 'in_progress' ? 'In progress' : currentTourStatus === 'review' ? 'Review' : 'Approved'}
+              </span>
+              <p className="text-xs text-slate-500 dark:text-neutral-400">
+                Last updated: {tourUpdatedAt ? new Date(tourUpdatedAt).toLocaleString() : 'Not submitted'}
+              </p>
+            </div>
+
+            <ol aria-label="Tour progress" className="flex flex-col gap-3 sm:flex-row sm:items-center sm:gap-0">
+              {tourSteps.map((step, index) => {
+                const isComplete = index < currentTourStep;
+                const isCurrent = index === currentTourStep;
+                const isApproved = step.status === 'approved' && isCurrent;
+                return (
+                  <React.Fragment key={step.status}>
+                    {index > 0 && (
+                      <>
+                        <span aria-hidden="true" className={`hidden h-0.5 flex-1 sm:block ${
+                          isComplete || isCurrent ? 'bg-brand-teal-500' : 'bg-slate-200 dark:bg-neutral-700'
+                        }`} />
+                        <span aria-hidden="true" className={`ml-[13px] h-4 w-0.5 sm:hidden ${
+                          index <= currentTourStep ? 'bg-brand-teal-500' : 'bg-slate-200 dark:bg-neutral-700'
+                        }`} />
+                      </>
+                    )}
+                    <li className="flex items-center gap-3 sm:min-w-32">
+                      <span className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full border text-xs font-bold ${
+                        isApproved
+                          ? 'border-emerald-600 bg-emerald-600 text-white'
+                          : isComplete
+                            ? 'border-brand-teal-600 bg-brand-teal-600 text-white'
+                            : isCurrent
+                              ? 'border-brand-navy-500 bg-brand-navy-500 text-white'
+                              : 'border-slate-300 bg-slate-100 text-slate-500 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-400'
+                      }`}>
+                        {isComplete || isApproved ? <CheckCircle2 className="h-4 w-4" /> : index + 1}
+                      </span>
+                      <span className={`text-xs font-bold ${
+                        isCurrent ? 'text-brand-navy-500 dark:text-brand-teal-200' : 'text-slate-500 dark:text-neutral-400'
+                      }`}>{step.label}</span>
+                    </li>
+                  </React.Fragment>
+                );
+              })}
+            </ol>
+
+            <p className="text-sm font-medium text-slate-700 dark:text-neutral-200">
+              {tourHelperText[currentTourStatus]}
+            </p>
+
+            {currentTourStatus === 'review' && (
+              <div role="status" className="rounded-xl border border-brand-sun-200 bg-brand-sun-50 p-3 text-xs text-brand-navy-700 dark:border-brand-navy-800 dark:bg-brand-navy-900/30 dark:text-brand-sun-200">
+                Your tour is in review and cannot be edited until the admin completes the review.
+              </div>
+            )}
+
+            {currentTourStatus === 'in_progress' && tourRequest?.status_note && (
+              <div className="rounded-xl border border-brand-sun-300 bg-brand-sun-50 p-4 dark:border-brand-sun-700 dark:bg-brand-sun-900/20">
+                <p className="text-xs font-bold text-brand-navy-700 dark:text-brand-sun-300">Changes requested</p>
+                <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700 dark:text-neutral-200">{tourRequest.status_note}</p>
+                <p className="mt-2 text-[11px] text-slate-500 dark:text-neutral-400">
+                  {new Date(tourRequest.status_updated_at).toLocaleString()}
+                </p>
+              </div>
+            )}
+
+            {currentTourStatus === 'in_progress' && (
+              <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-900">
+                <label htmlFor="tour-link" className="block text-xs font-bold text-slate-700 dark:text-neutral-200">
+                  360° tour link
+                </label>
+                <input
+                  id="tour-link"
+                  type="url"
+                  value={tourUrl}
+                  onChange={(event) => setTourUrl(event.target.value)}
+                  disabled={tourBusy}
+                  placeholder="https://..."
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 dark:border-neutral-700 dark:bg-neutral-950 dark:text-white"
+                />
+                <label htmlFor="tour-note" className="block text-xs font-bold text-slate-700 dark:text-neutral-200">
+                  Note for the review team (optional)
+                </label>
+                <textarea
+                  id="tour-note"
+                  rows={2}
+                  value={tourNote}
+                  onChange={(event) => setTourNote(event.target.value)}
+                  disabled={tourBusy}
+                  className="w-full rounded-xl border border-slate-300 bg-white px-3 py-2.5 text-sm text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 dark:border-neutral-700 dark:bg-neutral-950 dark:text-white"
+                />
+                {!tourUrl.trim() && (
+                  <p className="text-xs font-medium text-slate-600 dark:text-neutral-300">
+                    Missing: add a 360° tour link before submitting for review.
+                  </p>
+                )}
+              </div>
+            )}
+
+            <div className="flex flex-wrap gap-2">
+              {currentTourStatus === 'in_progress' && (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => void handleTourAction('save')}
+                    disabled={tourBusy || !tourUrl.trim()}
+                    className="min-h-11 rounded-full border border-brand-navy-500 px-5 py-2.5 text-xs font-bold text-brand-navy-600 hover:bg-brand-navy-50 disabled:cursor-not-allowed disabled:opacity-50 dark:text-brand-teal-200 dark:hover:bg-brand-navy-900/40"
+                  >
+                    {tourBusy ? 'Saving...' : 'Save tour details'}
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => void handleTourAction('submit_for_review')}
+                    disabled={tourBusy || !tourUrl.trim()}
+                    className="min-h-11 rounded-full bg-brand-navy-500 px-6 py-2.5 text-xs font-bold text-white hover:bg-brand-navy-600 disabled:cursor-not-allowed disabled:opacity-50"
+                  >
+                    {tourBusy ? 'Submitting...' : 'Submit for review'}
+                  </button>
+                </>
+              )}
+              {currentTourStatus === 'review' && (
+                <button type="button" disabled className="min-h-11 rounded-full bg-slate-200 px-6 py-2.5 text-xs font-bold text-slate-600 dark:bg-neutral-800 dark:text-neutral-400">
+                  Waiting for review
+                </button>
+              )}
+              {currentTourStatus === 'approved' && (
                 <button
                   type="button"
                   onClick={() => setShowTourPreview(true)}
-                  className="text-xs font-bold text-emerald-700 dark:text-emerald-300 hover:underline inline-flex items-center gap-1 cursor-pointer"
+                  className="min-h-11 rounded-full bg-brand-navy-500 px-6 py-2.5 text-xs font-bold text-white hover:bg-brand-navy-600"
                 >
-                  <span>Launch Preview</span>
-                  <ExternalLink className="w-3.5 h-3.5" />
+                  View live tour
                 </button>
-              </div>
+              )}
+            </div>
 
-              {/* Embedded Interactive Viewer */}
-              <div className="relative aspect-16/9 overflow-hidden border border-slate-200 dark:border-neutral-800 bg-black">
+            {formData.virtual_tour_url && (
+              <div className="relative aspect-16/9 overflow-hidden rounded-2xl border border-slate-200 dark:border-neutral-800 bg-black">
                 <iframe
                   src={formData.virtual_tour_url}
                   title="360 Tour"
@@ -2659,29 +2916,44 @@ export default function ManageInformationPage() {
                   allowFullScreen
                 />
               </div>
+            )}
             </div>
-          ) : (
-            <div className="py-12 border-2 border-dashed border-slate-200 dark:border-neutral-800 text-center flex flex-col items-center justify-center gap-2 text-slate-400">
-              <Compass className="w-8 h-8 text-slate-300 dark:text-neutral-700" />
-              <p className="text-xs font-semibold text-slate-700 dark:text-neutral-200">
-                No 360° virtual tour registered yet
-              </p>
-              <p className="text-[11px] text-slate-500 max-w-sm">
-                Click &quot;Request 360° Recapture&quot; to notify the municipal team to scan your resort with our 360° camera equipment.
-              </p>
-            </div>
-          )}
 
-          <div className="flex justify-center">
-            <button
-              type="button"
-              onClick={() => setShowRecaptureModal(true)}
-              className="px-6 py-2.5 rounded-full bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-bold shadow-xs cursor-pointer transition-all"
-            >
-              Request 360° Recapture
-            </button>
+            {tourRequest && (
+              <section className="border-t border-slate-200 pt-4 dark:border-neutral-800">
+                <button
+                  type="button"
+                  aria-expanded={tourHistoryExpanded}
+                  onClick={() => {
+                    const expanded = !tourHistoryExpanded;
+                    setTourHistoryExpanded(expanded);
+                    if (expanded) void loadTourHistory();
+                  }}
+                  className="text-xs font-bold text-brand-navy-600 hover:underline dark:text-brand-teal-200"
+                >
+                  {tourHistoryExpanded ? 'Hide tour timeline' : 'View tour timeline'}
+                </button>
+                {tourHistoryExpanded && (
+                  tourHistoryLoading
+                    ? <p className="mt-3 text-xs text-slate-500">Loading timeline...</p>
+                    : (
+                      <ol className="mt-3 space-y-3">
+                        {tourHistory.map((item) => (
+                          <li key={item.id} className="border-l-2 border-brand-teal-400 pl-3">
+                            <p className="text-xs font-semibold text-slate-800 dark:text-neutral-100">
+                              {item.from_status ? `${item.from_status.replace('_', ' ')} → ` : ''}{item.to_status.replace('_', ' ')}
+                              {' · '}{item.changed_by_name || (item.changed_by_role === 'admin' ? 'Admin' : 'Owner')}
+                            </p>
+                            <p className="text-[11px] text-slate-500 dark:text-neutral-400">{new Date(item.created_at).toLocaleString()}</p>
+                            {item.note && <p className="mt-1 whitespace-pre-wrap text-xs text-slate-600 dark:text-neutral-300">{item.note}</p>}
+                          </li>
+                        ))}
+                      </ol>
+                    )
+                )}
+              </section>
+            )}
           </div>
-        </div>
       )}
 
       {/* ── BOTTOM SAVE CHANGES BUTTON (Oblong, Dive Blue, Strictly NO icon inside) ── */}
@@ -2691,7 +2963,7 @@ export default function ManageInformationPage() {
             type="button"
             onClick={() => handleSave()}
             disabled={saving}
-            className="rounded-full px-8 py-3 bg-[#1F3F74] hover:bg-[#183460] active:scale-[0.99] text-white font-bold text-xs sm:text-sm tracking-wide transition-all shadow-md cursor-pointer disabled:opacity-50"
+            className="rounded-full px-8 py-3 bg-brand-navy-500 hover:bg-brand-navy-600 active:scale-[0.99] text-white font-bold text-xs sm:text-sm tracking-wide transition-all shadow-md cursor-pointer disabled:opacity-50"
           >
             {saving ? 'Saving...' : 'Save Changes'}
           </button>
@@ -2744,7 +3016,7 @@ export default function ManageInformationPage() {
         >
           <div className="max-h-[90vh] w-full max-w-lg space-y-4 sm:space-y-5 overflow-y-auto rounded-2xl border border-slate-200 bg-white p-4 sm:p-7 shadow-2xl animate-in fade-in zoom-in-95 duration-200 dark:border-neutral-800 dark:bg-neutral-900">
             <div className="flex items-start justify-between gap-3">
-              <h3 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
+              <h3 className="text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300 font-sans">
                 {editingCottageId ? 'Edit Resort Cottage' : 'Add New Resort Cottage'}
               </h3>
               <button
@@ -2865,7 +3137,7 @@ export default function ManageInformationPage() {
                   placeholder="e.g. Seafront Mahogany Cottage"
                   aria-invalid={Boolean(cottageFieldErrors.name)}
                   aria-describedby={cottageFieldErrors.name ? 'cottage-name-error' : undefined}
-                  className={`w-full rounded-full border bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs text-slate-900 dark:text-white placeholder:italic focus:outline-none focus:border-[#1F3F74] ${
+                  className={`w-full rounded-full border bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs text-slate-900 dark:text-white placeholder:italic focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-navy-500 ${
                     cottageFieldErrors.name ? 'border-rose-500' : 'border-slate-300 dark:border-neutral-700'
                   }`}
                 />
@@ -2882,7 +3154,7 @@ export default function ManageInformationPage() {
                     Daily Rate *
                   </label>
                   <div className="relative flex items-center">
-                    <span className="absolute left-3.5 text-xs font-bold text-[#1F3F74] dark:text-[#4987BA]">₱</span>
+                    <span className="absolute left-3.5 text-xs font-bold text-brand-navy-500 dark:text-brand-teal-300">₱</span>
                     <input
                       type="number"
                       value={newCottage.price}
@@ -2895,7 +3167,7 @@ export default function ManageInformationPage() {
                       placeholder="700"
                       aria-invalid={Boolean(cottageFieldErrors.price)}
                       aria-describedby={cottageFieldErrors.price ? 'cottage-rate-error' : undefined}
-                      className={`w-full rounded-full border bg-white dark:bg-neutral-950 py-2.5 pl-8 pr-4 text-xs text-slate-900 dark:text-white placeholder:italic focus:outline-none focus:border-[#1F3F74] ${
+                      className={`w-full rounded-full border bg-white dark:bg-neutral-950 py-2.5 pl-8 pr-4 text-xs text-slate-900 dark:text-white placeholder:italic focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-navy-500 ${
                         cottageFieldErrors.price ? 'border-rose-500' : 'border-slate-300 dark:border-neutral-700'
                       }`}
                     />
@@ -2919,7 +3191,7 @@ export default function ManageInformationPage() {
                       setNewCottage({ ...newCottage, capacity: e.target.value });
                     }}
                     placeholder="e.g. 10 - 15 persons"
-                    className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs text-slate-900 dark:text-white placeholder:italic focus:outline-none focus:border-[#1F3F74]"
+                    className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs text-slate-900 dark:text-white placeholder:italic focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-navy-500"
                   />
                 </div>
               </div>
@@ -2947,7 +3219,7 @@ export default function ManageInformationPage() {
                     setNewCottage({ ...newCottage, description: e.target.value });
                   }}
                   placeholder="Details about shade, grilling area, table setup..."
-                  className="w-full rounded-2xl border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 p-3 text-xs text-slate-900 dark:text-white placeholder:italic focus:outline-none focus:border-[#1F3F74]"
+                  className="w-full rounded-2xl border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 p-3 text-xs text-slate-900 dark:text-white placeholder:italic focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-navy-500"
                 />
               </div>
 
@@ -2963,7 +3235,7 @@ export default function ManageInformationPage() {
                 <button
                   type="submit"
                   disabled={savingCottage || uploadingCottageImage}
-                  className="rounded-full px-6 py-2 bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50"
+                  className="rounded-full px-6 py-2 bg-brand-navy-500 hover:bg-brand-navy-600 text-white text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50"
                 >
                   {savingCottage ? (
                     <span className="inline-flex items-center gap-1.5">
@@ -3034,7 +3306,7 @@ export default function ManageInformationPage() {
             >
               <X className="h-4 w-4" />
             </button>
-            <h3 className="pr-10 text-lg font-bold text-[#1F3F74] dark:text-[#4987BA]">
+            <h3 className="pr-10 text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300">
               {facilityOriginalSnapshotRef.current ? 'Edit Facility or Equipment' : 'Add Facility or Equipment'}
             </h3>
 
@@ -3142,7 +3414,7 @@ export default function ManageInformationPage() {
                     if (facilityModalStatus?.type === 'error') setFacilityModalStatus(null);
                   }}
                   placeholder="e.g. Secured Gated Parking"
-                  className="w-full rounded-full border border-slate-300 bg-white px-4 py-2.5 text-xs text-slate-900 placeholder:italic focus:border-[#1F3F74] focus:outline-none dark:border-neutral-700 dark:bg-neutral-950 dark:text-white"
+                  className="w-full rounded-full border border-slate-300 bg-white px-4 py-2.5 text-xs text-slate-900 placeholder:italic focus:border-brand-navy-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 dark:border-neutral-700 dark:bg-neutral-950 dark:text-white"
                 />
               </div>
 
@@ -3166,7 +3438,7 @@ export default function ManageInformationPage() {
                   <div className="space-y-1">
                     <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">Rental Rate / Fee</label>
                     <div className="relative flex items-center">
-                      <span className="absolute left-3.5 text-xs font-bold text-[#1F3F74] dark:text-[#4987BA]">₱</span>
+                      <span className="absolute left-3.5 text-xs font-bold text-brand-navy-500 dark:text-brand-teal-300">₱</span>
                       <input
                         type="text"
                         value={newFacility.price}
@@ -3175,7 +3447,7 @@ export default function ManageInformationPage() {
                           setNewFacility({ ...newFacility, price: event.target.value });
                         }}
                         placeholder="Free or 100"
-                        className="w-full rounded-full border border-slate-300 bg-white py-2.5 pl-8 pr-4 text-xs text-slate-900 placeholder:italic focus:border-[#1F3F74] focus:outline-none dark:border-neutral-700 dark:bg-neutral-950 dark:text-white"
+                        className="w-full rounded-full border border-slate-300 bg-white py-2.5 pl-8 pr-4 text-xs text-slate-900 placeholder:italic focus:border-brand-navy-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 dark:border-neutral-700 dark:bg-neutral-950 dark:text-white"
                       />
                     </div>
                   </div>
@@ -3195,7 +3467,7 @@ export default function ManageInformationPage() {
                         <div key={option.key} className="space-y-2">
                           <label className={`inline-flex cursor-pointer items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-semibold transition-colors ${
                             selected
-                              ? 'border-[#1F3F74] bg-[#1F3F74] text-white'
+                              ? 'border-brand-navy-500 bg-brand-navy-500 text-white'
                               : 'border-slate-300 bg-white text-slate-700 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200'
                           }`}>
                             <input
@@ -3216,7 +3488,7 @@ export default function ManageInformationPage() {
                                   return next;
                                 });
                               }}
-                              className="h-3.5 w-3.5 accent-[#1F3F74]"
+                              className="h-3.5 w-3.5 accent-brand-navy-500"
                             />
                             {option.label}
                           </label>
@@ -3226,7 +3498,7 @@ export default function ManageInformationPage() {
                                 {option.label} Rate / Fee
                               </label>
                               <div className="relative flex items-center">
-                                <span className="absolute left-3.5 text-xs font-bold text-[#1F3F74] dark:text-[#4987BA]">₱</span>
+                                <span className="absolute left-3.5 text-xs font-bold text-brand-navy-500 dark:text-brand-teal-300">₱</span>
                                 <input
                                   id={`facility-rate-${option.key}`}
                                   type="text"
@@ -3243,7 +3515,7 @@ export default function ManageInformationPage() {
                                   }}
                                   placeholder="Free or 10"
                                   aria-invalid={Boolean(error)}
-                                  className={`w-full rounded-full border bg-white py-2.5 pl-8 pr-4 text-xs text-slate-900 placeholder:italic focus:outline-none dark:bg-neutral-900 dark:text-white ${error ? 'border-rose-500' : 'border-slate-300 dark:border-neutral-700'}`}
+                                  className={`w-full rounded-full border bg-white py-2.5 pl-8 pr-4 text-xs text-slate-900 placeholder:italic focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 dark:bg-neutral-900 dark:text-white ${error ? 'border-rose-500' : 'border-slate-300 dark:border-neutral-700'}`}
                                 />
                               </div>
                               {error && <p className="text-xs text-rose-600" role="alert">{error}</p>}
@@ -3280,14 +3552,14 @@ export default function ManageInformationPage() {
                               }}
                               placeholder="e.g. Towel rental"
                               aria-invalid={Boolean(labelError)}
-                              className={`w-full rounded-xl border bg-white px-3 py-2.5 text-xs text-slate-900 focus:outline-none dark:bg-neutral-900 dark:text-white ${labelError ? 'border-rose-500' : 'border-slate-300 dark:border-neutral-700'}`}
+                              className={`w-full rounded-xl border bg-white px-3 py-2.5 text-xs text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 dark:bg-neutral-900 dark:text-white ${labelError ? 'border-rose-500' : 'border-slate-300 dark:border-neutral-700'}`}
                             />
                             {labelError && <p className="text-xs text-rose-600" role="alert">{labelError}</p>}
                           </div>
                           <div className="space-y-1">
                             <label htmlFor={`custom-rate-amount-${rate.localId}`} className="block text-xs font-semibold text-slate-700 dark:text-neutral-300">Rate / Fee</label>
                             <div className="relative flex items-center">
-                              <span className="absolute left-3 text-xs font-bold text-[#1F3F74] dark:text-[#4987BA]">₱</span>
+                              <span className="absolute left-3 text-xs font-bold text-brand-navy-500 dark:text-brand-teal-300">₱</span>
                               <input
                                 id={`custom-rate-amount-${rate.localId}`}
                                 type="text"
@@ -3304,7 +3576,7 @@ export default function ManageInformationPage() {
                                 }}
                                 placeholder="Free or 10"
                                 aria-invalid={Boolean(amountError)}
-                                className={`w-full rounded-xl border bg-white py-2.5 pl-7 pr-3 text-xs text-slate-900 focus:outline-none dark:bg-neutral-900 dark:text-white ${amountError ? 'border-rose-500' : 'border-slate-300 dark:border-neutral-700'}`}
+                                className={`w-full rounded-xl border bg-white py-2.5 pl-7 pr-3 text-xs text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 dark:bg-neutral-900 dark:text-white ${amountError ? 'border-rose-500' : 'border-slate-300 dark:border-neutral-700'}`}
                               />
                             </div>
                             {amountError && <p className="text-xs text-rose-600" role="alert">{amountError}</p>}
@@ -3337,7 +3609,7 @@ export default function ManageInformationPage() {
                       facilityHasChangesRef.current = true;
                       setCustomFacilityRates((current) => [...current, { localId: generateUUID(), label: '', amount: '' }]);
                     }}
-                    className="text-xs font-semibold text-[#1F3F74] hover:underline dark:text-[#4987BA]"
+                    className="text-xs font-semibold text-brand-navy-500 hover:underline dark:text-brand-teal-300"
                   >
                     + Add other rate
                   </button>
@@ -3365,7 +3637,7 @@ export default function ManageInformationPage() {
                     setNewFacility({ ...newFacility, description: event.target.value });
                   }}
                   placeholder="Description of the facility, capacity, fee if any..."
-                  className="w-full rounded-2xl border border-slate-300 bg-white p-3 text-xs text-slate-900 placeholder:italic focus:border-[#1F3F74] focus:outline-none dark:border-neutral-700 dark:bg-neutral-950 dark:text-white"
+                  className="w-full rounded-2xl border border-slate-300 bg-white p-3 text-xs text-slate-900 placeholder:italic focus:border-brand-navy-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 dark:border-neutral-700 dark:bg-neutral-950 dark:text-white"
                 />
               </div>
 
@@ -3381,7 +3653,7 @@ export default function ManageInformationPage() {
                 <button
                   type="submit"
                   disabled={savingFacility || uploadingFacilityPhotos}
-                  className="rounded-full bg-[#1F3F74] px-6 py-2 text-xs font-bold text-white shadow-xs hover:bg-[#183460] disabled:opacity-50"
+                  className="rounded-full bg-brand-navy-500 px-6 py-2 text-xs font-bold text-white shadow-xs hover:bg-brand-navy-600 disabled:opacity-50"
                 >
                   {savingFacility ? (
                     <span className="inline-flex items-center gap-1.5">
@@ -3437,7 +3709,7 @@ export default function ManageInformationPage() {
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-4 sm:p-7 max-w-lg w-full space-y-4 sm:space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             <div>
-              <h3 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
+              <h3 className="text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300 font-sans">
                 {editingRuleId ? 'Edit Resort Guideline / Policy' : 'Add Resort Guideline / Policy'}
               </h3>
               <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1">
@@ -3494,8 +3766,8 @@ export default function ManageInformationPage() {
                     onClick={() => setNewRule({ ...newRule, type: 'do' })}
                     className={`py-2 rounded-full text-xs font-bold flex items-center justify-center gap-2 transition-all cursor-pointer ${
                       newRule.type === 'do'
-                        ? 'bg-emerald-600 text-white shadow-xs'
-                        : 'text-slate-600 dark:text-neutral-400 hover:text-emerald-700'
+                        ? 'bg-brand-teal-600 text-white shadow-xs'
+                        : 'text-slate-600 dark:text-neutral-400 hover:text-brand-teal-700'
                     }`}
                   >
                     <CheckCircle2 className="w-3.5 h-3.5" />
@@ -3527,7 +3799,7 @@ export default function ManageInformationPage() {
                   value={newRule.title}
                   onChange={(e) => setNewRule({ ...newRule, title: e.target.value })}
                   placeholder={newRule.type === 'do' ? 'e.g. Wear life vests during high tide' : 'e.g. No glassware or bottles on shoreline'}
-                  className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs text-slate-900 dark:text-white placeholder:italic focus:outline-none focus:border-[#1F3F74]"
+                  className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs text-slate-900 dark:text-white placeholder:italic focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-navy-500"
                 />
               </div>
 
@@ -3541,7 +3813,7 @@ export default function ManageInformationPage() {
                   value={newRule.description}
                   onChange={(e) => setNewRule({ ...newRule, description: e.target.value })}
                   placeholder="Provide additional context or instructions for guests..."
-                  className="w-full rounded-2xl border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 p-3 text-xs text-slate-900 dark:text-white placeholder:italic focus:outline-none focus:border-[#1F3F74]"
+                  className="w-full rounded-2xl border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 p-3 text-xs text-slate-900 dark:text-white placeholder:italic focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-navy-500"
                 />
               </div>
 
@@ -3558,77 +3830,9 @@ export default function ManageInformationPage() {
                 </button>
                 <button
                   type="submit"
-                  className="rounded-full px-6 py-2 bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-bold shadow-xs cursor-pointer"
+                  className="rounded-full px-6 py-2 bg-brand-navy-500 hover:bg-brand-navy-600 text-white text-xs font-bold shadow-xs cursor-pointer"
                 >
                   {editingRuleId ? 'Save Changes' : 'Save Guideline'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* ── MODAL: 360° RECAPTURE REQUEST ── */}
-      {showRecaptureModal && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-4 sm:p-7 max-w-lg w-full space-y-4 sm:space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
-            <div>
-              <h3 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
-                Request 360° Virtual Tour Recapture
-              </h3>
-              <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1">
-                Notify the Dagat Ta Bai Admin to schedule a panoramic re-scanning of your resort.
-              </p>
-            </div>
-
-            <form onSubmit={handleSubmitRecapture} className="space-y-4">
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
-                  Reason for Recapture *
-                </label>
-                <div className="relative">
-                  <select
-                    value={recaptureReason}
-                    onChange={(e) => setRecaptureReason(e.target.value)}
-                    className="w-full appearance-none rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 pl-4 pr-10 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#1F3F74]"
-                  >
-                    <option value="New cottage/building added">New cottage/building added</option>
-                    <option value="Renovated shoreline or pool">Renovated shoreline or pool</option>
-                    <option value="Existing tour is outdated">Existing tour is outdated</option>
-                    <option value="New amenities/facilities available">New amenities/facilities available</option>
-                    <option value="Other structural improvements">Other structural improvements</option>
-                  </select>
-                  <ChevronDown className="w-4 h-4 text-slate-400 absolute right-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
-                  Additional Notes for Municipal Admin
-                </label>
-                <textarea
-                  rows={3}
-                  value={recaptureNotes}
-                  onChange={(e) => setRecaptureNotes(e.target.value)}
-                  placeholder="Detail what new features were constructed and preferred scanning dates..."
-                  className="w-full rounded-2xl border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 p-3 text-xs text-slate-900 dark:text-white placeholder:italic focus:outline-none focus:border-[#1F3F74]"
-                />
-              </div>
-
-              <div className="flex justify-end gap-2 pt-3">
-                <button
-                  type="button"
-                  onClick={() => setShowRecaptureModal(false)}
-                  className="rounded-full px-5 py-2 text-xs font-bold text-slate-600 dark:text-neutral-400 hover:bg-slate-100 dark:hover:bg-neutral-800 cursor-pointer"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={submittingRecapture}
-                  className="rounded-full px-6 py-2 bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50"
-                >
-                  {submittingRecapture ? 'Submitting...' : 'Send Request'}
                 </button>
               </div>
             </form>
@@ -3641,7 +3845,7 @@ export default function ManageInformationPage() {
         <VirtualTourModal
           isOpen={showTourPreview}
           onClose={() => setShowTourPreview(false)}
-          tourUrl={formData.virtual_tour_url}
+          tourUrl={tourRequest?.requested_tour_url || formData.virtual_tour_url}
           beachName={formData.name || 'Resort 360° Virtual Tour'}
         />
       )}

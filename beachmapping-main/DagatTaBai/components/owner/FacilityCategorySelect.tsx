@@ -100,7 +100,7 @@ export function FacilityCategorySelect({ value, onChange }: FacilityCategorySele
             chooseOption(activeIndex);
           }
         }}
-        className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm font-medium text-slate-800 shadow-sm transition hover:border-emerald-400 hover:bg-emerald-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500/30 dark:border-neutral-700 dark:bg-neutral-950 dark:text-white dark:hover:border-emerald-700 dark:hover:bg-neutral-900"
+        className="flex w-full items-center justify-between rounded-xl border border-slate-200 bg-white px-4 py-3 text-left text-sm font-medium text-slate-800 shadow-sm transition hover:border-brand-teal-400 hover:bg-brand-teal-50/40 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 dark:border-neutral-700 dark:bg-neutral-950 dark:text-white dark:hover:border-brand-teal-600 dark:hover:bg-neutral-900"
       >
         <span className="inline-flex max-w-full items-center rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold text-slate-800 dark:bg-neutral-800 dark:text-neutral-100">
           <span className="truncate">{selectedLabel}</span>

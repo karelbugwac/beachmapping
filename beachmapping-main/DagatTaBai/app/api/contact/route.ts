@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import nodemailer from 'nodemailer';
+import { FULL_NAME_MESSAGES, validateFullName } from '@/lib/validation/fullName';
 
 export const runtime = 'nodejs';
 
@@ -32,14 +33,19 @@ export async function POST(request: Request) {
     );
   }
 
-  const name = typeof body.name === 'string' ? body.name.trim() : '';
+  const nameValidation = validateFullName(body.name);
+  if (!nameValidation.ok) {
+    return NextResponse.json(
+      { error: FULL_NAME_MESSAGES.serverRejected },
+      { status: 400, headers: noStoreHeaders }
+    );
+  }
+  const name = nameValidation.value;
   const email = typeof body.email === 'string' ? body.email.trim() : '';
   const subject = typeof body.subject === 'string' ? body.subject.trim() : '';
   const message = typeof body.message === 'string' ? body.message.trim() : '';
 
   if (
-    name.length < 2 ||
-    name.length > 120 ||
     email.length > 254 ||
     !EMAIL_PATTERN.test(email) ||
     subject.length > 200 ||
@@ -47,7 +53,7 @@ export async function POST(request: Request) {
     message.length > 5000
   ) {
     return NextResponse.json(
-      { error: 'Please provide a valid name, email, and message.' },
+      { error: 'Please provide a valid email and message.' },
       { status: 400, headers: noStoreHeaders }
     );
   }

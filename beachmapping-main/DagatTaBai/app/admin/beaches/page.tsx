@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useEffect, useState, useMemo } from 'react';
+import React, { useEffect, useState, useMemo, useRef } from 'react';
 import Image from 'next/image';
 import {
   Compass,
@@ -20,10 +20,13 @@ import {
 } from 'lucide-react';
 import type { BeachRecord } from '@/lib/db/beaches';
 import { showToast } from '@/components/ui/feedback-toasts';
+import { prepareImageForUpload } from '@/lib/utils/image-compression';
+import { formatImageSize } from '@/lib/utils/image-upload-config';
 import { CoastalEmptyState } from '@/components/ui/coastal-empty-state';
 import { confirmAction } from '@/components/ui/confirm-dialog';
 import { VirtualTourModal, extractTourEmbedUrl } from '@/components/virtual-tour-modal';
 import { LocationPickerModal } from '@/components/map/location-picker-modal';
+import { filterAdminSearchInput, SAFE_TEXT_MESSAGES } from '@/lib/validation/safe-text';
 import type { TourRequestWithBeach } from '@/lib/services/tourRequests';
 import type { CoordinateRequestWithBeach } from '@/lib/services/coordinateRequests';
 import { notifyRealtimeSync, useRealtimeSync } from '@/lib/realtime-sync';
@@ -70,7 +73,7 @@ function StarRating({ rating }: { rating: number }) {
             key={index}
             className={`h-3.5 w-3.5 ${
               filled
-                ? 'fill-amber-400 text-amber-400'
+                ? 'fill-brand-sun-400 text-brand-sun-700'
                 : 'fill-transparent text-slate-300 dark:text-neutral-700'
             }`}
           />
@@ -84,6 +87,7 @@ export default function AdminBeachesPage() {
   const [beaches, setBeaches] = useState<BeachRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [tourRequests, setTourRequests] = useState<TourRequestWithBeach[]>([]);
+  const [tourStatusFilter, setTourStatusFilter] = useState<'in_progress' | 'review' | 'approved'>('review');
   const [coordinateRequests, setCoordinateRequests] = useState<CoordinateRequestWithBeach[]>([]);
   const [reviews, setReviews] = useState<BeachReviewItem[]>([]);
   const [reports, setReports] = useState<BeachReviewReport[]>([]);
@@ -92,6 +96,7 @@ export default function AdminBeachesPage() {
 
   // Filter & Search state
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchError, setSearchError] = useState('');
   const [filterMode, setFilterMode] = useState<'all' | 'active' | 'requests' | 'flagged' | 'suspended'>('all');
 
   // Modals state
@@ -109,6 +114,7 @@ export default function AdminBeachesPage() {
   const [rejectingRequest, setRejectingRequest] = useState<TourRequestWithBeach | null>(null);
   const [rejectReason, setRejectReason] = useState('');
   const [isProcessingAction, setIsProcessingAction] = useState(false);
+  const tourFetchedAtRef = useRef(0);
 
   // Reject Coordinate Request Modal
   const [rejectingCoordRequest, setRejectingCoordRequest] = useState<CoordinateRequestWithBeach | null>(null);
@@ -143,6 +149,7 @@ export default function AdminBeachesPage() {
     status: 'active',
   });
   const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
 
   const fetchBeaches = async () => {
     try {
@@ -163,6 +170,7 @@ export default function AdminBeachesPage() {
       const data = await res.json();
       if (Array.isArray(data?.requests)) {
         setTourRequests(data.requests);
+        tourFetchedAtRef.current = Date.now();
       }
     } catch (err: unknown) {
       console.error('Failed to load tour requests:', err);
@@ -207,14 +215,33 @@ export default function AdminBeachesPage() {
 
   useEffect(() => {
     void refreshAll();
+    const interval = setInterval(() => {
+      if (document.visibilityState === 'visible') {
+        void Promise.all([fetchBeaches(), fetchCoordinateRequests(), fetchReviews()]);
+      }
+    }, 60000);
+
+    const refreshToursIfStale = () => {
+      if (Date.now() - tourFetchedAtRef.current >= 60_000) void fetchTourRequests();
+    };
+    window.addEventListener('focus', refreshToursIfStale);
+    return () => {
+      clearInterval(interval);
+      window.removeEventListener('focus', refreshToursIfStale);
+    };
   }, []);
 
   useRealtimeSync(() => {
     void refreshAll();
   });
 
+  const filteredTourRequests = useMemo(
+    () => tourRequests.filter((request) => request.status === tourStatusFilter),
+    [tourRequests, tourStatusFilter]
+  );
+
   const pendingTourRequests = useMemo(
-    () => tourRequests.filter((r) => r.status === 'pending'),
+    () => tourRequests.filter((r) => r.status === 'review'),
     [tourRequests]
   );
 
@@ -257,12 +284,13 @@ export default function AdminBeachesPage() {
 
     setDeletingReviewId(review.id);
     try {
-      const params = new URLSearchParams({
-        id: review.id,
-        type: review.review_type === 'platform' ? 'platform' : 'beach',
-      });
-      const response = await fetch(`/api/admin/reviews?${params.toString()}`, {
+      const response = await fetch('/api/admin/reviews', {
         method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          id: review.id,
+          type: review.review_type === 'platform' ? 'platform' : 'beach',
+        }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Failed to delete review.');
@@ -393,8 +421,11 @@ export default function AdminBeachesPage() {
           setEditForm((prev) => ({ ...prev, virtual_tour_url: data.tourUrl }));
         }
       }
+      if (data.request) {
+        setTourRequests((current) => current.map((item) => (item.id === req.id ? data.request : item)));
+      }
 
-      showToast(`360° Tour request for "${req.beach?.name || 'Beach'}" approved.`, 'success');
+      showToast(`360° Tour for "${req.beach?.name || 'Beach'}" approved.`, 'success');
       notifyRealtimeSync('beaches');
       notifyRealtimeSync('requests');
       await Promise.all([fetchBeaches(), fetchTourRequests()]);
@@ -413,18 +444,21 @@ export default function AdminBeachesPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          action: 'reject',
+          action: 'request_changes',
           beach_id: rejectingRequest.beach_id,
           request_id: rejectingRequest.id,
-          rejection_reason: rejectReason.trim() || undefined,
+          note: rejectReason.trim(),
         }),
       });
       const data = await res.json();
       if (!res.ok) throw new Error(data.error || 'Failed to reject tour request.');
 
-      showToast('360° Tour request rejected.', 'error');
+      showToast('Changes requested for this 360° tour.', 'success');
       setRejectingRequest(null);
       setRejectReason('');
+      if (data.request) {
+        setTourRequests((current) => current.map((item) => (item.id === rejectingRequest.id ? data.request : item)));
+      }
       notifyRealtimeSync('requests');
       await fetchTourRequests();
     } catch (err: unknown) {
@@ -635,19 +669,11 @@ export default function AdminBeachesPage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!['image/png', 'image/jpeg', 'image/jpg'].includes(file.type.toLowerCase())) {
-      showToast('Please upload an image in PNG or JPG format only.', 'error');
-      return;
-    }
-
-    if (file.size > 5 * 1024 * 1024) {
-      showToast('Image file size must be less than 5MB.', 'error');
-      return;
-    }
-
+    setUploadingImage(true);
     try {
+      const prepared = await prepareImageForUpload(file, 'resort');
       const uploadData = new FormData();
-      uploadData.append('file', file);
+      uploadData.append('file', prepared.file);
       uploadData.append('category', targetField === 'cover_image' ? 'cover' : 'profile');
 
       const res = await fetch('/api/owner/beach/images', {
@@ -661,10 +687,16 @@ export default function AdminBeachesPage() {
       const url = data.photo_url || data.url;
       if (url) {
         setEditForm((prev) => ({ ...prev, [targetField]: url }));
-        showToast('Image uploaded.', 'success');
+        showToast(
+          `Image uploaded (${formatImageSize(prepared.originalSize)} → ${formatImageSize(prepared.compressedSize)}).`,
+          'success'
+        );
       }
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Image upload failed.', 'error');
+    } finally {
+      setUploadingImage(false);
+      e.target.value = '';
     }
   };
 
@@ -693,7 +725,7 @@ export default function AdminBeachesPage() {
       {/* Header */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1F3F74] dark:text-white">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-brand-navy-500 dark:text-white">
             Manage Beaches
           </h1>
           <p className="mt-1 text-xs sm:text-sm text-slate-500 dark:text-neutral-400">
@@ -704,7 +736,7 @@ export default function AdminBeachesPage() {
         <button
           type="button"
           onClick={() => void refreshAll()}
-          className="inline-flex items-center justify-center gap-2 self-start sm:self-auto rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-3.5 py-2 text-xs font-bold text-[#1F3F74] dark:text-[#4987BA] shadow-2xs transition hover:border-[#4987BA]"
+          className="inline-flex items-center justify-center gap-2 self-start sm:self-auto rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-3.5 py-2 text-xs font-bold text-brand-navy-500 dark:text-brand-teal-300 shadow-2xs transition hover:border-brand-teal-600"
         >
           <RefreshCw className="h-3.5 w-3.5" />
           Refresh
@@ -718,12 +750,12 @@ export default function AdminBeachesPage() {
           onClick={() => setFilterMode('all')}
           className={`text-left rounded-2xl border p-4 transition-all ${
             filterMode === 'all'
-              ? 'border-[#4987BA] bg-sky-50/60 dark:bg-sky-950/20 ring-2 ring-[#4987BA]/20'
+              ? 'border-brand-teal-600 bg-brand-teal-50/60 dark:bg-brand-teal-700/20 ring-2 ring-brand-teal-400/20'
               : 'border-slate-200/80 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:border-slate-300'
           }`}
         >
           <p className="text-xs font-semibold text-slate-500 dark:text-neutral-400">Total Beaches</p>
-          <p className="mt-1 text-2xl font-extrabold text-[#1F3F74] dark:text-white">{stats.total}</p>
+          <p className="mt-1 text-2xl font-extrabold text-brand-navy-500 dark:text-white">{stats.total}</p>
         </button>
 
         <button
@@ -731,7 +763,7 @@ export default function AdminBeachesPage() {
           onClick={() => setFilterMode(filterMode === 'active' ? 'all' : 'active')}
           className={`text-left rounded-2xl border p-4 transition-all ${
             filterMode === 'active'
-              ? 'border-[#4987BA] bg-sky-50/60 dark:bg-sky-950/20 ring-2 ring-[#4987BA]/20'
+              ? 'border-brand-teal-600 bg-brand-teal-50/60 dark:bg-brand-teal-700/20 ring-2 ring-brand-teal-400/20'
               : 'border-slate-200/80 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:border-slate-300'
           }`}
         >
@@ -744,12 +776,12 @@ export default function AdminBeachesPage() {
           onClick={() => setFilterMode(filterMode === 'flagged' ? 'all' : 'flagged')}
           className={`text-left rounded-2xl border p-4 transition-all ${
             filterMode === 'flagged'
-              ? 'border-[#4987BA] bg-sky-50/60 dark:bg-sky-950/20 ring-2 ring-[#4987BA]/20'
+              ? 'border-brand-teal-600 bg-brand-teal-50/60 dark:bg-brand-teal-700/20 ring-2 ring-brand-teal-400/20'
               : 'border-slate-200/80 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:border-slate-300'
           }`}
         >
           <p className="text-xs font-semibold text-slate-500 dark:text-neutral-400">Flagged Reviews</p>
-          <p className="mt-1 text-2xl font-extrabold text-amber-500 dark:text-amber-400">{stats.flagged}</p>
+          <p className="mt-1 text-2xl font-extrabold text-brand-navy-700 dark:text-brand-sun-400">{stats.flagged}</p>
         </button>
 
         <button
@@ -757,7 +789,7 @@ export default function AdminBeachesPage() {
           onClick={() => setFilterMode(filterMode === 'suspended' ? 'all' : 'suspended')}
           className={`text-left rounded-2xl border p-4 transition-all ${
             filterMode === 'suspended'
-              ? 'border-[#4987BA] bg-sky-50/60 dark:bg-sky-950/20 ring-2 ring-[#4987BA]/20'
+              ? 'border-brand-teal-600 bg-brand-teal-50/60 dark:bg-brand-teal-700/20 ring-2 ring-brand-teal-400/20'
               : 'border-slate-200/80 dark:border-neutral-800 bg-white dark:bg-neutral-900 hover:border-slate-300'
           }`}
         >
@@ -766,6 +798,149 @@ export default function AdminBeachesPage() {
         </button>
       </div>
 
+      {/* Pending Requests Banners */}
+      {(tourRequests.length > 0 || pendingCoordRequests.length > 0) && (
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+          {tourRequests.length > 0 && (
+            <div className="bg-brand-sun-50/70 dark:bg-brand-navy-900/20 border border-brand-sun-200/80 dark:border-brand-navy-800 rounded-2xl p-4 space-y-3">
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-center gap-2">
+                  <Compass className="w-4 h-4 text-brand-navy-700 dark:text-brand-sun-400" />
+                  <h2 className="text-xs font-bold text-brand-navy-700 dark:text-brand-sun-300">360° Virtual Tours</h2>
+                </div>
+                <div role="group" aria-label="Filter tours by status" className="flex flex-wrap gap-1">
+                  {([
+                    ['in_progress', 'In progress'],
+                    ['review', 'Review'],
+                    ['approved', 'Approved'],
+                  ] as const).map(([status, label]) => (
+                    <button
+                      key={status}
+                      type="button"
+                      onClick={() => setTourStatusFilter(status)}
+                      aria-pressed={tourStatusFilter === status}
+                      className={`rounded-full px-3 py-1 text-[10px] font-bold ${
+                        tourStatusFilter === status
+                          ? 'bg-brand-navy-500 text-white'
+                          : 'bg-white text-slate-600 dark:bg-neutral-900 dark:text-neutral-300'
+                      }`}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {filteredTourRequests.length ? (
+                <div className="space-y-2">
+                {filteredTourRequests.map((req) => (
+                  <div
+                    key={req.id}
+                    className="bg-white dark:bg-neutral-900 p-3 rounded-xl border border-brand-sun-100 dark:border-brand-navy-900/50 flex flex-wrap items-center justify-between gap-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-bold text-xs text-brand-navy-500 dark:text-white">{req.beach?.name || 'Beach'}</p>
+                      <p className="mt-1 text-[10px] text-slate-500 dark:text-neutral-400">
+                        {req.status.replace('_', ' ')} · Updated {new Date(req.status_updated_at).toLocaleString()}
+                      </p>
+                    </div>
+                    <div className="flex items-center gap-1.5">
+                      {req.requested_tour_url && (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setPreviewTourUrl(req.requested_tour_url);
+                            setPreviewTourBeachName(req.beach?.name || 'Beach');
+                            setShowPreviewModal(true);
+                          }}
+                          className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300 hover:bg-slate-200"
+                        >Preview</button>
+                      )}
+                      {req.status === 'review' && (
+                        <>
+                          <button
+                            type="button"
+                            onClick={() => handleApproveTour(req)}
+                            disabled={isProcessingAction}
+                            className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold bg-brand-navy-500 hover:bg-brand-navy-600 text-white disabled:opacity-50"
+                          >Approve</button>
+                          <button
+                            type="button"
+                            onClick={() => { setRejectReason(''); setRejectingRequest(req); }}
+                            disabled={isProcessingAction}
+                            className="px-2.5 py-1.5 rounded-lg text-[11px] font-bold text-brand-navy-700 hover:bg-brand-sun-100 dark:text-brand-sun-300 dark:hover:bg-brand-navy-800"
+                          >Request changes</button>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                ))}
+                </div>
+              ) : (
+                <p className="rounded-xl bg-white/70 p-3 text-xs text-slate-500 dark:bg-neutral-900/70 dark:text-neutral-400">
+                  No tours in {tourStatusFilter.replace('_', ' ')}.
+                </p>
+              )}
+            </div>
+          )}
+
+          {pendingCoordRequests.length > 0 && (
+            <div className="bg-brand-teal-50/70 dark:bg-brand-teal-700/20 border border-brand-teal-200/80 dark:border-brand-teal-700 rounded-2xl p-4 space-y-3">
+              <div className="flex items-center gap-2">
+                <MapPin className="w-4 h-4 text-brand-teal-600 dark:text-brand-teal-400" />
+                <h2 className="text-xs font-bold text-brand-teal-700 dark:text-brand-teal-300">
+                  Pending Coordinate Requests ({pendingCoordRequests.length})
+                </h2>
+              </div>
+
+              <div className="space-y-2">
+                {pendingCoordRequests.map((req) => (
+                  <div
+                    key={req.id}
+                    className="bg-white dark:bg-neutral-900 p-3 rounded-xl border border-brand-teal-100 dark:border-brand-teal-700/50 flex items-center justify-between gap-3"
+                  >
+                    <div className="min-w-0">
+                      <p className="font-bold text-xs text-brand-navy-500 dark:text-white truncate">
+                        {req.beach?.name || 'Beach'}
+                      </p>
+                      <p className="text-[11px] font-mono text-slate-500 dark:text-neutral-400">
+                        {req.requested_latitude.toFixed(4)}, {req.requested_longitude.toFixed(4)}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-1.5 shrink-0">
+                      <button
+                        type="button"
+                        onClick={() => setPreviewCoordRequest(req)}
+                        className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-neutral-300 hover:bg-slate-200 cursor-pointer"
+                      >
+                        Map
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => handleApproveCoord(req)}
+                        disabled={isProcessingCoordAction}
+                        className="px-2.5 py-1 rounded-lg text-[11px] font-bold bg-brand-navy-500 hover:bg-brand-navy-600 text-white cursor-pointer"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setRejectingCoordRequest(req)}
+                        disabled={isProcessingCoordAction}
+                        className="px-2.5 py-1 rounded-lg text-[11px] font-bold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 cursor-pointer"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Search & Filter Controls */}
       <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-slate-200/80 dark:border-neutral-800 p-4 flex flex-col sm:flex-row sm:items-center justify-between gap-3 shadow-2xs">
         <div className="relative flex-1 max-w-md">
@@ -773,17 +948,23 @@ export default function AdminBeachesPage() {
           <input
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            maxLength={60}
+            onChange={(e) => {
+              const filtered = filterAdminSearchInput(e.target.value);
+              setSearchQuery(filtered.value);
+              setSearchError(filtered.rejected ? SAFE_TEXT_MESSAGES.invalid : '');
+            }}
             placeholder="Search beach or location..."
-            className="w-full rounded-xl border border-slate-200 dark:border-neutral-800 bg-slate-50/70 dark:bg-neutral-950 py-2 pl-10 pr-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-[#4987BA] focus:bg-white dark:focus:bg-neutral-900 focus:outline-none"
+            className="w-full rounded-xl border border-slate-200 dark:border-neutral-800 bg-slate-50/70 dark:bg-neutral-950 py-2 pl-10 pr-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-brand-teal-600 focus:bg-white dark:focus:bg-neutral-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400"
           />
+          {searchError && <p role="alert" className="mt-1 px-2 text-xs text-rose-600">{searchError}</p>}
         </div>
 
         <div className="flex items-center gap-2">
           <select
             value={filterMode}
             onChange={(e) => setFilterMode(e.target.value as any)}
-            className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-slate-50/70 dark:bg-neutral-950 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-neutral-200 focus:border-[#4987BA] focus:outline-none"
+            className="rounded-xl border border-slate-200 dark:border-neutral-800 bg-slate-50/70 dark:bg-neutral-950 px-3 py-2 text-xs font-semibold text-slate-700 dark:text-neutral-200 focus:border-brand-teal-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400"
           >
             <option value="all">All Beaches</option>
             <option value="active">Active</option>
@@ -799,6 +980,7 @@ export default function AdminBeachesPage() {
               type="button"
               onClick={() => {
                 setSearchQuery('');
+                setSearchError('');
                 setFilterMode('all');
               }}
               className="rounded-xl px-3 py-2 text-xs font-semibold text-slate-500 hover:bg-slate-100 dark:hover:bg-neutral-800"
@@ -812,7 +994,7 @@ export default function AdminBeachesPage() {
       {/* Beaches Grid */}
       {loading ? (
         <div className="py-20 text-center">
-          <Loader2 className="w-7 h-7 animate-spin mx-auto text-[#1F3F74] dark:text-[#4987BA] mb-2" />
+          <Loader2 className="w-7 h-7 animate-spin mx-auto text-brand-navy-500 dark:text-brand-teal-300 mb-2" />
           <p className="text-xs font-semibold text-slate-400">Loading beaches...</p>
         </div>
       ) : filteredBeaches.length === 0 ? (
@@ -840,8 +1022,8 @@ export default function AdminBeachesPage() {
                 key={beach.id}
                 className={`bg-white dark:bg-neutral-900 rounded-2xl border shadow-2xs transition-all overflow-hidden flex flex-col justify-between ${
                   hasPendingRequests
-                    ? 'border-[#4987BA] ring-1 ring-[#4987BA]/30'
-                    : 'border-slate-200/80 dark:border-neutral-800 hover:border-[#4987BA]'
+                    ? 'border-brand-teal-600 ring-1 ring-brand-teal-500/30'
+                    : 'border-slate-200/80 dark:border-neutral-800 hover:border-brand-teal-600'
                 }`}
               >
                 <div>
@@ -879,8 +1061,8 @@ export default function AdminBeachesPage() {
                           </span>
                         )}
                         {hasTour && (
-                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-[#1F3F74] text-white shadow-xs">
-                            <Sparkles className="w-3 h-3 text-amber-300" />
+                          <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-brand-navy-500 text-white shadow-xs">
+                            <Sparkles className="w-3 h-3 text-brand-sun-300" />
                             <span>360°</span>
                           </span>
                         )}
@@ -892,7 +1074,7 @@ export default function AdminBeachesPage() {
                   <div className="p-4 space-y-3">
                     <div className="flex items-start justify-between gap-2">
                       <div className="min-w-0">
-                        <h3 className="font-bold text-sm sm:text-base text-[#1F3F74] dark:text-white truncate">
+                        <h3 className="font-bold text-sm sm:text-base text-brand-navy-500 dark:text-white truncate">
                           {beach.name}
                         </h3>
                         <div className="flex items-center gap-1 text-slate-500 dark:text-neutral-400 text-xs mt-0.5">
@@ -901,7 +1083,7 @@ export default function AdminBeachesPage() {
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 text-xs font-bold shrink-0">
+                      <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-brand-sun-50 dark:bg-brand-navy-900/40 text-brand-navy-700 dark:text-brand-sun-400 text-xs font-bold shrink-0">
                         <Star className="w-3.5 h-3.5 fill-current" />
                         <span>{beach.average_rating ? Number(beach.average_rating).toFixed(1) : 'New'}</span>
                       </div>
@@ -1022,7 +1204,7 @@ export default function AdminBeachesPage() {
                     {/* Per-Beach Reviews Section on Card */}
                     <div className="rounded-xl border border-slate-100 dark:border-neutral-800 bg-slate-50/70 dark:bg-neutral-950/60 p-3 space-y-2">
                       <div className="flex items-center justify-between">
-                        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-[#1F3F74] dark:text-[#4987BA]">
+                        <span className="inline-flex items-center gap-1.5 text-[11px] font-bold text-brand-navy-500 dark:text-brand-teal-300">
                           <MessageSquare className="w-3.5 h-3.5" />
                           Reviews ({beachReviews.length})
                         </span>
@@ -1069,7 +1251,7 @@ export default function AdminBeachesPage() {
                     onClick={() => openEditModal(beach, 'reviews')}
                     className="inline-flex items-center gap-1.5 rounded-lg px-2.5 py-1.5 text-xs font-bold text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-800 transition cursor-pointer"
                   >
-                    <MessageSquare className="h-3.5 w-3.5 text-[#4987BA]" />
+                    <MessageSquare className="h-3.5 w-3.5 text-brand-teal-600" />
                     Reviews ({beachReviews.length})
                   </button>
 
@@ -1077,7 +1259,7 @@ export default function AdminBeachesPage() {
                     <button
                       type="button"
                       onClick={() => openEditModal(beach, 'basic')}
-                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-1.5 text-xs font-bold text-[#1F3F74] dark:text-white shadow-2xs transition hover:border-[#4987BA] hover:text-[#4987BA] cursor-pointer"
+                      className="inline-flex items-center gap-1.5 rounded-lg border border-slate-200 dark:border-neutral-700 bg-white dark:bg-neutral-800 px-3 py-1.5 text-xs font-bold text-brand-navy-500 dark:text-white shadow-2xs transition hover:border-brand-teal-600 hover:text-brand-teal-600 cursor-pointer"
                     >
                       <Eye className="h-3.5 w-3.5" />
                       View
@@ -1111,7 +1293,7 @@ export default function AdminBeachesPage() {
             <div className="px-6 py-4 border-b border-slate-100 dark:border-neutral-800 flex items-center justify-between gap-3">
               <div className="min-w-0">
                 <div className="flex items-center gap-2">
-                  <h3 className="text-base font-extrabold text-[#1F3F74] dark:text-white truncate">
+                  <h3 className="text-base font-extrabold text-brand-navy-500 dark:text-white truncate">
                     {editingBeach.name}
                   </h3>
                   <span
@@ -1138,7 +1320,7 @@ export default function AdminBeachesPage() {
                       setPreviewTourBeachName(editingBeach.name);
                       setShowPreviewModal(true);
                     }}
-                    className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-neutral-800 text-xs font-bold text-[#1F3F74] dark:text-[#4987BA] hover:bg-slate-200 cursor-pointer"
+                    className="px-3 py-1.5 rounded-lg bg-slate-100 dark:bg-neutral-800 text-xs font-bold text-brand-navy-500 dark:text-brand-teal-300 hover:bg-slate-200 cursor-pointer"
                   >
                     View 360°
                   </button>
@@ -1149,7 +1331,7 @@ export default function AdminBeachesPage() {
                   onClick={() => toggleBeachStatus(editingBeach)}
                   className={`px-3 py-1.5 rounded-lg text-xs font-bold cursor-pointer ${
                     editingBeach.status === 'active'
-                      ? 'bg-amber-50 text-amber-700 hover:bg-amber-100 dark:bg-amber-950/40 dark:text-amber-300'
+                      ? 'bg-brand-sun-50 text-brand-navy-700 hover:bg-brand-sun-100 dark:bg-brand-navy-900/40 dark:text-brand-sun-300'
                       : 'bg-emerald-50 text-emerald-600 hover:bg-emerald-100 dark:bg-emerald-950/40 dark:text-emerald-300'
                   }`}
                 >
@@ -1201,7 +1383,7 @@ export default function AdminBeachesPage() {
                   onClick={() => setEditTab(tab.id as any)}
                   className={`px-3.5 py-1.5 rounded-lg transition-all cursor-pointer whitespace-nowrap ${
                     editTab === tab.id
-                      ? 'bg-[#1F3F74] text-white shadow-2xs dark:bg-[#4987BA]'
+                      ? 'bg-brand-navy-500 text-white shadow-2xs dark:bg-brand-teal-600'
                       : 'text-slate-600 dark:text-neutral-400 hover:bg-slate-100 dark:hover:bg-neutral-800'
                   }`}
                 >
@@ -1226,7 +1408,7 @@ export default function AdminBeachesPage() {
                         value={editForm.name}
                         onChange={(e) => setEditForm({ ...editForm, name: e.target.value })}
                         placeholder="e.g. Catmon Beach Resort"
-                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus:outline-none focus:border-[#4987BA]"
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-teal-600"
                       />
                     </div>
 
@@ -1240,7 +1422,7 @@ export default function AdminBeachesPage() {
                         value={editForm.location}
                         onChange={(e) => setEditForm({ ...editForm, location: e.target.value })}
                         placeholder="Barangay Binongkalan, Catmon, Cebu"
-                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus:outline-none focus:border-[#4987BA]"
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-teal-600"
                       />
                     </div>
                   </div>
@@ -1262,7 +1444,7 @@ export default function AdminBeachesPage() {
                             setEditForm({ ...editForm, contact_phone: e.target.value.replace(/\D/g, '') })
                           }
                           placeholder="9123456789"
-                          className="w-full pl-11 pr-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus:outline-none focus:border-[#4987BA]"
+                          className="w-full pl-11 pr-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-teal-600"
                         />
                       </div>
                     </div>
@@ -1276,7 +1458,7 @@ export default function AdminBeachesPage() {
                         value={editForm.contact_email}
                         onChange={(e) => setEditForm({ ...editForm, contact_email: e.target.value })}
                         placeholder="contact@resort.ph"
-                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus:outline-none focus:border-[#4987BA]"
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-teal-600"
                       />
                     </div>
                   </div>
@@ -1290,7 +1472,7 @@ export default function AdminBeachesPage() {
                       value={editForm.description}
                       onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
                       placeholder="Beach shoreline, atmosphere, and amenities..."
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus:outline-none focus:border-[#4987BA]"
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-teal-600"
                     />
                   </div>
                 </div>
@@ -1302,7 +1484,7 @@ export default function AdminBeachesPage() {
                   {/* Summary Header */}
                   <div className="flex items-center justify-between rounded-xl bg-slate-50 dark:bg-neutral-950 border border-slate-100 dark:border-neutral-800 px-4 py-3">
                     <div className="flex items-center gap-3">
-                      <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 text-xs font-bold">
+                      <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-brand-sun-50 dark:bg-brand-navy-900/40 text-brand-navy-700 dark:text-brand-sun-400 text-xs font-bold">
                         <Star className="w-3.5 h-3.5 fill-current" />
                         <span>
                           {editingBeach.average_rating
@@ -1342,7 +1524,7 @@ export default function AdminBeachesPage() {
                           >
                             <div className="space-y-1.5 min-w-0 flex-1">
                               <div className="flex flex-wrap items-center gap-2">
-                                <span className="text-xs font-bold text-[#1F3F74] dark:text-white">
+                                <span className="text-xs font-bold text-brand-navy-500 dark:text-white">
                                   {review.user_name}
                                 </span>
                                 <StarRating rating={review.rating} />
@@ -1448,7 +1630,7 @@ export default function AdminBeachesPage() {
                       value={editForm.virtual_tour_url}
                       onChange={(e) => setEditForm({ ...editForm, virtual_tour_url: e.target.value })}
                       placeholder="https://kuula.co/share/... or Street View embed URL"
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus:outline-none focus:border-[#4987BA]"
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-teal-600"
                     />
                   </div>
 
@@ -1533,7 +1715,7 @@ export default function AdminBeachesPage() {
                         step="any"
                         value={editForm.latitude}
                         onChange={(e) => setEditForm({ ...editForm, latitude: e.target.value })}
-                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus:outline-none focus:border-[#4987BA]"
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-teal-600"
                       />
                     </div>
 
@@ -1546,7 +1728,7 @@ export default function AdminBeachesPage() {
                         step="any"
                         value={editForm.longitude}
                         onChange={(e) => setEditForm({ ...editForm, longitude: e.target.value })}
-                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus:outline-none focus:border-[#4987BA]"
+                        className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-teal-600"
                       />
                     </div>
                   </div>
@@ -1564,7 +1746,7 @@ export default function AdminBeachesPage() {
                           : null,
                       });
                     }}
-                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-xs font-bold text-[#1F3F74] dark:text-[#4987BA] transition-colors cursor-pointer"
+                    className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-xs font-bold text-brand-navy-500 dark:text-brand-teal-300 transition-colors cursor-pointer"
                   >
                     <MapPin className="w-4 h-4" />
                     <span>Pick on Map</span>
@@ -1589,7 +1771,7 @@ export default function AdminBeachesPage() {
                         value={editForm.entrance_fee}
                         onChange={(e) => setEditForm({ ...editForm, entrance_fee: e.target.value })}
                         placeholder="50"
-                        className="w-full pl-8 pr-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus:outline-none focus:border-[#4987BA]"
+                        className="w-full pl-8 pr-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-teal-600"
                       />
                     </div>
                   </div>
@@ -1608,7 +1790,7 @@ export default function AdminBeachesPage() {
                         value={editForm.cottage_fee}
                         onChange={(e) => setEditForm({ ...editForm, cottage_fee: e.target.value })}
                         placeholder="500"
-                        className="w-full pl-8 pr-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus:outline-none focus:border-[#4987BA]"
+                        className="w-full pl-8 pr-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-teal-600"
                       />
                     </div>
                   </div>
@@ -1633,13 +1815,16 @@ export default function AdminBeachesPage() {
                       <span className="text-xs text-slate-400">No cover image uploaded</span>
                     )}
                   </div>
-                  <label className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-xs font-bold text-[#1F3F74] dark:text-[#4987BA] transition-colors cursor-pointer">
-                    <Upload className="w-3.5 h-3.5" />
-                    <span>Upload Cover Image</span>
+                  <label className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-slate-100 hover:bg-slate-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-xs font-bold text-brand-navy-500 dark:text-brand-teal-300 transition-colors cursor-pointer">
+                    {uploadingImage
+                      ? <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                      : <Upload className="w-3.5 h-3.5" />}
+                    <span>{uploadingImage ? 'Compressing and uploading...' : 'Upload Cover Image'}</span>
                     <input
                       type="file"
-                      accept="image/png,image/jpeg,image/jpg"
+                      accept="image/png,image/jpeg,image/jpg,image/webp"
                       onChange={(e) => handleImageUpload(e, 'cover_image')}
+                      disabled={uploadingImage}
                       className="hidden"
                     />
                   </label>
@@ -1650,7 +1835,7 @@ export default function AdminBeachesPage() {
               {editTab === 'posts' && (
                 <div className="space-y-4">
                   <div className="p-4 rounded-xl border border-slate-200 dark:border-neutral-800 bg-slate-50/50 dark:bg-neutral-900/40 space-y-3">
-                    <label className="block text-xs font-bold text-[#1F3F74] dark:text-[#4987BA]">
+                    <label className="block text-xs font-bold text-brand-navy-500 dark:text-brand-teal-300">
                       New Post
                     </label>
                     <textarea
@@ -1658,7 +1843,7 @@ export default function AdminBeachesPage() {
                       value={newPostCaption}
                       onChange={(e) => setNewPostCaption(e.target.value)}
                       placeholder="Write announcement or update..."
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus:outline-none"
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400"
                     />
                     <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-2">
                       <input
@@ -1666,7 +1851,7 @@ export default function AdminBeachesPage() {
                         value={newPostImage}
                         onChange={(e) => setNewPostImage(e.target.value)}
                         placeholder="Optional photo URL"
-                        className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus:outline-none"
+                        className="flex-1 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400"
                       />
                       <button
                         type="button"
@@ -1688,7 +1873,7 @@ export default function AdminBeachesPage() {
                           setNewPostImage('');
                           showToast('Post published.', 'success');
                         }}
-                        className="px-4 py-2 rounded-xl bg-[#1F3F74] hover:bg-[#285091] text-white text-xs font-bold transition cursor-pointer"
+                        className="px-4 py-2 rounded-xl bg-brand-navy-500 hover:bg-brand-navy-600 text-white text-xs font-bold transition cursor-pointer"
                       >
                         Publish
                       </button>
@@ -1741,7 +1926,7 @@ export default function AdminBeachesPage() {
                       <select
                         value={newRuleType}
                         onChange={(e) => setNewRuleType(e.target.value as any)}
-                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black font-bold focus:outline-none"
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400"
                       >
                         <option value="do">DO (Required)</option>
                         <option value="dont">DON&apos;T (Prohibited)</option>
@@ -1749,7 +1934,7 @@ export default function AdminBeachesPage() {
                       <select
                         value={newRuleCategory}
                         onChange={(e) => setNewRuleCategory(e.target.value)}
-                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black font-bold focus:outline-none"
+                        className="w-full px-3 py-2 text-xs rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black font-bold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400"
                       >
                         <option value="Safety">Safety</option>
                         <option value="Environment">Environment</option>
@@ -1761,14 +1946,14 @@ export default function AdminBeachesPage() {
                       value={newRuleTitle}
                       onChange={(e) => setNewRuleTitle(e.target.value)}
                       placeholder="Rule title..."
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus:outline-none"
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400"
                     />
                     <textarea
                       rows={2}
                       value={newRuleDesc}
                       onChange={(e) => setNewRuleDesc(e.target.value)}
                       placeholder="Short description..."
-                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus:outline-none"
+                      className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400"
                     />
                     <div className="flex justify-end">
                       <button
@@ -1792,7 +1977,7 @@ export default function AdminBeachesPage() {
                           setNewRuleDesc('');
                           showToast('Rule added.', 'success');
                         }}
-                        className="px-4 py-2 rounded-xl bg-[#1F3F74] hover:bg-[#285091] text-white text-xs font-bold transition cursor-pointer"
+                        className="px-4 py-2 rounded-xl bg-brand-navy-500 hover:bg-brand-navy-600 text-white text-xs font-bold transition cursor-pointer"
                       >
                         Add Rule
                       </button>
@@ -1856,7 +2041,7 @@ export default function AdminBeachesPage() {
                   <button
                     type="submit"
                     disabled={isSavingEdit}
-                    className="px-5 py-2 rounded-xl bg-[#1F3F74] hover:bg-[#18325c] dark:bg-[#4987BA] dark:hover:bg-[#3a72a1] text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
+                    className="px-5 py-2 rounded-xl bg-brand-navy-500 hover:bg-brand-navy-600 dark:bg-brand-teal-600 dark:hover:bg-brand-navy-500 text-white text-xs font-bold shadow-xs transition-all cursor-pointer"
                   >
                     {isSavingEdit ? 'Saving...' : 'Save Changes'}
                   </button>
@@ -1867,22 +2052,24 @@ export default function AdminBeachesPage() {
         </div>
       )}
 
-      {/* Reject 360 Tour Modal */}
+      {/* Request tour changes modal */}
       {rejectingRequest && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
           <div className="w-full max-w-md bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-6 shadow-2xl space-y-4">
-            <h3 className="text-base font-bold text-[#1F3F74] dark:text-[#4987BA]">
-              Reject 360° Tour
+            <h3 className="text-base font-bold text-brand-navy-500 dark:text-brand-teal-300">
+              Request changes
             </h3>
             <p className="text-xs text-slate-500 dark:text-neutral-400">
-              Reason for rejecting &ldquo;{rejectingRequest.beach?.name}&rdquo;:
+              Explain what needs to change in the tour for &ldquo;{rejectingRequest.beach?.name}&rdquo;:
             </p>
             <textarea
               rows={3}
               value={rejectReason}
               onChange={(e) => setRejectReason(e.target.value)}
-              placeholder="Reason..."
-              className="w-full p-3 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus:outline-none focus:border-[#4987BA]"
+              required
+              aria-label="Required changes note"
+              placeholder="Describe the requested changes..."
+              className="w-full p-3 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-teal-600"
             />
             <div className="flex items-center justify-end gap-2">
               <button
@@ -1895,10 +2082,10 @@ export default function AdminBeachesPage() {
               <button
                 type="button"
                 onClick={handleRejectTour}
-                disabled={isProcessingAction}
-                className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs cursor-pointer"
+                disabled={isProcessingAction || !rejectReason.trim()}
+                className="px-4 py-2 rounded-xl bg-brand-navy-500 hover:bg-brand-navy-600 text-white text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50"
               >
-                Reject
+                Request changes
               </button>
             </div>
           </div>
@@ -1909,7 +2096,7 @@ export default function AdminBeachesPage() {
       {rejectingCoordRequest && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
           <div className="w-full max-w-md bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-6 shadow-2xl space-y-4">
-            <h3 className="text-base font-bold text-[#1F3F74] dark:text-[#4987BA]">
+            <h3 className="text-base font-bold text-brand-navy-500 dark:text-brand-teal-300">
               Reject Coordinates
             </h3>
             <p className="text-xs text-slate-500 dark:text-neutral-400">
@@ -1920,7 +2107,7 @@ export default function AdminBeachesPage() {
               value={coordRejectReason}
               onChange={(e) => setCoordRejectReason(e.target.value)}
               placeholder="Reason..."
-              className="w-full p-3 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus:outline-none focus:border-[#4987BA]"
+              className="w-full p-3 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-teal-600"
             />
             <div className="flex items-center justify-end gap-2">
               <button

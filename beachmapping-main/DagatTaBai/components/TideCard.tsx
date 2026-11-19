@@ -23,14 +23,14 @@ export default function TideCard({ extremes, attribution }: TideCardProps) {
 
   if (!now) {
     return (
-      <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-neutral-800 dark:bg-[#121215] h-72 animate-pulse" />
+      <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-neutral-800 dark:bg-neutral-900 h-72 animate-pulse" />
     );
   }
 
   if (!extremes || extremes.length < 2) {
     return (
-      <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-neutral-800 dark:bg-[#121215]">
-        <h3 className="font-bold text-sm text-[#1F3F74] dark:text-white uppercase tracking-wider">
+      <div className="rounded-2xl border border-slate-200/80 bg-white p-5 shadow-xs dark:border-neutral-800 dark:bg-neutral-900">
+        <h3 className="font-bold text-sm text-brand-navy-500 dark:text-white uppercase tracking-wider">
           Tide Status
         </h3>
         <p className="mt-3 text-xs text-slate-500 dark:text-slate-400">Tide readings are currently unavailable.</p>
@@ -118,7 +118,7 @@ export default function TideCard({ extremes, attribution }: TideCardProps) {
     <div className="glass-card rounded-3xl p-4 shadow-lg shadow-slate-200/40 dark:shadow-black/10 sm:p-5">
       {/* Top Header: Waves icon removed, arrow removed from status pill */}
       <div className="flex items-center justify-between gap-3">
-        <h3 className="font-bold text-sm text-[#1F3F74] dark:text-white uppercase tracking-wider">
+        <h3 className="font-bold text-sm text-brand-navy-500 dark:text-white uppercase tracking-wider">
           Tide Status
         </h3>
 
@@ -126,8 +126,8 @@ export default function TideCard({ extremes, attribution }: TideCardProps) {
         <span
           className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold ${
             isRising
-              ? 'bg-blue-100 text-[#1F3F74] dark:bg-blue-950/70 dark:text-sky-300'
-              : 'bg-amber-100 text-amber-800 dark:bg-amber-950/70 dark:text-amber-300'
+              ? 'bg-brand-navy-100 text-brand-navy-500 dark:bg-brand-navy-900/70 dark:text-brand-teal-300'
+              : 'bg-brand-sun-100 text-brand-navy-700 dark:bg-brand-navy-900/70 dark:text-brand-sun-300'
           }`}
         >
           {tideLabel}
@@ -150,7 +150,7 @@ export default function TideCard({ extremes, attribution }: TideCardProps) {
           <span className="text-[11px] text-slate-500 font-medium">
             Next: {nextTide?.type === 'high' ? 'High Tide' : 'Low Tide'}
           </span>
-          <div className="text-lg sm:text-xl font-extrabold text-[#1F3F74] dark:text-sky-300 tracking-tight">
+          <div className="text-lg sm:text-xl font-extrabold text-brand-navy-500 dark:text-brand-teal-300 tracking-tight">
             {nextTide ? formatTime(nextTide.time) : '--'}
           </div>
           <span className="text-[10px] text-slate-400">
@@ -164,8 +164,8 @@ export default function TideCard({ extremes, attribution }: TideCardProps) {
         <svg viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none" className="absolute inset-0 h-full w-full">
           <defs>
             <linearGradient id={`grad-dive-${clipId}`} x1="0%" y1="0%" x2="0%" y2="100%">
-              <stop offset="0%" stopColor="#1F3F74" stopOpacity="0.30" />
-              <stop offset="100%" stopColor="#1F3F74" stopOpacity="0.03" />
+              <stop offset="0%" stopColor="rgb(var(--brand-navy-500))" stopOpacity="0.30" />
+              <stop offset="100%" stopColor="rgb(var(--brand-teal-400))" stopOpacity="0.03" />
             </linearGradient>
           </defs>
 
@@ -176,7 +176,7 @@ export default function TideCard({ extremes, attribution }: TideCardProps) {
           <path
             d={linePath}
             fill="none"
-            stroke="#1F3F74"
+            stroke="rgb(var(--brand-navy-500))"
             strokeWidth="2.5"
             vectorEffect="non-scaling-stroke"
           />
@@ -196,7 +196,9 @@ export default function TideCard({ extremes, attribution }: TideCardProps) {
               style={{
                 left: `${dotX}%`,
                 top: `${dotY}%`,
-                backgroundColor: extreme.type === 'high' ? '#1F3F74' : '#d97706',
+                backgroundColor: extreme.type === 'high'
+                  ? 'rgb(var(--brand-navy-500))'
+                  : 'rgb(var(--brand-sun-600))',
               }}
               title={`${extreme.type === 'high' ? 'High Tide' : 'Low Tide'}: ${extreme.height.toFixed(1)}m at ${formatTime(extreme.time)}`}
             />
@@ -208,15 +210,15 @@ export default function TideCard({ extremes, attribution }: TideCardProps) {
           className="absolute inset-y-0 flex -translate-x-1/2 flex-col items-center pointer-events-none"
           style={{ left: `${(nowMinutes / 1440) * 100}%` }}
         >
-          <div className="rounded-full bg-[#1F3F74] px-1.5 py-0.2 text-[8px] font-bold text-white shadow-xs">
+          <div className="rounded-full bg-brand-navy-500 px-1.5 py-0.2 text-[8px] font-bold text-white shadow-xs">
             Now
           </div>
-          <div className="w-px flex-1 border-l border-dashed border-[#1F3F74]/60" />
+          <div className="w-px flex-1 border-l border-dashed border-brand-navy-500/60" />
         </div>
 
         {/* Current Level Dot on curve */}
         <div
-          className="absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-[#1F3F74] ring-2 ring-white dark:ring-black shadow-xs pointer-events-none"
+          className="absolute h-2.5 w-2.5 -translate-x-1/2 -translate-y-1/2 rounded-full bg-brand-navy-500 ring-2 ring-white dark:ring-black shadow-xs pointer-events-none"
           style={{
             left: `${(nowMinutes / 1440) * 100}%`,
             top: `${(nowY / H) * 100}%`,
@@ -251,17 +253,17 @@ export default function TideCard({ extremes, attribution }: TideCardProps) {
                   isPassed
                     ? 'opacity-40 border-white/40 bg-white/25 dark:border-white/5 dark:bg-black/15'
                     : isNext
-                    ? 'border-[#1F3F74]/70 bg-white/55 ring-1 ring-[#1F3F74]/60 dark:border-sky-300/50 dark:bg-sky-950/30'
+                    ? 'border-brand-navy-500/70 bg-white/55 ring-1 ring-brand-teal-400/60 dark:border-brand-teal-300/50 dark:bg-brand-teal-700/30'
                     : 'border-white/50 bg-white/35 dark:border-white/5 dark:bg-black/20'
                 }`}
               >
                 <div className="text-[9px] font-bold flex items-center justify-center gap-0.5">
                   {extreme.type === 'high' ? (
-                    <span className="text-[#1F3F74] dark:text-sky-300">High</span>
+                    <span className="text-brand-navy-500 dark:text-brand-teal-300">High</span>
                   ) : (
-                    <span className="text-amber-700 dark:text-amber-400">Low</span>
+                    <span className="text-brand-navy-700 dark:text-brand-sun-400">Low</span>
                   )}
-                  {isNext && <span className="text-[8px] bg-[#1F3F74] text-white px-1 rounded-xs">Next</span>}
+                  {isNext && <span className="text-[8px] bg-brand-navy-500 text-white px-1 rounded-xs">Next</span>}
                 </div>
                 <div className="text-xs font-bold text-slate-900 dark:text-white mt-0.5">{time}</div>
                 <div className="text-[9px] text-slate-500">{extreme.height.toFixed(1)} m</div>

@@ -1,13 +1,13 @@
 export const FACILITY_CATEGORY_CONFIG = {
-  comfort_room: { label: 'Comfort Rooms & Showers', className: 'bg-sky-100 text-sky-800' },
-  parking: { label: 'Parking', className: 'bg-amber-100 text-amber-800' },
-  cottages: { label: 'Cottages', className: 'bg-violet-100 text-violet-800', selectable: false },
-  amenity: { label: 'Amenity', className: 'bg-green-100 text-green-800', selectable: false },
-  room: { label: 'Room', className: 'bg-violet-100 text-violet-800' },
-  grilling_area: { label: 'Grilling Area', className: 'bg-orange-100 text-orange-800' },
+  comfort_room: { label: 'Comfort Rooms & Showers', className: 'bg-brand-teal-100 text-brand-teal-700' },
+  parking: { label: 'Parking', className: 'bg-brand-sun-100 text-brand-navy-700' },
+  cottages: { label: 'Cottages', className: 'bg-brand-navy-100 text-brand-navy-700', selectable: false },
+  amenity: { label: 'Amenity', className: 'bg-brand-teal-100 text-brand-teal-700', selectable: false },
+  room: { label: 'Room', className: 'bg-brand-teal-100 text-brand-teal-700' },
+  grilling_area: { label: 'Grilling Area', className: 'bg-brand-sun-100 text-brand-navy-700' },
   equipment: { label: 'Water Equipment / Life Vests', className: 'bg-slate-100 text-slate-800' },
-  water_activities: { label: 'Water Activities', className: 'bg-orange-100 text-orange-800' },
-  safety: { label: 'Lifeguard & Safety Station', className: 'bg-rose-100 text-rose-800' },
+  water_activities: { label: 'Water Activities', className: 'bg-brand-sun-100 text-brand-navy-700' },
+  safety: { label: 'Lifeguard & Safety Station', className: 'bg-brand-sun-100 text-brand-navy-700' },
 } as const;
 
 export type FacilityCategory = keyof typeof FACILITY_CATEGORY_CONFIG;

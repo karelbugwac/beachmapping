@@ -113,7 +113,7 @@ export async function PATCH(request: NextRequest) {
     try {
       if (virtual_tour_url !== undefined && updates.virtual_tour_url) {
         const pendingTour = await getTourRequestForBeach(id);
-        if (pendingTour && pendingTour.status === 'pending') {
+        if (pendingTour && pendingTour.status === 'review') {
           await approveTourRequest({
             beachId: id,
             reviewerId: auth.user.id,
@@ -222,7 +222,7 @@ export async function DELETE(request: NextRequest) {
       'beach_posts',
       'beach_tour_requests',
       'beach_coordinate_requests',
-    ];
+    ] as const;
     await Promise.allSettled(
       childTables.map((table) =>
         (adminClient.from(table) as any).delete().eq('beach_id', id)

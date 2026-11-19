@@ -9,19 +9,7 @@ import { Mail, MapPin, Clock } from 'lucide-react';
 export function Footer() {
   const pathname = usePathname();
 
-  if (
-    pathname === '/map' ||
-    pathname?.startsWith('/map') ||
-    pathname?.startsWith('/admin') ||
-    pathname?.startsWith('/owner') ||
-    pathname?.startsWith('/staff') ||
-    pathname === '/login' ||
-    pathname === '/register' ||
-    pathname === '/forgot-password' ||
-    pathname === '/reset-password'
-  ) {
-    return null;
-  }
+  if (pathname !== '/') return null;
 
   return (
     <footer className="bg-white dark:bg-black border-t border-slate-200/80 dark:border-neutral-900 transition-colors duration-200 pt-12 pb-8 text-slate-800 dark:text-slate-200">
@@ -42,7 +30,7 @@ export function Footer() {
                   className="object-contain w-full h-full"
                 />
               </div>
-              <span className="font-sans font-extrabold text-xl tracking-tight text-[#1F3F74] dark:text-[#4987BA]">
+              <span className="font-sans font-extrabold text-xl tracking-tight text-brand-navy-500 dark:text-brand-teal-300">
                 Dagat Ta Bai
               </span>
             </Link>
@@ -66,37 +54,37 @@ export function Footer() {
               </h4>
               <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-400">
                 <li>
-                  <Link href="/" className="hover:text-[#1F3F74] dark:hover:text-white transition-colors">
+                  <Link href="/" className="hover:text-brand-navy-500 dark:hover:text-white transition-colors">
                     Home
                   </Link>
                 </li>
                 <li>
-                  <Link href="/weather" className="hover:text-[#1F3F74] dark:hover:text-white transition-colors">
-                    Weather &amp; Tides
+                  <Link href="/weather" className="hover:text-brand-navy-500 dark:hover:text-white transition-colors">
+                    Weather Forecast
                   </Link>
                 </li>
                 <li>
-                  <Link href="/about" className="hover:text-[#1F3F74] dark:hover:text-white transition-colors">
+                  <Link href="/about" className="hover:text-brand-navy-500 dark:hover:text-white transition-colors">
                     About Us
                   </Link>
                 </li>
                 <li>
-                  <Link href="/apply" className="hover:text-[#1F3F74] dark:hover:text-white transition-colors">
-                    Apply
+                  <Link href="/apply" className="hover:text-brand-navy-500 dark:hover:text-white transition-colors">
+                    Apply as Beach Owner
                   </Link>
                 </li>
                 <li>
-                  <Link href="/contact" className="hover:text-[#1F3F74] dark:hover:text-white transition-colors">
+                  <Link href="/contact" className="hover:text-brand-navy-500 dark:hover:text-white transition-colors">
                     Contact
                   </Link>
                 </li>
                 <li>
-                  <Link href="/faq" className="hover:text-[#1F3F74] dark:hover:text-white transition-colors">
+                  <Link href="/faq" className="hover:text-brand-navy-500 dark:hover:text-white transition-colors">
                     FAQs
                   </Link>
                 </li>
                 <li>
-                  <Link href="/feedback" className="hover:text-[#1F3F74] dark:hover:text-white transition-colors">
+                  <Link href="/feedback" className="hover:text-brand-navy-500 dark:hover:text-white transition-colors">
                     Feedback
                   </Link>
                 </li>
@@ -110,17 +98,17 @@ export function Footer() {
               </h4>
               <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-400">
                 <li>
-                  <Link href="/privacy" className="hover:text-[#1F3F74] dark:hover:text-white transition-colors">
+                  <Link href="/privacy" className="hover:text-brand-navy-500 dark:hover:text-white transition-colors">
                     Privacy Policy
                   </Link>
                 </li>
                 <li>
-                  <Link href="/terms" className="hover:text-[#1F3F74] dark:hover:text-white transition-colors">
+                  <Link href="/terms" className="hover:text-brand-navy-500 dark:hover:text-white transition-colors">
                     Terms of Use
                   </Link>
                 </li>
                 <li>
-                  <Link href="/community-guidelines" className="hover:text-[#1F3F74] dark:hover:text-white transition-colors">
+                  <Link href="/community-guidelines" className="hover:text-brand-navy-500 dark:hover:text-white transition-colors">
                     Community Guidelines
                   </Link>
                 </li>
@@ -134,20 +122,23 @@ export function Footer() {
               </h4>
               <div className="space-y-2.5 text-xs text-slate-600 dark:text-slate-400">
                 <div className="flex items-start gap-2.5">
-                  <Mail className="w-3.5 h-3.5 text-[#1F3F74] dark:text-[#4987BA] flex-shrink-0 mt-0.5" />
+                  <Mail className="w-3.5 h-3.5 text-brand-navy-500 dark:text-brand-teal-300 flex-shrink-0 mt-0.5" />
                   <a
-                    href="mailto:support@dagattabai.ph"
-                    className="hover:text-[#1F3F74] dark:hover:text-sky-300 font-medium transition-colors"
+                    href="https://mail.google.com/mail/?view=cm&fs=1&to=support.dagattabai@gmail.com&su=Inquiry%20-%20Dagat%20Ta%20Bai&body=Hello%20Dagat%20Ta%20Bai%20Support,%0A%0AMy%20concern%20is:%20"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    title="Compose email directly in Gmail"
+                    className="hover:text-brand-navy-500 dark:hover:text-brand-teal-300 font-medium transition-colors hover:underline"
                   >
                     support.dagattabai@gmail.com
                   </a>
                 </div>
                 <div className="flex items-start gap-2.5">
-                  <MapPin className="w-3.5 h-3.5 text-[#1F3F74] dark:text-[#4987BA] flex-shrink-0 mt-0.5" />
+                  <MapPin className="w-3.5 h-3.5 text-brand-navy-500 dark:text-brand-teal-300 flex-shrink-0 mt-0.5" />
                   <span>Barangay Binongkalan, Catmon, Cebu 6006</span>
                 </div>
                 <div className="flex items-start gap-2.5">
-                  <Clock className="w-3.5 h-3.5 text-[#1F3F74] dark:text-[#4987BA] flex-shrink-0 mt-0.5" />
+                  <Clock className="w-3.5 h-3.5 text-brand-navy-500 dark:text-brand-teal-300 flex-shrink-0 mt-0.5" />
                   <span>Monday – Friday: 8:00 AM – 5:00 PM (PST)</span>
                 </div>
               </div>

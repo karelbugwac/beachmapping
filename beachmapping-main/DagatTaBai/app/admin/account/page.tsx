@@ -66,7 +66,7 @@ export default function AdminSettingsPage() {
     <div className="max-w-7xl mx-auto space-y-6 font-sans">
       {/* Header */}
       <div>
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1F3F74] dark:text-white">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-brand-navy-500 dark:text-white">
           Settings
         </h1>
       </div>
@@ -76,7 +76,7 @@ export default function AdminSettingsPage() {
         {/* Card 1: Appearance */}
         <section className="rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200/80 dark:border-neutral-800 p-5 shadow-2xs flex flex-col justify-between gap-4">
           <div>
-            <h2 className="text-sm font-extrabold text-[#1F3F74] dark:text-white">
+            <h2 className="text-sm font-extrabold text-brand-navy-500 dark:text-white">
               Appearance
             </h2>
             <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
@@ -91,13 +91,13 @@ export default function AdminSettingsPage() {
               onClick={() => setTheme('light')}
               className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
                 theme === 'light'
-                  ? 'border-[#1F3F74] ring-2 ring-[#1F3F74]/15 bg-sky-50/40 dark:bg-sky-950/20'
+                  ? 'border-brand-navy-500 ring-2 ring-brand-teal-400/15 bg-brand-teal-50/40 dark:bg-brand-teal-700/20'
                   : 'border-slate-200 dark:border-neutral-800 hover:border-slate-300 bg-white dark:bg-neutral-950'
               }`}
             >
               <div className="h-16 w-full rounded-lg bg-slate-100 border border-slate-200 p-2 flex gap-1.5 overflow-hidden mb-2.5">
                 <div className="w-6 h-full bg-white rounded border border-slate-200 flex flex-col gap-1 p-1">
-                  <div className="w-full h-1 bg-[#1F3F74] rounded-full" />
+                  <div className="w-full h-1 bg-brand-navy-500 rounded-full" />
                   <div className="w-full h-1 bg-slate-200 rounded-full" />
                 </div>
                 <div className="flex-1 flex flex-col gap-1 p-0.5">
@@ -113,7 +113,7 @@ export default function AdminSettingsPage() {
                 <div
                   className={`w-4 h-4 rounded-full border flex items-center justify-center ${
                     theme === 'light'
-                      ? 'border-[#1F3F74] bg-[#1F3F74]'
+                      ? 'border-brand-navy-500 bg-brand-navy-500'
                       : 'border-slate-300 dark:border-neutral-700'
                   }`}
                 >
@@ -128,13 +128,13 @@ export default function AdminSettingsPage() {
               onClick={() => setTheme('dark')}
               className={`p-3.5 rounded-xl border text-left transition-all cursor-pointer ${
                 theme === 'dark'
-                  ? 'border-[#4987BA] ring-2 ring-[#4987BA]/20 bg-neutral-900'
+                  ? 'border-brand-teal-600 ring-2 ring-brand-teal-400/20 bg-neutral-900'
                   : 'border-slate-200 dark:border-neutral-800 hover:border-slate-300 bg-white dark:bg-neutral-950'
               }`}
             >
               <div className="h-16 w-full rounded-lg bg-black border border-neutral-800 p-2 flex gap-1.5 overflow-hidden mb-2.5">
                 <div className="w-6 h-full bg-neutral-900 rounded border border-neutral-800 flex flex-col gap-1 p-1">
-                  <div className="w-full h-1 bg-[#4987BA] rounded-full" />
+                  <div className="w-full h-1 bg-brand-teal-600 rounded-full" />
                   <div className="w-full h-1 bg-neutral-800 rounded-full" />
                 </div>
                 <div className="flex-1 flex flex-col gap-1 p-0.5">
@@ -150,7 +150,7 @@ export default function AdminSettingsPage() {
                 <div
                   className={`w-4 h-4 rounded-full border flex items-center justify-center ${
                     theme === 'dark'
-                      ? 'border-[#4987BA] bg-[#4987BA]'
+                      ? 'border-brand-teal-600 bg-brand-teal-600'
                       : 'border-slate-300 dark:border-neutral-700'
                   }`}
                 >
@@ -164,7 +164,7 @@ export default function AdminSettingsPage() {
         {/* Card 2: Security & Password Reset */}
         <section className="rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200/80 dark:border-neutral-800 p-5 shadow-2xs flex flex-col justify-between gap-4">
           <div>
-            <h2 className="text-sm font-extrabold text-[#1F3F74] dark:text-white">
+            <h2 className="text-sm font-extrabold text-brand-navy-500 dark:text-white">
               Security
             </h2>
             <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
@@ -192,7 +192,7 @@ export default function AdminSettingsPage() {
               type="button"
               onClick={handleRequestPasswordReset}
               disabled={sendingReset || resetSent}
-              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-[#1F3F74] hover:bg-[#18325c] dark:bg-[#4987BA] dark:hover:bg-[#3a72a1] disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold shadow-2xs transition-all cursor-pointer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl bg-brand-navy-500 hover:bg-brand-navy-600 dark:bg-brand-teal-600 dark:hover:bg-brand-navy-500 disabled:opacity-50 disabled:cursor-not-allowed text-white text-xs font-bold shadow-2xs transition-all cursor-pointer"
             >
               {sendingReset ? (
                 <>

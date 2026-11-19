@@ -12,7 +12,7 @@ export default function OwnerRequirementsPage() {
   return (
     <main className="mx-auto max-w-4xl space-y-8 px-4 py-12 sm:px-6">
       <header className="space-y-3">
-        <p className="text-xs font-semibold uppercase text-sky-700">Beach Owner Listings</p>
+        <p className="text-xs font-semibold uppercase text-brand-teal-700">Beach Owner Listings</p>
         <h1 className="text-3xl font-bold text-slate-950 dark:text-white">Application requirements</h1>
         <p className="max-w-2xl text-sm text-slate-600 dark:text-slate-300">Prepare these details and documents before applying. Your documents are uploaded to private storage and reviewed by the administrator.</p>
       </header>
@@ -35,14 +35,14 @@ export default function OwnerRequirementsPage() {
           <li>Your application is stored with a pending status.</li>
           <li>An administrator verifies your business and ownership documents.</li>
           <li>If approved, an owner account is created and a one-time six-digit PIN is emailed to the application address.</li>
-          <li>Sign in at the <Link className="font-semibold text-sky-700 underline" href="/owner/login">Owner Portal</Link> using that same email and PIN.</li>
+          <li>Sign in at the <Link className="font-semibold text-brand-teal-700 underline" href="/owner/login">Owner Portal</Link> using that same email and PIN.</li>
         </ol>
         <p className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300"><Mail className="mt-0.5 h-4 w-4 shrink-0" />Make sure you can receive email at the address you provide. An application is not an owner account until it is approved.</p>
         <p className="flex items-start gap-2 text-sm text-slate-600 dark:text-slate-300"><Phone className="mt-0.5 h-4 w-4 shrink-0" />Use a phone number where the administrator can reach you if the documents need clarification.</p>
       </section>
 
       <Link href="/apply" className="inline-flex items-center gap-2 rounded-md bg-slate-900 px-5 py-3 text-sm font-semibold text-white dark:bg-slate-100 dark:text-slate-900">
-        Apply to list your beach <ArrowRight className="h-4 w-4" />
+        Apply as Beach Owner <ArrowRight className="h-4 w-4" />
       </Link>
     </main>
   );

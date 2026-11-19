@@ -78,7 +78,7 @@ export function PageLoader() {
       aria-hidden="true"
     >
       <div
-        className="h-full bg-[#1F3F74] transition-all duration-300 ease-out"
+        className="h-full bg-brand-navy-500 transition-all duration-300 ease-out"
         style={{
           width: `${progress}%`,
         }}

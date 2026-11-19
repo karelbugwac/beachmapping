@@ -5,7 +5,7 @@ import { getOpeningStatus, type OpeningHours, type OpeningStatus } from '@/lib/u
 
 const statusClasses = {
   open: 'text-emerald-700 dark:text-emerald-400',
-  closing_soon: 'text-amber-700 dark:text-amber-400',
+  closing_soon: 'text-brand-navy-700 dark:text-brand-sun-400',
   closed: 'text-rose-700 dark:text-rose-400',
 };
 

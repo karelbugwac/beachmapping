@@ -6,6 +6,8 @@ import Link from 'next/link';
 import { Eye, EyeOff } from 'lucide-react';
 import { showToast } from '@/components/ui/feedback-toasts';
 import { createClient } from '@/lib/supabase/client';
+import { getSafeInternalRedirect } from '@/lib/utils/safe-redirect';
+import { signOutAndClearClientState } from '@/lib/client/logout';
 
 export default function AdminLoginPage() {
   const username = 'Administrator';
@@ -20,11 +22,15 @@ export default function AdminLoginPage() {
     const clearSession = async () => {
       try {
         const supabase = createClient();
-        const { data: { session } } = await supabase.auth.getSession();
-        if (session) {
-          const email = session.user.email?.toLowerCase() || '';
-          if (!['official.dagattabai@gmail.com', 'admin@dagattabai.ph'].includes(email)) {
-            await supabase.auth.signOut();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (user) {
+          const { data: profileData } = await supabase.from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .maybeSingle();
+          const profile = profileData as { role: string | null } | null;
+          if (profile?.role !== 'admin') {
+            await signOutAndClearClientState(user.id);
           }
         }
       } catch (error) {
@@ -121,20 +127,23 @@ export default function AdminLoginPage() {
       }
 
       // Establish client-side Supabase session
-      try {
-        const supabase = createClient();
-        await supabase.auth.signInWithPassword({
-          email: data.email || 'official.dagattabai@gmail.com',
-          password: nextPin,
-        });
-      } catch (clientAuthErr) {
-        console.warn('Client-side session sync notice:', clientAuthErr);
+      const supabase = createClient();
+      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+        email: data.email || 'official.dagattabai@gmail.com',
+        password: nextPin,
+      });
+      if (authError || !authData.session) {
+        throw new Error(authError?.message || 'Could not establish an admin session. Please try again.');
       }
 
-      showToast('Login successful! Redirecting to Admin Dashboard...', 'success');
+      showToast('Successful Login!', 'success');
 
       setTimeout(() => {
-        window.location.replace('/admin/dashboard');
+        const redirect = getSafeInternalRedirect(
+          new URLSearchParams(window.location.search).get('redirect'),
+          '/admin/dashboard'
+        );
+        window.location.replace(redirect);
       }, 800);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Authentication failed';
@@ -159,8 +168,8 @@ export default function AdminLoginPage() {
     <div className="admin-console min-h-screen flex flex-col justify-center items-center px-4 py-8 bg-[#f8fafc] dark:bg-black transition-colors duration-200 font-sans">
       {/* ── Top Page Loader Line Indicator ── */}
       {loading && (
-        <div className="fixed top-0 left-0 right-0 h-1 bg-[#1F3F74] dark:bg-[#4987BA] z-[400] animate-pulse overflow-hidden">
-          <div className="h-full bg-sky-400 w-1/2 animate-[progress_1s_ease-in-out_infinite]" />
+        <div className="fixed top-0 left-0 right-0 h-1 bg-brand-navy-500 dark:bg-brand-teal-600 z-[400] animate-pulse overflow-hidden">
+          <div className="h-full bg-brand-teal-400 w-1/2 animate-[progress_1s_ease-in-out_infinite]" />
         </div>
       )}
 
@@ -180,7 +189,7 @@ export default function AdminLoginPage() {
               />
             </div>
           </Link>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1F3F74] dark:text-[#4987BA]">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-brand-navy-500 dark:text-brand-teal-300">
             Admin Portal
           </h1>
           <p className="text-xs text-slate-500 dark:text-neutral-400 max-w-xs mx-auto mt-1 leading-relaxed">
@@ -208,10 +217,10 @@ export default function AdminLoginPage() {
                   onChange={(e) => handleDigitChange(i, e.target.value)}
                   onKeyDown={(e) => handleDigitKeyDown(i, e)}
                   onPaste={handleDigitPaste}
-                  className={`w-11 h-13 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-bold font-mono rounded-xl border transition-all focus:outline-none ${
+                  className={`w-11 h-13 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-bold font-mono rounded-xl border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 ${
                     digit
-                      ? 'border-[#1F3F74] ring-2 ring-[#1F3F74]/20 bg-blue-50/20 text-[#1F3F74] dark:text-[#4987BA] dark:bg-blue-950/20'
-                      : 'border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-slate-900 dark:text-white focus:border-[#1F3F74] focus:ring-2 focus:ring-[#1F3F74]/20'
+                      ? 'border-brand-navy-500 ring-2 ring-brand-teal-400/20 bg-brand-navy-50/20 text-brand-navy-500 dark:text-brand-teal-300 dark:bg-brand-navy-900/20'
+                      : 'border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-900 text-slate-900 dark:text-white focus:border-brand-navy-500 focus:ring-2 focus:ring-brand-teal-400/20'
                   }`}
                 />
               ))}
@@ -222,7 +231,7 @@ export default function AdminLoginPage() {
               <button
                 type="button"
                 onClick={() => setShowPin(!showPin)}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-[#1F3F74] dark:text-neutral-400 dark:hover:text-[#4987BA] transition-colors cursor-pointer"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-brand-navy-500 dark:text-neutral-400 dark:hover:text-brand-teal-300 transition-colors cursor-pointer"
               >
                 {showPin ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                 <span>{showPin ? 'Hide PIN' : 'Show PIN'}</span>
@@ -234,7 +243,7 @@ export default function AdminLoginPage() {
           <button
             type="submit"
             disabled={loading || pin.length !== 6}
-            className="w-full py-3.5 bg-[#1F3F74] hover:bg-[#183460] active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-sm tracking-wide rounded-full transition-all shadow-md flex items-center justify-center cursor-pointer"
+            className="w-full py-3.5 bg-brand-navy-500 hover:bg-brand-navy-600 active:scale-[0.99] disabled:opacity-40 disabled:cursor-not-allowed text-white font-bold text-sm tracking-wide rounded-full transition-all shadow-md flex items-center justify-center cursor-pointer"
           >
             <span>Login</span>
           </button>

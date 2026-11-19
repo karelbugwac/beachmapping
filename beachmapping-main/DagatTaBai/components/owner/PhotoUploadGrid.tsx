@@ -12,6 +12,7 @@ export interface PhotoUploadItem {
   progress: number;
   status: 'uploading' | 'saved' | 'error';
   error?: string;
+  sizeSummary?: string;
 }
 
 interface PhotoUploadGridProps<T extends PhotoUploadItem> {
@@ -109,7 +110,7 @@ export function PhotoUploadGrid<T extends PhotoUploadItem>({
                 <div
                   className={`relative aspect-[4/3] overflow-hidden bg-slate-100 dark:bg-neutral-800 ${
                     isCover
-                      ? 'border-2 border-blue-600'
+                      ? 'border-2 border-brand-navy-600'
                       : 'border border-slate-200 dark:border-neutral-700'
                   } ${photo.status === 'uploading' ? 'opacity-80' : ''}`}
                 >
@@ -124,7 +125,7 @@ export function PhotoUploadGrid<T extends PhotoUploadItem>({
                   )}
 
                   {isCover && (
-                    <span className="absolute left-2 top-2 z-10 inline-flex items-center gap-1 rounded-full bg-blue-100 px-2 py-1 text-[11px] font-medium text-blue-800">
+                    <span className="absolute left-2 top-2 z-10 inline-flex items-center gap-1 rounded-full bg-brand-navy-100 px-2 py-1 text-[11px] font-medium text-brand-navy-800">
                       <Star className="h-3 w-3 fill-current" aria-hidden="true" />
                       Cover
                     </span>
@@ -144,7 +145,7 @@ export function PhotoUploadGrid<T extends PhotoUploadItem>({
                     title="Remove photo"
                     disabled={removeDisabled}
                     onClick={() => removePhoto(photo)}
-                    className="absolute right-2 top-2 z-20 flex h-[26px] w-[26px] items-center justify-center rounded-full bg-white text-slate-600 shadow-sm transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 disabled:opacity-50"
+                    className="absolute right-2 top-2 z-20 flex h-[26px] w-[26px] items-center justify-center rounded-full bg-white text-slate-600 shadow-sm transition-colors hover:bg-red-50 hover:text-red-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus-visible:ring-offset-2 disabled:opacity-50"
                   >
                     <X className="h-[14px] w-[14px]" aria-hidden="true" />
                   </button>
@@ -162,7 +163,7 @@ export function PhotoUploadGrid<T extends PhotoUploadItem>({
                         <button
                           type="button"
                           onClick={() => setConfirmingPhotoId(null)}
-                          className="rounded-full border border-slate-300 px-2.5 py-1 text-[11px] font-medium text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 dark:border-neutral-600 dark:text-neutral-200"
+                          className="rounded-full border border-slate-300 px-2.5 py-1 text-[11px] font-medium text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 dark:border-neutral-600 dark:text-neutral-200"
                         >
                           Cancel
                         </button>
@@ -172,7 +173,7 @@ export function PhotoUploadGrid<T extends PhotoUploadItem>({
                             setConfirmingPhotoId(null);
                             onRemove(photo);
                           }}
-                          className="rounded-full bg-red-600 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
+                          className="rounded-full bg-red-600 px-2.5 py-1 text-[11px] font-medium text-white hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus-visible:ring-offset-2"
                         >
                           Remove
                         </button>
@@ -183,7 +184,7 @@ export function PhotoUploadGrid<T extends PhotoUploadItem>({
 
                 {photo.status === 'uploading' && (
                   <span className="block text-[11px] text-slate-500 dark:text-neutral-400">
-                    Uploading... {photo.progress}%
+                    {photo.progress === 0 ? 'Optimizing image...' : `Uploading... ${photo.progress}%`}
                   </span>
                 )}
                 {photo.status === 'saved' && (
@@ -200,11 +201,17 @@ export function PhotoUploadGrid<T extends PhotoUploadItem>({
                       type="button"
                       disabled={retryDisabled}
                       onClick={() => onRetry(photo)}
-                      className="w-full rounded-full border border-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800"
+                      className="w-full rounded-full border border-slate-300 px-2 py-1 text-xs font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800"
                     >
                       Retry
                     </button>
                   </div>
+                )}
+
+                {photo.sizeSummary && (
+                  <span className="block text-[10px] text-slate-500 dark:text-neutral-400">
+                    {photo.sizeSummary}
+                  </span>
                 )}
 
                 {photos.length > 1 && (
@@ -215,7 +222,7 @@ export function PhotoUploadGrid<T extends PhotoUploadItem>({
                       title={isCover ? 'Already the cover photo' : 'Move photo earlier'}
                       disabled={index === 0}
                       onClick={() => movePhoto(photo, -1)}
-                      className="flex flex-1 items-center justify-center gap-1 rounded-full border border-slate-300 px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 disabled:opacity-40 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800"
+                      className="flex flex-1 items-center justify-center gap-1 rounded-full border border-slate-300 px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 disabled:opacity-40 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800"
                     >
                       <ChevronUp className="h-3.5 w-3.5" aria-hidden="true" />
                       Earlier
@@ -225,7 +232,7 @@ export function PhotoUploadGrid<T extends PhotoUploadItem>({
                       aria-label={`Move photo ${index + 1} later`}
                       disabled={index === photos.length - 1}
                       onClick={() => movePhoto(photo, 1)}
-                      className="flex flex-1 items-center justify-center gap-1 rounded-full border border-slate-300 px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 disabled:opacity-40 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800"
+                      className="flex flex-1 items-center justify-center gap-1 rounded-full border border-slate-300 px-2 py-1 text-[11px] font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 disabled:opacity-40 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800"
                     >
                       <ChevronDown className="h-3.5 w-3.5" aria-hidden="true" />
                       Later
@@ -253,7 +260,7 @@ export function PhotoUploadGrid<T extends PhotoUploadItem>({
         />
         <label
           htmlFor={inputId}
-          className={`flex w-full items-center justify-center gap-2 rounded-full border border-slate-300 px-4 py-2.5 text-xs font-medium text-slate-700 transition-colors focus-within:ring-2 focus-within:ring-blue-600 dark:border-neutral-700 dark:text-neutral-200 ${
+          className={`flex w-full items-center justify-center gap-2 rounded-full border border-slate-300 px-4 py-2.5 text-xs font-medium text-slate-700 transition-colors focus-within:ring-2 focus-within:ring-brand-teal-400 dark:border-neutral-700 dark:text-neutral-200 ${
             addDisabled || atLimit
               ? 'cursor-not-allowed bg-slate-100 opacity-60 dark:bg-neutral-900'
               : 'cursor-pointer bg-white hover:bg-slate-50 dark:bg-neutral-950 dark:hover:bg-neutral-900'

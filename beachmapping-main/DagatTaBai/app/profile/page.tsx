@@ -21,10 +21,17 @@ import {
   Check,
   Trash,
   X,
+  AlertCircle,
 } from 'lucide-react';
 import { useTheme } from '@/components/theme-provider';
 import { showToast } from '@/components/ui/feedback-toasts';
+import { signOutAndClearClientState } from '@/lib/client/logout';
 import { confirmAction } from '@/components/ui/confirm-dialog';
+import { createClient } from '@/lib/supabase/client';
+import { formatImageSize } from '@/lib/utils/image-upload-config';
+import { prepareImageForUpload } from '@/lib/utils/image-compression';
+import { validateImageFile } from '@/lib/utils/image-validation';
+import { filterFullNameInput, validateFullName } from '@/lib/validation/fullName';
 import { notifyRealtimeSync, useRealtimeSync } from '@/lib/realtime-sync';
 
 interface ProfileData {
@@ -49,48 +56,6 @@ interface UserReview {
 }
 
 const AVATAR_PREVIEW_SIZE = 192;
-
-function cropAvatarImage(
-  imageUrl: string,
-  zoom: number,
-  offsetX: number,
-  offsetY: number
-): Promise<string> {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    image.onload = () => {
-      const cropSize = Math.min(image.naturalWidth, image.naturalHeight) / zoom;
-      const maxOffsetX = (image.naturalWidth - cropSize) / 2;
-      const maxOffsetY = (image.naturalHeight - cropSize) / 2;
-      const centerX = image.naturalWidth / 2 + offsetX * maxOffsetX;
-      const centerY = image.naturalHeight / 2 + offsetY * maxOffsetY;
-      const canvas = document.createElement('canvas');
-      canvas.width = 512;
-      canvas.height = 512;
-
-      const context = canvas.getContext('2d');
-      if (!context) {
-        reject(new Error('Could not prepare the selected photo.'));
-        return;
-      }
-
-      context.drawImage(
-        image,
-        centerX - cropSize / 2,
-        centerY - cropSize / 2,
-        cropSize,
-        cropSize,
-        0,
-        0,
-        canvas.width,
-        canvas.height
-      );
-      resolve(canvas.toDataURL('image/jpeg', 0.9));
-    };
-    image.onerror = () => reject(new Error('Could not load the selected photo.'));
-    image.src = imageUrl;
-  });
-}
 
 const profileCategories = [
   {
@@ -124,6 +89,7 @@ export default function ProfilePage() {
 
   // Personal Info Edit State
   const [name, setName] = useState('');
+  const [nameInputError, setNameInputError] = useState<string | null>(null);
   const [email, setEmail] = useState('');
   const [profileSaveState, setProfileSaveState] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const savedProfileRef = useRef<{ name: string; location: string } | null>(null);
@@ -134,6 +100,7 @@ export default function ProfilePage() {
   const [avatarUploading, setAvatarUploading] = useState(false);
   const [avatarEditorOpen, setAvatarEditorOpen] = useState(false);
   const [avatarDraft, setAvatarDraft] = useState<string | null>(null);
+  const [avatarDraftFile, setAvatarDraftFile] = useState<File | null>(null);
   const [avatarZoom, setAvatarZoom] = useState(1);
   const [avatarOffsetX, setAvatarOffsetX] = useState(0);
   const [avatarOffsetY, setAvatarOffsetY] = useState(0);
@@ -305,9 +272,11 @@ export default function ProfilePage() {
   useEffect(() => {
     if (!user || !savedProfileRef.current) return;
 
-    const pendingProfile = { name: name.trim(), location: userLocation.trim() };
+    const nameValidation = validateFullName(name);
+    if (!nameValidation.ok || nameInputError) return;
+
+    const pendingProfile = { name: nameValidation.value, location: userLocation.trim() };
     if (
-      pendingProfile.name.length < 2 ||
       (pendingProfile.name === savedProfileRef.current.name &&
         pendingProfile.location === savedProfileRef.current.location)
     ) {
@@ -350,7 +319,7 @@ export default function ProfilePage() {
     }, 650);
 
     return () => window.clearTimeout(timer);
-  }, [name, user, userLocation]);
+  }, [name, nameInputError, user, userLocation]);
 
   const fetchUserReviews = (silent = false) => {
     if (!user?.id) return;
@@ -409,19 +378,8 @@ export default function ProfilePage() {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
-      showToast('Choose a JPG, PNG, or WebP image.', 'error');
-      e.target.value = '';
-      return;
-    }
-
-    if (file.size > 3 * 1024 * 1024) {
-      showToast('Selected image exceeds 3MB limit. Please choose a smaller photo.', 'error');
-      e.target.value = '';
-      return;
-    }
-
     try {
+      await validateImageFile(file, 'profile');
       const base64Data = await new Promise<string>((resolve, reject) => {
         const reader = new FileReader();
         reader.onload = () => {
@@ -432,6 +390,7 @@ export default function ProfilePage() {
         reader.readAsDataURL(file);
       });
       setAvatarDraft(base64Data);
+      setAvatarDraftFile(file);
       setAvatarImageSize(null);
       setAvatarZoom(1);
       setAvatarOffsetX(0);
@@ -445,35 +404,72 @@ export default function ProfilePage() {
   };
 
   const handleApplyAvatar = async () => {
-    if (!avatarDraft) return;
+    if (!avatarDraft || !avatarDraftFile || !user) return;
     setAvatarUploading(true);
     try {
-      const croppedImage = await cropAvatarImage(
-        avatarDraft,
-        avatarZoom,
-        avatarOffsetX,
-        avatarOffsetY
+      const prepared = await prepareImageForUpload(
+        avatarDraftFile,
+        'profile',
+        {
+          zoom: avatarZoom,
+          offsetX: avatarOffsetX,
+          offsetY: avatarOffsetY,
+        }
       );
+      const supabase = createClient();
+      const extension = prepared.file.type === 'image/webp' ? 'webp' : 'jpg';
+      const storagePath = `${user.id}/avatar.${extension}`;
+      const { error: uploadError } = await supabase.storage.from('avatars').upload(
+        storagePath,
+        prepared.file,
+        {
+          cacheControl: '3600',
+          contentType: prepared.file.type,
+          upsert: true,
+        }
+      );
+      if (uploadError) throw uploadError;
+
+      const profileImageUrl = `${supabase.storage.from('avatars').getPublicUrl(storagePath).data.publicUrl}?v=${Date.now()}`;
       const res = await fetch('/api/auth/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profile_image_url: croppedImage }),
+        body: JSON.stringify({ profile_image_url: profileImageUrl }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
+        if (user.picture !== profileImageUrl) {
+          const { error: cleanupError } = await supabase.storage.from('avatars').remove([storagePath]);
+          if (cleanupError) {
+            console.error('Failed to clean up an avatar after profile update failed:', cleanupError);
+          }
+        }
         throw new Error(data?.error || `Could not save your photo (HTTP ${res.status}).`);
       }
       if (!data?.user) throw new Error('The server did not confirm the photo update.');
 
       setUser((prev) => (prev ? { ...prev, picture: data.user.profile_image_url } : null));
+      const oldAvatarPaths = ['webp', 'jpg']
+        .map((suffix) => `${user.id}/avatar.${suffix}`)
+        .filter((path) => path !== storagePath);
+      const { error: cleanupError } = await supabase.storage.from('avatars').remove(oldAvatarPaths);
+      if (cleanupError) {
+        console.error('Failed to remove a replaced avatar file:', cleanupError);
+        showToast('Profile photo updated, but the previous file could not be removed.', 'error');
+      } else {
+        showToast(
+          `Profile photo updated (${formatImageSize(prepared.originalSize)} → ${formatImageSize(prepared.compressedSize)}).`,
+          'success'
+        );
+      }
       window.dispatchEvent(
         new CustomEvent('dtb_user_updated', {
           detail: { profile_image_url: data.user.profile_image_url },
         })
       );
-      showToast('Profile photo updated.', 'success');
       setAvatarEditorOpen(false);
       setAvatarDraft(null);
+      setAvatarDraftFile(null);
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Could not update your photo.', 'error');
     } finally {
@@ -497,6 +493,13 @@ export default function ProfilePage() {
       if (!data?.user) throw new Error('The server did not confirm the photo removal.');
 
       setUser((prev) => (prev ? { ...prev, picture: null } : null));
+      const supabase = createClient();
+      const { error: storageError } = await supabase.storage
+        .from('avatars')
+        .remove([`${user.id}/avatar.webp`, `${user.id}/avatar.jpg`]);
+      if (storageError) {
+        throw new Error(`Profile photo was cleared, but its storage file could not be removed: ${storageError.message}`);
+      }
       window.dispatchEvent(
         new CustomEvent('dtb_user_updated', {
           detail: { profile_image_url: null },
@@ -504,6 +507,7 @@ export default function ProfilePage() {
       );
       setAvatarEditorOpen(false);
       setAvatarDraft(null);
+      setAvatarDraftFile(null);
       showToast('Profile photo removed.', 'destructive');
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Failed to remove picture', 'error');
@@ -541,12 +545,11 @@ export default function ProfilePage() {
   // Delete User Review
   const handleSignOut = async () => {
     try {
-      const { createClient } = await import('@/lib/supabase/client');
-      const supabase = createClient();
-      await supabase.auth.signOut();
-      await fetch('/api/auth/logout', { method: 'POST' });
-    } catch {} finally {
-      window.location.href = '/login';
+      await signOutAndClearClientState(user?.id);
+    } catch (error: unknown) {
+      console.error('Sign-out cleanup did not complete:', error);
+    } finally {
+      window.location.replace('/login');
     }
   };
 
@@ -557,7 +560,7 @@ export default function ProfilePage() {
         aria-label="Loading profile"
         className="min-h-[70vh] flex items-center justify-center text-slate-500 dark:text-slate-400"
       >
-        <Loader2 className="w-8 h-8 animate-spin text-[#1F3F74] dark:text-[#4987BA]" />
+        <Loader2 className="w-8 h-8 animate-spin text-brand-navy-500 dark:text-brand-teal-300" />
         <span className="sr-only">Loading profile...</span>
       </div>
     );
@@ -566,7 +569,7 @@ export default function ProfilePage() {
   if (!user) return null;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-8">
+    <div className="mx-auto w-full min-w-0 max-w-4xl px-4 py-10 sm:px-6 lg:px-8 space-y-8">
       {/* Hidden File Input for Avatar */}
       <input
         type="file"
@@ -582,7 +585,7 @@ export default function ProfilePage() {
       <div className="text-center space-y-3 pt-4">
         {/* Large Profile Picture with Camera Action */}
         <div className="relative inline-block group">
-          <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden bg-slate-100 dark:bg-neutral-900 border-4 border-white dark:border-neutral-900 shadow-md flex items-center justify-center text-4xl font-extrabold text-[#1F3F74] dark:text-[#4987BA] mx-auto">
+          <div className="relative w-24 h-24 sm:w-28 sm:h-28 rounded-full overflow-hidden bg-slate-100 dark:bg-neutral-900 border-4 border-white dark:border-neutral-900 shadow-md flex items-center justify-center text-4xl font-extrabold text-brand-navy-500 dark:text-brand-teal-300 mx-auto">
             <span>{user.name.charAt(0).toUpperCase()}</span>
             {user.picture && (
               // eslint-disable-next-line @next/next/no-img-element
@@ -590,7 +593,12 @@ export default function ProfilePage() {
                 key={user.picture}
                 src={user.picture}
                 alt=""
+                width={112}
+                height={112}
+                loading="lazy"
+                decoding="async"
                 referrerPolicy="no-referrer"
+                style={{ aspectRatio: '1 / 1' }}
                 onError={(event) => {
                   event.currentTarget.style.display = 'none';
                 }}
@@ -607,7 +615,7 @@ export default function ProfilePage() {
             }}
             disabled={avatarUploading}
             aria-label="Manage profile photo"
-            className="absolute bottom-0 right-0 p-2 bg-[#1F3F74] hover:bg-[#285091] text-white rounded-full shadow-md transition-transform group-hover:scale-110 cursor-pointer"
+            className="absolute bottom-0 right-0 p-2 bg-brand-navy-500 hover:bg-brand-navy-600 text-white rounded-full shadow-md transition-transform group-hover:scale-110 cursor-pointer"
           >
             {avatarUploading ? (
               <Loader2 className="w-4 h-4 animate-spin" />
@@ -618,10 +626,10 @@ export default function ProfilePage() {
         </div>
 
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1F3F74] dark:text-white">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-brand-navy-500 dark:text-white">
             {user.name}
           </h1>
-          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+          <p className="break-all text-xs text-slate-500 dark:text-slate-400 mt-0.5">
             {user.email}
           </p>
         </div>
@@ -634,12 +642,12 @@ export default function ProfilePage() {
             type="button"
             onClick={() => setActiveCategory(null)}
             aria-label="Back to profile settings"
-            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-[#1F3F74] dark:text-white transition-all cursor-pointer shadow-2xs"
+            className="inline-flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-brand-navy-500 dark:text-white transition-all cursor-pointer shadow-2xs"
           >
             <ChevronLeft className="h-5 w-5" />
           </button>
           <div>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-[#1F3F74] dark:text-white tracking-tight">
+            <h2 className="text-xl sm:text-2xl font-extrabold text-brand-navy-500 dark:text-white tracking-tight">
               {profileCategories.find((category) => category.id === activeCategory)?.label}
             </h2>
             <p className="text-xs text-slate-500 dark:text-slate-400">
@@ -654,14 +662,14 @@ export default function ProfilePage() {
               key={id}
               type="button"
               onClick={() => setActiveCategory(id)}
-              className="group flex w-full items-center justify-between gap-4 rounded-2xl sm:rounded-3xl border border-slate-200/90 bg-white px-4 py-4.5 text-left shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:border-[#1F3F74]/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74] focus-visible:ring-offset-2 dark:border-neutral-800 dark:bg-neutral-900/90 dark:hover:border-[#38BDF8]/40 dark:focus-visible:ring-[#38BDF8] dark:focus-visible:ring-offset-neutral-950 sm:px-6 sm:py-5 cursor-pointer"
+              className="group flex w-full items-center justify-between gap-4 rounded-2xl sm:rounded-3xl border border-slate-200/90 bg-white px-4 py-4.5 text-left shadow-2xs transition-all duration-200 hover:-translate-y-0.5 hover:border-brand-navy-500/40 hover:shadow-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus-visible:ring-offset-2 dark:border-neutral-800 dark:bg-neutral-900/90 dark:hover:border-brand-teal-400/40 dark:focus-visible:ring-brand-teal-400 dark:focus-visible:ring-offset-neutral-950 sm:px-6 sm:py-5 cursor-pointer"
             >
               <span className="flex min-w-0 items-center gap-4 sm:gap-4.5">
-                <span className="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-2xl bg-[#1F3F74]/[0.08] text-[#1F3F74] transition-all duration-200 group-hover:bg-[#1F3F74] group-hover:text-white dark:bg-sky-950/60 dark:text-[#38BDF8] dark:group-hover:bg-[#38BDF8] dark:group-hover:text-neutral-950 shadow-2xs">
+                <span className="flex h-11 w-11 sm:h-12 sm:w-12 shrink-0 items-center justify-center rounded-2xl bg-brand-navy-500/[0.08] text-brand-navy-500 transition-all duration-200 group-hover:bg-brand-navy-500 group-hover:text-white dark:bg-brand-teal-700/60 dark:text-brand-teal-400 dark:group-hover:bg-brand-teal-400 dark:group-hover:text-neutral-950 shadow-2xs">
                   <Icon className="h-5 w-5 sm:h-5.5 sm:w-5.5" />
                 </span>
                 <span className="min-w-0">
-                  <span className="block text-base sm:text-lg font-extrabold text-[#1F3F74] dark:text-[#38BDF8] tracking-tight group-hover:translate-x-0.5 transition-transform duration-200">
+                  <span className="block text-base sm:text-lg font-extrabold text-brand-navy-500 dark:text-brand-teal-400 tracking-tight group-hover:translate-x-0.5 transition-transform duration-200">
                     {label}
                   </span>
                   <span className="mt-0.5 sm:mt-1 block text-xs sm:text-xs leading-relaxed text-slate-500 dark:text-neutral-400">
@@ -669,7 +677,7 @@ export default function ProfilePage() {
                   </span>
                 </span>
               </span>
-              <ChevronRight className="h-5 w-5 shrink-0 text-slate-400 transition-all duration-200 group-hover:translate-x-1 group-hover:text-[#1F3F74] dark:text-neutral-500 dark:group-hover:text-[#38BDF8]" />
+              <ChevronRight className="h-5 w-5 shrink-0 text-slate-400 transition-all duration-200 group-hover:translate-x-1 group-hover:text-brand-navy-500 dark:text-neutral-500 dark:group-hover:text-brand-teal-400" />
             </button>
           ))}
         </nav>
@@ -687,7 +695,7 @@ export default function ProfilePage() {
             {/* Header & Auto-Save Badge */}
             <div className="border-b border-slate-200 pb-4 dark:border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
               <div>
-                <h2 className="text-lg font-bold text-[#1F3F74] dark:text-white tracking-tight">
+                <h2 className="text-lg font-bold text-brand-navy-500 dark:text-white tracking-tight">
                   Basic Info
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
@@ -697,7 +705,7 @@ export default function ProfilePage() {
 
               <div aria-live="polite" className="text-[11px] font-medium shrink-0">
                 {profileSaveState === 'saving' && (
-                  <span className="inline-flex items-center gap-1.5 text-sky-600 dark:text-sky-400 bg-sky-50 dark:bg-sky-950/50 px-2.5 py-1 rounded-full">
+                  <span className="inline-flex items-center gap-1.5 text-brand-teal-600 dark:text-brand-teal-400 bg-brand-teal-50 dark:bg-brand-teal-700/50 px-2.5 py-1 rounded-full">
                     <Loader2 className="w-3 h-3 animate-spin" />
                     Saving...
                   </span>
@@ -720,25 +728,55 @@ export default function ProfilePage() {
             <div className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                  <label htmlFor="profile-overview-full-name" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
                     Display Name
                   </label>
                   <div className="relative">
                     <User className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
                     <input
+                      id="profile-overview-full-name"
                       type="text"
                       required
-                      minLength={2}
-                      maxLength={120}
+                      maxLength={80}
+                      autoComplete="name"
+                      inputMode="text"
                       value={name}
                       onChange={(e) => {
-                        setName(e.target.value);
+                        const rawValue = e.target.value;
+                        const validation = validateFullName(rawValue);
+                        setName(filterFullNameInput(rawValue));
+                        setNameInputError(validation.error);
                         setProfileSaveState('idle');
                       }}
-                      className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1F3F74] text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 transition"
+                      onBlur={() => {
+                        const validation = validateFullName(name);
+                        if (!nameInputError) setNameInputError(validation.error);
+                        if (validation.ok && !nameInputError) setName(validation.value);
+                      }}
+                      aria-invalid={Boolean(nameInputError || !validateFullName(name).ok)}
+                      aria-describedby={
+                        nameInputError || !validateFullName(name).ok
+                          ? 'profile-overview-name-error'
+                          : undefined
+                      }
+                      className={`w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 dark:bg-neutral-900 border rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:ring-2 focus:ring-brand-teal-400 text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 transition ${
+                        nameInputError || !validateFullName(name).ok
+                          ? 'border-red-500 dark:border-red-500'
+                          : 'border-slate-200 dark:border-neutral-800'
+                      }`}
                       placeholder="Your display name"
                     />
                   </div>
+                  {(nameInputError || validateFullName(name).error) && (
+                    <p
+                      id="profile-overview-name-error"
+                      role="alert"
+                      className="mt-1 flex items-center gap-1 text-[11px] text-red-600"
+                    >
+                      <AlertCircle className="h-3.5 w-3.5 shrink-0" />
+                      {nameInputError || validateFullName(name).error}
+                    </p>
+                  )}
                 </div>
 
                 <div>
@@ -755,7 +793,7 @@ export default function ProfilePage() {
                         setUserLocation(e.target.value);
                         setProfileSaveState('idle');
                       }}
-                      className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-xl focus:outline-none focus:ring-2 focus:ring-[#1F3F74] text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 transition"
+                      className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:ring-2 focus:ring-brand-teal-400 text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 transition"
                       placeholder={isFetchingLocation ? 'Detecting your location...' : 'Your town or city'}
                     />
                   </div>
@@ -767,13 +805,10 @@ export default function ProfilePage() {
                   Email Address
                 </label>
                 <div className="relative">
-                  <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="email"
-                    disabled
-                    value={email}
-                    className="w-full pl-10 pr-4 py-2.5 text-xs bg-slate-100 dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 rounded-xl text-slate-500 dark:text-slate-400 cursor-not-allowed"
-                  />
+                  <div className="flex min-h-10 w-full min-w-0 items-center gap-2 rounded-xl border border-slate-200 bg-slate-100 px-3.5 py-2.5 text-xs text-slate-500 dark:border-neutral-800 dark:bg-neutral-900/60 dark:text-slate-400">
+                    <Mail className="h-4 w-4 shrink-0 text-slate-400" />
+                    <span className="min-w-0 break-all">{email}</span>
+                  </div>
                 </div>
                 <p className="text-[11px] text-slate-400 mt-1 pl-1">
                   Email is linked to your authentication provider.
@@ -785,7 +820,7 @@ export default function ProfilePage() {
             {(user.role === 'beach_owner' || user.role === 'beach_manager') && (
               <section className="border-t border-slate-200 pt-6 dark:border-neutral-800" aria-label="Account status">
                 <h3 className="text-sm font-bold text-slate-800 dark:text-white">Account Status</h3>
-                <div className="mt-3 flex items-center justify-between gap-3 rounded-xl bg-slate-50 px-4 py-3 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800">
+                <div className="mt-3 flex flex-wrap items-center justify-between gap-3 rounded-xl bg-slate-50 px-4 py-3 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800">
                   <span className="text-xs font-medium text-slate-600 dark:text-slate-300">
                     {user.role === 'beach_owner' ? 'Beach Owner' : 'Beach Manager'}
                   </span>
@@ -809,7 +844,7 @@ export default function ProfilePage() {
                 type="button"
                 onClick={handleSendPasswordResetEmail}
                 disabled={isSendingReset}
-                className="inline-flex items-center justify-center gap-2 rounded-full bg-[#1F3F74] px-5 py-2.5 text-xs font-bold text-white transition-colors hover:bg-[#285091] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74] focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-offset-neutral-950 shadow-2xs"
+                className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-navy-500 px-5 py-2.5 text-xs font-bold text-white transition-colors hover:bg-brand-navy-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 dark:focus-visible:ring-offset-neutral-950 shadow-2xs sm:w-auto"
               >
                 {isSendingReset && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
                 <span>Reset Password</span>
@@ -828,7 +863,7 @@ export default function ProfilePage() {
               </div>
               <Link
                 href="/contact?subject=Account%20Deletion%20Request"
-                className="inline-flex items-center justify-center rounded-full bg-red-600 px-5 py-2.5 text-xs font-bold text-white shadow-2xs transition-colors hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-950"
+                className="inline-flex w-full items-center justify-center rounded-full bg-red-600 px-5 py-2.5 text-xs font-bold text-white shadow-2xs transition-colors hover:bg-red-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-600 focus-visible:ring-offset-2 dark:focus-visible:ring-offset-neutral-950 sm:w-auto"
               >
                 Request Account Deletion
               </Link>
@@ -842,7 +877,7 @@ export default function ProfilePage() {
         {activeCategory === 'appearance' && (
           <div id="appearance-settings" role="tabpanel" aria-labelledby="appearance-tab" className="max-w-2xl space-y-6">
             <div className="border-b border-slate-200 pb-4 dark:border-neutral-800">
-              <h3 className="text-base font-bold text-[#1F3F74] dark:text-white">Theme Mode</h3>
+              <h3 className="text-base font-bold text-brand-navy-500 dark:text-white">Theme Mode</h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 Choose the visual appearance that feels comfortable for your coastal exploration.
               </p>
@@ -857,12 +892,12 @@ export default function ProfilePage() {
                   onClick={() => setTheme('light')}
                   className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all cursor-pointer ${
                     theme === 'light'
-                      ? 'border-[#1F3F74] bg-[#1F3F74]/[0.06] shadow-sm ring-1 ring-[#1F3F74]'
+                      ? 'border-brand-navy-500 bg-brand-navy-500/[0.06] shadow-sm ring-1 ring-brand-teal-400'
                       : 'border-slate-200 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700 bg-white dark:bg-neutral-900'
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`p-2.5 rounded-xl ${theme === 'light' ? 'bg-[#1F3F74] text-white' : 'bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400'}`}>
+                    <div className={`p-2.5 rounded-xl ${theme === 'light' ? 'bg-brand-navy-500 text-white' : 'bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400'}`}>
                       <Sun className="h-5 w-5" />
                     </div>
                     <div className="text-left">
@@ -871,7 +906,7 @@ export default function ProfilePage() {
                     </div>
                   </div>
                   {theme === 'light' && (
-                    <span className="h-6 w-6 rounded-full bg-[#1F3F74] text-white flex items-center justify-center shrink-0">
+                    <span className="h-6 w-6 rounded-full bg-brand-navy-500 text-white flex items-center justify-center shrink-0">
                       <Check className="h-3.5 w-3.5" />
                     </span>
                   )}
@@ -883,12 +918,12 @@ export default function ProfilePage() {
                   onClick={() => setTheme('dark')}
                   className={`flex items-center justify-between p-4 rounded-2xl border-2 transition-all cursor-pointer ${
                     theme === 'dark'
-                      ? 'border-[#38BDF8] bg-sky-950/40 shadow-sm ring-1 ring-[#38BDF8]'
+                      ? 'border-brand-teal-400 bg-brand-teal-700/40 shadow-sm ring-1 ring-brand-teal-400'
                       : 'border-slate-200 dark:border-neutral-800 hover:border-slate-300 dark:hover:border-neutral-700 bg-white dark:bg-neutral-900'
                   }`}
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`p-2.5 rounded-xl ${theme === 'dark' ? 'bg-[#38BDF8] text-neutral-950' : 'bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400'}`}>
+                    <div className={`p-2.5 rounded-xl ${theme === 'dark' ? 'bg-brand-teal-400 text-neutral-950' : 'bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-400'}`}>
                       <Moon className="h-5 w-5" />
                     </div>
                     <div className="text-left">
@@ -897,7 +932,7 @@ export default function ProfilePage() {
                     </div>
                   </div>
                   {theme === 'dark' && (
-                    <span className="h-6 w-6 rounded-full bg-[#38BDF8] text-neutral-950 flex items-center justify-center shrink-0">
+                    <span className="h-6 w-6 rounded-full bg-brand-teal-400 text-neutral-950 flex items-center justify-center shrink-0">
                       <Check className="h-3.5 w-3.5" />
                     </span>
                   )}
@@ -911,7 +946,7 @@ export default function ProfilePage() {
         {activeCategory === 'reviews' && (
           <section id="reviews-settings" className="max-w-2xl space-y-5">
             <div className="border-b border-slate-200 pb-4 dark:border-neutral-800">
-              <h3 className="text-base font-bold text-[#1F3F74] dark:text-white">My Reviews &amp; Feedback</h3>
+              <h3 className="text-base font-bold text-brand-navy-500 dark:text-white">My Reviews &amp; Feedback</h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                 Reviews and community feedback submitted under your account.
               </p>
@@ -919,12 +954,12 @@ export default function ProfilePage() {
 
             {reviewsLoading ? (
               <div className="flex items-center justify-center gap-2 py-12 text-slate-500">
-                <Loader2 className="h-5 w-5 animate-spin text-[#1F3F74] dark:text-[#38BDF8]" />
+                <Loader2 className="h-5 w-5 animate-spin text-brand-navy-500 dark:text-brand-teal-400" />
                 <span className="text-xs font-semibold">Loading reviews...</span>
               </div>
             ) : reviews.length === 0 ? (
               <div className="flex flex-col items-center justify-center gap-3 py-14 text-center">
-                <div className="flex h-13 w-13 items-center justify-center rounded-2xl bg-[#1F3F74]/[0.08] text-[#1F3F74] dark:bg-sky-950/60 dark:text-[#38BDF8]">
+                <div className="flex h-13 w-13 items-center justify-center rounded-2xl bg-brand-navy-500/[0.08] text-brand-navy-500 dark:bg-brand-teal-700/60 dark:text-brand-teal-400">
                   <MessageSquare className="h-6 w-6" />
                 </div>
                 <h4 className="text-sm font-bold text-slate-800 dark:text-white">No reviews yet</h4>
@@ -941,11 +976,11 @@ export default function ProfilePage() {
                   >
                     <div className="space-y-1.5 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
-                        <h4 className="text-sm font-extrabold text-[#1F3F74] dark:text-white">
+                        <h4 className="text-sm font-extrabold text-brand-navy-500 dark:text-white">
                           {review.beach_name || 'Beach Resort'}
                         </h4>
                         {review.review_type === 'platform' && (
-                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-sky-100 text-[#1F3F74] dark:bg-sky-950/70 dark:text-sky-300">
+                          <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-brand-teal-100 text-brand-navy-500 dark:bg-brand-teal-700/70 dark:text-brand-teal-300">
                             Platform Feedback
                           </span>
                         )}
@@ -956,7 +991,7 @@ export default function ProfilePage() {
                             key={index}
                             className={`h-3.5 w-3.5 ${
                               index < review.rating
-                                ? 'fill-amber-400 text-amber-400'
+                                ? 'fill-brand-sun-400 text-brand-sun-700'
                                 : 'text-slate-300 dark:text-neutral-700'
                             }`}
                           />
@@ -1026,7 +1061,7 @@ export default function ProfilePage() {
             </header>
 
             <div
-              className={`relative mx-auto flex h-48 w-48 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-5xl font-bold text-[#1F3F74] dark:bg-neutral-900 dark:text-[#4987BA] ${
+              className={`relative mx-auto flex h-48 w-48 items-center justify-center overflow-hidden rounded-full bg-slate-100 text-5xl font-bold text-brand-navy-500 dark:bg-neutral-900 dark:text-brand-teal-300 ${
                 avatarDraft ? 'cursor-grab touch-none active:cursor-grabbing' : ''
               }`}
               role={avatarDraft ? 'group' : undefined}
@@ -1158,7 +1193,7 @@ export default function ProfilePage() {
                         setAvatarOffsetX((offset) => Math.max(-1, Math.min(1, offset)));
                         setAvatarOffsetY((offset) => Math.max(-1, Math.min(1, offset)));
                       }}
-                      className="mt-2 block w-full accent-[#1F3F74]"
+                      className="mt-2 block w-full accent-brand-navy-500"
                     />
                   </label>
                 </div>
@@ -1186,7 +1221,7 @@ export default function ProfilePage() {
                   onClick={handleApplyAvatar}
                   disabled={avatarUploading}
                   aria-busy={avatarUploading}
-                  className="inline-flex items-center gap-2 rounded-full bg-[#1F3F74] px-5 py-2.5 text-xs font-bold text-white hover:bg-[#285091] disabled:opacity-50"
+                  className="inline-flex items-center gap-2 rounded-full bg-brand-navy-500 px-5 py-2.5 text-xs font-bold text-white hover:bg-brand-navy-600 disabled:opacity-50"
                 >
                   {avatarUploading && <Loader2 className="h-4 w-4 animate-spin" />}
                   {avatarUploading ? 'Applying...' : 'Apply photo'}
@@ -1196,7 +1231,7 @@ export default function ProfilePage() {
                   type="button"
                   onClick={() => setAvatarEditorOpen(false)}
                   disabled={avatarUploading}
-                  className="rounded-full bg-[#1F3F74] px-5 py-2.5 text-xs font-bold text-white hover:bg-[#285091] disabled:opacity-50"
+                  className="rounded-full bg-brand-navy-500 px-5 py-2.5 text-xs font-bold text-white hover:bg-brand-navy-600 disabled:opacity-50"
                 >
                   Done
                 </button>

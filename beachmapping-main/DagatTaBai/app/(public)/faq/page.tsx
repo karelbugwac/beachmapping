@@ -82,7 +82,7 @@ export default function FaqPage() {
       {/* ── Page Header (Matching Homepage Typography Scale) ──────── */}
       <section className="pt-12 sm:pt-16 pb-8 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto text-center space-y-3">
         <ScrollReveal direction="up" duration={650}>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-[#1F3F74] dark:text-[#4987BA] leading-tight">
+          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-brand-navy-500 dark:text-brand-teal-300 leading-tight">
             Frequently Asked Questions
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-xl mx-auto leading-relaxed mt-2">
@@ -105,7 +105,7 @@ export default function FaqPage() {
                   onClick={() => setSelectedCategory(cat)}
                   className={`shrink-0 whitespace-nowrap px-4 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
                     isSelected
-                      ? 'bg-[#1F3F74] text-white shadow-xs'
+                      ? 'bg-brand-navy-500 text-white shadow-xs'
                       : 'bg-slate-100 dark:bg-neutral-900 text-slate-600 dark:text-slate-400 hover:bg-slate-200 dark:hover:bg-neutral-800'
                   }`}
                 >
@@ -141,15 +141,15 @@ export default function FaqPage() {
                   <button
                     type="button"
                     onClick={() => toggleFaq(index)}
-                    className="w-full flex items-center justify-between text-left gap-4 group focus:outline-none cursor-pointer"
+                    className="w-full flex items-center justify-between text-left gap-4 group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 cursor-pointer"
                     aria-expanded={isOpen}
                   >
-                    <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white group-hover:text-[#1F3F74] dark:group-hover:text-[#4987BA] transition-colors leading-relaxed">
+                    <span className="font-bold text-xs sm:text-sm text-slate-900 dark:text-white group-hover:text-brand-navy-500 dark:group-hover:text-brand-teal-300 transition-colors leading-relaxed">
                       {faq.q}
                     </span>
                     <div
                       className={`w-7 h-7 rounded-full bg-slate-100 dark:bg-neutral-900 flex items-center justify-center flex-shrink-0 text-slate-600 dark:text-slate-300 transition-all duration-200 ${
-                        isOpen ? 'rotate-180 bg-[#1F3F74] text-white dark:bg-[#1F3F74]' : ''
+                        isOpen ? 'rotate-180 bg-brand-navy-500 text-white dark:bg-brand-navy-500' : ''
                       }`}
                     >
                       <ChevronDown className="w-4 h-4 stroke-[2]" />
@@ -178,7 +178,7 @@ export default function FaqPage() {
           <div className="pt-1">
             <Link
               href="/contact"
-              className="inline-flex items-center justify-center px-8 py-3 rounded-full bg-[#1F3F74] hover:bg-[#285091] text-white font-bold text-xs sm:text-sm shadow-md transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
+              className="inline-flex items-center justify-center px-8 py-3 rounded-full bg-brand-navy-500 hover:bg-brand-navy-600 text-white font-bold text-xs sm:text-sm shadow-md transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
             >
               Contact Support
             </Link>

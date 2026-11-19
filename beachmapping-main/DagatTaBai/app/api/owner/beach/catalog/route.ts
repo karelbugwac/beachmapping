@@ -174,7 +174,7 @@ export async function GET(request: NextRequest) {
     const { beach } = beachResult;
 
     const entries = await Promise.all(
-      (Object.entries(tableByType) as Array<[CatalogType, string]>).map(async ([type, table]) => {
+      (Object.entries(tableByType) as Array<[CatalogType, (typeof tableByType)[CatalogType]]>).map(async ([type, table]) => {
         const query = (auth.adminClient.from(table) as any)
           .select(type === 'cottage'
             ? '*, photos:beach_cottage_photos(id, image_url, storage_path, sort_order, created_at)'

@@ -198,6 +198,22 @@ export function AiChatWidget() {
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const historyLoadedRef = useRef(false);
 
+  // Check auth session on mount and listen to auth events
+  useEffect(() => {
+    const checkAuth = () => {
+      fetch('/api/auth/session', { cache: 'no-store' })
+        .then((res) => (res.ok ? res.json() : null))
+        .then((data) => {
+          setSignedIn(Boolean(data?.user));
+        })
+        .catch(() => setSignedIn(false));
+    };
+
+    checkAuth();
+    window.addEventListener('dtb_login_completed', checkAuth);
+    return () => window.removeEventListener('dtb_login_completed', checkAuth);
+  }, []);
+
   // Lazy-load history only when the chat widget is actually opened
   useEffect(() => {
     if (isPortal || isMap || !isOpen || historyLoadedRef.current) return;
@@ -246,6 +262,11 @@ export function AiChatWidget() {
   }, []);
 
   const submitQuestion = async (questionText: string) => {
+    if (!signedIn) {
+      showToast('Please sign in to chat with Bai.', 'error');
+      window.location.href = '/login';
+      return;
+    }
     if (!questionText.trim() || loading) return;
 
     const recentHistory = messages
@@ -385,14 +406,14 @@ export function AiChatWidget() {
   }
 
   return (
-    <div className="fixed z-50 bottom-2 right-2 sm:bottom-4 sm:right-4 transition-all duration-300">
+    <div className="fixed z-[60] bottom-2 right-2 sm:bottom-4 sm:right-4 transition-all duration-300">
       {/* Minimized Floating Trigger Button with live beacon */}
       {!isOpen && (
         <div className="relative group">
           <button
             type="button"
             onClick={() => setIsOpen(true)}
-            className="group relative w-12 h-12 sm:w-16 sm:h-16 bg-transparent border-0 p-0 outline-none focus:outline-none shadow-none cursor-pointer transition-transform duration-300 hover:scale-105 active:scale-95 animate-float-slow select-none flex items-center justify-center"
+            className="group relative w-12 h-12 sm:w-16 sm:h-16 bg-transparent border-0 p-0 outline-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 shadow-none cursor-pointer transition-transform duration-300 hover:scale-105 active:scale-95 animate-float-slow select-none flex items-center justify-center"
             aria-label="Open Bai AI Guide"
           >
             <Image
@@ -400,8 +421,7 @@ export function AiChatWidget() {
               alt="Bai AI Guide - Click to chat"
               width={64}
               height={64}
-              style={{ width: 'auto', height: 'auto' }}
-              className="object-contain drop-shadow-[0_4px_12px_rgba(31,63,116,0.25)] dark:drop-shadow-[0_4px_16px_rgba(0,0,0,0.5)] group-hover:drop-shadow-[0_8px_18px_rgba(31,63,116,0.35)] transition-all duration-300 pointer-events-none"
+              className="w-12 h-12 sm:w-16 sm:h-16 object-contain drop-shadow-[0_4px_12px_rgba(31,63,116,0.25)] dark:drop-shadow-[0_4px_16px_rgba(0,0,0,0.5)] group-hover:drop-shadow-[0_8px_18px_rgba(31,63,116,0.35)] transition-all duration-300 pointer-events-none"
             />
             {/* Live emerald beacon indicator */}
             <span className="absolute top-1 right-1 sm:top-1.5 sm:right-1.5 flex h-2.5 sm:h-3 w-2.5 sm:w-3">
@@ -416,17 +436,17 @@ export function AiChatWidget() {
       {isOpen && (
         <section
           aria-label="Chat with Bai"
-          className="flex h-[min(520px,calc(100dvh-5rem))] max-h-[calc(100dvh-4rem)] w-[min(340px,calc(100vw-1.5rem))] sm:h-[min(520px,calc(100dvh-6rem))] sm:w-[350px] sm:max-h-[75vh] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_20px_50px_-15px_rgba(15,23,42,0.4)] animate-in fade-in slide-in-from-bottom-2 duration-200 dark:border-neutral-800 dark:bg-[#0c1424]"
+          className="flex h-[min(520px,calc(100dvh-5rem))] max-h-[calc(100dvh-4rem)] w-[min(340px,calc(100vw-1.5rem))] sm:h-[min(520px,calc(100dvh-6rem))] sm:w-[350px] sm:max-h-[75vh] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_20px_50px_-15px_rgba(15,23,42,0.4)] animate-in fade-in slide-in-from-bottom-2 duration-200 dark:border-neutral-800 dark:bg-brand-navy-900"
         >
           {/* Branded compact header */}
-          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-white/10 bg-[#1F3F74] px-3.5 py-2.5 text-white dark:bg-[#12223d] sm:px-4 sm:py-2.5">
+          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-white/10 bg-brand-navy-500 px-3.5 py-2.5 text-white dark:bg-brand-navy-800 sm:px-4 sm:py-2.5">
             <div className="flex min-w-0 items-center gap-2">
               <Image
                 src="/images/bai.png"
                 alt="Bai"
-                width={30}
-                height={30}
-                className="h-7 w-7 shrink-0 object-contain"
+                width={28}
+                height={28}
+                className="w-7 h-7 shrink-0 object-contain"
               />
               <div className="min-w-0">
                 <div className="flex items-center gap-1.5">
@@ -435,7 +455,7 @@ export function AiChatWidget() {
                     className={`h-1.5 w-1.5 rounded-full ${loading ? 'animate-ping bg-amber-300' : 'bg-emerald-400'}`}
                     aria-label="Online"
                   />
-                  <span className="text-[9px] sm:text-[10px] font-medium leading-tight text-blue-100/90">
+                  <span className="text-[9px] sm:text-[10px] font-medium leading-tight text-brand-navy-100/90">
                     {loading ? 'Generating answer...' : 'Local Guide'}
                   </span>
                 </div>
@@ -447,7 +467,7 @@ export function AiChatWidget() {
                 type="button"
                 onClick={() => void handleClearHistory()}
                 disabled={!signedIn}
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-blue-100/80 transition-colors hover:bg-white/15 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-brand-navy-100/80 transition-colors hover:bg-white/15 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
                 aria-label="Delete saved chat history"
                 title={signedIn ? 'Delete your saved chat history' : 'Sign in to save or delete history'}
               >
@@ -456,7 +476,7 @@ export function AiChatWidget() {
               <button
                 type="button"
                 onClick={() => setIsOpen(false)}
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-blue-100/80 transition-colors hover:bg-white/15 hover:text-white"
+                className="flex h-7 w-7 items-center justify-center rounded-lg text-brand-navy-100/80 transition-colors hover:bg-white/15 hover:text-white"
                 aria-label="Close Chat"
               >
                 <X size={15} />
@@ -469,7 +489,7 @@ export function AiChatWidget() {
             role="log"
             aria-live="polite"
             aria-relevant="additions text"
-            className="flex-1 space-y-3 overflow-y-auto bg-slate-50/70 px-3 py-3 text-xs dark:bg-[#09101d] sm:px-3.5"
+            className="flex-1 space-y-3 overflow-y-auto bg-slate-50/70 px-3 py-3 text-xs dark:bg-brand-navy-900 sm:px-3.5"
           >
             {visibleMessages.map((msg) => (
               <div
@@ -482,14 +502,14 @@ export function AiChatWidget() {
                     alt=""
                     width={24}
                     height={24}
-                    className="mb-4 h-6 w-6 shrink-0 object-contain"
+                    className="mb-4 w-6 h-6 shrink-0 object-contain"
                   />
                 )}
                 <div
                   className={`max-w-[85%] min-w-0 space-y-1 px-3 py-2 shadow-2xs sm:max-w-[82%] ${
                     msg.sender === 'user'
-                      ? 'rounded-2xl rounded-br-md border border-[#162e55] bg-[#1F3F74] text-white dark:bg-[#234b87]'
-                      : 'rounded-2xl rounded-bl-md border border-slate-200 bg-white text-slate-800 dark:border-slate-800 dark:bg-[#132035] dark:text-slate-100'
+                      ? 'rounded-2xl rounded-br-md border border-brand-navy-700 bg-brand-navy-500 text-white dark:bg-brand-navy-500'
+                      : 'rounded-2xl rounded-bl-md border border-slate-200 bg-white text-slate-800 dark:border-slate-800 dark:bg-brand-navy-800 dark:text-slate-100'
                   }`}
                 >
                   <p className="break-words whitespace-pre-line leading-relaxed [overflow-wrap:anywhere] text-[11px] sm:text-xs">
@@ -497,7 +517,7 @@ export function AiChatWidget() {
                   </p>
                   <span
                     className={`block text-right text-[9px] font-medium ${
-                      msg.sender === 'user' ? 'text-blue-200/80' : 'text-slate-400 dark:text-slate-500'
+                      msg.sender === 'user' ? 'text-brand-navy-200/80' : 'text-slate-400 dark:text-slate-500'
                     }`}
                   >
                     {msg.timestamp}
@@ -515,7 +535,7 @@ export function AiChatWidget() {
                       key={item.label}
                       type="button"
                       onClick={() => void submitQuestion(item.question)}
-                      className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-medium text-[#1F3F74] transition-colors hover:border-[#1F3F74]/40 hover:bg-blue-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74] dark:border-slate-700 dark:bg-[#132035] dark:text-blue-200 dark:hover:bg-[#182b48] dark:focus-visible:ring-[#4987BA]"
+                      className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-medium text-brand-navy-500 transition-colors hover:border-brand-navy-500/40 hover:bg-brand-navy-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 dark:border-slate-700 dark:bg-brand-navy-800 dark:text-brand-navy-200 dark:hover:bg-brand-navy-800 dark:focus-visible:ring-brand-teal-400"
                     >
                       {item.label}
                     </button>
@@ -537,7 +557,7 @@ export function AiChatWidget() {
                       type="button"
                       disabled={loading}
                       onClick={() => void submitQuestion(item.question)}
-                      className="rounded-full border border-blue-200/80 bg-blue-50/80 px-2.5 py-1 text-[10px] font-medium text-[#1F3F74] transition-colors hover:bg-[#1F3F74] hover:text-white dark:border-blue-900/60 dark:bg-[#152642] dark:text-blue-200 dark:hover:bg-[#1F3F74] dark:hover:text-white"
+                      className="rounded-full border border-brand-navy-200/80 bg-brand-navy-50/80 px-2.5 py-1 text-[10px] font-medium text-brand-navy-500 transition-colors hover:bg-brand-navy-500 hover:text-white dark:border-brand-navy-900/60 dark:bg-brand-navy-800 dark:text-brand-navy-200 dark:hover:bg-brand-navy-500 dark:hover:text-white"
                     >
                       {item.label}
                     </button>
@@ -555,14 +575,14 @@ export function AiChatWidget() {
                   height={24}
                   className="mb-1 h-6 w-6 shrink-0 object-contain"
                 />
-                <div className="inline-flex flex-col gap-1 rounded-2xl rounded-bl-md border border-slate-200 bg-white px-3.5 py-2.5 shadow-2xs dark:border-slate-800 dark:bg-[#132035]">
+                <div className="inline-flex flex-col gap-1 rounded-2xl rounded-bl-md border border-slate-200 bg-white px-3.5 py-2.5 shadow-2xs dark:border-slate-800 dark:bg-brand-navy-800">
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-1">
-                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#1F3F74] dark:bg-[#4987BA]" />
-                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#1F3F74] [animation-delay:0.2s] dark:bg-[#4987BA]" />
-                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-[#1F3F74] [animation-delay:0.4s] dark:bg-[#4987BA]" />
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-brand-navy-500 dark:bg-brand-teal-400" />
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-brand-navy-500 [animation-delay:0.2s] dark:bg-brand-teal-400" />
+                      <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-brand-navy-500 [animation-delay:0.4s] dark:bg-brand-teal-400" />
                     </div>
-                    <span className="text-[11px] font-semibold text-[#1F3F74] dark:text-blue-200">
+                    <span className="text-[11px] font-semibold text-brand-navy-500 dark:text-blue-200">
                       Generating an answer...
                     </span>
                   </div>
@@ -576,29 +596,48 @@ export function AiChatWidget() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Compact docked message composer */}
-          <form
-            onSubmit={handleSend}
-            className="flex shrink-0 items-center gap-2 border-t border-slate-200 bg-white p-2.5 dark:border-neutral-800 dark:bg-[#0c1424] sm:p-3"
-          >
-            <input
-              type="text"
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              disabled={loading}
-              placeholder={loading ? 'Generating answer, please wait...' : 'Ask Bai anything...'}
-              aria-label="Message Bai"
-              className="min-w-0 flex-1 rounded-full border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 transition focus:border-[#1F3F74] focus:outline-none focus:ring-2 focus:ring-[#1F3F74]/15 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-[#132035] dark:text-slate-100 dark:focus:border-[#4987BA] dark:focus:ring-[#4987BA]/20"
-            />
-            <button
-              type="submit"
-              disabled={loading || !input.trim()}
-              className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1F3F74] text-white shadow-xs transition hover:bg-[#16305a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74] focus-visible:ring-offset-2 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 dark:focus-visible:ring-offset-[#0c1424]"
-              aria-label="Send message"
+          {/* Compact docked message composer or Sign In prompt */}
+          {!signedIn ? (
+            <div className="flex flex-col items-center justify-center p-3.5 border-t border-slate-200 dark:border-neutral-800 bg-slate-50 dark:bg-[#0c1424] text-center space-y-2">
+              <div className="space-y-0.5">
+                <p className="text-xs font-bold text-slate-900 dark:text-white">
+                  Sign in to talk with Bai
+                </p>
+                <p className="text-[11px] text-slate-500 dark:text-neutral-400 max-w-xs leading-relaxed">
+                  Sign in to ask questions about beaches, directions, entrance fees, and local tips in Binongkalan.
+                </p>
+              </div>
+              <Link
+                href="/login"
+                className="inline-flex items-center justify-center px-5 py-2 rounded-full bg-[#1F3F74] hover:bg-[#285091] text-white text-xs font-bold shadow-md transition-all hover:scale-105 cursor-pointer"
+              >
+                Sign In to Talk with Bai
+              </Link>
+            </div>
+          ) : (
+            <form
+              onSubmit={handleSend}
+              className="flex shrink-0 items-center gap-2 border-t border-slate-200 bg-white p-2.5 dark:border-neutral-800 dark:bg-[#0c1424] sm:p-3"
             >
-              <Send size={14} />
-            </button>
-          </form>
+              <input
+                type="text"
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                disabled={loading}
+                placeholder={loading ? 'Generating answer, please wait...' : 'Ask Bai anything...'}
+                aria-label="Message Bai"
+                className="min-w-0 flex-1 rounded-full border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 transition focus:border-[#1F3F74] focus:outline-none focus:ring-2 focus:ring-[#1F3F74]/15 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-[#132035] dark:text-slate-100 dark:focus:border-[#4987BA] dark:focus:ring-[#4987BA]/20"
+              />
+              <button
+                type="submit"
+                disabled={loading || !input.trim()}
+                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1F3F74] text-white shadow-xs transition hover:bg-[#16305a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74] focus-visible:ring-offset-2 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 dark:focus-visible:ring-offset-[#0c1424]"
+                aria-label="Send message"
+              >
+                <Send size={14} />
+              </button>
+            </form>
+          )}
 
         </section>
       )}

@@ -125,7 +125,7 @@ export default function ManageOwnerLinksPage() {
                         href={link.url}
                         target="_blank"
                         rel="noreferrer"
-                        className="text-[11px] text-sky-600 dark:text-sky-400 hover:underline truncate block"
+                        className="text-[11px] text-brand-teal-600 dark:text-brand-teal-400 hover:underline truncate block"
                       >
                         {link.url}
                       </a>
@@ -164,7 +164,7 @@ export default function ManageOwnerLinksPage() {
                 value={newLabel}
                 onChange={(e) => setNewLabel(e.target.value)}
                 placeholder="e.g. Official Facebook Page"
-                className="w-full px-3 py-2.5 text-xs bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-900 dark:text-white"
+                className="w-full px-3 py-2.5 text-xs bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:ring-2 focus:ring-brand-teal-400 text-slate-900 dark:text-white"
               />
             </div>
 
@@ -178,7 +178,7 @@ export default function ManageOwnerLinksPage() {
                 value={newUrl}
                 onChange={(e) => setNewUrl(e.target.value)}
                 placeholder="https://facebook.com/your-resort"
-                className="w-full px-3 py-2.5 text-xs bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-900 dark:text-white"
+                className="w-full px-3 py-2.5 text-xs bg-slate-50 dark:bg-slate-800/60 border border-slate-200 dark:border-slate-700 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:ring-2 focus:ring-brand-teal-400 text-slate-900 dark:text-white"
               />
             </div>
           </div>

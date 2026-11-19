@@ -272,7 +272,7 @@ export function MapView({
     return (
       <div className="w-full h-full flex items-center justify-center bg-slate-100 dark:bg-black text-slate-500">
         <div className="flex flex-col items-center gap-2 text-xs">
-          <div className="w-6 h-6 border-2 border-[#1F3F74] border-t-transparent rounded-full animate-spin" />
+          <div className="w-6 h-6 border-2 border-brand-navy-500 border-t-transparent rounded-full animate-spin" />
           <span className="font-medium">Anchoring Catmon Shoreline Map...</span>
         </div>
       </div>

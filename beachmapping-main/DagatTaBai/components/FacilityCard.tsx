@@ -50,7 +50,7 @@ export function FacilityCard({
           type="button"
           onClick={onView}
           aria-label={`View ${name}`}
-          className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-4 rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74] dark:focus-visible:ring-[#4987BA]"
+          className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-4 rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 dark:focus-visible:ring-brand-teal-400"
         >
           <span className="relative h-18 w-20 sm:h-[88px] sm:w-[120px] shrink-0 overflow-hidden rounded-xl bg-slate-100 dark:bg-neutral-800">
             {imageUrl ? (
@@ -98,7 +98,7 @@ export function FacilityCard({
                   onEdit();
                 }}
                 aria-label={`Edit ${name}`}
-                className="flex h-9 w-9 items-center justify-center rounded-full text-[#1F3F74] transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74] dark:text-[#4987BA] dark:hover:bg-neutral-800"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-brand-navy-500 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 dark:text-brand-teal-300 dark:hover:bg-neutral-800"
               >
                 <Pencil className="h-4 w-4" />
               </button>
@@ -128,7 +128,7 @@ export function FacilityCard({
               return (
                 <div key={`${item.label}-${index}`} className="rounded-lg bg-slate-50 px-3 py-2 dark:bg-neutral-900">
                   <div className="text-xs text-slate-500 dark:text-neutral-400">{item.label}</div>
-                  <div className={`text-[15px] font-medium ${isFree ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-900 dark:text-white'}`}>
+                  <div className={`text-[15px] font-medium ${isFree ? 'text-brand-navy-500 dark:text-brand-navy-300' : 'text-slate-900 dark:text-white'}`}>
                     {formatFacilityFeeAmount(item.amount)}
                   </div>
                 </div>

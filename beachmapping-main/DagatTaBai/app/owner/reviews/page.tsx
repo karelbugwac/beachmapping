@@ -152,7 +152,7 @@ export default function OwnerReviewsPage() {
   if (loading) {
     return (
       <div className="pt-36 pb-24 flex flex-col items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#1F3F74] border-t-transparent dark:border-sky-400" />
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-brand-navy-500 border-t-transparent dark:border-brand-teal-400" />
       </div>
     );
   }
@@ -192,7 +192,7 @@ export default function OwnerReviewsPage() {
       {/* ── Top Header (Clean corporate style, No View Public Page) ── */}
       <div className="pb-3 border-b border-slate-200 dark:border-neutral-800">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1F3F74] dark:text-[#4987BA] tracking-tight font-sans">
+          <h1 className="text-2xl sm:text-3xl font-extrabold text-brand-navy-500 dark:text-brand-teal-300 tracking-tight font-sans">
             Guest Reviews &amp; Feedback
           </h1>
           <p className="text-xs sm:text-sm text-slate-500 dark:text-neutral-400 mt-1 font-medium">
@@ -213,12 +213,12 @@ export default function OwnerReviewsPage() {
         <div className="bg-white dark:bg-neutral-900 p-6 rounded-2xl border border-slate-200/90 dark:border-neutral-800 shadow-2xs space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 dark:text-neutral-400">Average Rating</span>
-            <div className="w-9 h-9 rounded-full bg-amber-50 dark:bg-amber-950/60 flex items-center justify-center text-amber-500">
-              <Star className="w-4.5 h-4.5 fill-amber-500" />
+            <div className="w-9 h-9 rounded-full bg-brand-sun-50 dark:bg-brand-navy-900/60 flex items-center justify-center text-brand-navy-700">
+              <Star className="w-4.5 h-4.5 fill-brand-sun-500" />
             </div>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-black text-[#1F3F74] dark:text-[#4987BA]">
+            <span className="text-3xl font-black text-brand-navy-500 dark:text-brand-teal-300">
               {avg > 0 ? avg.toFixed(1) : '0.0'}
             </span>
             <span className="text-xs font-semibold text-slate-400 dark:text-neutral-500">/ 5.0</span>
@@ -229,7 +229,7 @@ export default function OwnerReviewsPage() {
                 key={s}
                 className={`w-3.5 h-3.5 ${
                   s <= Math.round(avg)
-                    ? 'text-amber-400 fill-amber-400'
+                    ? 'text-brand-sun-700 fill-brand-sun-400'
                     : 'text-slate-200 dark:text-neutral-700'
                 }`}
               />
@@ -244,12 +244,12 @@ export default function OwnerReviewsPage() {
         <div className="bg-white dark:bg-neutral-900 p-6 rounded-2xl border border-slate-200/90 dark:border-neutral-800 shadow-2xs space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 dark:text-neutral-400">Verified Reviews</span>
-            <div className="w-9 h-9 rounded-full bg-blue-50 dark:bg-blue-950/60 flex items-center justify-center text-[#1F3F74] dark:text-[#4987BA]">
+            <div className="w-9 h-9 rounded-full bg-brand-navy-50 dark:bg-brand-navy-900/60 flex items-center justify-center text-brand-navy-500 dark:text-brand-teal-300">
               <Users className="w-4.5 h-4.5" />
             </div>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-black text-[#1F3F74] dark:text-[#4987BA]">
+            <span className="text-3xl font-black text-brand-navy-500 dark:text-brand-teal-300">
               {totalReviews}
             </span>
             <span className="text-xs font-semibold text-slate-400 dark:text-neutral-500">submissions</span>
@@ -263,12 +263,12 @@ export default function OwnerReviewsPage() {
         <div className="bg-white dark:bg-neutral-900 p-6 rounded-2xl border border-slate-200/90 dark:border-neutral-800 shadow-2xs space-y-2">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold text-slate-500 dark:text-neutral-400">Recommendation</span>
-            <div className="w-9 h-9 rounded-full bg-emerald-50 dark:bg-emerald-950/60 flex items-center justify-center text-emerald-600">
+            <div className="w-9 h-9 rounded-full bg-brand-teal-50 dark:bg-brand-teal-700/20 flex items-center justify-center text-brand-teal-700 dark:text-brand-teal-300">
               <ThumbsUp className="w-4.5 h-4.5" />
             </div>
           </div>
           <div className="flex items-baseline gap-2">
-            <span className="text-3xl font-black text-emerald-600 dark:text-emerald-400">
+            <span className="text-3xl font-black text-brand-navy-500 dark:text-brand-navy-300">
               {recommendationRate}%
             </span>
             <span className="text-xs font-semibold text-slate-400 dark:text-neutral-500">positive</span>
@@ -282,7 +282,7 @@ export default function OwnerReviewsPage() {
       {/* ── 2. Rating Breakdown Bar Chart & Oblong Filter Pills ── */}
       <div className="bg-white dark:bg-neutral-900 rounded-2xl border border-slate-200/90 dark:border-neutral-800 p-6 sm:p-8 space-y-6 shadow-2xs">
         <div>
-          <h2 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
+          <h2 className="text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300 font-sans">
             Rating Distribution
           </h2>
           <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
@@ -299,11 +299,11 @@ export default function OwnerReviewsPage() {
               <div key={star} className="flex items-center gap-3 text-xs">
                 <span className="w-12 font-bold text-slate-600 dark:text-neutral-300 flex items-center gap-1">
                   <span>{star}</span>
-                  <Star className="w-3 h-3 text-amber-500 fill-amber-500" />
+                  <Star className="w-3 h-3 text-brand-navy-700 fill-brand-sun-500" />
                 </span>
                 <div className="flex-1 h-2 rounded-full bg-slate-100 dark:bg-neutral-800 overflow-hidden">
                   <div
-                    className="h-full bg-amber-400 rounded-full transition-all duration-500"
+                    className="h-full bg-brand-sun-400 rounded-full transition-all duration-500"
                     style={{ width: `${percentage}%` }}
                   />
                 </div>
@@ -322,7 +322,7 @@ export default function OwnerReviewsPage() {
             onClick={() => setSelectedRatingFilter('all')}
             className={`px-5 py-2 rounded-full text-xs font-bold transition-all cursor-pointer ${
               selectedRatingFilter === 'all'
-                ? 'bg-[#1F3F74] text-white shadow-xs'
+                ? 'bg-brand-navy-500 text-white shadow-xs'
                 : 'bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300 hover:bg-slate-200 dark:hover:bg-neutral-700'
             }`}
           >
@@ -335,12 +335,12 @@ export default function OwnerReviewsPage() {
               onClick={() => setSelectedRatingFilter(s)}
               className={`px-4 py-2 rounded-full text-xs font-bold transition-all inline-flex items-center gap-1 cursor-pointer ${
                 selectedRatingFilter === s
-                  ? 'bg-[#1F3F74] text-white shadow-xs'
+                  ? 'bg-brand-navy-500 text-white shadow-xs'
                   : 'bg-slate-100 dark:bg-neutral-800 text-slate-600 dark:text-neutral-300 hover:bg-slate-200 dark:hover:bg-neutral-700'
               }`}
             >
               <span>{s}</span>
-              <Star className="w-3 h-3 fill-amber-400 text-amber-400" />
+              <Star className="w-3 h-3 fill-brand-sun-400 text-brand-sun-700" />
               <span>({(dist as any)[s] || 0})</span>
             </button>
           ))}
@@ -349,7 +349,7 @@ export default function OwnerReviewsPage() {
 
       {/* ── 3. Reviews Feed List (Unboxed, clean divider list with Star icon) ── */}
       <div className="space-y-4">
-        <h2 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
+        <h2 className="text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300 font-sans">
           Visitor Submissions ({filteredReviews.length})
         </h2>
 
@@ -371,15 +371,15 @@ export default function OwnerReviewsPage() {
                 >
                   <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
                     <div className="flex items-center gap-3">
-                      <div className="w-8 h-8 rounded-full bg-amber-50 dark:bg-amber-950/60 text-amber-500 flex items-center justify-center shrink-0">
-                        <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                      <div className="w-8 h-8 rounded-full bg-brand-sun-50 dark:bg-brand-navy-900/60 text-brand-navy-700 flex items-center justify-center shrink-0">
+                        <Star className="w-4 h-4 fill-brand-sun-400 text-brand-sun-700" />
                       </div>
                       <div>
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-bold text-slate-900 dark:text-white">
                             {maskReviewerName(r.user_name)}
                           </span>
-                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-blue-50 dark:bg-blue-950/40 text-[#1F3F74] dark:text-[#4987BA] border border-blue-200 dark:border-blue-900">
+                          <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold bg-brand-navy-50 dark:bg-brand-navy-900/40 text-brand-navy-500 dark:text-brand-teal-300 border border-brand-navy-200 dark:border-brand-navy-900">
                             Verified Guest
                           </span>
                         </div>
@@ -390,12 +390,12 @@ export default function OwnerReviewsPage() {
                     </div>
 
                     <div className="flex items-center gap-4 self-start sm:self-auto">
-                      <div className="flex items-center gap-1 text-amber-400">
+                      <div className="flex items-center gap-1 text-brand-sun-700">
                         {Array.from({ length: 5 }).map((_, i) => (
                           <Star
                             key={i}
                             className={`w-3.5 h-3.5 ${
-                              i < r.rating ? 'fill-amber-400 text-amber-400' : 'text-slate-200 dark:text-neutral-700'
+                              i < r.rating ? 'fill-brand-sun-400 text-brand-sun-700' : 'text-slate-200 dark:text-neutral-700'
                             }`}
                           />
                         ))}
@@ -439,7 +439,7 @@ export default function OwnerReviewsPage() {
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-6 sm:p-8 max-w-lg w-full space-y-5 shadow-2xl animate-in fade-in zoom-in-95 duration-200">
             <div>
-              <h3 className="text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans">
+              <h3 className="text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300 font-sans">
                 Report Review to Municipal Admin
               </h3>
               <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1">
@@ -455,7 +455,7 @@ export default function OwnerReviewsPage() {
                 <select
                   value={reportCategory}
                   onChange={(e) => setReportCategory(e.target.value)}
-                  className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs text-slate-900 dark:text-white focus:outline-none focus:border-[#1F3F74]"
+                  className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs text-slate-900 dark:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-navy-500"
                 >
                   <option value="False or misleading information">False or misleading information</option>
                   <option value="Harassment, profanity, or defamatory content">Harassment, profanity, or defamatory content</option>
@@ -477,8 +477,8 @@ export default function OwnerReviewsPage() {
                     if (e.target.value.trim().length >= 10) setReportError('');
                   }}
                   placeholder="Explain why this review should be moderated (minimum 10 characters)..."
-                  className={`w-full rounded-2xl border bg-white dark:bg-neutral-950 p-3 text-xs text-slate-900 dark:text-white placeholder:italic focus:outline-none transition-all ${
-                    reportError ? 'border-red-500' : 'border-slate-300 dark:border-neutral-700 focus:border-[#1F3F74]'
+                  className={`w-full rounded-2xl border bg-white dark:bg-neutral-950 p-3 text-xs text-slate-900 dark:text-white placeholder:italic focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 transition-all ${
+                    reportError ? 'border-red-500' : 'border-slate-300 dark:border-neutral-700 focus:border-brand-navy-500'
                   }`}
                 />
                 {reportError && (
@@ -497,7 +497,7 @@ export default function OwnerReviewsPage() {
                 <button
                   type="submit"
                   disabled={submittingReport}
-                  className="rounded-full px-6 py-2 bg-[#1F3F74] hover:bg-[#183460] text-white text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50"
+                  className="rounded-full px-6 py-2 bg-brand-navy-500 hover:bg-brand-navy-600 text-white text-xs font-bold shadow-xs cursor-pointer disabled:opacity-50"
                 >
                   {submittingReport ? 'Submitting...' : 'Submit Report'}
                 </button>

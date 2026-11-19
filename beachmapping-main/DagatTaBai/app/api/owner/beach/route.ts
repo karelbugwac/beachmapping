@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { authorizeRoles } from '@/lib/supabase/authorization';
 import { invalidateBeachesCache } from '@/lib/db/beaches';
+import { IMAGE_UPLOAD_CONFIG } from '@/lib/utils/image-upload-config';
 
 const noStoreHeaders = { 'Cache-Control': 'no-store, max-age=0' };
 
@@ -55,6 +56,41 @@ function toOwnerBeach(row: any) {
     activities: [],
     external_links: [],
   };
+}
+
+function getImageUrls(value: unknown): string[] {
+  if (!Array.isArray(value)) return [];
+  return value.flatMap((item) => {
+    if (typeof item === 'string') return [item];
+    if (!item || typeof item !== 'object') return [];
+    const url = (item as { photo_url?: unknown; url?: unknown }).photo_url
+      || (item as { url?: unknown }).url;
+    return typeof url === 'string' ? [url] : [];
+  });
+}
+
+function getOwnedGalleryStoragePath(
+  publicRoot: string,
+  imageUrl: string,
+  ownerId: string,
+  beachId: string
+): string | null {
+  if (!imageUrl.startsWith(publicRoot)) return null;
+  let path: string;
+  try {
+    path = decodeURIComponent(imageUrl.slice(publicRoot.length).split('?')[0]);
+  } catch {
+    return null;
+  }
+  const ownerBeachPrefix = `${ownerId}/${beachId}/`;
+  if (
+    !path.startsWith(ownerBeachPrefix) ||
+    path.includes('..') ||
+    !/^[^/]+\.(?:webp|jpg)$/i.test(path.slice(ownerBeachPrefix.length))
+  ) {
+    return null;
+  }
+  return path;
 }
 
 async function toOwnerBeachWithFees(adminSupabase: ReturnType<typeof createAdminClient>, row: any) {
@@ -184,16 +220,50 @@ export async function POST(request: Request) {
     
     const adminSupabase = createAdminClient();
     let result;
+    let removedGalleryStoragePaths: string[] = [];
     if (typeof body.id === 'string' && body.id) {
       // Find existing beach to preserve slug, owner_id, coordinates, and virtual_tour_url if needed
       const { data: existing, error: existingError } = await (adminSupabase.from('beaches') as any)
-        .select('slug, owner_id, virtual_tour_url, latitude, longitude, location, opening_hours')
+        .select('slug, owner_id, virtual_tour_url, latitude, longitude, location, opening_hours, images, cover_image_url, profile_image_url')
         .eq('id', body.id)
         .maybeSingle();
       if (existingError) throw existingError;
       if (!existing) {
         return NextResponse.json({ error: 'Beach listing not found.' }, { status: 404, headers: noStoreHeaders });
       }
+      const submittedImages = Array.isArray(body.images) ? body.images : [];
+      const oldImageCount = Array.isArray(existing.images) ? existing.images.length : 0;
+      if (
+        submittedImages.length > IMAGE_UPLOAD_CONFIG.maxPhotosPerItem &&
+        submittedImages.length > oldImageCount
+      ) {
+        return NextResponse.json(
+          { error: `A beach gallery can have up to ${IMAGE_UPLOAD_CONFIG.maxPhotosPerItem} photos.` },
+          { status: 400, headers: noStoreHeaders }
+        );
+      }
+      const retainedImageUrls = new Set([
+        ...getImageUrls(submittedImages),
+        body.cover_image || body.cover_image_url || null,
+        body.profile_image || body.profile_image_url || null,
+      ].filter((url): url is string => typeof url === 'string' && url.length > 0));
+      const oldImageUrls = [
+        ...getImageUrls(existing.images),
+        existing.cover_image_url,
+        existing.profile_image_url,
+      ].filter((url): url is string => typeof url === 'string' && url.length > 0);
+      const beachMediaPublicRoot = adminSupabase.storage.from('beach-media').getPublicUrl('').data.publicUrl;
+      removedGalleryStoragePaths = [...new Set(
+        oldImageUrls
+          .filter((url) => !retainedImageUrls.has(url))
+          .map((url) => getOwnedGalleryStoragePath(
+            beachMediaPublicRoot,
+            url,
+            existing.owner_id,
+            body.id
+          ))
+          .filter((storagePath): storagePath is string => Boolean(storagePath))
+      )];
 
       const existingLatitude = existing.latitude == null ? null : Number(existing.latitude);
       const existingLongitude = existing.longitude == null ? null : Number(existing.longitude);
@@ -247,6 +317,13 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Beach not found or unauthorized.' }, { status: 404, headers: noStoreHeaders });
       }
     } else {
+      const submittedImages = Array.isArray(body.images) ? body.images : [];
+      if (submittedImages.length > IMAGE_UPLOAD_CONFIG.maxPhotosPerItem) {
+        return NextResponse.json(
+          { error: `A beach gallery can have up to ${IMAGE_UPLOAD_CONFIG.maxPhotosPerItem} photos.` },
+          { status: 400, headers: noStoreHeaders }
+        );
+      }
       const beachPayload = {
         name,
         slug,
@@ -306,6 +383,19 @@ export async function POST(request: Request) {
       );
     if (generalInformationSaveError) throw generalInformationSaveError;
 
+    let storageCleanupWarnings: string[] = [];
+    if (removedGalleryStoragePaths.length) {
+      const { error: cleanupError } = await adminSupabase.storage
+        .from('beach-media')
+        .remove(removedGalleryStoragePaths);
+      if (cleanupError) {
+        console.error('Failed to remove deleted beach gallery images:', cleanupError);
+        storageCleanupWarnings = [
+          'Beach changes were saved, but one or more removed image files could not be deleted from Storage.',
+        ];
+      }
+    }
+
     invalidateBeachesCache();
 
     return NextResponse.json(
@@ -317,6 +407,7 @@ export async function POST(request: Request) {
             ? null
             : `${adultFee ?? ''}|${childFee ?? ''}|${seniorFee ?? ''}`,
         }),
+        storage_cleanup_warnings: storageCleanupWarnings,
       },
       { headers: noStoreHeaders }
     );

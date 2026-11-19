@@ -59,7 +59,7 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { user, error } = await loginLocalUser(parsed.data.email, parsed.data.password);
+    const { user, error, suspendedAccount } = await loginLocalUser(parsed.data.email, parsed.data.password);
     if (error || !user) {
       const emailHit = recordRateLimitHit(emailKey, LOGIN_RATE_LIMIT);
       const ipHit = recordRateLimitHit(ipKey, IP_LOGIN_RATE_LIMIT);
@@ -86,19 +86,47 @@ export async function POST(request: NextRequest) {
           ? ` (${emailHit.remaining} attempt${emailHit.remaining === 1 ? '' : 's'} remaining before temporary lockout.)`
           : '';
 
+      if (suspendedAccount) {
+        return NextResponse.json(
+          {
+            error: error || 'Your account is suspended.',
+            code: 'ACCOUNT_SUSPENDED',
+            reason: suspendedAccount.reason,
+            reason_type: suspendedAccount.reasonType,
+            suspended_until: suspendedAccount.suspendedUntil,
+          },
+          {
+            status: 403,
+            headers: {
+              'Cache-Control': 'private, no-store, max-age=0',
+              ...emailHit.headers,
+            },
+          }
+        );
+      }
+
       return NextResponse.json(
         {
           error: `${baseError}${warning}`,
           remainingAttempts: emailHit.remaining,
         },
-        { status: 401, headers: emailHit.headers }
+        {
+          status: 401,
+          headers: {
+            'Cache-Control': 'private, no-store, max-age=0',
+            ...emailHit.headers,
+          },
+        }
       );
     }
 
     clearRateLimit(emailKey);
     clearRateLimit(ipKey);
 
-    return NextResponse.json({ success: true, user });
+    return NextResponse.json(
+      { success: true, user },
+      { headers: { 'Cache-Control': 'private, no-store, max-age=0' } }
+    );
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Login failed';
     return NextResponse.json({ error: msg }, { status: 500 });

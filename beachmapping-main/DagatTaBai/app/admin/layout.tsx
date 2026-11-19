@@ -12,9 +12,12 @@ import {
   Users,
   ChevronLeft,
   ChevronRight,
+  FileCheck,
+  Palmtree,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
 import { showToast } from '@/components/ui/feedback-toasts';
+import { signOutAndClearClientState } from '@/lib/client/logout';
 import { useRealtimeSync } from '@/lib/realtime-sync';
 import { ShorelineMarker, VerifiedSanctuary } from '@/components/ui/coastal-icons';
 
@@ -29,29 +32,28 @@ export default function AdminLayout({
   const [pendingCount, setPendingCount] = useState<number>(0);
   const [pendingTourCount, setPendingTourCount] = useState<number>(0);
   const [pendingCoordCount, setPendingCoordCount] = useState<number>(0);
+  const [sidebarTooltip, setSidebarTooltip] = useState<{ label: string; left: number; top: number } | null>(null);
   const mobileMenuButtonRef = useRef<HTMLButtonElement>(null);
   const sidebarRef = useRef<HTMLElement>(null);
-  // Server middleware (proxy.ts) already guards /admin/* routes, so render immediately
-  // while verifying session/email in the background in parallel with child page fetches.
-  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(true);
-  const [userEmail, setUserEmail] = useState<string>('');
   const isInitialLoadRef = useRef(true);
   const previousPendingCountRef = useRef(0);
+
+  // Server middleware (proxy.ts) already guards /admin/* routes, so render immediately
+  // while verifying session/email in the background in parallel with child page fetches.
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [userEmail, setUserEmail] = useState<string>('');
   const authVerifiedRef = useRef(false);
+  const tooltipTimerRef = useRef<number | null>(null);
   const shouldRenderLogin = pathname === '/admin/login';
 
   // Check authentication once on client side (do not re-query DB on every internal admin page click)
   useEffect(() => {
     if (shouldRenderLogin) {
-      authVerifiedRef.current = false;
       setIsAuthenticated(true);
       return;
     }
 
-    if (authVerifiedRef.current) {
-      setIsAuthenticated(true);
-      return;
-    }
+    if (authVerifiedRef.current) return;
 
     const checkAuth = async () => {
       try {
@@ -64,35 +66,30 @@ export default function AdminLayout({
           return;
         }
 
-        const email = session.user.email?.toLowerCase().trim() || '';
-        setUserEmail(email);
-        const isWhitelisted = ['official.dagattabai@gmail.com', 'admin@dagattabai.ph'].includes(email);
-
-        if (isWhitelisted || session.user.user_metadata?.role === 'admin') {
+        const role = (session.user.user_metadata?.role as string) || (session.user.app_metadata?.role as string);
+        if (role === 'admin') {
           authVerifiedRef.current = true;
+          setUserEmail(session.user.email || 'Admin');
           setIsAuthenticated(true);
           return;
         }
 
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { data: profile } = await (supabase.from('profiles') as any)
           .select('role')
           .eq('id', session.user.id)
           .maybeSingle();
 
-        const isAdmin = profile?.role === 'admin';
-
-        if (!isAdmin) {
-          console.warn('Non-admin user attempted to access admin console. Redirecting to login.');
-          await supabase.auth.signOut();
+        if (profile?.role === 'admin') {
+          authVerifiedRef.current = true;
+          setUserEmail(session.user.email || 'Admin');
+          setIsAuthenticated(true);
+        } else {
           setIsAuthenticated(false);
           window.location.replace('/admin/login');
-          return;
         }
-
-        authVerifiedRef.current = true;
-        setIsAuthenticated(true);
       } catch (error) {
-        console.error('Auth verification error:', error);
+        console.error('Error verifying admin authorization:', error);
         setIsAuthenticated(false);
         window.location.replace('/admin/login');
       }
@@ -144,7 +141,6 @@ export default function AdminLayout({
       .catch(() => {});
   };
 
-  // Periodic automatic counts for sidebar badges (without re-triggering on state change)
   useEffect(() => {
     if (shouldRenderLogin || !isAuthenticated) return;
     fetchCounts();
@@ -194,12 +190,37 @@ export default function AdminLayout({
     mobileMenuButtonRef.current?.focus();
   };
 
+  useEffect(() => () => {
+    if (tooltipTimerRef.current !== null) window.clearTimeout(tooltipTimerRef.current);
+  }, []);
+
+  const openSidebarTooltip = (event: React.FocusEvent<HTMLAnchorElement> | React.PointerEvent<HTMLAnchorElement>, label: string) => {
+    if (!collapsed) return;
+    if ('pointerType' in event && event.pointerType === 'mouse' && !(event.currentTarget.matches(':hover'))) return;
+    if (tooltipTimerRef.current !== null) window.clearTimeout(tooltipTimerRef.current);
+    const target = event.currentTarget;
+    tooltipTimerRef.current = window.setTimeout(() => {
+      const rect = target.getBoundingClientRect();
+      const left = Math.min(rect.right + 12, window.innerWidth - 180);
+      setSidebarTooltip({ label, left: Math.max(8, left), top: Math.max(8, Math.min(rect.top + rect.height / 2, window.innerHeight - 36)) });
+    }, 150);
+  };
+
+  const closeSidebarTooltip = () => {
+    if (tooltipTimerRef.current !== null) {
+      window.clearTimeout(tooltipTimerRef.current);
+      tooltipTimerRef.current = null;
+    }
+    setSidebarTooltip(null);
+  };
+
   const handleLogout = async () => {
     try {
       const supabase = createClient();
-      await supabase.auth.signOut();
-    } catch {
-      // Ignore
+      const { data: { user } } = await supabase.auth.getUser();
+      await signOutAndClearClientState(user?.id);
+    } catch (error: unknown) {
+      console.error('Sign-out cleanup did not complete:', error);
     } finally {
       authVerifiedRef.current = false;
       showToast('Signed out successfully.', 'success');
@@ -215,7 +236,7 @@ export default function AdminLayout({
   // Redirecting unauthenticated user
   if (!isAuthenticated) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-black text-[#1F3F74] dark:text-[#4987BA]">
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-black text-brand-navy-500 dark:text-brand-teal-300">
         <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-current" />
       </div>
     );
@@ -269,7 +290,7 @@ export default function AdminLayout({
       {/* Admin Sidebar: Fixed height, does NOT scroll with main content */}
       <aside
         ref={sidebarRef}
-        className={`fixed lg:static top-0 h-screen h-[100dvh] flex-shrink-0 flex flex-col justify-between z-50 transition-all duration-300 ease-in-out border-r border-slate-200 dark:border-neutral-800 bg-white dark:bg-black overflow-hidden ${
+        className={`fixed lg:static top-0 h-screen h-[100dvh] flex-shrink-0 flex flex-col justify-between z-50 transition-all duration-300 ease-in-out border-r border-slate-200 dark:border-neutral-800 bg-white dark:bg-black overflow-visible ${
           collapsed ? 'w-[76px]' : 'w-[280px]'
         } ${
           mobileOpen ? 'visible translate-x-0 w-[280px]' : 'invisible -translate-x-full lg:visible lg:translate-x-0'
@@ -278,6 +299,21 @@ export default function AdminLayout({
         role={mobileOpen ? 'dialog' : undefined}
         aria-modal={mobileOpen ? true : undefined}
       >
+        <button
+          type="button"
+          onClick={() => {
+            if (mobileOpen) {
+              setMobileOpen(false);
+            } else {
+              setCollapsed((value) => !value);
+            }
+          }}
+          className="absolute -right-3.5 top-1/2 z-[60] hidden h-7 w-7 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-md transition-colors hover:bg-slate-50 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800 lg:flex"
+          title={mobileOpen ? 'Close sidebar' : collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={mobileOpen ? 'Close sidebar' : collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {collapsed ? <ChevronRight className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
+        </button>
         <div className="flex flex-col flex-1 overflow-y-auto no-scrollbar">
           {/* Top Header inside Sidebar: Centered Logo + Email + Position */}
           <div
@@ -321,6 +357,7 @@ export default function AdminLayout({
 
                 <Link
                   href="/admin/dashboard"
+                  prefetch={false}
                   className="flex flex-col items-center gap-3 group rounded-lg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-sky-600"
                   title="Barangay Binongkalan Admin Portal"
                 >
@@ -358,9 +395,17 @@ export default function AdminLayout({
                   <Link
                     key={item.href}
                     href={item.href}
+                    prefetch={false}
                     onClick={closeMobileMenu}
                     aria-current={isActive ? 'page' : undefined}
                     aria-label={collapsed ? item.label : undefined}
+                    onPointerEnter={(event) => openSidebarTooltip(event, item.label)}
+                    onPointerLeave={closeSidebarTooltip}
+                    onFocus={(event) => openSidebarTooltip(event, item.label)}
+                    onBlur={closeSidebarTooltip}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Escape') closeSidebarTooltip();
+                    }}
                     title={collapsed ? item.label : undefined}
                     className={`group relative flex items-center ${
                       collapsed ? 'justify-center px-2 py-4' : 'justify-between px-4 py-4'
@@ -384,13 +429,13 @@ export default function AdminLayout({
                     </div>
 
                     {item.count > 0 && !collapsed && (
-                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white flex-shrink-0 ml-2">
+                      <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-brand-sun-400 text-brand-navy-700 flex-shrink-0 ml-2">
                         {item.count}
                       </span>
                     )}
 
                     {item.count > 0 && collapsed && (
-                      <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-amber-500" />
+                      <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-brand-sun-500" />
                     )}
                   </Link>
                 );
@@ -412,6 +457,17 @@ export default function AdminLayout({
           </button>
         </div>
       </aside>
+
+      {collapsed && sidebarTooltip && (
+        <div
+          role="tooltip"
+          className="pointer-events-none fixed z-[55] -translate-y-1/2 rounded-md bg-slate-900 px-2.5 py-1.5 text-sm text-white shadow-lg motion-safe:animate-in motion-safe:fade-in motion-safe:duration-150"
+          style={{ left: sidebarTooltip.left, top: sidebarTooltip.top }}
+        >
+          <span className="absolute -left-1 top-1/2 h-2 w-2 -translate-y-1/2 rotate-45 bg-slate-900" aria-hidden="true" />
+          <span className="relative">{sidebarTooltip.label}</span>
+        </div>
+      )}
 
       {/* Main Content Area: Independent scroll container so sidebar NEVER scrolls with content */}
       <div className="flex-1 flex flex-col h-screen h-[100dvh] min-w-0 overflow-hidden">

@@ -103,7 +103,7 @@ export default function PlatformFeedbackPage() {
   return (
     <div className="mx-auto max-w-4xl space-y-8 px-4 py-12 sm:px-6 font-sans">
       <header className="space-y-1">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1F3F74] dark:text-white tracking-tight">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-brand-navy-500 dark:text-white tracking-tight">
           Platform Feedback
         </h1>
         <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
@@ -118,7 +118,7 @@ export default function PlatformFeedbackPage() {
               <legend className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                 Your rating
               </legend>
-              <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
+              <span className="text-xs font-bold text-brand-navy-700 dark:text-brand-sun-400">
                 {activeDisplayRating} {activeDisplayRating === 1 ? 'Star' : 'Stars'} &bull; {RATING_LABELS[activeDisplayRating]}
               </span>
             </div>
@@ -141,12 +141,12 @@ export default function PlatformFeedbackPage() {
                     aria-label={`${value} stars`}
                     onClick={() => handleStarClick(value)}
                     onMouseEnter={() => setHoverRating(value)}
-                    className="p-1 -m-1 text-slate-300 transition-transform hover:scale-110 cursor-pointer focus:outline-none"
+                    className="p-1 -m-1 text-slate-300 transition-transform hover:scale-110 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400"
                     title={`Rate ${value} star${value > 1 ? 's' : ''}`}
                   >
                     <Star
                       className={`h-7 w-7 transition-colors duration-150 ${
-                        isLit ? 'fill-amber-400 text-amber-500' : 'text-slate-300 dark:text-neutral-700'
+                        isLit ? 'fill-brand-sun-400 text-brand-navy-700' : 'text-slate-300 dark:text-neutral-700'
                       }`}
                     />
                   </button>
@@ -165,14 +165,14 @@ export default function PlatformFeedbackPage() {
               value={comment}
               onChange={(event) => setComment(event.target.value)}
               placeholder="Tell us what you liked, what can be improved, or suggestions for the platform..."
-              className="w-full rounded-2xl border border-slate-300 dark:border-neutral-800 bg-white dark:bg-black p-3.5 text-xs sm:text-sm font-normal text-slate-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1F3F74] placeholder:italic"
+              className="w-full rounded-2xl border border-slate-300 dark:border-neutral-800 bg-white dark:bg-black p-3.5 text-xs sm:text-sm font-normal text-slate-900 dark:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:ring-2 focus:ring-brand-teal-400 placeholder:italic"
             />
           </label>
 
           <button
             type="submit"
             disabled={submitting}
-            className="inline-flex items-center justify-center rounded-full bg-[#1F3F74] hover:bg-[#285091] px-6 py-2.5 text-xs font-bold text-white transition shadow-sm disabled:opacity-50 cursor-pointer"
+            className="inline-flex items-center justify-center rounded-full bg-brand-navy-500 hover:bg-brand-navy-600 px-6 py-2.5 text-xs font-bold text-white transition shadow-sm disabled:opacity-50 cursor-pointer"
           >
             {submitting ? 'Submitting…' : 'Submit feedback'}
           </button>
@@ -200,7 +200,7 @@ export default function PlatformFeedbackPage() {
                 onClick={() => setActiveCategory(cat)}
                 className={`shrink-0 snap-start py-2.5 px-3 whitespace-nowrap rounded-full text-xs font-bold transition-all cursor-pointer flex items-center justify-center gap-1.5 shadow-2xs ${
                   isSelected
-                    ? 'bg-[#1F3F74] text-white'
+                    ? 'bg-brand-navy-500 text-white'
                     : 'bg-slate-100 dark:bg-neutral-900 text-slate-600 dark:text-neutral-400 hover:bg-slate-200 dark:hover:bg-neutral-800'
                 }`}
               >
@@ -232,7 +232,7 @@ export default function PlatformFeedbackPage() {
               >
                 <div className="flex items-center justify-between gap-4 text-sm">
                   <div className="flex min-w-0 items-center gap-2.5">
-                    <div className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#edf3fa] text-sm font-bold text-[#1F3F74] dark:bg-blue-950/60 dark:text-sky-300">
+                    <div className="relative flex h-9 w-9 shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-navy-50 text-sm font-bold text-brand-navy-500 dark:bg-brand-navy-900/60 dark:text-brand-navy-200">
                       {review.user_name?.trim().charAt(0).toUpperCase() || 'U'}
                       {review.profile_image_url && (
                         // eslint-disable-next-line @next/next/no-img-element
@@ -253,7 +253,7 @@ export default function PlatformFeedbackPage() {
 
                   {/* Star Icons instead of "5 / 5" */}
                   <div
-                    className="flex items-center gap-1 text-amber-400"
+                    className="flex items-center gap-1 text-brand-sun-700"
                     aria-label={`${review.rating} out of 5 stars`}
                   >
                     {Array.from({ length: 5 }, (_, i) => (
@@ -261,7 +261,7 @@ export default function PlatformFeedbackPage() {
                         key={i}
                         className={`w-3.5 h-3.5 ${
                           i < review.rating
-                            ? 'fill-amber-400 text-amber-500'
+                            ? 'fill-brand-sun-400 text-brand-navy-700'
                             : 'text-slate-200 dark:text-neutral-700'
                         }`}
                       />

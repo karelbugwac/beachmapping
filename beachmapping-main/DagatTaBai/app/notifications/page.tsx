@@ -2,15 +2,20 @@
 
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { Bell, Check, CircleAlert, Clock3, MonitorSmartphone, ShieldCheck, MapPin } from 'lucide-react';
 import { showToast } from '@/components/ui/feedback-toasts';
+import { SignOutAllDevicesButton } from '@/components/auth/sign-out-all-devices';
 
 interface NotificationItem {
   id: string;
-  type: 'new_device_login' | 'new_location_login';
+  type: 'new_device_login' | 'new_location_login' | 'tour_status';
   created_at: string;
   read_at: string | null;
   response: 'confirmed' | 'unrecognized' | null;
+  title?: string | null;
+  message?: string | null;
+  action_url?: string | null;
   browser: string;
   platform: string;
   location?: string | null;
@@ -82,24 +87,37 @@ export default function NotificationsPage() {
   const unreadCount = notifications.filter((item) => !item.read_at).length;
 
   return (
-    <main className="min-h-[70vh] bg-[#f7f9fc] px-4 py-10 dark:bg-neutral-950 sm:px-6 sm:py-14">
+    <main className="min-h-[70vh] bg-slate-50 px-4 py-10 dark:bg-neutral-950 sm:px-6 sm:py-14">
       <div className="mx-auto max-w-3xl">
         <header className="mb-10 flex items-center justify-between gap-4">
-          <h1 className="text-3xl font-bold tracking-tight text-[#1F3F74] dark:text-white sm:text-4xl">Notifications</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-brand-navy-500 dark:text-white sm:text-4xl">Notifications</h1>
           {unreadCount > 0 && (
-            <span className="rounded-full bg-blue-50 px-3 py-1.5 text-xs font-semibold text-[#1F3F74] dark:bg-blue-950/60 dark:text-sky-200">
+            <span className="rounded-full bg-brand-navy-50 px-3 py-1.5 text-xs font-semibold text-brand-navy-500 dark:bg-brand-navy-900/60 dark:text-brand-teal-200">
               {unreadCount} unread
             </span>
           )}
         </header>
 
+        <section className="mb-8 flex flex-col gap-4 rounded-2xl border border-slate-200 bg-white p-5 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 sm:flex-row sm:items-center sm:justify-between sm:p-6">
+          <div className="flex items-start gap-3">
+            <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-brand-navy-500 dark:text-brand-teal-300" />
+            <div>
+              <h2 className="text-sm font-semibold text-slate-900 dark:text-white">Security</h2>
+              <p className="mt-1 text-xs leading-relaxed text-slate-500 dark:text-neutral-400">
+                Sign out everywhere if you no longer recognize a device.
+              </p>
+            </div>
+          </div>
+          <SignOutAllDevicesButton />
+        </section>
+
         {loading ? (
           <div className="flex min-h-64 items-center justify-center" aria-label="Loading notifications">
-            <span className="h-7 w-7 animate-spin rounded-full border-2 border-[#1F3F74]/20 border-t-[#1F3F74] dark:border-sky-200/20 dark:border-t-sky-200" />
+            <span className="h-7 w-7 animate-spin rounded-full border-2 border-brand-navy-500/20 border-t-brand-navy-500 dark:border-brand-teal-200/20 dark:border-t-brand-teal-200" />
           </div>
         ) : notifications.length === 0 ? (
           <section className="py-16 text-center">
-            <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-[#1F3F74] text-white shadow-sm dark:bg-[#1F3F74]">
+            <span className="mx-auto flex h-16 w-16 items-center justify-center rounded-full bg-brand-navy-500 text-white shadow-sm dark:bg-brand-navy-500">
               <Bell className="h-7 w-7" />
             </span>
             <h2 className="mt-5 text-lg font-semibold text-slate-900 dark:text-white">You&apos;re all caught up</h2>
@@ -108,11 +126,12 @@ export default function NotificationsPage() {
           <div className="space-y-3">
             {notifications.map((notification) => {
               const isLocationAlert = notification.type === 'new_location_login';
+              const isTourAlert = notification.type === 'tour_status';
               return (
                 <article
                   key={notification.id}
                   className={`rounded-2xl border bg-white p-5 shadow-sm transition-colors dark:bg-neutral-900 sm:p-6 ${
-                    notification.read_at ? 'border-slate-200 dark:border-neutral-800' : 'border-blue-200 ring-1 ring-blue-100 dark:border-blue-900 dark:ring-blue-950'
+                    notification.read_at ? 'border-slate-200 dark:border-neutral-800' : 'border-brand-navy-200 ring-1 ring-brand-teal-400 dark:border-brand-navy-900 dark:ring-brand-teal-400'
                   }`}
                 >
                   <div className="flex items-start gap-4">
@@ -122,8 +141,8 @@ export default function NotificationsPage() {
                         : notification.response === 'confirmed'
                           ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-300'
                           : isLocationAlert
-                            ? 'bg-sky-50 text-sky-600 dark:bg-sky-950/60 dark:text-sky-300'
-                            : 'bg-blue-50 text-[#1F3F74] dark:bg-blue-950/60 dark:text-sky-200'
+                            ? 'bg-brand-teal-50 text-brand-teal-600 dark:bg-brand-teal-700/60 dark:text-brand-teal-300'
+                            : 'bg-brand-navy-50 text-brand-navy-500 dark:bg-brand-navy-900/60 dark:text-brand-teal-200'
                     }`}>
                       {notification.response === 'unrecognized'
                         ? <CircleAlert className="h-5 w-5" />
@@ -137,12 +156,14 @@ export default function NotificationsPage() {
                     <div className="min-w-0 flex-1">
                       <div className="flex flex-wrap items-center justify-between gap-2">
                         <h2 className="font-semibold text-slate-900 dark:text-white">
-                          {isLocationAlert ? 'New sign-in location detected' : 'New sign-in detected'}
+                          {notification.title || (isLocationAlert ? 'New sign-in location detected' : 'New sign-in detected')}
                         </h2>
-                        {!notification.read_at && <span className="h-2 w-2 rounded-full bg-blue-600" aria-label="Unread" />}
+                        {!notification.read_at && <span className="h-2 w-2 rounded-full bg-brand-navy-600" aria-label="Unread" />}
                       </div>
 
-                      {isLocationAlert ? (
+                      {isTourAlert ? (
+                        <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">{notification.message}</p>
+                      ) : isLocationAlert ? (
                         <p className="mt-1 text-sm leading-6 text-slate-600 dark:text-slate-300">
                           Your account was accessed from a new location: <strong className="font-semibold text-slate-800 dark:text-slate-100">{notification.location}</strong>
                           {' '}via {notification.browser} on {notification.platform}.
@@ -158,7 +179,28 @@ export default function NotificationsPage() {
                         <time dateTime={notification.created_at}>{formatDate(notification.created_at)}</time>
                       </p>
 
-                      {notification.response === 'confirmed' ? (
+                      {isTourAlert ? (
+                        <div className="mt-5 flex flex-wrap items-center gap-3">
+                          {notification.action_url && (
+                            <Link
+                              href={notification.action_url}
+                              className="rounded-lg bg-brand-navy-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-navy-600"
+                            >
+                              View tour
+                            </Link>
+                          )}
+                          {!notification.read_at && (
+                            <button
+                              type="button"
+                              disabled={busyId === notification.id}
+                              onClick={() => void handleAction(notification, 'read')}
+                              className="text-sm font-semibold text-brand-navy-600 underline dark:text-brand-teal-200"
+                            >
+                              Mark as read
+                            </button>
+                          )}
+                        </div>
+                      ) : notification.response === 'confirmed' ? (
                         <p className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-emerald-700 dark:text-emerald-300"><Check className="h-4 w-4" />You confirmed this activity.</p>
                       ) : notification.response === 'unrecognized' ? (
                         <p className="mt-4 inline-flex items-center gap-2 text-sm font-medium text-rose-700 dark:text-rose-300"><CircleAlert className="h-4 w-4" />You reported this activity as unrecognized.</p>
@@ -168,7 +210,7 @@ export default function NotificationsPage() {
                             type="button"
                             disabled={busyId === notification.id}
                             onClick={() => void handleAction(notification, 'confirmed')}
-                            className="rounded-lg bg-[#1F3F74] px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-[#294f8c] disabled:cursor-wait disabled:opacity-60"
+                            className="rounded-lg bg-brand-navy-500 px-4 py-2 text-sm font-semibold text-white transition-colors hover:bg-brand-navy-500 disabled:cursor-wait disabled:opacity-60"
                           >
                             This was me
                           </button>

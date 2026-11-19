@@ -85,7 +85,7 @@ export function VirtualTourModal({
 
   return (
     <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-md p-2 sm:p-4 lg:p-6 transition-all"
+      className="fixed inset-0 z-[60] flex items-center justify-center bg-black/80 backdrop-blur-md p-2 sm:p-4 lg:p-6 transition-all"
       role="dialog"
       aria-modal="true"
       aria-label={`${beachName} 360° Virtual Tour`}
@@ -101,12 +101,12 @@ export function VirtualTourModal({
         {/* Top Header Bar */}
         <div className="flex items-center justify-between px-4 sm:px-6 py-3.5 bg-zinc-900/90 border-b border-zinc-800/80 backdrop-blur-md z-10 flex-shrink-0">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-9 h-9 rounded-xl bg-blue-600/20 border border-blue-500/30 flex items-center justify-center text-blue-400 flex-shrink-0">
+            <div className="w-9 h-9 rounded-xl bg-brand-navy-600/20 border border-brand-navy-500/30 flex items-center justify-center text-brand-navy-400 flex-shrink-0">
               <Compass className="w-5 h-5 animate-pulse" />
             </div>
             <div className="min-w-0">
               <div className="flex items-center gap-2">
-                <span className="inline-flex items-center gap-1 text-[11px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full bg-blue-500/20 text-blue-400 border border-blue-500/30">
+                <span className="inline-flex items-center gap-1 text-[11px] font-semibold tracking-wider uppercase px-2 py-0.5 rounded-full bg-brand-navy-500/20 text-brand-navy-400 border border-brand-navy-500/30">
                   <Sparkles className="w-3 h-3" />
                   360° Virtual Tour
                 </span>
@@ -159,7 +159,7 @@ export function VirtualTourModal({
             <>
               {loading && (
                 <div className="absolute inset-0 flex flex-col items-center justify-center bg-zinc-950 text-zinc-300 z-10 space-y-3">
-                  <div className="w-12 h-12 rounded-full border-2 border-blue-500/30 border-t-blue-500 animate-spin" />
+                  <div className="w-12 h-12 rounded-full border-2 border-brand-navy-500/30 border-t-brand-teal-400 animate-spin" />
                   <p className="text-sm font-medium">Loading 360° interactive tour...</p>
                   <p className="text-xs text-zinc-500">Preparing panorama and viewport controls</p>
                 </div>

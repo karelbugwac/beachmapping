@@ -45,7 +45,7 @@ export function BeachHero({ beach, loading = false }: BeachHeroProps) {
               className="absolute inset-0 pointer-events-none"
               style={{
                 background:
-                  'linear-gradient(180deg, rgba(11, 46, 54, 0.05) 0%, rgba(11, 46, 54, 0.4) 60%, rgba(11, 46, 54, 0.82) 100%)',
+                  'linear-gradient(180deg, rgb(var(--brand-navy-500) / 0.05) 0%, rgb(var(--brand-navy-500) / 0.4) 60%, rgb(var(--brand-navy-500) / 0.82) 100%)',
               }}
             />
           </>
@@ -92,7 +92,7 @@ export function BeachHero({ beach, loading = false }: BeachHeroProps) {
               borderColor: 'rgba(0, 0, 0, 0.08)',
             }}
           >
-            <Camera className="w-3.5 h-3.5 text-[#CF4530]" strokeWidth={1.75} aria-hidden="true" />
+            <Camera className="w-3.5 h-3.5 text-brand-navy-500" strokeWidth={1.75} aria-hidden="true" />
             <span>Change cover</span>
           </Link>
         </div>
@@ -156,7 +156,7 @@ export function BeachHero({ beach, loading = false }: BeachHeroProps) {
               </div>
 
               <div className="flex items-center justify-center sm:justify-start gap-1.5 text-xs font-sans text-[var(--color-muted)]">
-                <MapPin className="w-3.5 h-3.5 text-[#CF4530] flex-shrink-0" strokeWidth={1.75} aria-hidden="true" />
+                <MapPin className="w-3.5 h-3.5 text-brand-navy-500 flex-shrink-0" strokeWidth={1.75} aria-hidden="true" />
                 <span>{displayLocation}</span>
                 <span className="text-[var(--color-sand-300)]">&bull;</span>
                 <span>Philippines</span>
@@ -169,7 +169,8 @@ export function BeachHero({ beach, loading = false }: BeachHeroProps) {
             {/* Primary Action Button (Coral with white text) */}
             <Link
               href="/owner/beach"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-sans font-semibold text-white transition-colors shadow-xs min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#CF4530]"
+              prefetch={false}
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg text-xs font-sans font-semibold text-white transition-colors shadow-xs min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400"
               style={{
                 backgroundColor: 'var(--color-coral)',
               }}
@@ -182,8 +183,9 @@ export function BeachHero({ beach, loading = false }: BeachHeroProps) {
             {isConfigured && publicSlug && (
               <Link
                 href={`/beaches/${publicSlug}`}
+                prefetch={false}
                 target="_blank"
-                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg text-xs font-sans font-medium border transition-colors min-h-[44px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#CF4530]"
+                className="inline-flex items-center gap-1.5 px-3.5 py-2.5 rounded-lg text-xs font-sans font-medium border transition-colors min-h-[44px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus-visible:ring-2 focus-visible:ring-brand-teal-400"
                 style={{
                   backgroundColor: 'transparent',
                   borderColor: 'var(--color-sand-200)',

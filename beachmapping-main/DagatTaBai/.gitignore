@@ -5,6 +5,7 @@
 
 # testing
 /coverage
+/.local-migrations/
 
 # next.js
 /.next/

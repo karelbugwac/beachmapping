@@ -90,7 +90,7 @@ export function AppShell({
   return (
     <div
       onClickCapture={handleNavigationStart}
-      className="h-screen flex font-sans bg-[#f8fafc] dark:bg-black text-slate-900 dark:text-slate-100 transition-colors duration-200 overflow-hidden"
+      className="h-screen flex font-sans bg-slate-50 dark:bg-black text-slate-900 dark:text-slate-100 transition-colors duration-200 overflow-hidden"
     >
       {/* 1. SIDEBAR (Collapsible desktop / off-canvas drawer mobile) */}
       <Sidebar
@@ -107,8 +107,8 @@ export function AppShell({
       {/* 2. MAIN APPLICATION CONTENT AREA */}
       <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
         {pageLoading && (
-          <div className="fixed top-0 left-0 right-0 h-1 bg-[#1F3F74] dark:bg-[#4987BA] z-[100] overflow-hidden">
-            <div className="h-full w-1/2 bg-sky-400 animate-[progress_1s_ease-in-out_infinite]" />
+          <div className="fixed top-0 left-0 right-0 h-1 bg-brand-navy-500 dark:bg-brand-teal-600 z-[100] overflow-hidden">
+            <div className="h-full w-1/2 bg-brand-teal-400 animate-[progress_1s_ease-in-out_infinite]" />
           </div>
         )}
 
@@ -121,7 +121,7 @@ export function AppShell({
           >
             <Menu className="w-5 h-5" />
           </button>
-          <span className="font-bold text-sm text-[#1F3F74] dark:text-[#4987BA]">Beach Owner Portal</span>
+          <span className="font-bold text-sm text-brand-navy-500 dark:text-brand-teal-300">Beach Owner Portal</span>
         </div>
 
         {/* Page Content */}
