@@ -64,13 +64,13 @@ export function CookieConsent() {
   return (
     <aside
       aria-label="Cookie and Privacy Consent"
-      className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-xl z-50 animate-in fade-in slide-in-from-bottom-4 duration-300 pointer-events-auto"
+      className="fixed bottom-4 left-4 right-4 sm:left-auto sm:right-6 sm:max-w-xl z-[60] cookie-consent-enter pointer-events-auto"
     >
       {/* Straight 90-degree corners: rounded-none */}
       <div className="bg-white/95 dark:bg-neutral-900/95 backdrop-blur-md p-4 sm:p-5 rounded-none shadow-2xl border border-slate-200 dark:border-neutral-800 text-slate-800 dark:text-neutral-100 space-y-3.5">
         <div className="flex items-start justify-between gap-3">
           {/* Armor / shield icon removed, Dive color applied */}
-          <h3 className="font-bold text-xs uppercase tracking-wider text-[#1F3F74] dark:text-[#4987BA] font-heading">
+          <h3 className="font-bold text-xs uppercase tracking-wider text-brand-navy-500 dark:text-brand-teal-300 font-heading">
             Privacy &amp; Cookie Consent
           </h3>
           <button
@@ -90,7 +90,7 @@ export function CookieConsent() {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pt-1">
           <Link
             href="/privacy"
-            className="text-xs font-semibold text-[#1F3F74] dark:text-[#4987BA] hover:underline"
+            className="text-xs font-semibold text-brand-navy-500 dark:text-brand-teal-300 hover:underline"
           >
             View Privacy Policy
           </Link>
@@ -107,14 +107,14 @@ export function CookieConsent() {
             <button
               type="button"
               onClick={handleEssentialOnly}
-              className="px-3 py-1.5 rounded-none border border-[#1F3F74] text-[#1F3F74] dark:text-sky-300 dark:border-sky-400 hover:bg-[#1F3F74]/10 text-xs font-medium transition-colors"
+              className="px-3 py-1.5 rounded-none border border-brand-navy-500 text-brand-navy-500 dark:text-brand-teal-300 dark:border-brand-teal-400 hover:bg-brand-navy-500/10 text-xs font-medium transition-colors"
             >
               Essential Only
             </button>
             <button
               type="button"
               onClick={handleAccept}
-              className="px-4 py-1.5 rounded-none bg-[#1F3F74] hover:bg-[#285091] dark:bg-[#1F3F74] dark:hover:bg-[#285091] text-white text-xs font-bold transition-colors shadow-xs"
+              className="px-4 py-1.5 rounded-none bg-brand-navy-500 hover:bg-brand-navy-600 dark:bg-brand-navy-500 dark:hover:bg-brand-navy-600 text-white text-xs font-bold transition-colors shadow-xs"
             >
               Accept
             </button>

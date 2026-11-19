@@ -75,7 +75,7 @@ export function QuickActions() {
             <Link
               key={idx}
               href={action.href}
-              className="group flex items-center justify-between py-4 px-3 -mx-3 rounded-xl transition-colors hover:bg-[var(--color-sand-100)]/40 min-h-[52px] focus:outline-none focus-visible:ring-2 focus-visible:ring-[#CF4530]"
+              className="group flex items-center justify-between py-4 px-3 -mx-3 rounded-xl transition-colors hover:bg-[var(--color-sand-100)]/40 min-h-[52px] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus-visible:ring-2 focus-visible:ring-brand-teal-400"
             >
               <div className="flex items-center gap-3.5 min-w-0">
                 <div

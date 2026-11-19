@@ -3,7 +3,7 @@
 import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import {
   LayoutDashboard,
   Building2,
@@ -14,7 +14,7 @@ import {
   Menu,
   Bell,
 } from 'lucide-react';
-import { createClient } from '@/lib/supabase/client';
+import { signOutAndClearClientState } from '@/lib/client/logout';
 
 interface SidebarProps {
   mobileOpen: boolean;
@@ -37,16 +37,14 @@ export function Sidebar({
   unreadNotifications = 0,
 }: SidebarProps) {
   const pathname = usePathname();
-  const router = useRouter();
 
   const handleLogout = async () => {
     try {
-      const supabase = createClient();
-      await supabase.auth.signOut();
-    } catch {
-      // Ignore fallback
+      await signOutAndClearClientState();
+    } catch (error: unknown) {
+      console.error('Sign-out cleanup did not complete:', error);
     } finally {
-      router.push('/owner/login');
+      window.location.replace('/owner/login');
     }
   };
 
@@ -107,7 +105,7 @@ export function Sidebar({
               <button
                 type="button"
                 onClick={onToggleCollapse}
-                className="p-2 text-slate-600 dark:text-neutral-300 hover:text-[#1F3F74] dark:hover:text-[#4987BA] hover:bg-slate-100 dark:hover:bg-neutral-900 rounded-xl transition-colors cursor-pointer"
+                className="p-2 text-slate-600 dark:text-neutral-300 hover:text-brand-navy-500 dark:hover:text-brand-teal-300 hover:bg-slate-100 dark:hover:bg-neutral-900 rounded-xl transition-colors cursor-pointer"
                 title="Expand sidebar"
                 aria-label="Expand sidebar"
               >
@@ -122,7 +120,7 @@ export function Sidebar({
                       if (mobileOpen) onClose();
                       else onToggleCollapse();
                     }}
-                    className="p-1.5 rounded-lg text-slate-500 hover:text-[#1F3F74] dark:text-neutral-400 dark:hover:text-[#4987BA] hover:bg-slate-100 dark:hover:bg-neutral-900 transition-colors cursor-pointer"
+                    className="p-1.5 rounded-lg text-slate-500 hover:text-brand-navy-500 dark:text-neutral-400 dark:hover:text-brand-teal-300 hover:bg-slate-100 dark:hover:bg-neutral-900 transition-colors cursor-pointer"
                     title="Toggle sidebar"
                     aria-label="Toggle sidebar"
                   >
@@ -136,7 +134,7 @@ export function Sidebar({
                   <p className="text-xs font-medium text-slate-600 dark:text-neutral-400 truncate" title={beachName}>
                     {beachName}
                   </p>
-                  <p className="text-[10px] font-bold text-[#1F3F74] dark:text-[#4987BA] uppercase tracking-wider">
+                  <p className="text-[10px] font-bold text-brand-navy-500 dark:text-brand-teal-300 uppercase tracking-wider">
                     Beach Owner Portal
                   </p>
                   <button
@@ -171,8 +169,8 @@ export function Sidebar({
                       collapsed ? 'justify-center px-2 py-4' : 'justify-between px-4 py-4'
                     } rounded-2xl text-xs sm:text-sm font-medium transition-all ${
                       isActive
-                        ? 'bg-[#1F3F74] text-white shadow-md font-semibold'
-                        : 'text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-900 hover:text-[#1F3F74] dark:hover:text-white'
+                        ? 'bg-brand-navy-500 text-white shadow-md font-semibold'
+                        : 'text-slate-600 dark:text-neutral-300 hover:bg-slate-100 dark:hover:bg-neutral-900 hover:text-brand-navy-500 dark:hover:text-white'
                     }`}
                   >
                     <div className="flex items-center gap-3.5 min-w-0">
@@ -180,7 +178,7 @@ export function Sidebar({
                         className={`w-5 h-5 flex-shrink-0 transition-colors ${
                           isActive
                             ? 'text-white'
-                            : 'text-slate-500 dark:text-neutral-400 group-hover:text-[#1F3F74] dark:group-hover:text-[#4987BA]'
+                            : 'text-slate-500 dark:text-neutral-400 group-hover:text-brand-navy-500 dark:group-hover:text-brand-teal-300'
                         }`}
                         strokeWidth={1.8}
                       />
@@ -189,13 +187,13 @@ export function Sidebar({
 
                     {/* Badge only when count > 0 */}
                     {item.count > 0 && !collapsed && (
-                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white flex-shrink-0 ml-2">
+                      <span className="px-2 py-0.5 rounded-full text-[10px] font-bold bg-brand-sun-400 text-brand-navy-700 flex-shrink-0 ml-2">
                         {item.count}
                       </span>
                     )}
 
                     {item.count > 0 && collapsed && (
-                      <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-amber-500" />
+                      <span className="absolute top-2 right-2 w-2 h-2 rounded-full bg-brand-sun-500" />
                     )}
                   </Link>
                 );
@@ -205,15 +203,15 @@ export function Sidebar({
             {/* Notifications Alert if present */}
             {unreadNotifications > 0 && (
               <div
-                className={`mt-4 rounded-2xl bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 ${
+                className={`mt-4 rounded-2xl bg-brand-sun-50 dark:bg-brand-navy-900/30 border border-brand-sun-200 dark:border-brand-navy-800 ${
                   collapsed ? 'p-2 flex justify-center' : 'px-4 py-3'
                 }`}
                 title={`${unreadNotifications} notifications`}
               >
                 <div className="flex items-center gap-2.5">
-                  <Bell className="w-4 h-4 text-amber-600 dark:text-amber-400 flex-shrink-0" />
+                  <Bell className="w-4 h-4 text-brand-navy-700 dark:text-brand-sun-400 flex-shrink-0" />
                   {!collapsed && (
-                    <span className="text-xs font-semibold text-amber-900 dark:text-amber-300 truncate">
+                    <span className="text-xs font-semibold text-brand-navy-700 dark:text-brand-sun-300 truncate">
                       {unreadNotifications} new notification{unreadNotifications > 1 ? 's' : ''}
                     </span>
                   )}

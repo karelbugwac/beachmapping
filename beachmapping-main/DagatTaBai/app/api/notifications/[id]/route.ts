@@ -36,16 +36,19 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       .update(update)
       .eq('id', id)
       .eq('user_id', user.id);
-    if (action !== 'read') query = query.is('response', null);
+    if (action !== 'read') query = query.is('response', null).neq('type', 'tour_status');
 
     const { data } = await query
-      .select('id, type, created_at, read_at, response, device:login_devices!user_notifications_login_device_id_fkey(browser, platform)')
+      .select('id, type, title, message, action_url, created_at, read_at, response, device:login_devices!user_notifications_login_device_id_fkey(browser, platform)')
       .maybeSingle();
 
     if (data) {
       dbNotification = {
         id: data.id,
         type: data.type,
+        title: data.title,
+        message: data.message,
+        action_url: data.action_url,
         created_at: data.created_at,
         read_at: data.read_at,
         response: data.response,

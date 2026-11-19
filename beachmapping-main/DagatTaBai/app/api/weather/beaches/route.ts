@@ -1,15 +1,16 @@
 import { NextResponse } from 'next/server';
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { getAllBeaches } from '@/lib/db/beaches';
 
 export async function GET() {
   try {
-    const supabase = await createServerSupabaseClient();
-    const { data, error } = await supabase
-      .from('beaches')
-      .select('id, name, location, latitude, longitude')
-      .eq('status', 'active');
-
-    if (error) throw new Error(error.message);
+    const beaches = await getAllBeaches();
+    const data = beaches.map(({ id, name, location, latitude, longitude }) => ({
+      id,
+      name,
+      location,
+      latitude,
+      longitude,
+    }));
 
     return NextResponse.json(data || [], {
       headers: { 'Cache-Control': 'no-cache, no-store, must-revalidate' },

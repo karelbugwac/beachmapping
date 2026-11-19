@@ -3,13 +3,11 @@ import nodemailer from 'nodemailer';
 import { createAdminClient } from '../supabase/server';
 import { hashPin } from './pin';
 import { getValidBeachCoordinates } from '../utils/beach-coordinates';
+import { FULL_NAME_MESSAGES, validateFullName } from '../validation/fullName';
 
-export interface ProvisionResult {
-  userId: string;
-  email: string;
-  success: boolean;
-  error?: string;
-}
+export type ProvisionResult =
+  | { userId: string; email: string; success: true }
+  | { email: string; success: false; error: string; invalidName?: boolean; conflict?: boolean };
 
 /**
  * Generates a cryptographically secure, randomized 6-digit numeric PIN.
@@ -30,8 +28,20 @@ export function generateSecurePin(): string {
 export async function provisionBeachOwner(
   email: string,
   name: string,
-  applicationId: string
+  applicationId: string,
+  reviewMetadata?: { expectedStatusUpdatedAt?: string; reviewedBy?: string; note?: string | null }
 ): Promise<ProvisionResult> {
+  const nameValidation = validateFullName(name);
+  if (!nameValidation.ok) {
+    return {
+      email,
+      success: false,
+      error: FULL_NAME_MESSAGES.serverRejected,
+      invalidName: true,
+    };
+  }
+  name = nameValidation.value;
+
   const adminSupabase = createAdminClient();
   const randomizedPin = generateSecurePin();
 
@@ -80,27 +90,49 @@ export async function provisionBeachOwner(
     // 3. Link application to created user and mark as approved (if valid UUID)
     const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(applicationId);
     if (isUuid) {
+      const reviewedAt = new Date().toISOString();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: applicationError } = await (adminSupabase.from('owner_applications') as any)
+      let applicationUpdate = (adminSupabase.from('owner_applications') as any)
         .update({
           applicant_user_id: userId,
           status: 'approved',
-          reviewed_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
+          ...(reviewMetadata ? { status_note: reviewMetadata.note ?? null } : {}),
+          status_updated_at: reviewedAt,
+          decided_at: reviewedAt,
+          reviewed_at: reviewedAt,
+          ...(reviewMetadata?.reviewedBy ? { reviewed_by: reviewMetadata.reviewedBy } : {}),
+          updated_at: reviewedAt,
         })
         .eq('id', applicationId);
+      if (reviewMetadata?.expectedStatusUpdatedAt) {
+        applicationUpdate = applicationUpdate
+          .eq('status', 'under_review')
+          .eq('status_updated_at', reviewMetadata.expectedStatusUpdatedAt);
+      }
+      const { data: updatedApplication, error: applicationError } = await applicationUpdate
+        .select('id')
+        .maybeSingle();
       if (applicationError) throw applicationError;
+      if (!updatedApplication) {
+        return {
+          email,
+          success: false,
+          error: 'Someone else already changed this application. Refresh and try again.',
+          conflict: true,
+        };
+      }
 
-      const { data: application, error: fetchApplicationError } = await (adminSupabase
-        .from('owner_applications') as any)
-        .select('business_name, beach_name, beach_description, beach_location, latitude, longitude, contact_phone, applicant_email, cover_image_path, profile_image_path, virtual_tour_url')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const applicationQuery = (adminSupabase.from('owner_applications') as any)
+        .select('business_name, beach_name, beach_description, beach_location, latitude, longitude, contact_phone, applicant_email, cover_image_path, profile_image_path, virtual_tour_url');
+      const { data: application, error: fetchApplicationError } = await applicationQuery
         .eq('id', applicationId)
         .single();
       if (fetchApplicationError) throw fetchApplicationError;
 
-      const { data: existingBeach, error: existingBeachError } = await (adminSupabase
-        .from('beaches') as any)
-        .select('id')
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const existingBeachQuery = (adminSupabase.from('beaches') as any).select('id');
+      const { data: existingBeach, error: existingBeachError } = await existingBeachQuery
         .eq('owner_id', userId)
         .maybeSingle();
       if (existingBeachError) throw existingBeachError;
@@ -109,6 +141,7 @@ export async function provisionBeachOwner(
         const beachName = application.beach_name || application.business_name || name;
         const baseSlug = beachName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/(^-|-$)/g, '');
         const coordinates = getValidBeachCoordinates(application.latitude, application.longitude);
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error: beachError } = await (adminSupabase.from('beaches') as any).insert({
           owner_id: userId,
           name: beachName,
@@ -141,13 +174,11 @@ export async function provisionBeachOwner(
       success: true,
     };
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Unknown error during provisioning';
-    console.error('Owner provisioning failed:', message);
+    console.error('Owner provisioning failed:', error);
     return {
-      userId: '',
       email,
       success: false,
-      error: message,
+      error: 'Could not complete owner provisioning. Please try again.',
     };
   }
 }
@@ -197,8 +228,8 @@ async function sendOwnerWelcomeEmail({
               Your beach owner application has been approved. Use this PIN to log in:
             </p>
 
-            <div style="background-color: #f1f5f9; border: 2px solid #0284c7; padding: 24px; border-radius: 12px; margin: 20px 0; text-align: center;">
-              <div style="font-size: 10px; font-weight: 700; color: #0369a1; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
+            <div style="background-color: #f1f5f9; border: 2px solid #2F7A87; padding: 24px; border-radius: 12px; margin: 20px 0; text-align: center;">
+              <div style="font-size: 10px; font-weight: 700; color: #124168; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;">
                 Your 6-Digit PIN
               </div>
               <div style="font-size: 40px; font-weight: 900; letter-spacing: 6px; color: #0f172a; font-family: monospace;">
@@ -207,13 +238,13 @@ async function sendOwnerWelcomeEmail({
             </div>
 
             <div style="text-align: center; margin: 24px 0;">
-              <a href="${loginUrl}" style="background-color: #0284c7; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600; display: inline-block;">
+              <a href="${loginUrl}" style="background-color: #2F7A87; color: #ffffff; padding: 12px 24px; text-decoration: none; border-radius: 8px; font-size: 14px; font-weight: 600; display: inline-block;">
                 Log In to Owner Portal
               </a>
             </div>
 
             <p style="font-size: 11px; color: #94a3b8; margin-top: 24px; padding-top: 16px; border-top: 1px solid #f1f5f9;">
-              <a href="${loginUrl}" style="color: #0284c7;">${loginUrl}</a>
+              <a href="${loginUrl}" style="color: #2F7A87;">${loginUrl}</a>
             </p>
           </div>
         `,

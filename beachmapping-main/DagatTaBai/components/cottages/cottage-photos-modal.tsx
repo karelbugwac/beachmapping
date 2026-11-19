@@ -187,7 +187,7 @@ export function PhotoViewerModal({
               type="button"
               onClick={showPrevious}
               aria-label="Previous photo"
-              className="absolute left-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-md hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74]"
+              className="absolute left-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-md hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400"
             >
               <ChevronLeft className="h-4 w-4" />
             </button>
@@ -195,7 +195,7 @@ export function PhotoViewerModal({
               type="button"
               onClick={showNext}
               aria-label="Next photo"
-              className="absolute right-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-md hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74]"
+              className="absolute right-3 top-1/2 z-20 flex h-11 w-11 -translate-y-1/2 items-center justify-center rounded-full border border-slate-200 bg-white text-slate-700 shadow-md hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400"
             >
               <ChevronRight className="h-4 w-4" />
             </button>
@@ -218,9 +218,9 @@ export function PhotoViewerModal({
                 onClick={() => setSelectedIndex(index)}
                 aria-label={`Show image ${index + 1}`}
                 aria-current={selectedIndex === index}
-                className={`relative aspect-[4/3] w-[90px] shrink-0 overflow-hidden rounded-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74] ${
+                className={`relative aspect-[4/3] w-[90px] shrink-0 overflow-hidden rounded-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 ${
                   selectedIndex === index
-                    ? 'border-2 border-[#1F3F74]'
+                    ? 'border-2 border-brand-navy-500'
                     : 'border border-slate-200'
                 }`}
               >
@@ -268,23 +268,23 @@ export function PhotoViewerModal({
           type="button"
           onClick={onClose}
           aria-label="Close photos"
-          className="absolute right-2 top-2 z-20 flex h-[34px] w-[34px] items-center justify-center rounded-full bg-white text-slate-700 shadow-md hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74]"
+          className="absolute right-2 top-2 z-20 flex h-[34px] w-[34px] items-center justify-center rounded-full bg-white text-slate-700 shadow-md hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400"
         >
           <X className="h-4 w-4" />
         </button>
 
-        <div className="grid max-h-[90vh] min-w-0 grid-cols-1 overflow-y-auto lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-stretch">
+        <div className="grid max-h-[90vh] min-w-0 grid-cols-1 overflow-y-auto lg:grid-cols-[minmax(0,1.15fr)_minmax(0,1fr)] lg:items-start">
           {photoViewer}
 
           <div className="flex min-w-0 flex-col gap-4 p-6">
             <h2 className="min-w-0 break-words pr-10 text-xl font-semibold text-slate-900 dark:text-white">{name}</h2>
             {infoLabel?.trim() && (
-              <span className="inline-flex w-fit rounded-full bg-emerald-100 px-3 py-1.5 text-xs font-semibold text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">
+              <span className="inline-flex w-fit rounded-full bg-brand-teal-100 px-3 py-1.5 text-xs font-semibold text-brand-teal-700 dark:bg-brand-teal-700/20 dark:text-brand-teal-300">
                 {infoLabel}
               </span>
             )}
             {capacityText && (
-              <div className={`inline-flex items-center gap-1.5 text-xs font-semibold ${capacity ? 'text-emerald-700 dark:text-emerald-400' : 'text-slate-600 dark:text-neutral-300'}`}>
+              <div className={`inline-flex items-center gap-1.5 text-xs font-semibold ${capacity ? 'text-brand-navy-500 dark:text-brand-navy-300' : 'text-slate-600 dark:text-neutral-300'}`}>
                 {capacity ? (
                   <UsersRound className="h-3.5 w-3.5" aria-hidden="true" />
                 ) : (
@@ -294,9 +294,9 @@ export function PhotoViewerModal({
               </div>
             )}
             {description?.trim() && (
-              <section className="border-t border-slate-200 pt-4 dark:border-neutral-800">
+              <section className="w-full min-w-0 border-t border-slate-200 pt-4 dark:border-neutral-800">
                 <h3 className="text-xs font-semibold text-slate-500 dark:text-neutral-400">Description</h3>
-                <p className="mt-2 whitespace-pre-line text-justify text-xs leading-relaxed text-slate-700 dark:text-neutral-200">
+                <p className="mt-2 w-full min-w-0 break-words whitespace-pre-line text-justify text-xs leading-relaxed text-slate-700 dark:text-neutral-200">
                   {description}
                 </p>
               </section>
@@ -311,7 +311,7 @@ export function PhotoViewerModal({
                     {feeItems[0].label !== 'Fee' && (
                       <div className="text-xs text-slate-500 dark:text-neutral-400">{feeItems[0].label}</div>
                     )}
-                    <span className="text-base font-semibold text-[#1F3F74] dark:text-[#4987BA]">
+                    <span className="text-base font-semibold text-brand-navy-500 dark:text-brand-teal-300">
                       {formatFacilityFeeAmount(feeItems[0].amount)}
                     </span>
                   </div>
@@ -320,7 +320,7 @@ export function PhotoViewerModal({
                     {feeItems.map((fee, index) => (
                       <div key={`${fee.label}-${index}`} className="rounded-lg bg-slate-50 px-2.5 py-2 dark:bg-neutral-800">
                         <div className="text-[10px] text-slate-500 dark:text-neutral-400">{fee.label}</div>
-                        <div className="text-base font-semibold text-[#1F3F74] dark:text-[#4987BA]">
+                        <div className="text-base font-semibold text-brand-navy-500 dark:text-brand-teal-300">
                           {formatFacilityFeeAmount(fee.amount)}
                         </div>
                       </div>
@@ -332,7 +332,7 @@ export function PhotoViewerModal({
               <section className="border-t border-slate-200 pt-4 dark:border-neutral-800">
                 <div className="text-xs text-slate-500 dark:text-neutral-400">{priceLabel}</div>
                 <div className="flex items-baseline gap-1.5 whitespace-nowrap">
-                  <span className="text-2xl font-semibold text-[#1F3F74] dark:text-[#4987BA]">
+                  <span className="text-2xl font-semibold text-brand-navy-500 dark:text-brand-teal-300">
                     {formattedRate}
                   </span>
                   {priceUnit && resolvedRate?.trim() && resolvedRate.toLowerCase() !== 'free' && (

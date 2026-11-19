@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authorizeRoles } from '@/lib/supabase/authorization';
+import { validateAdminMutationRequest, noStoreHeaders } from '@/lib/server/admin-request';
+import { ADMIN_MESSAGES } from '@/lib/validation/admin-messages';
 
 export async function GET() {
   try {
@@ -111,32 +113,41 @@ export async function GET() {
       { headers: { 'Cache-Control': 'no-store, max-age=0' } }
     );
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Failed to load reviews.';
-    console.error('Admin reviews GET error:', message);
-    return NextResponse.json({ error: message, reviews: [], reports: [] }, { status: 500 });
+    console.error('Admin reviews GET error:', error);
+    return NextResponse.json({ error: ADMIN_MESSAGES.serverError, reviews: [], reports: [] }, { status: 500, headers: noStoreHeaders() });
   }
 }
 
 export async function DELETE(request: NextRequest) {
+  const originError = validateAdminMutationRequest(request);
+  if (originError) return originError;
+
   try {
     const auth = await authorizeRoles(['admin']);
     if (!auth.authorized) {
-      return NextResponse.json({ error: auth.message }, { status: auth.status });
+      return NextResponse.json({ error: auth.message }, { status: auth.status, headers: noStoreHeaders() });
     }
-    const reviewId = request.nextUrl.searchParams.get('id');
-    if (!reviewId) return NextResponse.json({ error: 'Review ID is required.' }, { status: 400 });
+    const body = await request.json();
+    const reviewId = body?.id;
+    const reviewTypeValue = body?.type;
+    if (typeof reviewId !== 'string' || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(reviewId)) {
+      return NextResponse.json({ error: 'Review ID is required.' }, { status: 400, headers: noStoreHeaders() });
+    }
+    if (reviewTypeValue !== 'platform' && reviewTypeValue !== 'beach') {
+      return NextResponse.json({ error: 'Choose a valid review type.' }, { status: 400, headers: noStoreHeaders() });
+    }
 
-    const reviewType = request.nextUrl.searchParams.get('type') === 'platform' ? 'platform_reviews' : 'beach_reviews';
+    const reviewType = reviewTypeValue === 'platform' ? 'platform_reviews' : 'beach_reviews';
     const { data, error } = await (auth.adminClient.from(reviewType) as any)
       .delete()
       .eq('id', reviewId)
       .select('id');
     if (error) throw error;
-    if (!data?.length) return NextResponse.json({ error: 'Review not found.' }, { status: 404 });
+    if (!data?.length) return NextResponse.json({ error: 'Review not found.' }, { status: 404, headers: noStoreHeaders() });
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true }, { headers: noStoreHeaders() });
   } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Failed to delete review.';
-    return NextResponse.json({ error: message }, { status: 500 });
+    console.error('Admin review delete error:', error);
+    return NextResponse.json({ error: ADMIN_MESSAGES.serverError }, { status: 500, headers: noStoreHeaders() });
   }
 }

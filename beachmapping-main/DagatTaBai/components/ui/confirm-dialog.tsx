@@ -121,7 +121,7 @@ export function ConfirmDialog() {
             className={`rounded-full px-5 py-2 text-xs font-bold text-white transition-colors shadow-xs cursor-pointer ${
               isDanger
                 ? 'bg-rose-600 hover:bg-rose-700'
-                : 'bg-[#1F3F74] hover:bg-[#183460]'
+                : 'bg-brand-navy-500 hover:bg-brand-navy-600'
             }`}
           >
             {dialog.confirmLabel || (isDanger ? 'Delete' : 'Confirm')}

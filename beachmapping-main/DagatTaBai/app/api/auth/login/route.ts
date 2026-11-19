@@ -10,15 +10,23 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: parsed.error.issues[0]?.message || 'Invalid login details.' }, { status: 400 });
     }
 
-    const { user, error } = await loginLocalUser(parsed.data.email, parsed.data.password);
+    const { user, error, suspendedAccount } = await loginLocalUser(parsed.data.email, parsed.data.password);
     if (error || !user) {
       return NextResponse.json(
-        { error: error || 'Invalid email or password.' },
-        { status: 401 }
+        suspendedAccount
+          ? {
+              error: error || 'Your account is suspended.',
+              code: 'ACCOUNT_SUSPENDED',
+              reason: suspendedAccount.reason,
+              reason_type: suspendedAccount.reasonType,
+              suspended_until: suspendedAccount.suspendedUntil,
+            }
+          : { error: error || 'Invalid email or password.' },
+        { status: suspendedAccount ? 403 : 401, headers: { 'Cache-Control': 'private, no-store, max-age=0' } }
       );
     }
 
-    return NextResponse.json({ success: true, user });
+    return NextResponse.json({ success: true, user }, { headers: { 'Cache-Control': 'private, no-store, max-age=0' } });
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : 'Login failed';
     return NextResponse.json({ error: msg }, { status: 500 });

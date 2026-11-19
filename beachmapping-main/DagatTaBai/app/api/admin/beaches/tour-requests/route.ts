@@ -1,10 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { revalidatePath } from 'next/cache';
 import { authorizeRoles } from '@/lib/supabase/authorization';
-import {
-  getAllTourRequests,
-  approveTourRequest,
-  rejectTourRequest,
-} from '@/lib/services/tourRequests';
+import { getAllTourRequests, getTourRequestForAdmin, transitionTourRequest } from '@/lib/services/tourRequests';
+import { TourWorkflowError } from '@/lib/services/tourTransitions';
 
 const noStoreHeaders = { 'Cache-Control': 'no-store, max-age=0' };
 
@@ -14,20 +12,14 @@ export async function GET() {
     if (!auth.authorized) {
       return NextResponse.json({ error: auth.message }, { status: auth.status, headers: noStoreHeaders });
     }
-
     const requests = await getAllTourRequests();
-
     return NextResponse.json(
-      {
-        success: true,
-        requests,
-        pendingCount: requests.filter((r) => r.status === 'pending').length,
-      },
+      { success: true, requests, reviewCount: requests.filter((tour) => tour.status === 'review').length },
       { headers: noStoreHeaders }
     );
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Failed to load tour requests.';
-    return NextResponse.json({ error: message }, { status: 500, headers: noStoreHeaders });
+  } catch (error) {
+    console.error('Failed to load admin tour requests:', error);
+    return NextResponse.json({ error: 'Failed to load tour requests.' }, { status: 500, headers: noStoreHeaders });
   }
 }
 
@@ -39,51 +31,37 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { action, beach_id, rejection_reason } = body;
-
-    if (!beach_id || typeof beach_id !== 'string') {
-      return NextResponse.json(
-        { error: 'beach_id is required.' },
-        { status: 400, headers: noStoreHeaders }
-      );
+    const requestId = typeof body.request_id === 'string' ? body.request_id : '';
+    const action = body.action;
+    const note = typeof body.note === 'string' ? body.note.trim() : '';
+    if (!requestId || (action !== 'approve' && action !== 'request_changes')) {
+      return NextResponse.json({ error: 'Choose a valid tour review action.' }, { status: 400, headers: noStoreHeaders });
+    }
+    if (action === 'request_changes' && !note) {
+      return NextResponse.json({ error: 'Add a note describing the changes requested.' }, { status: 400, headers: noStoreHeaders });
     }
 
-    if (action === 'approve') {
-      const result = await approveTourRequest({
-        beachId: beach_id,
-        reviewerId: auth.user.id,
-      });
-
-      return NextResponse.json(
-        {
-          success: true,
-          message: '360° Virtual Tour approved and published to the beach listing!',
-          tourUrl: result.tourUrl,
-        },
-        { headers: noStoreHeaders }
-      );
-    } else if (action === 'reject') {
-      await rejectTourRequest({
-        beachId: beach_id,
-        rejectionReason: rejection_reason || 'Tour submission did not meet listing guidelines.',
-        reviewerId: auth.user.id,
-      });
-
-      return NextResponse.json(
-        {
-          success: true,
-          message: '360° Virtual Tour request rejected.',
-        },
-        { headers: noStoreHeaders }
-      );
-    } else {
-      return NextResponse.json(
-        { error: 'Invalid action. Expected "approve" or "reject".' },
-        { status: 400, headers: noStoreHeaders }
-      );
+    const currentTour = await getTourRequestForAdmin(requestId);
+    if (!currentTour) {
+      return NextResponse.json({ error: 'Tour request not found.' }, { status: 404, headers: noStoreHeaders });
     }
-  } catch (error: unknown) {
-    const message = error instanceof Error ? error.message : 'Failed to process tour request.';
-    return NextResponse.json({ error: message }, { status: 500, headers: noStoreHeaders });
+
+    const tour = await transitionTourRequest({
+      requestId,
+      toStatus: action === 'approve' ? 'approved' : 'in_progress',
+      actor: 'admin',
+      actorId: auth.user.id,
+      note: action === 'request_changes' ? note : null,
+    });
+    revalidatePath('/beaches/[slug]', 'page');
+    revalidatePath('/map');
+    return NextResponse.json({ success: true, request: { ...tour, beach: currentTour.beach, owner: currentTour.owner } }, { headers: noStoreHeaders });
+  } catch (error) {
+    if (!(error instanceof TourWorkflowError)) console.error('Failed to process admin tour review:', error);
+    const message = error instanceof TourWorkflowError ? error.message : 'Failed to process tour review.';
+    return NextResponse.json(
+      { error: message },
+      { status: error instanceof TourWorkflowError ? 400 : 500, headers: noStoreHeaders }
+    );
   }
 }

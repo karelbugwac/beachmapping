@@ -12,6 +12,7 @@ import {
   ChevronLeft,
 } from 'lucide-react';
 import { showToast } from '@/components/ui/feedback-toasts';
+import { getSafeInternalRedirect } from '@/lib/utils/safe-redirect';
 
 function UserLoginForm() {
   const router = useRouter();
@@ -25,6 +26,7 @@ function UserLoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [touched, setTouched] = useState({ email: false, password: false });
+  const [suspendedAccount, setSuspendedAccount] = useState<{ reason: string | null; reason_type: string | null; suspended_until: string | null } | null>(null);
 
   useEffect(() => {
     if (prefilledEmail) {
@@ -67,6 +69,7 @@ function UserLoginForm() {
     }
 
     setLoading(true);
+    setSuspendedAccount(null);
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
@@ -75,6 +78,10 @@ function UserLoginForm() {
       });
 
       const data = await res.json();
+      if (data.code === 'ACCOUNT_SUSPENDED') {
+        setSuspendedAccount({ reason: data.reason || null, reason_type: data.reason_type || null, suspended_until: data.suspended_until || null });
+        return;
+      }
       if (!res.ok || data.error) {
         throw new Error(data.error || 'Invalid email or password.');
       }
@@ -83,7 +90,7 @@ function UserLoginForm() {
       window.dispatchEvent(new CustomEvent('dtb_login_completed', {
         detail: { userId: data.user.id },
       }));
-      const redirectUrl = searchParams.get('redirect') || '/';
+      const redirectUrl = getSafeInternalRedirect(searchParams.get('redirect'));
       router.push(redirectUrl);
       router.refresh();
     } catch (err: unknown) {
@@ -99,12 +106,12 @@ function UserLoginForm() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between items-center px-4 py-8 bg-[#f8fafc] dark:bg-black transition-colors duration-200">
+    <div className="min-h-screen flex flex-col justify-between items-center px-4 py-8 bg-slate-50 dark:bg-black transition-colors duration-200">
       {/* ── Top Navigation (Left-aligned) ─────────────────── */}
       <div className="w-full px-4 sm:px-8 md:px-12 flex items-center justify-start">
         <Link
           href="/"
-          className="inline-flex items-center gap-1 text-xs sm:text-sm font-medium text-slate-500 hover:text-[#1F3F74] dark:text-neutral-400 dark:hover:text-white transition-colors group"
+          className="inline-flex items-center gap-1 text-xs sm:text-sm font-medium text-slate-500 hover:text-brand-navy-500 dark:text-neutral-400 dark:hover:text-white transition-colors group"
         >
           <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
           <span>Back to Home</span>
@@ -128,7 +135,7 @@ function UserLoginForm() {
               />
             </div>
           </Link>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1F3F74] dark:text-[#4987BA]">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-brand-navy-500 dark:text-brand-teal-300">
             Welcome back
           </h1>
           <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1 font-normal leading-relaxed max-w-xs mx-auto">
@@ -150,10 +157,10 @@ function UserLoginForm() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 onBlur={() => setTouched((t) => ({ ...t, email: true }))}
-                className={`w-full px-5 py-3.5 text-sm bg-white dark:bg-[#121212] border rounded-full text-slate-900 dark:text-white caret-[#1F3F74] dark:caret-[#4987BA] placeholder:text-transparent focus:outline-none focus:ring-2 transition-all duration-200 ${
+                className={`w-full px-5 py-3.5 text-sm bg-white dark:bg-neutral-900 border rounded-full text-slate-900 dark:text-white caret-brand-navy-500 dark:caret-brand-teal-600 placeholder:text-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:ring-2 transition-all duration-200 ${
                   touched.email && !emailValid && email
                     ? 'border-red-400 dark:border-red-600 focus:ring-red-500/20'
-                    : 'border-slate-300 dark:border-neutral-800 focus:border-[#1F3F74] dark:focus:border-[#4987BA] focus:ring-[#1F3F74] dark:focus:ring-[#4987BA]'
+                    : 'border-slate-300 dark:border-neutral-800 focus:border-brand-navy-500 dark:focus:border-brand-teal-600 focus:ring-brand-teal-400 dark:focus:ring-brand-teal-400'
                 }`}
               />
               {touched.email && email && !emailValid && (
@@ -178,7 +185,7 @@ function UserLoginForm() {
               </label>
               <Link
                 href="/forgot-password"
-                className="text-[11px] text-[#1F3F74] dark:text-[#4987BA] font-semibold hover:underline transition-colors"
+                className="text-[11px] text-brand-navy-500 dark:text-brand-teal-300 font-semibold hover:underline transition-colors"
               >
                 Forgot password?
               </Link>
@@ -190,10 +197,10 @@ function UserLoginForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 onBlur={() => setTouched((t) => ({ ...t, password: true }))}
-                className={`w-full pl-5 pr-12 py-3.5 text-sm bg-white dark:bg-[#121212] border rounded-full text-slate-900 dark:text-white caret-[#1F3F74] dark:caret-[#4987BA] placeholder:text-transparent focus:outline-none focus:ring-2 transition-all duration-200 ${
+                className={`w-full pl-5 pr-12 py-3.5 text-sm bg-white dark:bg-neutral-900 border rounded-full text-slate-900 dark:text-white caret-brand-navy-500 dark:caret-brand-teal-600 placeholder:text-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:ring-2 transition-all duration-200 ${
                   touched.password && !password
                     ? 'border-red-400 dark:border-red-600 focus:ring-red-500/20'
-                    : 'border-slate-300 dark:border-neutral-800 focus:border-[#1F3F74] dark:focus:border-[#4987BA] focus:ring-[#1F3F74] dark:focus:ring-[#4987BA]'
+                    : 'border-slate-300 dark:border-neutral-800 focus:border-brand-navy-500 dark:focus:border-brand-teal-600 focus:ring-brand-teal-400 dark:focus:ring-brand-teal-400'
                 }`}
               />
               <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
@@ -220,7 +227,7 @@ function UserLoginForm() {
           <button
             type="submit"
             disabled={loading}
-            className="group relative w-full py-3.5 mt-2 bg-[#1F3F74] hover:bg-[#285091] dark:bg-[#1F3F74] dark:hover:bg-[#285091] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm rounded-full transition-all duration-200 shadow-md hover:shadow-lg shadow-[#1F3F74]/25 flex items-center justify-center cursor-pointer"
+            className="group relative w-full py-3.5 mt-2 bg-brand-navy-500 hover:bg-brand-navy-600 dark:bg-brand-navy-500 dark:hover:bg-brand-navy-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm rounded-full transition-all duration-200 shadow-md hover:shadow-lg shadow-brand-navy-500/25 flex items-center justify-center cursor-pointer"
           >
             {loading ? (
               <div className="flex items-center justify-center gap-2">
@@ -247,6 +254,18 @@ function UserLoginForm() {
           </button>
         </form>
 
+        {suspendedAccount && (
+          <div role="alert" className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-200">
+            <p className="font-bold">Your account is suspended.</p>
+            {suspendedAccount.reason_type && <p className="mt-1 font-semibold">{suspendedAccount.reason_type}</p>}
+            {suspendedAccount.reason && <p className="mt-1 whitespace-pre-wrap">{suspendedAccount.reason}</p>}
+            <p className="mt-1">
+              This suspension is in effect {suspendedAccount.suspended_until ? `until ${new Date(suspendedAccount.suspended_until).toLocaleDateString()}` : 'until further notice'}.
+            </p>
+            <Link href="/contact" className="mt-2 inline-block font-semibold underline">Contact us</Link>
+          </div>
+        )}
+
         {/* ── Standard Divider: Clean lowercase/sentence case, no all-caps ─ */}
         <div className="relative flex items-center gap-3 my-5">
           <div className="flex-1 h-px bg-slate-200 dark:bg-neutral-800" />
@@ -260,7 +279,7 @@ function UserLoginForm() {
         <button
           type="button"
           onClick={handleGoogleSignIn}
-          className="w-full py-3.5 px-5 bg-white dark:bg-[#121212] border border-slate-300 dark:border-neutral-800 hover:bg-slate-50 dark:hover:bg-neutral-900 rounded-full text-slate-700 dark:text-neutral-200 text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-3 shadow-2xs hover:shadow-xs cursor-pointer"
+          className="w-full py-3.5 px-5 bg-white dark:bg-neutral-900 border border-slate-300 dark:border-neutral-800 hover:bg-slate-50 dark:hover:bg-neutral-900 rounded-full text-slate-700 dark:text-neutral-200 text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-3 shadow-2xs hover:shadow-xs cursor-pointer"
         >
           <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24">
             <path
@@ -272,7 +291,7 @@ function UserLoginForm() {
               d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
             />
             <path
-              fill="#FBBC05"
+              fill="#FCC255"
               d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
             />
             <path
@@ -288,7 +307,7 @@ function UserLoginForm() {
           Don&apos;t have an account?{' '}
           <Link
             href="/register"
-            className="text-[#1F3F74] dark:text-[#4987BA] font-bold hover:underline transition-colors"
+            className="text-brand-navy-500 dark:text-brand-teal-300 font-bold hover:underline transition-colors"
           >
             Register here
           </Link>
@@ -303,7 +322,7 @@ function UserLoginForm() {
 
 export default function UserLoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-[#f8fafc] dark:bg-black" />}>
+    <Suspense fallback={<div className="min-h-screen bg-slate-50 dark:bg-black" />}>
       <UserLoginForm />
     </Suspense>
   );

@@ -6,7 +6,7 @@ export default function TermsPage() {
       
       {/* ── Page Header (Placed Higher Up, Frameless) ── */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-6 text-center space-y-1.5">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold text-[#1F3F74] dark:text-[#4987BA] tracking-tight leading-tight">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold text-brand-navy-500 dark:text-brand-teal-300 tracking-tight leading-tight">
           Terms of Use
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
@@ -19,7 +19,7 @@ export default function TermsPage() {
         
         {/* Section 1 */}
         <section className="space-y-1.5">
-          <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-[#4987BA]">
+          <h2 className="text-base sm:text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300">
             1. Acceptance of Terms
           </h2>
           <p style={{ textAlign: 'justify' }}>
@@ -29,7 +29,7 @@ export default function TermsPage() {
 
         {/* Section 2 */}
         <section className="space-y-1.5 border-t border-slate-200 dark:border-neutral-800 pt-5">
-          <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-[#4987BA]">
+          <h2 className="text-base sm:text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300">
             2. User Accounts and Responsibilities
           </h2>
           <p style={{ textAlign: 'justify' }}>
@@ -39,7 +39,7 @@ export default function TermsPage() {
 
         {/* Section 3 */}
         <section className="space-y-1.5 border-t border-slate-200 dark:border-neutral-800 pt-5">
-          <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-[#4987BA]">
+          <h2 className="text-base sm:text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300">
             3. Establishment Registration and Verification
           </h2>
           <p style={{ textAlign: 'justify' }}>
@@ -49,7 +49,7 @@ export default function TermsPage() {
 
         {/* Section 4 */}
         <section className="space-y-1.5 border-t border-slate-200 dark:border-neutral-800 pt-5">
-          <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-[#4987BA]">
+          <h2 className="text-base sm:text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300">
             4. Reviews and User-Submitted Content
           </h2>
           <p style={{ textAlign: 'justify' }}>
@@ -59,7 +59,7 @@ export default function TermsPage() {
 
         {/* Section 5 */}
         <section className="space-y-1.5 border-t border-slate-200 dark:border-neutral-800 pt-5">
-          <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-[#4987BA]">
+          <h2 className="text-base sm:text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300">
             5. Accuracy of Establishment Listings
           </h2>
           <p style={{ textAlign: 'justify' }}>
@@ -69,7 +69,7 @@ export default function TermsPage() {
 
         {/* Section 6 */}
         <section className="space-y-1.5 border-t border-slate-200 dark:border-neutral-800 pt-5">
-          <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-[#4987BA]">
+          <h2 className="text-base sm:text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300">
             6. Weather and Tidal Information Disclaimer
           </h2>
           <p style={{ textAlign: 'justify' }}>
@@ -79,7 +79,7 @@ export default function TermsPage() {
 
         {/* Section 7 */}
         <section className="space-y-1.5 border-t border-slate-200 dark:border-neutral-800 pt-5">
-          <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-[#4987BA]">
+          <h2 className="text-base sm:text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300">
             7. Platform Availability and Changes
           </h2>
           <p style={{ textAlign: 'justify' }}>
@@ -89,7 +89,7 @@ export default function TermsPage() {
 
         {/* Section 8 */}
         <section className="space-y-2 border-t border-slate-200 dark:border-neutral-800 pt-5">
-          <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-[#4987BA]">
+          <h2 className="text-base sm:text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300">
             8. Prohibited Activities
           </h2>
           <p style={{ textAlign: 'justify' }}>Users must not:</p>
@@ -107,7 +107,7 @@ export default function TermsPage() {
 
         {/* Section 9 */}
         <section className="space-y-1.5 border-t border-slate-200 dark:border-neutral-800 pt-5">
-          <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-[#4987BA]">
+          <h2 className="text-base sm:text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300">
             9. Limitation of Liability
           </h2>
           <p style={{ textAlign: 'justify' }}>
@@ -117,7 +117,7 @@ export default function TermsPage() {
 
         {/* Section 10 */}
         <section className="space-y-1.5 border-t border-slate-200 dark:border-neutral-800 pt-5">
-          <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-[#4987BA]">
+          <h2 className="text-base sm:text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300">
             10. Changes to These Terms
           </h2>
           <p style={{ textAlign: 'justify' }}>
@@ -127,7 +127,7 @@ export default function TermsPage() {
 
         {/* Section 11 */}
         <section className="space-y-1.5 border-t border-slate-200 dark:border-neutral-800 pt-5">
-          <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-[#4987BA]">
+          <h2 className="text-base sm:text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300">
             11. Contact and Concerns
           </h2>
           <p style={{ textAlign: 'justify' }}>

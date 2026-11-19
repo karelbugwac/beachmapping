@@ -92,7 +92,7 @@ export default function AdminDashboardPage() {
     <div className="max-w-7xl mx-auto space-y-6 font-sans">
       {/* Header */}
       <div className="flex items-center justify-between gap-3">
-        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1F3F74] dark:text-white">
+        <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-brand-navy-500 dark:text-white">
           Overview
         </h1>
 
@@ -100,7 +100,7 @@ export default function AdminDashboardPage() {
           type="button"
           onClick={() => void handleRefresh()}
           disabled={refreshing}
-          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-xs font-bold text-[#1F3F74] dark:text-[#4987BA] hover:border-[#4987BA] transition-all shadow-2xs cursor-pointer disabled:opacity-50"
+          className="inline-flex items-center gap-2 px-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-xs font-bold text-brand-navy-500 dark:text-brand-teal-300 hover:border-brand-teal-600 transition-all shadow-2xs cursor-pointer disabled:opacity-50"
         >
           <RefreshCw className={`w-3.5 h-3.5 ${refreshing ? 'animate-spin' : ''}`} />
           <span>Refresh</span>
@@ -111,60 +111,60 @@ export default function AdminDashboardPage() {
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
         <Link
           href="/admin/applications"
-          className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200/80 dark:border-neutral-800 shadow-2xs hover:border-yellow-500 transition-all"
+          className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200/80 dark:border-neutral-800 shadow-2xs hover:border-brand-sun-500 transition-all"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 dark:text-neutral-400">
               Pending Applications
             </span>
-            <Clock className="w-4 h-4 text-yellow-500" />
+            <Clock className="w-4 h-4 text-brand-navy-700" />
           </div>
-          <div className="mt-1 text-2xl font-extrabold text-yellow-500 dark:text-yellow-400">
+          <div className="mt-1 text-2xl font-extrabold text-brand-navy-700 dark:text-brand-sun-400">
             {stats.loading ? '...' : stats.pendingApplications}
           </div>
         </Link>
 
         <Link
           href="/admin/beaches"
-          className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200/80 dark:border-neutral-800 shadow-2xs hover:border-sky-500 transition-all"
+          className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200/80 dark:border-neutral-800 shadow-2xs hover:border-brand-teal-500 transition-all"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 dark:text-neutral-400">
               Active Beaches
             </span>
-            <Palmtree className="w-4 h-4 text-sky-500" />
+            <Palmtree className="w-4 h-4 text-brand-teal-600" />
           </div>
-          <div className="mt-1 text-2xl font-extrabold text-sky-500 dark:text-sky-400">
+          <div className="mt-1 text-2xl font-extrabold text-brand-teal-600 dark:text-brand-teal-400">
             {stats.loading ? '...' : stats.activeBeaches}
           </div>
         </Link>
 
         <Link
           href="/admin/beaches"
-          className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200/80 dark:border-neutral-800 shadow-2xs hover:border-sky-400 transition-all"
+          className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200/80 dark:border-neutral-800 shadow-2xs hover:border-brand-teal-400 transition-all"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 dark:text-neutral-400">
               Total Reviews
             </span>
-            <MessageSquare className="w-4 h-4 text-sky-400" />
+            <MessageSquare className="w-4 h-4 text-brand-teal-600" />
           </div>
-          <div className="mt-1 text-2xl font-extrabold text-sky-500 dark:text-sky-300">
+          <div className="mt-1 text-2xl font-extrabold text-brand-teal-600 dark:text-brand-teal-300">
             {stats.loading ? '...' : stats.totalReviews}
           </div>
         </Link>
 
         <Link
           href="/admin/users"
-          className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200/80 dark:border-neutral-800 shadow-2xs hover:border-[#4987BA] transition-all"
+          className="p-4 rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200/80 dark:border-neutral-800 shadow-2xs hover:border-brand-teal-600 transition-all"
         >
           <div className="flex items-center justify-between">
             <span className="text-xs font-semibold text-slate-500 dark:text-neutral-400">
               Total Users
             </span>
-            <Users className="w-4 h-4 text-[#1F3F74] dark:text-[#38BDF8]" />
+            <Users className="w-4 h-4 text-brand-navy-500 dark:text-brand-teal-400" />
           </div>
-          <div className="mt-1 text-2xl font-extrabold text-[#1F3F74] dark:text-white">
+          <div className="mt-1 text-2xl font-extrabold text-brand-navy-500 dark:text-white">
             {stats.loading ? '...' : stats.totalUsers}
           </div>
         </Link>

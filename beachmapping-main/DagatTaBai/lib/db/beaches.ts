@@ -1,4 +1,7 @@
-import { createServerSupabaseClient } from '@/lib/supabase/server';
+import { createAdminClient, createServerSupabaseClient } from '@/lib/supabase/server';
+import type { SupabaseClient } from '@supabase/supabase-js';
+import type { Database } from '@/lib/supabase/types';
+import { isSuspensionActive } from '@/lib/utils/account-status';
 import { getValidBeachCoordinates } from '@/lib/utils/beach-coordinates';
 
 export interface BeachPhoto {
@@ -138,6 +141,20 @@ export function invalidateBeachesCache() {
   slugBeachCache.clear();
 }
 
+async function getApprovedTourUrls(beachIds: string[]): Promise<Map<string, string>> {
+  if (beachIds.length === 0) return new Map();
+  const supabase = await createServerSupabaseClient() as unknown as SupabaseClient<Database, 'public', 'public', Database['public']>;
+  const { data, error } = await supabase.from('beach_published_tours')
+    .select('beach_id, requested_tour_url')
+    .in('beach_id', beachIds);
+  if (error?.code === 'PGRST205' && error.message.includes('beach_published_tours')) {
+    console.warn('Approved beach tours are unavailable because beach_published_tours is missing from the Supabase schema cache.');
+    return new Map();
+  }
+  if (error) throw error;
+  return new Map((data || []).map((tour) => [tour.beach_id, tour.requested_tour_url]));
+}
+
 export async function getAllBeaches(): Promise<BeachRecord[]> {
   const now = Date.now();
   if (allBeachesCache && allBeachesCache.expiresAt > now) {
@@ -169,13 +186,30 @@ export async function getAllBeaches(): Promise<BeachRecord[]> {
     offset += data.length;
   }
 
+  const { data: profiles, error: profileError } = await (createAdminClient()
+    .from('profiles') as any)
+    .select('id, account_status, suspended_until')
+    .eq('account_status', 'suspended');
+  if (profileError) throw profileError;
+  const suspensionProfiles = profiles as Array<{
+    id: string;
+    account_status: 'active' | 'under_review' | 'suspended';
+    suspended_until: string | null;
+  }> | null;
+  const suspendedOwners = new Set(
+    (suspensionProfiles || [])
+      .filter((profile) => isSuspensionActive(profile.account_status, profile.suspended_until))
+      .map((profile) => profile.id)
+  );
+
+  const approvedTours = await getApprovedTourUrls(dbBeaches.map((beach) => String(beach.id)));
   const seenIds = new Set<string>();
   const seenSlugs = new Set<string>();
   const mapped: BeachRecord[] = dbBeaches
     .filter((beach) => {
       const id = String(beach.id || '');
       const slug = String(beach.slug || '').toLowerCase();
-      if (!id || seenIds.has(id) || (slug && seenSlugs.has(slug))) return false;
+      if (!id || (beach.owner_id && suspendedOwners.has(beach.owner_id)) || seenIds.has(id) || (slug && seenSlugs.has(slug))) return false;
       seenIds.add(id);
       if (slug) seenSlugs.add(slug);
       return true;
@@ -214,7 +248,7 @@ export async function getAllBeaches(): Promise<BeachRecord[]> {
           cover_image: b.cover_image_url || b.cover_image || null,
           profile_image: b.profile_image_url || b.profile_image || null,
           images: Array.isArray(b.images) ? b.images : [],
-          virtual_tour_url: b.virtual_tour_url || null,
+          virtual_tour_url: approvedTours.get(String(b.id)) || null,
           contact_phone: b.contact_phone || null,
           contact_email: b.contact_email || null,
           facebook_url: b.facebook_url || null,
@@ -341,6 +375,19 @@ export async function getBeachBySlug(slug: string): Promise<BeachRecord | null> 
 
     if (dbBeach) {
       const b = dbBeach as any;
+      if (b.owner_id) {
+        const { data: ownerProfile, error: ownerError } = await (createAdminClient()
+          .from('profiles') as any)
+          .select('account_status, suspended_until')
+          .eq('id', b.owner_id)
+          .maybeSingle();
+        if (ownerError) throw ownerError;
+        if (ownerProfile && isSuspensionActive(ownerProfile.account_status, ownerProfile.suspended_until)) {
+          slugBeachCache.set(normalized, { data: null, expiresAt: now + BEACH_CACHE_TTL_MS });
+          return null;
+        }
+      }
+      const approvedTours = await getApprovedTourUrls([String(b.id)]);
 
       // Parse opening_hours if it's a JSON string
       let parsedOpeningHours = b.opening_hours || '';
@@ -375,7 +422,7 @@ export async function getBeachBySlug(slug: string): Promise<BeachRecord | null> 
         cover_image: b.cover_image_url || b.cover_image || null,
         profile_image: b.profile_image_url || b.profile_image || null,
         images: Array.isArray(b.images) ? b.images : [],
-        virtual_tour_url: b.virtual_tour_url || null,
+        virtual_tour_url: approvedTours.get(String(b.id)) || null,
         contact_phone: b.contact_phone || null,
         contact_email: b.contact_email || null,
         facebook_url: b.facebook_url || null,

@@ -24,9 +24,16 @@ export async function POST() {
       // Best-effort cookie purge
     }
 
-    return NextResponse.json({ success: true });
-  } catch (err: unknown) {
-    const msg = err instanceof Error ? err.message : 'Logout failed';
-    return NextResponse.json({ error: msg }, { status: 500 });
+    return NextResponse.json({ success: true }, { headers: {
+      'Cache-Control': 'private, no-store, max-age=0, must-revalidate',
+      Pragma: 'no-cache',
+      Expires: '0',
+    } });
+  } catch {
+    return NextResponse.json({ error: 'Logout could not be completed.' }, { status: 500, headers: {
+      'Cache-Control': 'private, no-store, max-age=0, must-revalidate',
+      Pragma: 'no-cache',
+      Expires: '0',
+    } });
   }
 }

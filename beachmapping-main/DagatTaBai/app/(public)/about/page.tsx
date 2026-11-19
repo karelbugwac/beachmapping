@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import {
   HeartHandshake,
   Search,
@@ -120,7 +121,7 @@ export default function AboutPage() {
           
           <ScrollReveal direction="up" duration={650}>
             <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-[#1F3F74] dark:text-[#4987BA] leading-tight">
+              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-brand-navy-500 dark:text-brand-teal-300 leading-tight">
                 What Sets Us Apart
               </h1>
               <p className="mt-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
@@ -135,7 +136,7 @@ export default function AboutPage() {
             {/* Pillar 1: Trust Over Trends (Icon: HeartHandshake) */}
             <ScrollReveal direction="up" delay={100} duration={600} className="px-6 sm:px-8 py-6 md:py-2 flex flex-col items-center space-y-3 group">
               <div className="h-10 flex items-center justify-center">
-                <HeartHandshake className="w-9 h-9 text-[#1F3F74] dark:text-[#4987BA] stroke-[1.8] transition-transform duration-300 group-hover:scale-110" />
+                <HeartHandshake className="w-9 h-9 text-brand-navy-500 dark:text-brand-teal-300 stroke-[1.8] transition-transform duration-300 group-hover:scale-110" />
               </div>
               <h2 className="text-xs sm:text-sm font-bold tracking-widest uppercase text-slate-900 dark:text-white font-heading">
                 Trust Over Trends
@@ -148,7 +149,7 @@ export default function AboutPage() {
             {/* Pillar 2: More Than a Quick Search (Icon: Search) */}
             <ScrollReveal direction="up" delay={200} duration={600} className="px-6 sm:px-8 py-6 md:py-2 flex flex-col items-center space-y-3 group">
               <div className="h-10 flex items-center justify-center">
-                <Search className="w-9 h-9 text-[#1F3F74] dark:text-[#4987BA] stroke-[1.8] transition-transform duration-300 group-hover:scale-110" />
+                <Search className="w-9 h-9 text-brand-navy-500 dark:text-brand-teal-300 stroke-[1.8] transition-transform duration-300 group-hover:scale-110" />
               </div>
               <h2 className="text-xs sm:text-sm font-bold tracking-widest uppercase text-slate-900 dark:text-white font-heading">
                 More Than a Quick Search
@@ -161,7 +162,7 @@ export default function AboutPage() {
             {/* Pillar 3: Shared Growth, Shared Value (Icon: HandHeart) */}
             <ScrollReveal direction="up" delay={300} duration={600} className="px-6 sm:px-8 py-6 md:py-2 flex flex-col items-center space-y-3 group">
               <div className="h-10 flex items-center justify-center">
-                <HandHeart className="w-9 h-9 text-[#1F3F74] dark:text-[#4987BA] stroke-[1.8] transition-transform duration-300 group-hover:scale-110" />
+                <HandHeart className="w-9 h-9 text-brand-navy-500 dark:text-brand-teal-300 stroke-[1.8] transition-transform duration-300 group-hover:scale-110" />
               </div>
               <h2 className="text-xs sm:text-sm font-bold tracking-widest uppercase text-slate-900 dark:text-white font-heading">
                 Shared Growth, Shared Value
@@ -176,8 +177,8 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ── SECTION 2: OUR MISSION (DARK DIVE BLUE #1F3F74 - CLEAN, NO ICONS, NO PILLS) ── */}
-      <section className="w-full bg-[#1F3F74] dark:bg-[#14284b] text-white transition-colors duration-200 py-16 sm:py-24 px-4 sm:px-6 lg:px-8 border-b border-white/10 relative z-20">
+      {/* ── SECTION 2: OUR MISSION (DARK DIVE BLUE #124168 - CLEAN, NO ICONS, NO PILLS) ── */}
+      <section className="w-full bg-brand-navy-500 dark:bg-brand-navy-700 text-white transition-colors duration-200 py-16 sm:py-24 px-4 sm:px-6 lg:px-8 border-b border-white/10 relative z-20">
         <div className="max-w-4xl mx-auto text-center">
           <ScrollReveal direction="up" duration={650} className="space-y-6 flex flex-col items-center">
             
@@ -186,7 +187,7 @@ export default function AboutPage() {
             </h2>
 
             <div
-              className="text-xs sm:text-sm text-blue-100/90 leading-relaxed max-w-2xl mx-auto"
+              className="text-xs sm:text-sm text-brand-navy-100/90 leading-relaxed max-w-2xl mx-auto"
               style={{ textAlign: 'justify', textAlignLast: 'center' }}
             >
               <p>
@@ -203,7 +204,7 @@ export default function AboutPage() {
         <div className="max-w-4xl mx-auto text-center">
           <ScrollReveal direction="up" duration={650} className="space-y-6 flex flex-col items-center">
             
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-[#1F3F74] dark:text-[#4987BA] leading-tight">
+            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-brand-navy-500 dark:text-brand-teal-300 leading-tight">
               Our Vision
             </h2>
 
@@ -220,8 +221,8 @@ export default function AboutPage() {
         </div>
       </section>
 
-      {/* ── SECTION 4: MEET OUR TEAM (DARK DIVE BLUE #1F3F74 - 3 MEMBERS WITH '<' '>' BUTTONS) ── */}
-      <section className="w-full bg-[#1F3F74] dark:bg-[#14284b] text-white py-16 sm:py-24 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
+      {/* ── SECTION 4: MEET OUR TEAM (DARK DIVE BLUE #124168 - 3 MEMBERS WITH '<' '>' BUTTONS) ── */}
+      <section className="w-full bg-brand-navy-500 dark:bg-brand-navy-700 text-white py-16 sm:py-24 px-4 sm:px-6 lg:px-8 relative overflow-hidden">
         <div className="max-w-5xl mx-auto">
           
           <ScrollReveal direction="up" duration={650}>
@@ -315,6 +316,20 @@ export default function AboutPage() {
             </button>
           </div>
 
+        </div>
+      </section>
+
+      <section className="w-full bg-white dark:bg-black px-4 py-12 text-center sm:px-6 lg:px-8">
+        <div className="mx-auto max-w-3xl space-y-4">
+          <h2 className="text-xl font-bold text-brand-navy-500 dark:text-brand-teal-300 sm:text-2xl">
+            Have a question?
+          </h2>
+          <Link
+            href="/contact"
+            className="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-navy-500 px-7 py-3 text-sm font-bold text-white shadow-sm transition-colors hover:bg-brand-navy-600 dark:bg-brand-teal-600 dark:hover:bg-brand-teal-500"
+          >
+            Contact us
+          </Link>
         </div>
       </section>
 

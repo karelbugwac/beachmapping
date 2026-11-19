@@ -1,6 +1,9 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient, createServerSupabaseClient } from '@/lib/supabase/server';
 import { hashPin } from '@/lib/services/pin';
+import { isAccountStatus, isSuspensionActive } from '@/lib/utils/account-status';
+import { persistExpiredSuspension } from '@/lib/server/account-status';
+import { ADMIN_MESSAGES } from '@/lib/validation/admin-messages';
 
 export async function POST(request: Request) {
   try {
@@ -40,18 +43,29 @@ export async function POST(request: Request) {
       const adminEmail = 'official.dagattabai@gmail.com';
       const previousAdminEmail = 'admin@dagattabai.ph';
 
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: adminProfiles, error: adminLookupError } = await (adminSupabase.from('profiles') as any)
-        .select('id, email, full_name, role, pin')
-        .or(`email.eq.${adminEmail},email.eq.${previousAdminEmail},full_name.eq.Administrator,full_name.eq.administrator`)
-        .in('role', ['admin', 'beach_manager']);
+      const [emailLookup, nameLookup] = await Promise.all([
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (adminSupabase.from('profiles') as any)
+          .select('id, email, full_name, role, pin')
+          .in('email', [adminEmail, previousAdminEmail])
+          .in('role', ['admin', 'beach_manager']),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        (adminSupabase.from('profiles') as any)
+          .select('id, email, full_name, role, pin')
+          .in('full_name', ['Administrator', 'administrator'])
+          .in('role', ['admin', 'beach_manager']),
+      ]);
 
-      if (adminLookupError) {
-        console.error('Admin lookup error:', adminLookupError);
-        throw adminLookupError;
+      if (emailLookup.error || nameLookup.error) {
+        console.error('Admin lookup error:', emailLookup.error || nameLookup.error);
+        throw emailLookup.error || nameLookup.error;
       }
 
-      const matchedProfiles = Array.isArray(adminProfiles) ? adminProfiles : [];
+      const matchedProfiles = Array.from(
+        new Map(
+          [...(emailLookup.data || []), ...(nameLookup.data || [])].map((profile) => [profile.id, profile])
+        ).values()
+      );
       let adminProfile =
         matchedProfiles.find((profile: { email?: string }) => (profile.email || '').toLowerCase() === adminEmail) ||
         matchedProfiles.find((profile: { role?: string }) => profile.role === 'admin') ||
@@ -223,35 +237,65 @@ export async function POST(request: Request) {
         return NextResponse.json({ error: 'Enter the email address used in your owner application.' }, { status: 400 });
       }
 
+      const ownerProfileColumnSets = [
+        'id, email, full_name, role, pin, account_status, status_reason, status_reason_type, suspended_until, pin_reset_required, status, suspension_reason, suspended_at, suspension_ends_at',
+        'id, email, full_name, role, pin, status, suspension_reason, suspended_at, suspension_ends_at',
+        'id, email, full_name, role, pin',
+      ] as const;
+      let ownerProfile: {
+        id: string;
+        email: string | null;
+        full_name: string | null;
+        role: string;
+        pin: string | null;
+        account_status?: string | null;
+        status_reason?: string | null;
+        status_reason_type?: string | null;
+        suspended_until?: string | null;
+        pin_reset_required?: boolean;
+        status?: string | null;
+        suspension_reason?: string | null;
+        suspended_at?: string | null;
+        suspension_ends_at?: string | null;
+      } | null = null;
+      let ownerLookupError: { code?: string } | null = null;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let { data: ownerProfile } = await (adminSupabase.from('profiles') as any)
-        .select('id, email, full_name, role, pin')
-        .in('role', ['beach_owner', 'beach_manager'])
-        .ilike('email', ownerEmail)
-        .eq('pin', pinHash)
-        .maybeSingle();
-
-      if (!ownerProfile) {
-        const { data: legacyProfile } = await (adminSupabase.from('profiles') as any)
-          .select('id, email, full_name, role, pin')
+      const profiles = adminSupabase.from('profiles') as any;
+      for (const columns of ownerProfileColumnSets) {
+        const result = await profiles
+          .select(columns)
           .in('role', ['beach_owner', 'beach_manager'])
-          .ilike('email', ownerEmail)
-          .eq('pin', cleanPin)
+          .eq('email', ownerEmail)
           .maybeSingle();
-        if (legacyProfile) {
-          const { error: pinUpdateError } = await (adminSupabase.from('profiles') as any)
-            .update({ pin: pinHash, updated_at: new Date().toISOString() })
-            .eq('id', legacyProfile.id);
-          if (pinUpdateError) throw pinUpdateError;
-          ownerProfile = { ...legacyProfile, pin: pinHash };
-        }
+        ownerProfile = result.data;
+        ownerLookupError = result.error;
+        if (!ownerLookupError) break;
+        if (ownerLookupError.code !== '42703' && ownerLookupError.code !== 'PGRST204') break;
       }
+      if (ownerLookupError) throw ownerLookupError;
 
       if (!ownerProfile) {
         return NextResponse.json(
           { error: 'Invalid 6-digit PIN. Please check the PIN sent to your email.' },
           { status: 401 }
         );
+      }
+
+      const ownerStatus = ownerProfile.account_status || ownerProfile.status || 'active';
+      const suspendedUntil = ownerProfile.suspended_until || ownerProfile.suspension_ends_at || null;
+      if (ownerStatus === 'suspended' && !isSuspensionActive('suspended', suspendedUntil)) {
+        await persistExpiredSuspension(adminSupabase, ownerProfile.id);
+        ownerProfile.account_status = 'active';
+      } else if (isAccountStatus(ownerStatus) && isSuspensionActive(ownerStatus, suspendedUntil)) {
+        const sessionClient = await createServerSupabaseClient();
+        await sessionClient.auth.signOut();
+        return NextResponse.json({
+          error: ADMIN_MESSAGES.suspended,
+          code: 'ACCOUNT_SUSPENDED',
+          reason_type: ownerProfile.status_reason_type || null,
+          reason: ownerProfile.status_reason || ownerProfile.suspension_reason || null,
+          suspended_until: suspendedUntil,
+        }, { status: 403 });
       }
 
       const { data: authUser } = await adminSupabase.auth.admin.getUserById(ownerProfile.id);
@@ -264,10 +308,50 @@ export async function POST(request: Request) {
         );
       }
 
+      if (ownerProfile.pin_reset_required) {
+        const sessionClient = await createServerSupabaseClient();
+        const { error: passwordError } = await sessionClient.auth.signInWithPassword({
+          email,
+          password: cleanPin,
+        });
+        if (passwordError) {
+          return NextResponse.json(
+            { error: 'Invalid 6-digit PIN. Please check the PIN sent to your email.' },
+            { status: 401 }
+          );
+        }
+        return NextResponse.json({
+          success: true,
+          email,
+          role: ownerProfile.role,
+          resetPinRequired: true,
+          redirect: '/owner/reset-pin',
+        });
+      }
+
+      if (ownerProfile.pin !== pinHash && ownerProfile.pin !== cleanPin) {
+        return NextResponse.json(
+          { error: 'Invalid 6-digit PIN. Please check the PIN sent to your email.' },
+          { status: 401 }
+        );
+      }
+      if (ownerProfile.pin === cleanPin) {
+        const { error: pinUpdateError } = await (adminSupabase.from('profiles') as any)
+          .update({ pin: pinHash, updated_at: new Date().toISOString() })
+          .eq('id', ownerProfile.id);
+        if (pinUpdateError) throw pinUpdateError;
+      }
+
+      const ownerMetadata = (authUser?.user?.user_metadata || {}) as Record<string, unknown>;
+
       return NextResponse.json({
         success: true,
         email,
         role: ownerProfile.role,
+        status: 'active',
+        suspension_reason: ownerProfile.status_reason || ownerProfile.suspension_reason || ownerMetadata.status_reason || null,
+        suspended_at: ownerProfile.suspended_at || ownerMetadata.status_updated_at || null,
+        suspension_ends_at: suspendedUntil,
         redirect: '/owner/dashboard',
       });
     }

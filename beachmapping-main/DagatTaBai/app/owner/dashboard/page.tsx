@@ -105,7 +105,7 @@ export default function OwnerDashboardPage() {
   if (loading) {
     return (
       <div className="pt-36 pb-24 flex flex-col items-center justify-center">
-        <div className="animate-spin rounded-full h-8 w-8 border-2 border-[#1F3F74] border-t-transparent dark:border-sky-400" />
+        <div className="animate-spin rounded-full h-8 w-8 border-2 border-brand-navy-500 border-t-transparent dark:border-brand-teal-400" />
       </div>
     );
   }
@@ -123,13 +123,13 @@ export default function OwnerDashboardPage() {
 
   return (
     <div className="space-y-6 max-w-6xl mx-auto">
-      <p className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-[#4987BA]">
+      <p className="text-base sm:text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300">
         {greeting}
       </p>
       
       {/* ── 1. Hero Overview Header (Clean, Corporate, Date ONLY under name) ── */}
       <div className="pb-3 border-b border-slate-200 dark:border-neutral-800">
-        <h1 className="text-2xl sm:text-3xl font-extrabold text-[#1F3F74] dark:text-[#4987BA] tracking-tight font-sans">
+        <h1 className="text-2xl sm:text-3xl font-extrabold text-brand-navy-500 dark:text-brand-teal-300 tracking-tight font-sans">
           {beachName}
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 dark:text-neutral-400 mt-1 font-medium">
@@ -138,7 +138,7 @@ export default function OwnerDashboardPage() {
       </div>
 
       {beach && !hasMapPin && (
-        <div className="flex flex-col gap-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-amber-950 dark:border-amber-900 dark:bg-amber-950/30 dark:text-amber-200 sm:flex-row sm:items-center sm:justify-between">
+        <div className="flex flex-col gap-3 rounded-xl border border-brand-sun-200 bg-brand-sun-50 p-4 text-brand-navy-700 dark:border-brand-navy-900 dark:bg-brand-navy-900/30 dark:text-brand-sun-200 sm:flex-row sm:items-center sm:justify-between">
           <div className="flex items-start gap-3">
             <MapPin className="mt-0.5 h-4 w-4 shrink-0" />
             <div>
@@ -150,7 +150,7 @@ export default function OwnerDashboardPage() {
           </div>
           <Link
             href="/owner/beach"
-            className="inline-flex shrink-0 items-center justify-center rounded-full bg-[#1F3F74] px-4 py-2 text-xs font-bold text-white hover:bg-[#183460]"
+            className="inline-flex shrink-0 items-center justify-center rounded-full bg-brand-navy-500 px-4 py-2 text-xs font-bold text-white hover:bg-brand-navy-600"
           >
             Set Map Pin
           </Link>
@@ -163,21 +163,21 @@ export default function OwnerDashboardPage() {
         {/* Card 1: Visitor Rating */}
         <Link
           href="/owner/reviews"
-          className="p-5 bg-white dark:bg-neutral-900 rounded-2xl border border-slate-200/90 dark:border-neutral-800 shadow-2xs hover:border-[#1F3F74]/60 dark:hover:border-[#4987BA]/60 transition-all group flex flex-col justify-between"
+          className="p-5 bg-white dark:bg-neutral-900 rounded-2xl border border-slate-200/90 dark:border-neutral-800 shadow-2xs hover:border-brand-navy-500/60 dark:hover:border-brand-teal-600/60 transition-all group flex flex-col justify-between"
         >
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-slate-500 dark:text-neutral-400">Visitor Rating</span>
-              <Star className="w-5 h-5 text-amber-500 fill-amber-500" />
+              <Star className="w-5 h-5 text-brand-navy-700 fill-brand-sun-500" />
             </div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl sm:text-3xl font-black text-[#1F3F74] dark:text-[#4987BA]">
+              <span className="text-2xl sm:text-3xl font-black text-brand-navy-500 dark:text-brand-teal-300">
                 {rating > 0 ? rating.toFixed(1) : '0.0'}
               </span>
               <span className="text-xs text-slate-400 dark:text-neutral-500 font-medium">/ 5.0</span>
             </div>
           </div>
-          <p className="text-[11px] text-slate-500 dark:text-neutral-400 mt-2 flex items-center gap-1 group-hover:text-[#1F3F74] dark:group-hover:text-[#4987BA] transition-colors font-medium">
+          <p className="text-[11px] text-slate-500 dark:text-neutral-400 mt-2 flex items-center gap-1 group-hover:text-brand-navy-500 dark:group-hover:text-brand-teal-300 transition-colors font-medium">
             <span>{reviewCount} review{reviewCount !== 1 ? 's' : ''}</span>
             <ChevronRight className="w-3 h-3" />
           </p>
@@ -188,10 +188,10 @@ export default function OwnerDashboardPage() {
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-slate-500 dark:text-neutral-400">Total Visits</span>
-              <Eye className="w-5 h-5 text-[#1F3F74] dark:text-[#4987BA]" />
+              <Eye className="w-5 h-5 text-brand-navy-500 dark:text-brand-teal-300" />
             </div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl sm:text-3xl font-black text-[#1F3F74] dark:text-[#4987BA]">
+              <span className="text-2xl sm:text-3xl font-black text-brand-navy-500 dark:text-brand-teal-300">
                 {totalVisits}
               </span>
             </div>
@@ -204,20 +204,20 @@ export default function OwnerDashboardPage() {
         {/* Card 3: Active Cottages & Units */}
         <Link
           href="/owner/beach"
-          className="p-5 bg-white dark:bg-neutral-900 rounded-2xl border border-slate-200/90 dark:border-neutral-800 shadow-2xs hover:border-[#1F3F74]/60 dark:hover:border-[#4987BA]/60 transition-all group flex flex-col justify-between"
+          className="p-5 bg-white dark:bg-neutral-900 rounded-2xl border border-slate-200/90 dark:border-neutral-800 shadow-2xs hover:border-brand-navy-500/60 dark:hover:border-brand-teal-600/60 transition-all group flex flex-col justify-between"
         >
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-slate-500 dark:text-neutral-400">Cottages &amp; Sheds</span>
-              <Building className="w-5 h-5 text-emerald-600" />
+              <Building className="w-5 h-5 text-brand-teal-700" />
             </div>
             <div className="flex items-baseline gap-1.5">
-              <span className="text-2xl sm:text-3xl font-black text-[#1F3F74] dark:text-[#4987BA]">
+              <span className="text-2xl sm:text-3xl font-black text-brand-navy-500 dark:text-brand-teal-300">
                 Available
               </span>
             </div>
           </div>
-          <p className="text-[11px] text-slate-500 dark:text-neutral-400 mt-2 group-hover:text-[#1F3F74] dark:group-hover:text-[#4987BA] transition-colors flex items-center gap-1 font-medium">
+          <p className="text-[11px] text-slate-500 dark:text-neutral-400 mt-2 group-hover:text-brand-navy-500 dark:group-hover:text-brand-teal-300 transition-colors flex items-center gap-1 font-medium">
             <span>Manage units &amp; rates</span>
             <ChevronRight className="w-3 h-3" />
           </p>
@@ -226,21 +226,21 @@ export default function OwnerDashboardPage() {
         {/* Card 4: 360° Virtual Tour */}
         <Link
           href="/owner/beach#tour"
-          className="p-5 bg-white dark:bg-neutral-900 rounded-2xl border border-slate-200/90 dark:border-neutral-800 shadow-2xs hover:border-[#1F3F74]/60 dark:hover:border-[#4987BA]/60 transition-all group flex flex-col justify-between"
+          className="p-5 bg-white dark:bg-neutral-900 rounded-2xl border border-slate-200/90 dark:border-neutral-800 shadow-2xs hover:border-brand-navy-500/60 dark:hover:border-brand-teal-600/60 transition-all group flex flex-col justify-between"
         >
           <div>
             <div className="flex items-center justify-between mb-2">
               <span className="text-xs font-bold text-slate-500 dark:text-neutral-400">360° Virtual Tour</span>
-              <Compass className="w-5 h-5 text-indigo-600" />
+              <Compass className="w-5 h-5 text-brand-navy-600" />
             </div>
             <div className="flex items-center gap-2">
-              <span className={`w-2.5 h-2.5 rounded-full ${hasTour ? 'bg-emerald-500' : 'bg-amber-500'}`} />
-              <span className="text-sm sm:text-base font-bold text-[#1F3F74] dark:text-[#4987BA] truncate">
+              <span className={`w-2.5 h-2.5 rounded-full ${hasTour ? 'bg-emerald-500' : 'bg-brand-sun-500'}`} />
+              <span className="text-sm sm:text-base font-bold text-brand-navy-500 dark:text-brand-teal-300 truncate">
                 {hasTour ? 'Active' : 'Available'}
               </span>
             </div>
           </div>
-          <p className="text-[11px] text-slate-500 dark:text-neutral-400 mt-2 group-hover:text-[#1F3F74] dark:group-hover:text-[#4987BA] transition-colors flex items-center gap-1 font-medium">
+          <p className="text-[11px] text-slate-500 dark:text-neutral-400 mt-2 group-hover:text-brand-navy-500 dark:group-hover:text-brand-teal-300 transition-colors flex items-center gap-1 font-medium">
             <span>Request recapture</span>
             <ChevronRight className="w-3 h-3" />
           </p>
@@ -261,13 +261,13 @@ export default function OwnerDashboardPage() {
       {/* ── 4. Recent Guest Reviews Feed (Clean, unboxed) ── */}
       <section className="p-6 bg-white dark:bg-neutral-900 rounded-2xl border border-slate-200/90 dark:border-neutral-800 shadow-2xs space-y-4">
         <div className="flex items-center justify-between">
-          <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-[#4987BA] font-sans flex items-center gap-2">
-            <Star className="w-4.5 h-4.5 text-amber-500 fill-amber-500" />
+          <h2 className="text-base sm:text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300 font-sans flex items-center gap-2">
+            <Star className="w-4.5 h-4.5 text-brand-navy-700 fill-brand-sun-500" />
             <span>Recent Guest Reviews</span>
           </h2>
           <Link
             href="/owner/reviews"
-            className="text-xs font-bold text-[#1F3F74] dark:text-[#4987BA] hover:underline flex items-center gap-1"
+            className="text-xs font-bold text-brand-navy-500 dark:text-brand-teal-300 hover:underline flex items-center gap-1"
           >
             <span>View All ({reviewCount})</span>
             <ChevronRight className="w-3.5 h-3.5" />
@@ -286,9 +286,9 @@ export default function OwnerDashboardPage() {
                     <span className="text-xs font-bold text-slate-900 dark:text-white">
                       {r.user_name || 'Verified Visitor'}
                     </span>
-                    <div className="flex items-center text-amber-400 text-xs">
+                    <div className="flex items-center text-brand-sun-700 text-xs">
                       {Array.from({ length: r.rating }).map((_, i) => (
-                        <Star key={i} className="w-3 h-3 fill-amber-400" />
+                        <Star key={i} className="w-3 h-3 fill-brand-sun-400" />
                       ))}
                     </div>
                   </div>

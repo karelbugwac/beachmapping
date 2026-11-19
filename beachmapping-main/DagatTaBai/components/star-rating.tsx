@@ -38,7 +38,7 @@ export function StarRating({
             type={interactive ? 'button' : undefined}
             disabled={!interactive}
             onClick={() => interactive && onRatingChange?.(starValue)}
-            className={`focus:outline-none transition-colors ${
+            className={`focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 transition-colors ${
               interactive ? 'cursor-pointer hover:scale-110' : 'cursor-default'
             }`}
             aria-label={`${starValue} out of ${maxStars} stars`}
@@ -46,7 +46,7 @@ export function StarRating({
             <Star
               className={`${sizeClasses[size]} ${
                 isFilled
-                  ? 'fill-amber-400 text-amber-400'
+                  ? 'fill-brand-sun-400 text-brand-sun-700'
                   : 'fill-transparent text-slate-300'
               }`}
             />

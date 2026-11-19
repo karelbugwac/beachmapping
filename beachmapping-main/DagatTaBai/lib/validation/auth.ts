@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { fullNameSchema } from '@/lib/validation/fullName';
 
 // Regular User Email + Password Login
 export const userLoginSchema = z.object({
@@ -10,14 +11,14 @@ export type UserLoginInput = z.infer<typeof userLoginSchema>;
 
 // Regular User Registration (with RA 10173 consent requirement)
 export const userRegisterSchema = z.object({
-  name: z.string().min(2, 'Name must be at least 2 characters'),
-  email: z.string().email('Please enter a valid email address'),
+  name: fullNameSchema,
+  email: z.string().trim().toLowerCase().email('Please enter a valid email address'),
   password: z.string().min(6, 'Password must be at least 6 characters'),
   confirmPassword: z.string().min(6, 'Please confirm your password'),
   agreeToPrivacyPolicy: z.boolean().refine((val) => val === true, {
     message: 'You must agree to the Privacy Policy and Terms of Use',
   }),
-}).refine((data) => data.password === data.confirmPassword, {
+}).strict().refine((data) => data.password === data.confirmPassword, {
   message: 'Passwords do not match',
   path: ['confirmPassword'],
 });

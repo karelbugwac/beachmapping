@@ -1,14 +1,10 @@
 import { randomUUID } from 'crypto';
 import { NextRequest, NextResponse } from 'next/server';
 import { authorizeRoles } from '@/lib/supabase/authorization';
+import { IMAGE_UPLOAD_CONFIG } from '@/lib/utils/image-upload-config';
+import { detectImageMime } from '@/lib/utils/image-validation';
 
 const bucketName = 'beach-media';
-const maxImageSizeBytes = 5 * 1024 * 1024;
-const allowedTypes = new Map([
-  ['image/jpeg', 'jpg'],
-  ['image/png', 'png'],
-  ['image/webp', 'webp'],
-]);
 
 export async function POST(request: NextRequest) {
   try {
@@ -36,20 +32,26 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Beach not found or unauthorized.' }, { status: 404 });
     }
 
-    const extension = allowedTypes.get(file.type);
-    if (!extension) {
-      return NextResponse.json({ error: 'Cottage images must be JPG, PNG, or WebP.' }, { status: 400 });
-    }
-    if (file.size < 1 || file.size > maxImageSizeBytes) {
-      return NextResponse.json({ error: 'Cottage images must be no larger than 5 MB.' }, { status: 400 });
+    if (file.size < 1 || file.size > IMAGE_UPLOAD_CONFIG.storage.resortPhotosMaxBytes) {
+      return NextResponse.json({ error: 'Compressed cottage images must be no larger than 1 MB.' }, { status: 400 });
     }
 
+    const actualType = detectImageMime(new Uint8Array(await file.slice(0, 12).arrayBuffer()));
+    if (
+      !actualType ||
+      !IMAGE_UPLOAD_CONFIG.storage.allowedOutputTypes.includes(actualType as 'image/webp' | 'image/jpeg') ||
+      file.type !== actualType
+    ) {
+      return NextResponse.json({ error: 'Only compressed WebP or JPEG images are accepted.' }, { status: 400 });
+    }
+
+    const extension = actualType === 'image/webp' ? 'webp' : 'jpg';
     const path = `${beach.owner_id}/${beach.id}/cottages/${randomUUID()}.${extension}`;
     const storage = auth.adminClient.storage.from(bucketName);
     const { error: uploadError } = await storage.upload(
       path,
       new Uint8Array(await file.arrayBuffer()),
-      { contentType: file.type, upsert: false }
+      { cacheControl: '31536000', contentType: actualType, upsert: false }
     );
     if (uploadError) throw uploadError;
 

@@ -26,7 +26,7 @@ export function SearchBar({
           value={searchQuery}
           onChange={(e) => onSearchChange(e.target.value)}
           placeholder="Search by beach name, location, or activity..."
-          className="w-full pl-10 pr-9 py-2 text-xs sm:text-sm bg-slate-50 dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700 rounded-xl focus:outline-none focus:ring-2 focus:ring-sky-500 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500"
+          className="w-full pl-10 pr-9 py-2 text-xs sm:text-sm bg-slate-50 dark:bg-zinc-800/80 border border-slate-200 dark:border-zinc-700 rounded-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:ring-2 focus:ring-brand-teal-400 text-slate-900 dark:text-zinc-100 placeholder:text-slate-400 dark:placeholder:text-zinc-500"
         />
         {searchQuery && (
           <button
@@ -52,11 +52,11 @@ export function SearchBar({
               onClick={() => onRatingFilterChange(isSelected ? null : stars)}
               className={`inline-flex items-center gap-1 px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
                 isSelected
-                  ? 'bg-amber-500 text-white shadow-2xs'
+                  ? 'bg-brand-sun-400 text-brand-navy-700 shadow-2xs'
                   : 'bg-slate-100 dark:bg-zinc-800 text-slate-700 dark:text-zinc-300 hover:bg-slate-200 dark:hover:bg-zinc-700'
               }`}
             >
-              <Star className={`w-3 h-3 ${isSelected ? 'fill-white' : 'fill-amber-400 text-amber-400'}`} />
+              <Star className={`w-3 h-3 ${isSelected ? 'fill-brand-navy-700' : 'fill-brand-sun-400 text-brand-sun-700'}`} />
               <span>{stars}+ Stars</span>
             </button>
           );

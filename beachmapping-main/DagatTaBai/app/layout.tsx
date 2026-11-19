@@ -12,6 +12,8 @@ import { ConfirmDialog } from '@/components/ui/confirm-dialog';
 import { VisitorTracker } from '@/components/visitor-tracker';
 import { PageLoader } from '@/components/page-loader';
 import { LoginDeviceTracker } from '@/components/login-device-tracker';
+import { AccountSuspensionGate } from '@/components/account-suspension-gate';
+import { PageRestorationGuard } from '@/components/auth/page-restoration-guard';
 import { Suspense } from 'react';
 
 const inter = Inter({
@@ -55,6 +57,8 @@ export default function RootLayout({
             <PageLoader />
           </Suspense>
           <FeedbackToasts />
+          <PageRestorationGuard />
+          <AccountSuspensionGate />
           <ConfirmDialog />
           <VisitorTracker />
           <Navbar />

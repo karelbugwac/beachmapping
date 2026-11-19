@@ -157,7 +157,7 @@ export function SetupChecklist({ beach, reviewCount = 0 }: SetupChecklistProps) 
               {/* Right: Clean Action Button */}
               <Link
                 href={step.href}
-                className="self-start sm:self-center inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-sans font-medium transition-colors border flex-shrink-0 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#CF4530]"
+                className="self-start sm:self-center inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-sans font-medium transition-colors border flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus-visible:ring-2 focus-visible:ring-brand-teal-400"
                 style={{
                   backgroundColor: step.completed ? 'transparent' : 'var(--color-sand-100)',
                   borderColor: 'var(--color-sand-200)',

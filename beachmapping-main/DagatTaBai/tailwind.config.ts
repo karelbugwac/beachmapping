@@ -1,59 +1,94 @@
 import type { Config } from "tailwindcss";
 
+const tokenColor = (token: string) => `rgb(var(--${token}) / <alpha-value>)`;
+
 const config: Config = {
   darkMode: "class",
   content: [
     "./pages/**/*.{js,ts,jsx,tsx,mdx}",
     "./components/**/*.{js,ts,jsx,tsx,mdx}",
     "./app/**/*.{js,ts,jsx,tsx,mdx}",
+    "./lib/**/*.{js,ts,jsx,tsx,mdx}",
   ],
   theme: {
     extend: {
       colors: {
+        "brand-navy": {
+          50: tokenColor("brand-navy-50"),
+          100: tokenColor("brand-navy-100"),
+          200: tokenColor("brand-navy-200"),
+          300: tokenColor("brand-navy-300"),
+          400: tokenColor("brand-navy-400"),
+          500: tokenColor("brand-navy-500"),
+          600: tokenColor("brand-navy-600"),
+          700: tokenColor("brand-navy-700"),
+          800: tokenColor("brand-navy-800"),
+          900: tokenColor("brand-navy-900"),
+        },
+        "brand-sun": {
+          50: tokenColor("brand-sun-50"),
+          100: tokenColor("brand-sun-100"),
+          200: tokenColor("brand-sun-200"),
+          300: tokenColor("brand-sun-300"),
+          400: tokenColor("brand-sun-400"),
+          500: tokenColor("brand-sun-500"),
+          600: tokenColor("brand-sun-600"),
+          700: tokenColor("brand-sun-700"),
+        },
+        "brand-sand": {
+          50: tokenColor("brand-sand-50"),
+          100: tokenColor("brand-sand-100"),
+          200: tokenColor("brand-sand-200"),
+          300: tokenColor("brand-sand-300"),
+        },
+        "brand-teal": {
+          50: tokenColor("brand-teal-50"),
+          100: tokenColor("brand-teal-100"),
+          200: tokenColor("brand-teal-200"),
+          300: tokenColor("brand-teal-300"),
+          400: tokenColor("brand-teal-400"),
+          500: tokenColor("brand-teal-500"),
+          600: tokenColor("brand-teal-600"),
+          700: tokenColor("brand-teal-700"),
+        },
         sand: {
-          50: '#faf8f5',
-          100: '#f4efe8',
-          200: '#e8ded0',
-          300: '#d7c7b0',
-          400: '#c1aa8e',
-          500: '#ad9172',
-          600: '#94785b',
-          700: '#775f48',
-          800: '#624f3e',
-          900: '#524336',
+          50: tokenColor("brand-sand-50"),
+          100: tokenColor("brand-sand-100"),
+          200: tokenColor("brand-sand-200"),
+          300: tokenColor("brand-sand-300"),
         },
         ocean: {
-          50: '#f0f7fb',
-          100: '#dcedf5',
-          200: '#bedde9',
-          300: '#8fc4d9',
-          400: '#5ba6c4',
-          500: '#3a8baa',
-          600: '#2c6f8c',
-          700: '#265972',
-          800: '#234a5d',
-          900: '#213f4f',
-          950: '#0b1b26',
+          50: tokenColor("brand-teal-50"),
+          100: tokenColor("brand-teal-100"),
+          200: tokenColor("brand-teal-200"),
+          300: tokenColor("brand-teal-300"),
+          400: tokenColor("brand-teal-400"),
+          500: tokenColor("brand-teal-500"),
+          600: tokenColor("brand-teal-600"),
+          700: tokenColor("brand-teal-700"),
+          800: tokenColor("brand-teal-700"),
+          900: tokenColor("brand-teal-700"),
+          950: tokenColor("brand-navy-900"),
         },
         dtb: {
-          navy: '#1F3F74',     // Dive Navy Blue (Primary buttons & key highlights)
-          midnight: '#254B8A', // Midnight Blue
-          ocean: '#2B5F9D',    // Ocean Blue
-          classic: '#3A72AC',  // Classic Blue
-          sky: '#4987BA',      // Ocean Sky Blue
+          navy: tokenColor("brand-navy-500"),
+          midnight: tokenColor("brand-navy-600"),
+          ocean: tokenColor("brand-navy-500"),
+          classic: tokenColor("brand-navy-500"),
+          sky: tokenColor("brand-teal-600"),
         },
         brand: {
-          50: '#f0f4f9',
-          100: '#dbe5f3',
-          200: '#b9cfe8',
-          300: '#8ab1db',
-          400: '#4987BA',  // Ocean Sky Blue
-          500: '#3A72AC',  // Classic Blue
-          600: '#2B5F9D',  // Ocean Blue
-          700: '#254B8A',  // Midnight Blue
-          800: '#1F3F74',  // Dive Navy Blue (button color!)
-          900: '#14284b',
-          950: '#0c1930',
+          50: tokenColor("brand-navy-50"),
+          100: tokenColor("brand-navy-100"),
+          200: tokenColor("brand-navy-200"),
+          300: tokenColor("brand-navy-300"),
+          400: tokenColor("brand-navy-400"),
+          500: tokenColor("brand-navy-500"),
+          600: tokenColor("brand-navy-600"),
+          700: tokenColor("brand-navy-700"),
+          800: tokenColor("brand-navy-800"),
+          900: tokenColor("brand-navy-900"),
+          950: tokenColor("brand-navy-900"),
         },
       },
       fontFamily: {

@@ -1,41 +1,42 @@
-import { createServerClient, type CookieOptions } from '@supabase/ssr';
+import { createClient } from '@supabase/supabase-js';
+import { createServerClient } from '@supabase/ssr';
 import { cookies } from 'next/headers';
 import type { Database } from './types';
 
+const supabaseUrl =
+  process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-project.supabase.co';
+const supabaseAnonKey =
+  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
+const serviceRoleKey =
+  process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-key';
+
 /**
- * Creates a server-side Supabase client for Server Components, Server Actions, and Route Handlers.
+ * Server-side Supabase client para sa Server Components, Server Actions,npx supabase db push
+ * ug Route Handlers. Gamit ang cookies sa user (RLS applies).
  */
 export async function createServerSupabaseClient() {
-  const cookieStore = await cookies();
+  const cookieStore = await cookies(); // Next 14: tangtanga ang "await"
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-project.supabase.co';
-  const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
-
-  return createServerClient<Database>(
-    supabaseUrl,
-    supabaseAnonKey,
-    {
-      cookies: {
-        getAll() {
-          return cookieStore.getAll();
-        },
-        setAll(cookiesToSet: { name: string; value: string; options?: any }[]) {
-          try {
-            cookiesToSet.forEach(({ name, value, options }) => {
-              const opts = { ...options };
-              // In local development (HTTP LAN testing), disable `secure` flag so mobile browsers accept the session cookies
-              if (process.env.NODE_ENV !== 'production') {
-                opts.secure = false;
-              }
-              cookieStore.set(name, value, opts);
-            });
-          } catch {
-            // The `setAll` method was called from a Server Component.
-          }
-        },
+  return createServerClient<Database>(supabaseUrl, supabaseAnonKey, {
+    cookies: {
+      getAll() {
+        return cookieStore.getAll();
       },
-    }
-  );
+      setAll(cookiesToSet: { name: string; value: string; options?: any }[]) {
+        try {
+          cookiesToSet.forEach(({ name, value, options }) => {
+            const opts = { ...options };
+            if (process.env.NODE_ENV !== 'production') {
+              opts.secure = false;
+            }
+            cookieStore.set(name, value, opts);
+          });
+        } catch {
+          // Gitawag gikan sa Server Component, ok ra i-ignore.
+        }
+      },
+    },
+  });
 }
 
 /**
@@ -43,15 +44,10 @@ export async function createServerSupabaseClient() {
  * NEVER expose this to client components!
  */
 export function createAdminClient() {
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-project.supabase.co';
-  const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY || 'placeholder-service-key';
-
-  return createServerClient<Database>(supabaseUrl, serviceRoleKey, {
-    cookies: {
-      getAll() {
-        return [];
-      },
-      setAll() {},
+  return createClient<Database>(supabaseUrl, serviceRoleKey, {
+    auth: {
+      persistSession: false,
+      autoRefreshToken: false,
     },
   });
 }

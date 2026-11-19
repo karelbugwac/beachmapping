@@ -36,7 +36,7 @@ export function AnalyticsBarChart({
       {/* Chart Header with Metrics Overview */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-base sm:text-lg font-bold text-[#1F3F74] dark:text-white font-sans">
+          <h2 className="text-base sm:text-lg font-bold text-brand-navy-500 dark:text-white font-sans">
             {title}
           </h2>
           <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">
@@ -47,7 +47,7 @@ export function AnalyticsBarChart({
         {/* Legend-style Pills */}
         <div className="flex flex-wrap items-center gap-3 text-xs">
           <div className="flex items-center gap-2">
-            <div className="w-3 h-3 rounded-full bg-[#1F3F74] dark:bg-[#38BDF8]" />
+            <div className="w-3 h-3 rounded-full bg-brand-navy-500 dark:bg-brand-teal-400" />
             <span className="text-slate-600 dark:text-neutral-400">Peak Day</span>
           </div>
           <div className="flex items-center gap-2">
@@ -87,7 +87,7 @@ export function AnalyticsBarChart({
               >
                 {/* Floating Tooltip */}
                 {isHovered && (
-                  <div className="absolute -top-12 z-20 px-3 py-1.5 rounded-xl bg-gradient-to-r from-[#1F3F74] to-[#4987BA] text-white text-[11px] font-bold shadow-xl whitespace-nowrap animate-in fade-in slide-in-from-bottom-2 duration-200">
+                  <div className="absolute -top-12 z-20 px-3 py-1.5 rounded-xl bg-gradient-to-r from-brand-navy-500 to-brand-teal-600 text-white text-[11px] font-bold shadow-xl whitespace-nowrap animate-in fade-in slide-in-from-bottom-2 duration-200">
                     {point.visitors} visit{point.visitors !== 1 ? 's' : ''} &bull; {formattedDate}
                   </div>
                 )}
@@ -95,7 +95,7 @@ export function AnalyticsBarChart({
                 {/* Number above bar */}
                 <span className={`text-[11px] tabular-nums font-bold transition-all duration-200 ${
                   isHovered || isPeak
-                    ? 'text-[#1F3F74] dark:text-[#4987BA] scale-110'
+                    ? 'text-brand-navy-500 dark:text-brand-teal-300 scale-110'
                     : 'text-slate-500 dark:text-neutral-400'
                 }`}>
                   {point.visitors}
@@ -105,9 +105,9 @@ export function AnalyticsBarChart({
                 <div
                   className={`w-full max-w-14 rounded-t-2xl transition-all duration-300 ease-out ${
                     isHovered
-                      ? 'bg-gradient-to-t from-[#1F3F74] via-[#2a5a9a] to-sky-400 shadow-lg shadow-[#1F3F74]/20 scale-y-105'
+                      ? 'bg-gradient-to-t from-brand-navy-500 via-brand-navy-500 to-brand-teal-400 shadow-lg shadow-brand-navy-500/20 scale-y-105'
                       : isPeak
-                      ? 'bg-gradient-to-t from-[#1F3F74] via-[#2a5a9a] to-[#4987BA] shadow-md shadow-[#1F3F74]/15'
+                      ? 'bg-gradient-to-t from-brand-navy-500 via-brand-navy-500 to-brand-teal-600 shadow-md shadow-brand-navy-500/15'
                       : 'bg-gradient-to-t from-slate-400 via-slate-300 to-slate-200 dark:from-neutral-600 dark:via-neutral-500 dark:to-neutral-400 opacity-70 group-hover:opacity-90'
                   }`}
                   style={{ height: `${height}%` }}
@@ -119,7 +119,7 @@ export function AnalyticsBarChart({
                 <div className="text-center pt-1.5">
                   <span className={`text-xs font-bold block transition-colors ${
                     isHovered || isPeak
-                      ? 'text-[#1F3F74] dark:text-[#4987BA]'
+                      ? 'text-brand-navy-500 dark:text-brand-teal-300'
                       : 'text-slate-600 dark:text-neutral-400'
                   }`}>
                     {label}

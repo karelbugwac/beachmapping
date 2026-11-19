@@ -32,7 +32,7 @@ export function ReviewCard({ review, canDelete = false, onDelete }: ReviewCardPr
     <div className="p-4 bg-white border border-slate-200 rounded-lg shadow-sm">
       <div className="flex items-start justify-between gap-2 mb-2">
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center font-bold text-xs">
+          <div className="w-8 h-8 rounded-full bg-brand-teal-100 text-brand-teal-700 flex items-center justify-center font-bold text-xs">
             <User className="w-4 h-4" />
           </div>
           <div>

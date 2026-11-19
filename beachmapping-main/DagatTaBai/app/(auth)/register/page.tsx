@@ -12,6 +12,12 @@ import {
   ChevronLeft,
 } from 'lucide-react';
 import { showToast } from '@/components/ui/feedback-toasts';
+import {
+  filterFullNameInput,
+  FULL_NAME_MESSAGES,
+  validateFullName,
+} from '@/lib/validation/fullName';
+import { EMAIL_TAKEN_MESSAGE } from '@/lib/validation/registration';
 
 export default function UserRegisterPage() {
   const router = useRouter();
@@ -26,6 +32,8 @@ export default function UserRegisterPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [nameInputError, setNameInputError] = useState<string | null>(null);
+  const [emailInputError, setEmailInputError] = useState<string | null>(null);
   const [touched, setTouched] = useState({
     name: false,
     email: false,
@@ -34,8 +42,10 @@ export default function UserRegisterPage() {
   });
 
   // ── Validation ──────────────────────────────────────────────
-  const nameValid = formData.name.trim().length >= 2;
-  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email);
+  const nameValidation = validateFullName(formData.name);
+  const nameValid = nameValidation.ok && !nameInputError;
+  const nameError = nameInputError || nameValidation.error;
+  const emailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim());
   const passwordChecks = useMemo(
     () => ({
       minLength: formData.password.length >= 6,
@@ -54,10 +64,13 @@ export default function UserRegisterPage() {
     e.preventDefault();
     setTouched({ name: true, email: true, password: true, confirmPassword: true });
 
-    if (!nameValid) {
-      showToast('Please enter your full name.', 'error');
+    const submittedName = validateFullName(formData.name);
+    if (!nameInputError) setNameInputError(submittedName.error);
+    if (!submittedName.ok || nameInputError) {
+      showToast(nameInputError || submittedName.error || FULL_NAME_MESSAGES.required, 'error');
       return;
     }
+    setFormData((current) => ({ ...current, name: submittedName.value }));
     if (!emailValid) {
       showToast('Please enter a valid email address.', 'error');
       return;
@@ -91,6 +104,10 @@ export default function UserRegisterPage() {
 
       const data = await res.json();
       if (!res.ok || data.error) {
+        if (res.status === 409 && data.error === EMAIL_TAKEN_MESSAGE) {
+          setEmailInputError(EMAIL_TAKEN_MESSAGE);
+          return;
+        }
         throw new Error(data.error || 'Registration failed.');
       }
 
@@ -110,19 +127,19 @@ export default function UserRegisterPage() {
   };
 
   const inputCls = (fieldTouched: boolean, isValid: boolean, hasValue: boolean) =>
-    `w-full px-5 py-3.5 text-sm bg-white dark:bg-[#121212] border rounded-full text-slate-900 dark:text-white caret-[#1F3F74] dark:caret-[#4987BA] placeholder:text-transparent focus:outline-none focus:ring-2 transition-all duration-200 ${
+    `w-full px-5 py-3.5 text-sm bg-white dark:bg-neutral-900 border rounded-full text-slate-900 dark:text-white caret-brand-navy-500 dark:caret-brand-teal-600 placeholder:text-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:ring-2 transition-all duration-200 ${
       fieldTouched && !isValid && hasValue
         ? 'border-red-400 dark:border-red-600 focus:ring-red-500/20'
-        : 'border-slate-300 dark:border-neutral-800 focus:border-[#1F3F74] dark:focus:border-[#4987BA] focus:ring-[#1F3F74] dark:focus:ring-[#4987BA]'
+        : 'border-slate-300 dark:border-neutral-800 focus:border-brand-navy-500 dark:focus:border-brand-teal-600 focus:ring-brand-teal-400 dark:focus:ring-brand-teal-400'
     }`;
 
   return (
-    <div className="min-h-screen flex flex-col justify-between items-center px-4 py-8 bg-[#f8fafc] dark:bg-black transition-colors duration-200">
+    <div className="min-h-screen flex flex-col justify-between items-center px-4 py-8 bg-slate-50 dark:bg-black transition-colors duration-200">
       {/* ── Top Navigation (Left-aligned) ─────────────────── */}
       <div className="w-full px-4 sm:px-8 md:px-12 flex items-center justify-start">
         <Link
           href="/"
-          className="inline-flex items-center gap-1 text-xs sm:text-sm font-medium text-slate-500 hover:text-[#1F3F74] dark:text-neutral-400 dark:hover:text-white transition-colors group"
+          className="inline-flex items-center gap-1 text-xs sm:text-sm font-medium text-slate-500 hover:text-brand-navy-500 dark:text-neutral-400 dark:hover:text-white transition-colors group"
         >
           <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
           <span>Back to Home</span>
@@ -146,7 +163,7 @@ export default function UserRegisterPage() {
               />
             </div>
           </Link>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1F3F74] dark:text-[#4987BA]">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-brand-navy-500 dark:text-brand-teal-300">
             Join the Coast
           </h1>
           <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1 font-normal leading-relaxed max-w-xs mx-auto">
@@ -158,43 +175,74 @@ export default function UserRegisterPage() {
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Full Name Category (Sentence case, proper category spacing) */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-slate-700 dark:text-neutral-300 ml-1">
+            <label htmlFor="register-full-name" className="block text-xs font-semibold text-slate-700 dark:text-neutral-300 ml-1">
               Full name
             </label>
             <div className="relative">
               <input
+                id="register-full-name"
                 type="text"
                 required
+                maxLength={80}
+                autoComplete="name"
+                inputMode="text"
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData({ ...formData, name: e.target.value })
-                }
-                onBlur={() => setTouched((t) => ({ ...t, name: true }))}
-                className={inputCls(touched.name, nameValid, !!formData.name)}
+                onChange={(e) => {
+                  const rawValue = e.target.value;
+                  const validation = validateFullName(rawValue);
+                  setFormData({ ...formData, name: filterFullNameInput(rawValue) });
+                  setNameInputError(validation.error);
+                  setTouched((current) => ({ ...current, name: true }));
+                }}
+                onBlur={() => {
+                  setTouched((current) => ({ ...current, name: true }));
+                  const validation = validateFullName(formData.name);
+                  if (!nameInputError) setNameInputError(validation.error);
+                  if (validation.ok && !nameInputError) {
+                    setFormData((current) => ({ ...current, name: validation.value }));
+                  }
+                }}
+                aria-invalid={Boolean(nameError)}
+                aria-describedby={nameError ? 'register-full-name-error' : undefined}
+                className={inputCls(Boolean(nameError), nameValid, !!formData.name)}
               />
-              {touched.name && formData.name && !nameValid && (
+              {nameError && (
                 <div className="absolute right-4 top-1/2 -translate-y-1/2">
                   <AlertCircle className="w-4 h-4 text-red-500" />
                 </div>
               )}
             </div>
+            {nameError && (
+              <p
+                id="register-full-name-error"
+                role="alert"
+                className="text-[11px] text-red-600 flex items-center gap-1 mt-1 ml-2"
+              >
+                <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                {nameError}
+              </p>
+            )}
           </div>
 
           {/* Email Address Category (Sentence case) */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-slate-700 dark:text-neutral-300 ml-1">
+            <label htmlFor="register-email" className="block text-xs font-semibold text-slate-700 dark:text-neutral-300 ml-1">
               Email address
             </label>
             <div className="relative">
               <input
+                id="register-email"
                 type="email"
                 required
                 value={formData.email}
-                onChange={(e) =>
-                  setFormData({ ...formData, email: e.target.value })
-                }
+                aria-invalid={Boolean(emailInputError || (touched.email && formData.email && !emailValid))}
+                aria-describedby={emailInputError ? 'register-email-error' : undefined}
+                onChange={(e) => {
+                  setFormData((current) => ({ ...current, email: e.target.value }));
+                  setEmailInputError(null);
+                }}
                 onBlur={() => setTouched((t) => ({ ...t, email: true }))}
-                className={inputCls(touched.email, emailValid, !!formData.email)}
+                className={inputCls(touched.email || Boolean(emailInputError), emailValid && !emailInputError, !!formData.email)}
               />
               {touched.email && formData.email && !emailValid && (
                 <div className="absolute right-4 top-1/2 -translate-y-1/2">
@@ -206,6 +254,12 @@ export default function UserRegisterPage() {
               <p className="text-[11px] text-red-500 flex items-center gap-1 mt-1 ml-2">
                 <AlertCircle className="w-3 h-3 flex-shrink-0" />
                 Please enter a valid email address
+              </p>
+            )}
+            {emailInputError && (
+              <p id="register-email-error" role="alert" className="text-[11px] text-red-600 flex items-center gap-1 mt-1 ml-2">
+                <AlertCircle className="w-3 h-3 flex-shrink-0" />
+                {emailInputError}
               </p>
             )}
           </div>
@@ -224,10 +278,10 @@ export default function UserRegisterPage() {
                   setFormData({ ...formData, password: e.target.value })
                 }
                 onBlur={() => setTouched((t) => ({ ...t, password: true }))}
-                className={`w-full pl-5 pr-12 py-3.5 text-sm bg-white dark:bg-[#121212] border rounded-full text-slate-900 dark:text-white caret-[#1F3F74] dark:caret-[#4987BA] placeholder:text-transparent focus:outline-none focus:ring-2 transition-all duration-200 ${
+                className={`w-full pl-5 pr-12 py-3.5 text-sm bg-white dark:bg-neutral-900 border rounded-full text-slate-900 dark:text-white caret-brand-navy-500 dark:caret-brand-teal-600 placeholder:text-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:ring-2 transition-all duration-200 ${
                   touched.password && !passwordValid && formData.password
                     ? 'border-red-400 dark:border-red-600 focus:ring-red-500/20'
-                    : 'border-slate-300 dark:border-neutral-800 focus:border-[#1F3F74] dark:focus:border-[#4987BA] focus:ring-[#1F3F74] dark:focus:ring-[#4987BA]'
+                    : 'border-slate-300 dark:border-neutral-800 focus:border-brand-navy-500 dark:focus:border-brand-teal-600 focus:ring-brand-teal-400 dark:focus:ring-brand-teal-400'
                 }`}
               />
               <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
@@ -262,14 +316,14 @@ export default function UserRegisterPage() {
                 ].map((item) => (
                   <div key={item.label} className="flex items-center gap-2">
                     {item.check ? (
-                      <CheckCircle2 className="w-3 h-3 text-[#1F3F74] dark:text-[#4987BA] flex-shrink-0" />
+                      <CheckCircle2 className="w-3 h-3 text-brand-navy-500 dark:text-brand-teal-300 flex-shrink-0" />
                     ) : (
                       <div className="w-3.5 h-3.5 rounded-full border-[1.5px] border-slate-300 dark:border-neutral-600 flex-shrink-0" />
                     )}
                     <span
                       className={`text-[10px] ${
                         item.check
-                          ? 'text-[#1F3F74] dark:text-[#4987BA] font-medium'
+                          ? 'text-brand-navy-500 dark:text-brand-teal-300 font-medium'
                           : 'text-slate-500 dark:text-neutral-400'
                       }`}
                     >
@@ -297,18 +351,18 @@ export default function UserRegisterPage() {
                 onBlur={() =>
                   setTouched((t) => ({ ...t, confirmPassword: true }))
                 }
-                className={`w-full pl-5 pr-12 py-3.5 text-sm bg-white dark:bg-[#121212] border rounded-full text-slate-900 dark:text-white caret-[#1F3F74] dark:caret-[#4987BA] placeholder:text-transparent focus:outline-none focus:ring-2 transition-all duration-200 ${
+                className={`w-full pl-5 pr-12 py-3.5 text-sm bg-white dark:bg-neutral-900 border rounded-full text-slate-900 dark:text-white caret-brand-navy-500 dark:caret-brand-teal-600 placeholder:text-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:ring-2 transition-all duration-200 ${
                   touched.confirmPassword &&
                   !confirmValid &&
                   formData.confirmPassword
                     ? 'border-red-400 dark:border-red-600 focus:ring-red-500/20'
-                    : 'border-slate-300 dark:border-neutral-800 focus:border-[#1F3F74] dark:focus:border-[#4987BA] focus:ring-[#1F3F74] dark:focus:ring-[#4987BA]'
+                    : 'border-slate-300 dark:border-neutral-800 focus:border-brand-navy-500 dark:focus:border-brand-teal-600 focus:ring-brand-teal-400 dark:focus:ring-brand-teal-400'
                 }`}
               />
               <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
                 {touched.confirmPassword && formData.confirmPassword && (
                   confirmValid ? (
-                    <CheckCircle2 className="w-4 h-4 text-[#1F3F74] dark:text-[#4987BA]" />
+                    <CheckCircle2 className="w-4 h-4 text-brand-navy-500 dark:text-brand-teal-300" />
                   ) : (
                     <AlertCircle className="w-4 h-4 text-red-500" />
                   )
@@ -346,14 +400,14 @@ export default function UserRegisterPage() {
                 onChange={(e) =>
                   setFormData({ ...formData, agreeConsent: e.target.checked })
                 }
-                className="mt-0.5 w-4 h-4 rounded border-slate-300 dark:border-neutral-700 text-[#1F3F74] focus:ring-[#1F3F74]/30 cursor-pointer accent-[#1F3F74]"
+                className="mt-0.5 w-4 h-4 rounded border-slate-300 dark:border-neutral-700 text-brand-navy-500 focus:ring-brand-teal-400/30 cursor-pointer accent-brand-navy-500"
               />
               <span className="text-[11px] text-slate-600 dark:text-neutral-400 leading-relaxed">
                 I agree to the{' '}
                 <Link
                   href="/privacy"
                   target="_blank"
-                  className="text-[#1F3F74] dark:text-[#4987BA] font-semibold underline hover:opacity-80"
+                  className="text-brand-navy-500 dark:text-brand-teal-300 font-semibold underline hover:opacity-80"
                 >
                   Privacy Policy (RA 10173)
                 </Link>{' '}
@@ -361,7 +415,7 @@ export default function UserRegisterPage() {
                 <Link
                   href="/terms"
                   target="_blank"
-                  className="text-[#1F3F74] dark:text-[#4987BA] font-semibold underline hover:opacity-80"
+                  className="text-brand-navy-500 dark:text-brand-teal-300 font-semibold underline hover:opacity-80"
                 >
                   Terms of Use
                 </Link>
@@ -373,8 +427,8 @@ export default function UserRegisterPage() {
           {/* Primary Submit Button: Oblong rounded-full, No arrow */}
           <button
             type="submit"
-            disabled={loading}
-            className="group relative w-full py-3.5 mt-2 bg-[#1F3F74] hover:bg-[#285091] dark:bg-[#1F3F74] dark:hover:bg-[#285091] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm rounded-full transition-all duration-200 shadow-md hover:shadow-lg shadow-[#1F3F74]/25 flex items-center justify-center cursor-pointer"
+            disabled={loading || !nameValid}
+            className="group relative w-full py-3.5 mt-2 bg-brand-navy-500 hover:bg-brand-navy-600 dark:bg-brand-navy-500 dark:hover:bg-brand-navy-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm rounded-full transition-all duration-200 shadow-md hover:shadow-lg shadow-brand-navy-500/25 flex items-center justify-center cursor-pointer"
           >
             {loading ? (
               <div className="flex items-center justify-center gap-2">
@@ -418,7 +472,7 @@ export default function UserRegisterPage() {
         <button
           type="button"
           onClick={handleGoogleSignIn}
-          className="w-full py-3.5 px-5 bg-white dark:bg-[#121212] border border-slate-300 dark:border-neutral-800 hover:bg-slate-50 dark:hover:bg-neutral-900 rounded-full text-slate-700 dark:text-neutral-200 text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-3 shadow-2xs hover:shadow-xs cursor-pointer"
+          className="w-full py-3.5 px-5 bg-white dark:bg-neutral-900 border border-slate-300 dark:border-neutral-800 hover:bg-slate-50 dark:hover:bg-neutral-900 rounded-full text-slate-700 dark:text-neutral-200 text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-3 shadow-2xs hover:shadow-xs cursor-pointer"
         >
           <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24">
             <path
@@ -430,7 +484,7 @@ export default function UserRegisterPage() {
               d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"
             />
             <path
-              fill="#FBBC05"
+              fill="#FCC255"
               d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.06H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.94l2.85-2.22.81-.63z"
             />
             <path
@@ -446,7 +500,7 @@ export default function UserRegisterPage() {
           Already have an account?{' '}
           <Link
             href="/login"
-            className="text-[#1F3F74] dark:text-[#4987BA] font-bold hover:underline transition-colors"
+            className="text-brand-navy-500 dark:text-brand-teal-300 font-bold hover:underline transition-colors"
           >
             Sign in
           </Link>

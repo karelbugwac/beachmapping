@@ -1,5 +1,6 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
+import { isSuspensionActive } from '@/lib/utils/account-status';
 
 export async function proxy(request: NextRequest) {
   const pathname = request.nextUrl.pathname;
@@ -11,10 +12,57 @@ export async function proxy(request: NextRequest) {
   const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/');
   const isOwnerRoute = pathname === '/owner' || pathname.startsWith('/owner/');
   const isProfileRoute = pathname === '/profile' || pathname.startsWith('/profile/');
+  const isApplicationStatusRoute = pathname === '/apply/status' || pathname.startsWith('/apply/status/');
+  const isNotificationsPage = pathname === '/notifications' || pathname.startsWith('/notifications/');
+  const isApiRoute = pathname.startsWith('/api/');
+  const isAdminApiRoute = pathname === '/api/admin' || pathname.startsWith('/api/admin/');
+  const isOwnerApiRoute = pathname === '/api/owner' || pathname.startsWith('/api/owner/');
+  const isProtectedApiRoute = isAdminApiRoute || isOwnerApiRoute ||
+    pathname === '/api/profile' || pathname.startsWith('/api/profile/') ||
+    pathname === '/api/notifications' || pathname.startsWith('/api/notifications/') ||
+    pathname === '/api/assistant/history' ||
+    pathname === '/api/auth/profile' || pathname === '/api/auth/track-device';
+  const isAdminApplicationsRequest = pathname === '/api/applications' && request.method === 'GET';
+  const isSuspendedPage = pathname === '/suspended';
+  if (isAdminApiRoute && ['POST', 'PATCH', 'DELETE'].includes(request.method)) {
+    const configuredOrigin = process.env.SITE_URL || process.env.NEXT_PUBLIC_SITE_URL;
+    const expectedOrigin = configuredOrigin ? new URL(configuredOrigin).origin : request.nextUrl.origin;
+    if (request.headers.get('origin') !== expectedOrigin) {
+      return NextResponse.json({ error: "You don't have permission to do that." }, { status: 403 });
+    }
+    if (!request.headers.get('content-type')?.toLowerCase().includes('application/json')) {
+      return NextResponse.json({ error: "You don't have permission to do that." }, { status: 415 });
+    }
+  }
+  const suspensionExemptApiRoutes = new Set([
+    '/api/auth/session',
+    '/api/auth/login',
+    '/api/auth/pin-login',
+    '/api/auth/register',
+    '/api/auth/logout',
+    '/api/auth/google',
+    '/api/auth/callback/google',
+  ]);
+  const checkSuspension = !isAdminRoute &&
+    !isSuspendedPage &&
+    pathname !== '/login' &&
+    pathname !== '/register' &&
+    !isAdminApiRoute &&
+    !isAdminApplicationsRequest &&
+    !suspensionExemptApiRoutes.has(pathname);
   
-  if (!isAdminRoute && !isOwnerRoute && !isProfileRoute) return NextResponse.next();
+  if (!isAdminRoute && !isOwnerRoute && !isProfileRoute && !isApplicationStatusRoute &&
+    !isNotificationsPage && !checkSuspension && !isProtectedApiRoute) {
+    return NextResponse.next();
+  }
 
   let response = NextResponse.next({ request });
+  const setPrivateHeaders = (target: NextResponse) => {
+    target.headers.set('Cache-Control', 'private, no-store, max-age=0, must-revalidate');
+    target.headers.set('Pragma', 'no-cache');
+    target.headers.set('Expires', '0');
+    return target;
+  };
   const supabase = createServerClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-project.supabase.co',
     process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key',
@@ -32,31 +80,119 @@ export async function proxy(request: NextRequest) {
 
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) {
-    if (isAdminRoute) {
-      return NextResponse.redirect(new URL('/admin/login', request.url));
+    if (isProtectedApiRoute) {
+      return setPrivateHeaders(NextResponse.json({ error: 'Authentication required.' }, { status: 401 }));
     }
-    const loginPath = isOwnerRoute ? '/owner/login' : '/login';
-    return NextResponse.redirect(new URL(loginPath, request.url));
+    if (isApiRoute || (!isAdminRoute && !isOwnerRoute && !isProfileRoute && !isApplicationStatusRoute && !isNotificationsPage)) {
+      return NextResponse.next();
+    }
+    if (isAdminRoute) {
+      const loginUrl = new URL('/admin/login', request.url);
+      loginUrl.searchParams.set('redirect', `${pathname}${request.nextUrl.search}`);
+      return setPrivateHeaders(NextResponse.redirect(loginUrl));
+    }
+    const loginUrl = new URL(isOwnerRoute ? '/owner/login' : '/login', request.url);
+    loginUrl.searchParams.set('redirect', `${pathname}${request.nextUrl.search}`);
+    return setPrivateHeaders(NextResponse.redirect(loginUrl));
   }
 
-  // Skip role check for admin routes to improve performance - rely on client-side checks
-  // The admin login already validates the PIN and role
+  let profileStatus: {
+    role?: string;
+    pin_reset_required?: boolean;
+    account_status?: string;
+    status_reason?: string | null;
+    suspended_until?: string | null;
+    status?: string;
+    suspension_reason?: string | null;
+    suspended_at?: string | null;
+    suspension_ends_at?: string | null;
+  } | null = null;
+  if (checkSuspension || isOwnerRoute || isAdminRoute || isOwnerApiRoute ||
+    isApplicationStatusRoute || isNotificationsPage) {
+    const profileColumnSets = [
+      'role, account_status, status_reason, suspended_until, pin_reset_required, status, suspension_reason, suspended_at, suspension_ends_at',
+      'role, status, suspension_reason, suspended_at, suspension_ends_at',
+      'role',
+    ] as const;
+    let profileError: { code?: string } | null = null;
+    for (const columns of profileColumnSets) {
+      const result = await (supabase.from('profiles') as any)
+        .select(columns)
+        .eq('id', data.user.id)
+        .maybeSingle();
+      if (!result.error) {
+        profileStatus = result.data;
+        profileError = null;
+        break;
+      }
+      profileError = result.error;
+      if (result.error.code !== '42703' && result.error.code !== 'PGRST204') break;
+    }
+    if (profileError && (
+      isApiRoute ||
+      isOwnerRoute ||
+      isAdminRoute ||
+      isProfileRoute ||
+      isApplicationStatusRoute ||
+      isNotificationsPage
+    )) {
+      return setPrivateHeaders(NextResponse.json({ error: 'Could not verify account permissions.' }, { status: 503 }));
+    }
+  }
+
+  const metadata = (data.user.user_metadata || {}) as Record<string, unknown>;
+  const accountStatus = profileStatus?.account_status === 'suspended' || profileStatus?.status === 'suspended' || metadata.status === 'suspended'
+    ? 'suspended'
+    : 'active';
+  const suspendedUntil = profileStatus?.suspended_until ||
+    profileStatus?.suspension_ends_at ||
+    (typeof metadata.suspension_ends_at === 'string' ? metadata.suspension_ends_at : null);
+  if (checkSuspension && isSuspensionActive(accountStatus, suspendedUntil)) {
+    if (isApiRoute) {
+      return NextResponse.json({
+        code: 'ACCOUNT_SUSPENDED',
+        reason: profileStatus?.status_reason || profileStatus?.suspension_reason ||
+          (typeof metadata.status_reason === 'string' ? metadata.status_reason : null),
+        suspended_until: suspendedUntil,
+      }, {
+        status: 403,
+        headers: { 'Cache-Control': 'private, no-store, max-age=0' },
+      });
+    }
+    return setPrivateHeaders(NextResponse.redirect(new URL('/suspended', request.url)));
+  }
+
+  const isOwnerProfile = profileStatus?.role === 'beach_owner' || profileStatus?.role === 'beach_manager';
+  if (isOwnerProfile && profileStatus?.pin_reset_required) {
+    if (isApiRoute && pathname !== '/api/owner/reset-pin') {
+      return NextResponse.json({ error: 'Please create a new PIN to continue.' }, {
+        status: 403,
+        headers: { 'Cache-Control': 'private, no-store, max-age=0' },
+      });
+    }
+    if (isOwnerRoute && pathname !== '/owner/reset-pin') {
+      return setPrivateHeaders(NextResponse.redirect(new URL('/owner/reset-pin', request.url)));
+    }
+  }
+
   if (isAdminRoute) {
-    return response;
+    if (profileStatus?.role !== 'admin') {
+      return setPrivateHeaders(NextResponse.redirect(new URL('/unauthorized', request.url)));
+    }
+    return setPrivateHeaders(response);
   }
 
   if (isOwnerRoute) {
-    const { data: profile, error: profileError } = await (supabase.from('profiles') as any)
-      .select('role')
-      .eq('id', data.user.id)
-      .maybeSingle();
-    const hasAccess = profile?.role === 'beach_owner' || profile?.role === 'beach_manager';
+    const hasAccess = profileStatus?.role === 'beach_owner' || profileStatus?.role === 'beach_manager';
 
-    if (profileError || !hasAccess) {
-      return NextResponse.redirect(new URL('/unauthorized', request.url));
+    if (!hasAccess) {
+      return setPrivateHeaders(NextResponse.redirect(new URL('/unauthorized', request.url)));
     }
   }
 
+  if (isOwnerRoute || isProfileRoute || isProtectedApiRoute || isApplicationStatusRoute || isNotificationsPage) {
+    return setPrivateHeaders(response);
+  }
   return response;
 }
 

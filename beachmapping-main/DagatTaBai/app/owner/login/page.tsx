@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from 'react';
 import Image from 'next/image';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import {
   Mail,
@@ -12,6 +13,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { getSafeInternalRedirect } from '@/lib/utils/safe-redirect';
 
 export default function OwnerLoginPage() {
   const router = useRouter();
@@ -27,6 +29,7 @@ export default function OwnerLoginPage() {
   const [showPin, setShowPin] = useState(false);
   const [pinError, setPinError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [suspensionInfo, setSuspensionInfo] = useState<{ reason: string | null; reason_type: string | null; suspended_until: string | null } | null>(null);
 
   // Floating toast message state (Centered, solid green/red, white text, 5s duration, NO "x")
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -167,6 +170,11 @@ export default function OwnerLoginPage() {
 
       const data = await res.json();
 
+      if (data.code === 'ACCOUNT_SUSPENDED') {
+        setSuspensionInfo({ reason: data.reason || null, reason_type: data.reason_type || null, suspended_until: data.suspended_until || null });
+        setPinError('');
+        return;
+      }
       if (!res.ok) {
         throw new Error(data.error || 'Invalid 6-digit PIN. Please check your credentials.');
       }
@@ -188,7 +196,11 @@ export default function OwnerLoginPage() {
       });
 
       setTimeout(() => {
-        router.push(data.redirect || '/owner/dashboard');
+        const redirect = getSafeInternalRedirect(
+          new URLSearchParams(window.location.search).get('redirect') || data.redirect,
+          '/owner/dashboard'
+        );
+        router.push(data.resetPinRequired ? '/owner/reset-pin' : redirect);
       }, 1000);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : 'Login failed. Please try again.';
@@ -200,7 +212,7 @@ export default function OwnerLoginPage() {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center px-4 py-8 bg-[#f8fafc] dark:bg-black transition-colors duration-200 font-sans">
+    <div className="min-h-screen flex flex-col justify-center items-center px-4 py-8 bg-slate-50 dark:bg-black transition-colors duration-200 font-sans">
       
       {/* ── Floating Message Banner (Centered, solid green/red, white text, 5s duration, NO "x") ── */}
       {toast && (
@@ -230,7 +242,7 @@ export default function OwnerLoginPage() {
               priority
             />
           </div>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[#1F3F74] dark:text-[#4987BA]">
+          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-brand-navy-500 dark:text-brand-teal-300">
             Beach Owner Portal
           </h1>
           <p className="text-xs text-slate-500 dark:text-neutral-400 max-w-xs mx-auto mt-1 leading-relaxed">
@@ -267,10 +279,10 @@ export default function OwnerLoginPage() {
                       validateEmail(email);
                     }}
                     placeholder="resort.owner@example.com"
-                    className={`w-full rounded-full border bg-white dark:bg-[#132035] py-2.5 pl-10 pr-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:outline-none transition-all ${
+                    className={`w-full rounded-full border bg-white dark:bg-brand-navy-800 py-2.5 pl-10 pr-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 transition-all ${
                       emailError
                         ? 'border-red-500 ring-1 ring-red-500/20'
-                        : 'border-slate-300 dark:border-slate-700 focus:border-[#1F3F74] focus:ring-2 focus:ring-[#1F3F74]/20'
+                        : 'border-slate-300 dark:border-slate-700 focus:border-brand-navy-500 focus:ring-2 focus:ring-brand-teal-400/20'
                     }`}
                   />
                 </div>
@@ -285,7 +297,7 @@ export default function OwnerLoginPage() {
 
               <button
                 type="submit"
-                className="w-full py-3 bg-[#1F3F74] hover:bg-[#183460] active:scale-[0.99] text-white font-bold text-xs sm:text-sm tracking-wide rounded-full transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-3 bg-brand-navy-500 hover:bg-brand-navy-600 active:scale-[0.99] text-white font-bold text-xs sm:text-sm tracking-wide rounded-full transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>Proceed</span>
               </button>
@@ -312,10 +324,10 @@ export default function OwnerLoginPage() {
                       onChange={(e) => handleDigitChange(i, e.target.value)}
                       onKeyDown={(e) => handleDigitKeyDown(i, e)}
                       onPaste={handleDigitPaste}
-                      className={`w-11 h-13 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-bold font-mono rounded-xl border transition-all focus:outline-none ${
+                      className={`w-11 h-13 sm:w-12 sm:h-14 text-center text-xl sm:text-2xl font-bold font-mono rounded-xl border transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 ${
                         digit
-                          ? 'border-[#1F3F74] ring-2 ring-[#1F3F74]/20 bg-blue-50/20 text-[#1F3F74] dark:text-[#4987BA] dark:bg-blue-950/20'
-                          : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-[#132035] text-slate-900 dark:text-white focus:border-[#1F3F74] focus:ring-2 focus:ring-[#1F3F74]/20'
+                          ? 'border-brand-navy-500 ring-2 ring-brand-teal-400/20 bg-brand-navy-50/20 text-brand-navy-500 dark:text-brand-teal-300 dark:bg-brand-navy-900/20'
+                          : 'border-slate-300 dark:border-slate-700 bg-white dark:bg-brand-navy-800 text-slate-900 dark:text-white focus:border-brand-navy-500 focus:ring-2 focus:ring-brand-teal-400/20'
                       }`}
                     />
                   ))}
@@ -325,7 +337,7 @@ export default function OwnerLoginPage() {
                   <button
                     type="button"
                     onClick={() => setShowPin(!showPin)}
-                    className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-[#1F3F74] dark:text-neutral-400 dark:hover:text-[#4987BA] transition-colors cursor-pointer"
+                    className="inline-flex items-center justify-center gap-1.5 text-xs font-semibold text-slate-500 hover:text-brand-navy-500 dark:text-neutral-400 dark:hover:text-brand-teal-300 transition-colors cursor-pointer"
                   >
                     {showPin ? <EyeOff className="w-3.5 h-3.5" /> : <Eye className="w-3.5 h-3.5" />}
                     <span>{showPin ? 'Hide PIN' : 'Show PIN'}</span>
@@ -337,13 +349,24 @@ export default function OwnerLoginPage() {
                     {pinError}
                   </p>
                 )}
+                {suspensionInfo && (
+                  <div role="alert" className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-900 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-200">
+                    <p className="font-bold">Your account is suspended.</p>
+                    {suspensionInfo.reason_type && <p className="mt-1 font-semibold">{suspensionInfo.reason_type}</p>}
+                    {suspensionInfo.reason && <p className="mt-1 whitespace-pre-wrap">{suspensionInfo.reason}</p>}
+                    <p className="mt-1">
+                      This suspension is in effect {suspensionInfo.suspended_until ? `until ${new Date(suspensionInfo.suspended_until).toLocaleDateString()}` : 'until further notice'}.
+                    </p>
+                    <Link href="/contact" className="mt-2 inline-block font-semibold underline">Contact us</Link>
+                  </div>
+                )}
               </div>
 
               {/* Login Submit Button */}
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full py-3 bg-[#1F3F74] hover:bg-[#183460] disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs sm:text-sm tracking-wide rounded-full transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full py-3 bg-brand-navy-500 hover:bg-brand-navy-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-xs sm:text-sm tracking-wide rounded-full transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer"
               >
                 {loading ? (
                   <>
@@ -365,7 +388,7 @@ export default function OwnerLoginPage() {
                 setPinDigits(['', '', '', '', '', '']);
                 setPinError('');
               }}
-              className="text-xs font-semibold text-[#1F3F74] dark:text-[#4987BA] hover:underline cursor-pointer"
+              className="text-xs font-semibold text-brand-navy-500 dark:text-brand-teal-300 hover:underline cursor-pointer"
             >
               Use a different email
             </button>

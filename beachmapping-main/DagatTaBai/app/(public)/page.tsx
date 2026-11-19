@@ -127,12 +127,12 @@ export default function HomePage() {
   }, []);
 
   return (
-    <div className="flex flex-col min-h-screen bg-white dark:bg-black text-slate-900 dark:text-white font-sans transition-colors duration-200 selection:bg-blue-100 selection:text-blue-900 overflow-x-hidden">
+    <div className="flex flex-col min-h-screen bg-white dark:bg-black text-slate-900 dark:text-white font-sans transition-colors duration-200 selection:bg-brand-navy-100 selection:text-brand-navy-900 overflow-x-hidden">
       {/* Hero Section */}
       <HeroMapSection />
 
-      {/* Section 1: See Beyond the Pictures (DARK DIVE BLUE Background #1F3F74 - Harmonious Balanced Spacing) */}
-      <section className="w-full bg-[#1F3F74] dark:bg-[#14284b] text-white transition-colors duration-200 relative z-20">
+      {/* Section 1: See Beyond the Pictures (DARK DIVE BLUE Background #124168 - Harmonious Balanced Spacing) */}
+      <section className="w-full bg-brand-navy-500 dark:bg-brand-navy-700 text-white transition-colors duration-200 relative z-20">
         <div className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto text-center">
           <ScrollReveal direction="up" duration={650} className="space-y-5 sm:space-y-6 flex flex-col items-center">
             <div>
@@ -143,7 +143,7 @@ export default function HomePage() {
 
             {/* Description: Centered container yet justified text with centered last line */}
             <div
-              className="text-xs sm:text-sm text-blue-100/90 leading-relaxed max-w-3xl mx-auto"
+              className="text-xs sm:text-sm text-brand-navy-100/90 leading-relaxed max-w-3xl mx-auto"
               style={{ textAlign: 'justify', textAlignLast: 'center' }}
             >
               <p>
@@ -155,7 +155,7 @@ export default function HomePage() {
               {/* White button on blue background */}
               <Link
                 href="/about"
-                className="inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-white hover:bg-slate-100 text-[#1F3F74] font-bold text-xs sm:text-sm shadow-lg shadow-black/20 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
+                className="inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-white hover:bg-slate-100 text-brand-navy-500 font-bold text-xs sm:text-sm shadow-lg shadow-black/20 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
               >
                 Learn More
               </Link>
@@ -169,7 +169,7 @@ export default function HomePage() {
         <div className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <ScrollReveal direction="up" duration={650}>
             <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-14">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-[#1F3F74] dark:text-[#4987BA] leading-tight">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-brand-navy-500 dark:text-brand-teal-300 leading-tight">
                 Your Beach Guide
               </h2>
               <p className="mt-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
@@ -183,7 +183,7 @@ export default function HomePage() {
             {/* Column 1: Interactive Map (Map Icon - same as hero button) */}
             <ScrollReveal direction="up" delay={100} duration={600} className="px-6 sm:px-8 py-5 md:py-2 flex flex-col items-center space-y-3 group">
               <div className="h-10 flex items-center justify-center">
-                <Map className="w-9 h-9 text-[#1F3F74] dark:text-[#4987BA] stroke-[1.8] transition-transform duration-300 group-hover:scale-110" />
+                <Map className="w-9 h-9 text-brand-navy-500 dark:text-brand-teal-300 stroke-[1.8] transition-transform duration-300 group-hover:scale-110" />
               </div>
               <h3 className="text-xs sm:text-sm font-bold tracking-widest uppercase text-slate-900 dark:text-white font-heading">
                 Interactive Map
@@ -193,13 +193,13 @@ export default function HomePage() {
               </p>
             </ScrollReveal>
 
-            {/* Column 2: Live Weather & Tides (CloudSun Icon - Sun & Clouds) */}
+            {/* Column 2: Weather Forecast (CloudSun Icon - Sun & Clouds) */}
             <ScrollReveal direction="up" delay={200} duration={600} className="px-6 sm:px-8 py-5 md:py-2 flex flex-col items-center space-y-3 group">
               <div className="h-10 flex items-center justify-center">
-                <CloudSun className="w-9 h-9 text-[#1F3F74] dark:text-[#4987BA] stroke-[1.8] transition-transform duration-300 group-hover:scale-110" />
+                <CloudSun className="w-9 h-9 text-brand-navy-500 dark:text-brand-teal-300 stroke-[1.8] transition-transform duration-300 group-hover:scale-110" />
               </div>
               <h3 className="text-xs sm:text-sm font-bold tracking-widest uppercase text-slate-900 dark:text-white font-heading">
-                Live Weather &amp; Tides
+                Weather Forecast
               </h3>
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-xs">
                 Stay updated with real-time wave telemetry, tide levels, wind advisories, and marine weather forecasts for safe and well-planned beach trips.
@@ -209,7 +209,7 @@ export default function HomePage() {
             {/* Column 3: Bai Coastal Chatbot (Bot Icon) */}
             <ScrollReveal direction="up" delay={300} duration={600} className="px-6 sm:px-8 py-5 md:py-2 flex flex-col items-center space-y-3 group">
               <div className="h-10 flex items-center justify-center">
-                <Bot className="w-9 h-9 text-[#1F3F74] dark:text-[#4987BA] stroke-[1.8] transition-transform duration-300 group-hover:scale-110" />
+                <Bot className="w-9 h-9 text-brand-navy-500 dark:text-brand-teal-300 stroke-[1.8] transition-transform duration-300 group-hover:scale-110" />
               </div>
               <h3 className="text-xs sm:text-sm font-bold tracking-widest uppercase text-slate-900 dark:text-white font-heading">
                 Bai Coastal Chatbot
@@ -222,8 +222,8 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Section 3: Take a 360° Look Around (DARK DIVE BLUE Background #1F3F74 - Harmonious Spacing, Centered Header & Tour) */}
-      <section className="w-full bg-[#1F3F74] dark:bg-[#14284b] text-white border-b border-white/10 transition-colors duration-200 relative overflow-hidden">
+      {/* Section 3: Take a 360° Look Around (DARK DIVE BLUE Background #124168 - Harmonious Spacing, Centered Header & Tour) */}
+      <section className="w-full bg-brand-navy-500 dark:bg-brand-navy-700 text-white border-b border-white/10 transition-colors duration-200 relative overflow-hidden">
         <div className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           {/* Centered Header & Subheader */}
           <ScrollReveal direction="up" duration={650}>
@@ -232,7 +232,7 @@ export default function HomePage() {
                 Take a 360° Look Around
               </h2>
 
-              <p className="text-xs sm:text-sm text-blue-100/90 leading-relaxed max-w-2xl mx-auto">
+              <p className="text-xs sm:text-sm text-brand-navy-100/90 leading-relaxed max-w-2xl mx-auto">
                 Explore the beach from different angles and see what each destination has to offer. Take a closer look at the surroundings, discover available facilities, and get a better feel for the place through an immersive 360° virtual experience powered by Panoee.
               </p>
             </div>
@@ -264,7 +264,7 @@ export default function HomePage() {
         <div className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <ScrollReveal direction="up" duration={600}>
             <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-[#1F3F74] dark:text-[#4987BA] leading-tight">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-brand-navy-500 dark:text-brand-teal-300 leading-tight">
                 What People Are Saying
               </h2>
               <p className="mt-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
@@ -282,11 +282,11 @@ export default function HomePage() {
                   className="w-[82vw] max-w-[320px] flex-shrink-0 snap-center sm:w-auto sm:max-w-none sm:flex-shrink"
                 >
                   <ScrollReveal direction="up" delay={index * 100} duration={600} className="h-full">
-                    <div className="h-full min-h-[220px] min-w-0 p-6 sm:p-7 rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-sm flex flex-col justify-between gap-5 hover:border-[#1F3F74]/30 hover:shadow-md transition-all duration-200">
+                    <div className="h-full min-h-[220px] min-w-0 p-6 sm:p-7 rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-sm flex flex-col justify-between gap-5 hover:border-brand-navy-500/30 hover:shadow-md transition-all duration-200">
                       <div className="space-y-3.5">
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2.5 min-w-0">
-                            <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#edf3fa] text-sm font-bold text-[#1F3F74] dark:bg-blue-950/60 dark:text-[#9fc8ee]">
+                            <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-navy-50 text-sm font-bold text-brand-navy-500 dark:bg-brand-navy-900/60 dark:text-brand-navy-200">
                               <span>{item.user_name?.trim().charAt(0).toUpperCase() || 'U'}</span>
                               {item.profile_image_url ? (
                                 // eslint-disable-next-line @next/next/no-img-element
@@ -313,13 +313,13 @@ export default function HomePage() {
                           </div>
 
                           {/* Display the 5 stars */}
-                          <div className="flex items-center gap-0.5 text-amber-400 flex-shrink-0" title={`${item.rating}.0 out of 5 stars`}>
+                          <div className="flex items-center gap-0.5 text-brand-sun-700 flex-shrink-0" title={`${item.rating}.0 out of 5 stars`}>
                             {[...Array(5)].map((_, i) => (
                               <Star
                                 key={i}
                                 className={`w-3.5 h-3.5 ${
                                   i < Math.round(item.rating)
-                                    ? 'fill-amber-400 text-amber-400'
+                                    ? 'fill-brand-sun-400 text-brand-sun-700'
                                     : 'fill-slate-200 text-slate-300 dark:fill-neutral-800 dark:text-neutral-700'
                                 }`}
                               />
@@ -346,7 +346,7 @@ export default function HomePage() {
                 <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-600 dark:text-slate-400">
                   Share how Dagat Ta Bai has helped you plan your next beach visit.
                 </p>
-                <Link href="/feedback" className="mt-4 inline-flex text-sm font-semibold text-[#1F3F74] hover:underline dark:text-sky-300">
+                <Link href="/feedback" className="mt-4 inline-flex text-sm font-semibold text-brand-navy-500 hover:underline dark:text-brand-teal-300">
                   Leave feedback
                 </Link>
               </div>
@@ -355,15 +355,15 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Section 5: Be Part of Dagat Ta Bai (DARK DIVE BLUE Background #1F3F74 - Harmonious Spacing, Single Clean Button) */}
-      <section className="w-full bg-[#1F3F74] dark:bg-[#14284b] text-white border-b border-white/10 transition-colors duration-200 relative overflow-hidden">
+      {/* Section 5: Be Part of Dagat Ta Bai (DARK DIVE BLUE Background #124168 - Harmonious Spacing, Single Clean Button) */}
+      <section className="w-full bg-brand-navy-500 dark:bg-brand-navy-700 text-white border-b border-white/10 transition-colors duration-200 relative overflow-hidden">
         <div className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto relative z-10 text-center space-y-5">
           <ScrollReveal direction="up" duration={650}>
             <div className="space-y-3">
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-white leading-tight">
                 Be Part of Dagat Ta Bai
               </h2>
-              <p className="text-xs sm:text-sm text-blue-100/90 max-w-lg mx-auto leading-relaxed">
+              <p className="text-xs sm:text-sm text-brand-navy-100/90 max-w-lg mx-auto leading-relaxed">
                 Are you a beach or resort owner? Join our platform and let more people discover your place
               </p>
             </div>
@@ -372,9 +372,9 @@ export default function HomePage() {
               {/* Single White button with no icon */}
               <Link
                 href="/apply"
-                className="inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-white hover:bg-slate-100 text-[#1F3F74] text-xs sm:text-sm font-bold transition-all duration-200 shadow-lg shadow-black/20 hover:-translate-y-0.5 active:translate-y-0"
+                className="inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-white hover:bg-slate-100 text-brand-navy-500 text-xs sm:text-sm font-bold transition-all duration-200 shadow-lg shadow-black/20 hover:-translate-y-0.5 active:translate-y-0"
               >
-                Apply as a beach owner
+                Apply as Beach Owner
               </Link>
             </div>
           </ScrollReveal>
@@ -386,7 +386,7 @@ export default function HomePage() {
         <div className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <ScrollReveal direction="up" duration={650}>
             <div className="max-w-2xl mx-auto text-center space-y-5">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-[#1F3F74] dark:text-[#4987BA] leading-tight">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-brand-navy-500 dark:text-brand-teal-300 leading-tight">
                 Help Make Dagat Ta Bai Better
               </h2>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-lg mx-auto">
@@ -397,7 +397,7 @@ export default function HomePage() {
                 {/* Blue button on white background */}
                 <Link
                   href="/feedback"
-                  className="inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-[#1F3F74] hover:bg-[#285091] dark:bg-[#1F3F74] dark:hover:bg-[#285091] text-white text-xs sm:text-sm font-bold shadow-md transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
+                  className="inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-brand-navy-500 hover:bg-brand-navy-600 dark:bg-brand-navy-500 dark:hover:bg-brand-navy-600 text-white text-xs sm:text-sm font-bold shadow-md transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
                 >
                   <span>Review Dagat Ta Bai</span>
                 </Link>

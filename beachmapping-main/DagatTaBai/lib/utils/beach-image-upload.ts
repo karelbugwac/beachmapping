@@ -2,66 +2,81 @@
 
 import { createClient } from '@/lib/supabase/client';
 import { generateUUID } from '@/lib/utils/uuid';
+import { formatImageSize } from '@/lib/utils/image-upload-config';
+import { prepareImageForUpload } from '@/lib/utils/image-compression';
 
-export const MAX_BEACH_IMAGE_SIZE_BYTES = 20 * 1024 * 1024 * 1024;
-const MAX_COMPRESSED_IMAGE_SIZE_BYTES = 5 * 1024 * 1024;
-const MAX_IMAGE_WIDTH = 1600;
-const supportedImageTypes = new Set(['image/jpeg', 'image/jpg', 'image/png', 'image/webp']);
+export const MAX_BEACH_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
+const BEACH_MEDIA_BUCKET = 'beach-media';
 
-async function compressBeachImage(file: File): Promise<File> {
-  if (!supportedImageTypes.has(file.type.toLowerCase())) {
-    throw new Error('Choose a JPG, PNG, or WebP image.');
-  }
-  if (file.size < 1 || file.size > MAX_BEACH_IMAGE_SIZE_BYTES) {
-    throw new Error('Image files must be larger than 0 bytes and no larger than 20 GB.');
-  }
+export interface ImageUploadSizes {
+  originalSize: number;
+  compressedSize: number;
+}
 
-  let bitmap: ImageBitmap;
-  try {
-    bitmap = await createImageBitmap(file);
-  } catch {
-    throw new Error('This image could not be opened. Try a JPG, PNG, or WebP file.');
-  }
-
-  try {
-    const scale = Math.min(1, MAX_IMAGE_WIDTH / bitmap.width);
-    const canvas = document.createElement('canvas');
-    canvas.width = Math.max(1, Math.round(bitmap.width * scale));
-    canvas.height = Math.max(1, Math.round(bitmap.height * scale));
-    const context = canvas.getContext('2d');
-    if (!context) throw new Error('Image compression is not available in this browser.');
-    context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-
-    for (const outputType of ['image/webp', 'image/jpeg']) {
-      for (const quality of [0.86, 0.76, 0.66, 0.56, 0.46]) {
-        const blob = await new Promise<Blob | null>((resolve) =>
-          canvas.toBlob(resolve, outputType, quality)
-        );
-        if (blob && blob.size <= MAX_COMPRESSED_IMAGE_SIZE_BYTES && blob.type === outputType) {
-          const baseName = file.name.replace(/\.[^.]+$/, '') || 'beach-image';
-          const extension = outputType === 'image/webp' ? 'webp' : 'jpg';
-          return new File([blob], `${baseName}.${extension}`, {
-            type: outputType,
-            lastModified: Date.now(),
-          });
-        }
-      }
+function uploadWithProgress(
+  url: string,
+  apiKey: string,
+  accessToken: string,
+  file: File,
+  signal?: AbortSignal,
+  onProgress?: (progress: number) => void
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal?.aborted) {
+      reject(new DOMException('The upload was cancelled.', 'AbortError'));
+      return;
     }
 
-    throw new Error('This image could not be compressed below 5 MB. Choose a smaller image.');
-  } finally {
-    bitmap.close();
-  }
+    const request = new XMLHttpRequest();
+    const abortUpload = () => request.abort();
+    const cleanup = () => signal?.removeEventListener('abort', abortUpload);
+    request.open('POST', url);
+    request.setRequestHeader('apikey', apiKey);
+    request.setRequestHeader('Authorization', `Bearer ${accessToken}`);
+    request.setRequestHeader('cache-control', 'max-age=31536000');
+    request.setRequestHeader('content-type', file.type);
+    request.setRequestHeader('x-upsert', 'false');
+    request.upload.onprogress = (event) => {
+      if (event.lengthComputable) onProgress?.(Math.round((event.loaded / event.total) * 100));
+    };
+    request.onload = () => {
+      cleanup();
+      if (request.status >= 200 && request.status < 300) {
+        onProgress?.(100);
+        resolve();
+      } else {
+        reject(new Error(request.responseText || `Image upload failed (${request.status}).`));
+      }
+    };
+    request.onerror = () => {
+      cleanup();
+      reject(new Error('Network error while uploading the image.'));
+    };
+    request.onabort = () => {
+      cleanup();
+      reject(new DOMException('The upload was cancelled.', 'AbortError'));
+    };
+    signal?.addEventListener('abort', abortUpload, { once: true });
+    request.send(file);
+  });
 }
 
 export async function uploadBeachImageWithPath(
   file: File,
   beachId: string,
   folder?: string,
-  signal?: AbortSignal
-): Promise<{ imageUrl: string; storagePath: string }> {
-  const compressedFile = await compressBeachImage(file);
+  signal?: AbortSignal,
+  onCompressed?: (sizes: ImageUploadSizes) => void,
+  onProgress?: (progress: number) => void
+): Promise<{ imageUrl: string; storagePath: string; sizes: ImageUploadSizes }> {
+  const prepared = await prepareImageForUpload(file, 'resort');
+  const sizes = {
+    originalSize: prepared.originalSize,
+    compressedSize: prepared.compressedSize,
+  };
+  onCompressed?.(sizes);
   if (signal?.aborted) throw new DOMException('The upload was cancelled.', 'AbortError');
+
   const supabase = createClient();
   const [{ data: sessionData, error: sessionError }, { data: userData, error: userError }] =
     await Promise.all([supabase.auth.getSession(), supabase.auth.getUser()]);
@@ -71,72 +86,63 @@ export async function uploadBeachImageWithPath(
     throw new Error('Please sign in again before uploading images.');
   }
 
-  const objectName = [
+  const extension = prepared.file.type === 'image/webp' ? 'webp' : 'jpg';
+  const storagePath = [
     userData.user.id,
     beachId || 'general',
     folder,
-    `${generateUUID()}.${compressedFile.type === 'image/webp' ? 'webp' : 'jpg'}`,
+    `${generateUUID()}.${extension}`,
   ].filter(Boolean).join('/');
-  if (signal) {
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-project.supabase.co';
-    const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
-    const encodedPath = objectName.split('/').map(encodeURIComponent).join('/');
-    try {
-      const response = await fetch(`${supabaseUrl}/storage/v1/object/beach-media/${encodedPath}`, {
-        method: 'POST',
-        headers: {
-          apikey: anonKey,
-          Authorization: `Bearer ${sessionData.session.access_token}`,
-          'cache-control': 'max-age=3600',
-          'content-type': compressedFile.type,
-          'x-upsert': 'false',
-        },
-        body: compressedFile,
-        signal,
-      });
-      if (!response.ok) {
-        const detail = await response.text();
-        throw new Error(detail || `Image upload failed (${response.status}).`);
-      }
-    } catch (error) {
-      if (signal.aborted) {
-        try {
-          const cleanupResponse = await fetch(`${supabaseUrl}/storage/v1/object/beach-media/${encodedPath}`, {
-            method: 'DELETE',
-            headers: { apikey: anonKey, Authorization: `Bearer ${sessionData.session.access_token}` },
-          });
-          if (!cleanupResponse.ok) {
-            console.error('Failed to clean up a cancelled cottage photo upload:', await cleanupResponse.text());
-          }
-        } catch (cleanupError) {
-          console.error('Failed to clean up a cancelled cottage photo upload:', cleanupError);
-        }
-      }
-      throw error;
+
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  if (!supabaseUrl || !anonKey) {
+    throw new Error('Supabase image storage is not configured.');
+  }
+
+  const encodedPath = storagePath.split('/').map(encodeURIComponent).join('/');
+  try {
+    onProgress?.(0);
+    await uploadWithProgress(
+      `${supabaseUrl}/storage/v1/object/${BEACH_MEDIA_BUCKET}/${encodedPath}`,
+      anonKey,
+      sessionData.session.access_token,
+      prepared.file,
+      signal,
+      onProgress
+    );
+  } catch (error) {
+    const { error: cleanupError } = await supabase.storage
+      .from(BEACH_MEDIA_BUCKET)
+      .remove([storagePath]);
+    if (cleanupError) {
+      console.error('Failed to clean up an incomplete beach photo upload:', cleanupError);
     }
-  } else {
-    const { error: uploadError } = await supabase.storage
-      .from('beach-media')
-      .upload(objectName, compressedFile, {
-        cacheControl: '3600',
-        contentType: compressedFile.type,
-        upsert: false,
-      });
-    if (uploadError) throw uploadError;
+    throw error;
   }
 
   return {
-    imageUrl: supabase.storage.from('beach-media').getPublicUrl(objectName).data.publicUrl,
-    storagePath: objectName,
+    imageUrl: supabase.storage.from(BEACH_MEDIA_BUCKET).getPublicUrl(storagePath).data.publicUrl,
+    storagePath,
+    sizes,
   };
 }
 
 export async function uploadBeachImage(
   file: File,
   beachId: string,
-  folder?: string
+  folder?: string,
+  onCompressed?: (sizes: ImageUploadSizes) => void,
+  onProgress?: (progress: number) => void
 ): Promise<string> {
-  const uploaded = await uploadBeachImageWithPath(file, beachId, folder);
+  const uploaded = await uploadBeachImageWithPath(
+    file,
+    beachId,
+    folder,
+    undefined,
+    onCompressed,
+    onProgress
+  );
   return uploaded.imageUrl;
 }
 
@@ -144,6 +150,10 @@ export async function removeBeachImageByPath(storagePath: string): Promise<void>
   const supabase = createClient();
   const { error: sessionError } = await supabase.auth.getSession();
   if (sessionError) throw sessionError;
-  const { error } = await supabase.storage.from('beach-media').remove([storagePath]);
+  const { error } = await supabase.storage.from(BEACH_MEDIA_BUCKET).remove([storagePath]);
   if (error) throw error;
+}
+
+export function formatUploadSizeSummary(sizes: ImageUploadSizes): string {
+  return `${formatImageSize(sizes.originalSize)} → ${formatImageSize(sizes.compressedSize)}`;
 }

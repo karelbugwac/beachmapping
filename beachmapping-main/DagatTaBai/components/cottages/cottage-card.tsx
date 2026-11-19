@@ -33,19 +33,19 @@ export function CottageCard({
   const imageFailed = Boolean(imageUrl && failedImageUrl === imageUrl);
   const canView = Boolean(onView);
 
-  const viewButtonClasses = 'group flex min-w-0 flex-1 items-center gap-3 rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74] dark:focus-visible:ring-[#4987BA]';
+  const viewButtonClasses = 'group flex min-w-0 flex-1 items-center gap-3 rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 dark:focus-visible:ring-brand-teal-400';
   const details = (
     <>
       <div className="flex min-w-0 items-start justify-between gap-1.5 sm:gap-2">
         <h3 className="min-w-0 truncate text-xs sm:text-sm font-bold text-slate-900 dark:text-white">{name}</h3>
         {price && (
-          <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[9px] sm:text-[10px] font-bold text-[#1F3F74] dark:bg-neutral-800 dark:text-[#4987BA]">
+          <span className="shrink-0 rounded-full bg-slate-100 px-2 py-0.5 text-[9px] sm:text-[10px] font-bold text-brand-navy-500 dark:bg-neutral-800 dark:text-brand-teal-300">
             ₱{price}{priceSuffix ? ` ${priceSuffix}` : ''}
           </span>
         )}
       </div>
       {capacity && (
-        <p className="mt-0.5 truncate text-[10.5px] sm:text-xs font-medium text-emerald-600 dark:text-emerald-400">
+        <p className="mt-0.5 truncate text-[10.5px] sm:text-xs font-medium text-brand-navy-500 dark:text-brand-navy-300">
           Capacity: {capacity}
         </p>
       )}
@@ -58,7 +58,7 @@ export function CottageCard({
   );
 
   return (
-    <article className="group relative flex min-h-[110px] sm:min-h-[130px] items-center gap-2.5 sm:gap-3 rounded-2xl border border-slate-200 bg-white p-2.5 sm:p-3 shadow-none transition hover:border-[#1F3F74]/35 hover:shadow-sm dark:border-neutral-800 dark:bg-neutral-950 dark:hover:border-[#4987BA]/40">
+    <article className="group relative flex min-h-[110px] sm:min-h-[130px] items-center gap-2.5 sm:gap-3 rounded-2xl border border-slate-200 bg-white p-2.5 sm:p-3 shadow-none transition hover:border-brand-navy-500/35 hover:shadow-sm dark:border-neutral-800 dark:bg-neutral-950 dark:hover:border-brand-teal-600/40">
       {canView ? (
         <button type="button" onClick={onView} aria-label={`View photos of ${name}`} className={viewButtonClasses}>
           <span className="relative aspect-[4/3] w-20 sm:w-32 shrink-0 overflow-hidden rounded-xl">
@@ -154,7 +154,7 @@ export function CottageCard({
               }}
               title={`Edit ${name}`}
               aria-label={`Edit ${name}`}
-              className="flex h-8 w-8 items-center justify-center rounded-full text-[#1F3F74] transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74] dark:text-[#4987BA] dark:hover:bg-neutral-800"
+              className="flex h-8 w-8 items-center justify-center rounded-full text-brand-navy-500 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 dark:text-brand-teal-300 dark:hover:bg-neutral-800"
             >
               <Pencil className="h-4 w-4" />
             </button>

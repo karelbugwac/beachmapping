@@ -157,8 +157,8 @@ export default function BeachProfilePage({
   // 1st Image Requirement: Spinning indicator only (no text)
   if (loading) {
     return (
-      <div className="min-h-[70vh] flex items-center justify-center bg-white dark:bg-black text-[#1F3F74] dark:text-[#4987BA]">
-        <div className="animate-spin rounded-full h-9 w-9 border-3 border-[#1F3F74] dark:border-[#4987BA] border-t-transparent" />
+      <div className="min-h-[70vh] flex items-center justify-center bg-white dark:bg-black text-brand-navy-500 dark:text-brand-teal-300">
+        <div className="animate-spin rounded-full h-9 w-9 border-3 border-brand-navy-500 dark:border-brand-teal-600 border-t-transparent" />
       </div>
     );
   }
@@ -166,14 +166,14 @@ export default function BeachProfilePage({
   if (notFound || !beach) {
     return (
       <div className="min-h-[70vh] flex flex-col items-center justify-center gap-4 bg-white dark:bg-black text-center px-4">
-        <Compass className="w-12 h-12 text-[#1F3F74] dark:text-[#4987BA] opacity-60" />
-        <h2 className="text-xl font-extrabold text-[#1F3F74] dark:text-[#4987BA]">Beach destination not found</h2>
+        <Compass className="w-12 h-12 text-brand-navy-500 dark:text-brand-teal-300 opacity-60" />
+        <h2 className="text-xl font-extrabold text-brand-navy-500 dark:text-brand-teal-300">Beach destination not found</h2>
         <p className="text-xs text-slate-500 dark:text-neutral-400 max-w-sm">
           We couldn&apos;t locate this beach listing. It may have been updated or moved.
         </p>
         <Link
           href="/map"
-          className="inline-flex items-center gap-2 px-6 py-2.5 bg-[#1F3F74] hover:bg-[#285091] text-white text-xs font-bold rounded-full transition shadow-md"
+          className="inline-flex items-center gap-2 px-6 py-2.5 bg-brand-navy-500 hover:bg-brand-navy-600 text-white text-xs font-bold rounded-full transition shadow-md"
         >
           <Navigation className="w-3.5 h-3.5" />
           <span>Explore Live Map</span>
@@ -206,8 +206,8 @@ export default function BeachProfilePage({
             sizes="100vw"
           />
         ) : (
-          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-[#1F3F74] to-[#0c1a30] text-white p-6">
-            <Compass className="w-12 h-12 text-sky-300 mb-2" />
+          <div className="w-full h-full flex flex-col items-center justify-center bg-gradient-to-br from-brand-navy-500 to-brand-teal-600 text-white p-6">
+            <Compass className="w-12 h-12 text-brand-teal-300 mb-2" />
           </div>
         )}
 
@@ -231,15 +231,15 @@ export default function BeachProfilePage({
             <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight font-sans text-white drop-shadow-md">
               {beach.name}
             </h1>
-            <p className="text-xs sm:text-sm text-sky-200 flex items-center gap-1 font-medium">
-              <MapPin className="w-3.5 h-3.5 text-sky-300 flex-shrink-0" />
+            <p className="text-xs sm:text-sm text-brand-teal-200 flex items-center gap-1 font-medium">
+              <MapPin className="w-3.5 h-3.5 text-brand-teal-300 flex-shrink-0" />
               <span>{beach.location || 'Location not provided'}</span>
             </p>
           </div>
 
           {Number(beach.average_rating) > 0 && (
             <div className="bg-black/60 backdrop-blur-md text-white px-3.5 py-1.5 rounded-full text-xs font-extrabold flex items-center gap-1.5 border border-white/20 shadow-md">
-              <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+              <Star className="w-4 h-4 fill-brand-sun-400 text-brand-sun-700" />
               <span>{Number(beach.average_rating).toFixed(1)}</span>
             </div>
           )}
@@ -257,16 +257,16 @@ export default function BeachProfilePage({
           {/* Quick Contact & Facebook Link Row */}
           <div className="flex items-center gap-4 sm:gap-6 flex-wrap text-xs text-slate-600 dark:text-neutral-400 pt-1">
             <div className="flex items-center gap-1.5">
-              <MapPin className="w-4 h-4 text-[#1F3F74] dark:text-[#4987BA] flex-shrink-0" />
+              <MapPin className="w-4 h-4 text-brand-navy-500 dark:text-brand-teal-300 flex-shrink-0" />
               <span>{beach.location || 'Location not provided'}</span>
             </div>
 
             {beach.contact_phone && (
               <a
                 href={`tel:${beach.contact_phone}`}
-                className="flex items-center gap-1.5 text-slate-700 dark:text-neutral-300 hover:text-[#1F3F74] dark:hover:text-white transition-colors font-medium"
+                className="flex items-center gap-1.5 text-slate-700 dark:text-neutral-300 hover:text-brand-navy-500 dark:hover:text-white transition-colors font-medium"
               >
-                <Phone className="w-3.5 h-3.5 text-[#1F3F74] dark:text-[#4987BA] flex-shrink-0" />
+                <Phone className="w-3.5 h-3.5 text-brand-navy-500 dark:text-brand-teal-300 flex-shrink-0" />
                 <span>{beach.contact_phone}</span>
               </a>
             )}
@@ -274,9 +274,9 @@ export default function BeachProfilePage({
             {beach.contact_email && (
               <a
                 href={`mailto:${beach.contact_email}`}
-                className="flex items-center gap-1.5 text-slate-700 dark:text-neutral-300 hover:text-[#1F3F74] dark:hover:text-white transition-colors font-medium"
+                className="flex items-center gap-1.5 text-slate-700 dark:text-neutral-300 hover:text-brand-navy-500 dark:hover:text-white transition-colors font-medium"
               >
-                <Mail className="w-3.5 h-3.5 text-[#1F3F74] dark:text-[#4987BA] flex-shrink-0" />
+                <Mail className="w-3.5 h-3.5 text-brand-navy-500 dark:text-brand-teal-300 flex-shrink-0" />
                 <span>{beach.contact_email}</span>
               </a>
             )}
@@ -286,7 +286,7 @@ export default function BeachProfilePage({
                 href={beach.facebook_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-[#1877F2] font-bold hover:underline"
+                className="inline-flex items-center gap-1.5 text-brand-navy-500 font-bold hover:underline"
               >
                 <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
                   <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
@@ -331,7 +331,7 @@ export default function BeachProfilePage({
                 onClick={() => setActiveTab(tab.id as any)}
                 className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                   isActive
-                    ? 'bg-[#1F3F74] text-white shadow-md shadow-[#1F3F74]/20'
+                    ? 'bg-brand-navy-500 text-white shadow-md shadow-brand-navy-500/20'
                     : 'bg-slate-100 dark:bg-neutral-900 text-slate-700 dark:text-neutral-300 hover:bg-slate-200 dark:hover:bg-neutral-800'
                 }`}
               >
@@ -362,7 +362,7 @@ export default function BeachProfilePage({
                   </div>
                 ) : (
                   <div className="p-8 text-center border border-dashed border-slate-200 dark:border-neutral-800 bg-slate-50/50 dark:bg-neutral-900/30 space-y-2">
-                    <Compass className="w-8 h-8 mx-auto text-[#1F3F74] dark:text-[#4987BA] opacity-70" />
+                    <Compass className="w-8 h-8 mx-auto text-brand-navy-500 dark:text-brand-teal-300 opacity-70" />
                     <p className="text-xs font-bold text-slate-700 dark:text-neutral-300">
                       No virtual tour available yet
                     </p>
@@ -377,7 +377,7 @@ export default function BeachProfilePage({
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950 sm:p-5">
                   <div className="flex items-center gap-2.5">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-blue-100 text-[#1F3F74] dark:bg-blue-950/50 dark:text-[#4987BA]">
+                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-navy-100 text-brand-navy-500 dark:bg-brand-navy-900/50 dark:text-brand-teal-300">
                       <Ticket className="h-5 w-5" aria-hidden="true" />
                     </span>
                     <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-neutral-200">Entrance Admission</span>
@@ -388,7 +388,7 @@ export default function BeachProfilePage({
                         <span className="text-[11px] leading-tight text-slate-700 dark:text-neutral-300 sm:text-xs">
                           {label === 'adults' ? 'Adult' : 'Children / Senior'}
                         </span>
-                        <span className="mt-1 break-words text-xl font-extrabold leading-tight text-[#1F3F74] dark:text-[#4987BA] sm:text-2xl">
+                        <span className="mt-1 break-words text-xl font-extrabold leading-tight text-brand-navy-500 dark:text-brand-teal-300 sm:text-2xl">
                           {amount}
                         </span>
                       </div>
@@ -398,7 +398,7 @@ export default function BeachProfilePage({
 
                 <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950">
                   <div className="mb-3 flex items-center gap-2.5">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-[#1F3F74] dark:bg-neutral-900 dark:text-[#4987BA]">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-brand-navy-500 dark:bg-neutral-900 dark:text-brand-teal-300">
                       <Clock className="h-4 w-4" aria-hidden="true" />
                     </span>
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Operating Schedule</span>
@@ -408,7 +408,7 @@ export default function BeachProfilePage({
                       <div key={`${group.days}-${group.hours}`} className="flex flex-col gap-3 rounded-xl bg-slate-50 p-3 dark:bg-neutral-900/60 sm:flex-row sm:items-center sm:justify-between">
                         <div className="min-w-0">
                           <span className="block text-[11px] font-medium text-slate-500 dark:text-neutral-400">{group.days}</span>
-                          <span className="block text-base font-extrabold text-[#1F3F74] dark:text-[#4987BA]">{group.hours}</span>
+                          <span className="block text-base font-extrabold text-brand-navy-500 dark:text-brand-teal-300">{group.hours}</span>
                         </div>
                         <OpeningStatusPill hours={beach.opening_hours} />
                       </div>
@@ -422,19 +422,19 @@ export default function BeachProfilePage({
                   {beach.peak_days && (
                     <div className="p-4 rounded-2xl bg-slate-50 dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 space-y-1">
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Peak Visiting Days</span>
-                      <p className="text-sm font-bold text-[#1F3F74] dark:text-[#4987BA]">{beach.peak_days}</p>
+                      <p className="text-sm font-bold text-brand-navy-500 dark:text-brand-teal-300">{beach.peak_days}</p>
                     </div>
                   )}
                   {beach.peak_hours && (
                     <div className="p-4 rounded-2xl bg-slate-50 dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 space-y-1">
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Peak Visiting Hours</span>
-                      <p className="text-sm font-bold text-[#1F3F74] dark:text-[#4987BA]">{beach.peak_hours}</p>
+                      <p className="text-sm font-bold text-brand-navy-500 dark:text-brand-teal-300">{beach.peak_hours}</p>
                     </div>
                   )}
                   {beach.best_visiting_time && (
                     <div className="p-4 rounded-2xl bg-slate-50 dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 space-y-1">
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Best Time to Visit</span>
-                      <p className="text-sm font-bold text-[#1F3F74] dark:text-[#4987BA]">{beach.best_visiting_time}</p>
+                      <p className="text-sm font-bold text-brand-navy-500 dark:text-brand-teal-300">{beach.best_visiting_time}</p>
                     </div>
                   )}
                 </div>
@@ -446,7 +446,7 @@ export default function BeachProfilePage({
             {activeTab === 'posts' && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-lg font-extrabold text-[#1F3F74] dark:text-[#4987BA]">
+                  <h2 className="text-lg font-extrabold text-brand-navy-500 dark:text-brand-teal-300">
                     Resort Posts & Visual Feed
                   </h2>
                   <p className="text-xs text-slate-500 dark:text-neutral-400">
@@ -462,7 +462,7 @@ export default function BeachProfilePage({
                       className="rounded-2xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/50 overflow-hidden shadow-xs space-y-3"
                     >
                       <div className="p-4 flex items-center gap-3 border-b border-slate-100 dark:border-neutral-800">
-                        <div className="w-9 h-9 rounded-full bg-[#1F3F74] text-white flex items-center justify-center font-bold text-xs">
+                        <div className="w-9 h-9 rounded-full bg-brand-navy-500 text-white flex items-center justify-center font-bold text-xs">
                           {beach.name.charAt(0)}
                         </div>
                         <div>
@@ -516,7 +516,7 @@ export default function BeachProfilePage({
             {activeTab === 'cottages' && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-lg font-extrabold text-[#1F3F74] dark:text-[#4987BA]">
+                  <h2 className="text-lg font-extrabold text-brand-navy-500 dark:text-brand-teal-300">
                     Cottage &amp; Tables
                   </h2>
                   <p className="text-xs text-justify text-slate-500 dark:text-neutral-400">
@@ -528,7 +528,7 @@ export default function BeachProfilePage({
                   <div className="p-5 rounded-2xl bg-slate-50 dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 flex items-center justify-between shadow-2xs">
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Base Cottage Daily Rate</span>
-                      <div className="text-lg font-extrabold text-[#1F3F74] dark:text-[#4987BA]">
+                      <div className="text-lg font-extrabold text-brand-navy-500 dark:text-brand-teal-300">
                         ₱{beach.cottage_fee}
                       </div>
                     </div>
@@ -566,7 +566,7 @@ export default function BeachProfilePage({
                   </div>
                 ) : (
                   <div className="py-14 text-center rounded-2xl border border-dashed border-slate-200 dark:border-neutral-800 bg-slate-50/50 dark:bg-neutral-900/30 p-6 space-y-3">
-                    <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-neutral-800 text-[#1F3F74] dark:text-[#4987BA] flex items-center justify-center mx-auto">
+                    <div className="w-12 h-12 rounded-full bg-brand-navy-100 dark:bg-neutral-800 text-brand-navy-500 dark:text-brand-teal-300 flex items-center justify-center mx-auto">
                       <Home className="w-6 h-6" />
                     </div>
                     <div className="space-y-1">
@@ -586,7 +586,7 @@ export default function BeachProfilePage({
             {activeTab === 'facilities' && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-lg font-extrabold text-[#1F3F74] dark:text-[#4987BA]">
+                  <h2 className="text-lg font-extrabold text-brand-navy-500 dark:text-brand-teal-300">
                     Facilities
                   </h2>
                   <p className="text-xs text-justify text-slate-500 dark:text-neutral-400">
@@ -627,7 +627,7 @@ export default function BeachProfilePage({
                   </div>
                 ) : (
                   <div className="py-14 text-center rounded-2xl border border-dashed border-slate-200 dark:border-neutral-800 bg-slate-50/50 dark:bg-neutral-900/30 p-6 space-y-3">
-                    <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-neutral-800 text-[#1F3F74] dark:text-[#4987BA] flex items-center justify-center mx-auto">
+                    <div className="w-12 h-12 rounded-full bg-brand-navy-100 dark:bg-neutral-800 text-brand-navy-500 dark:text-brand-teal-300 flex items-center justify-center mx-auto">
                       <ShieldCheck className="w-6 h-6" />
                     </div>
                     <div className="space-y-1">
@@ -647,7 +647,7 @@ export default function BeachProfilePage({
             {activeTab === 'dos' && (
               <div className="space-y-6">
                 <div>
-                  <h2 className="text-lg font-extrabold text-[#1F3F74] dark:text-[#4987BA]">
+                  <h2 className="text-lg font-extrabold text-brand-navy-500 dark:text-brand-teal-300">
                     Do&apos;s &amp; Don&apos;ts (Resort Guidelines)
                   </h2>
                   <p className="text-xs text-justify text-slate-500 dark:text-neutral-400">
@@ -657,14 +657,14 @@ export default function BeachProfilePage({
 
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
-                    <div className="font-bold text-sm text-emerald-700 dark:text-emerald-400">
+                    <div className="font-bold text-sm text-brand-teal-700 dark:text-brand-teal-300">
                       <span>Do&apos;s (Recommended Etiquette)</span>
                     </div>
 
                     <ul className="space-y-3 text-justify text-xs text-slate-700 dark:text-neutral-300">
                       {resortRules.filter((rule) => rule.type === 'do').map((rule) => (
                         <li key={rule.id} className="flex items-start gap-2.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 mt-1.5 flex-shrink-0" />
+                          <span className="w-1.5 h-1.5 rounded-full bg-brand-teal-600 mt-1.5 flex-shrink-0" />
                           <span className="block text-justify">
                             <strong>{rule.title}</strong>
                             {rule.description && `: ${rule.description}`}
@@ -706,7 +706,7 @@ export default function BeachProfilePage({
               <div className="space-y-8">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h2 className="text-lg font-extrabold text-[#1F3F74] dark:text-[#4987BA]">
+                    <h2 className="text-lg font-extrabold text-brand-navy-500 dark:text-brand-teal-300">
                       Guest Community Reviews
                     </h2>
                     <p className="text-xs text-slate-500 dark:text-neutral-400">
@@ -714,8 +714,8 @@ export default function BeachProfilePage({
                     </p>
                   </div>
                   {Number(beach.average_rating) > 0 && (
-                    <div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-amber-50 dark:bg-amber-950/30 border border-amber-200 dark:border-amber-800 text-amber-700 dark:text-amber-400 text-xs font-extrabold">
-                      <Star className="w-4 h-4 fill-amber-400 text-amber-400" />
+                    <div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-brand-sun-50 dark:bg-brand-navy-900/30 border border-brand-sun-200 dark:border-brand-navy-800 text-brand-navy-700 dark:text-brand-sun-400 text-xs font-extrabold">
+                      <Star className="w-4 h-4 fill-brand-sun-400 text-brand-sun-700" />
                       <span>{Number(beach.average_rating).toFixed(1)}</span>
                     </div>
                   )}
@@ -756,7 +756,7 @@ export default function BeachProfilePage({
                         <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
                           Your rating
                         </span>
-                        <span className="text-xs font-bold text-amber-600 dark:text-amber-400">
+                        <span className="text-xs font-bold text-brand-navy-700 dark:text-brand-sun-400">
                           {hoverRating !== null ? hoverRating : userRating} {(hoverRating !== null ? hoverRating : userRating) === 1 ? 'Star' : 'Stars'} &bull; {RATING_LABELS[hoverRating !== null ? hoverRating : userRating]}
                         </span>
                       </div>
@@ -786,12 +786,12 @@ export default function BeachProfilePage({
                                 }
                               }}
                               onMouseEnter={() => setHoverRating(value)}
-                              className="p-1 -m-1 text-slate-300 transition-transform hover:scale-110 cursor-pointer focus:outline-none"
+                              className="p-1 -m-1 text-slate-300 transition-transform hover:scale-110 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400"
                               title={`Rate ${value} star${value > 1 ? 's' : ''}`}
                             >
                               <Star
                                 className={`h-7 w-7 transition-colors duration-150 ${
-                                  isLit ? 'fill-amber-400 text-amber-500' : 'text-slate-300 dark:text-neutral-700'
+                                  isLit ? 'fill-brand-sun-400 text-brand-navy-700' : 'text-slate-300 dark:text-neutral-700'
                                 }`}
                               />
                             </button>
@@ -813,14 +813,14 @@ export default function BeachProfilePage({
                         value={reviewComment}
                         onChange={(e) => setReviewComment(e.target.value)}
                         placeholder={`Share your experience with cottages, beach swimming, and facilities at ${beach.name}...`}
-                        className="w-full rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-[#1F3F74] dark:focus:border-[#4987BA] focus:outline-none focus:ring-1 focus:ring-[#1F3F74] dark:focus:ring-[#4987BA] transition"
+                        className="w-full rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-brand-navy-500 dark:focus:border-brand-teal-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:ring-1 focus:ring-brand-teal-400 dark:focus:ring-brand-teal-400 transition"
                       />
                     </div>
 
                     <button
                       type="submit"
                       disabled={submittingReview}
-                      className="px-6 py-2.5 bg-[#1F3F74] hover:bg-[#285091] dark:bg-[#1F3F74] dark:hover:bg-[#285091] disabled:opacity-50 text-white text-xs sm:text-sm font-bold rounded-xl transition-colors shadow-sm cursor-pointer"
+                      className="px-6 py-2.5 bg-brand-navy-500 hover:bg-brand-navy-600 dark:bg-brand-navy-500 dark:hover:bg-brand-navy-600 disabled:opacity-50 text-white text-xs sm:text-sm font-bold rounded-xl transition-colors shadow-sm cursor-pointer"
                     >
                       {submittingReview ? 'Submitting review...' : 'Submit review'}
                     </button>
@@ -833,7 +833,7 @@ export default function BeachProfilePage({
                     </div>
                     <Link
                       href="/auth/signin"
-                      className="inline-flex items-center justify-center px-5 py-2 bg-[#1F3F74] hover:bg-[#285091] text-white text-xs font-bold rounded-full transition shadow-xs shrink-0"
+                      className="inline-flex items-center justify-center px-5 py-2 bg-brand-navy-500 hover:bg-brand-navy-600 text-white text-xs font-bold rounded-full transition shadow-xs shrink-0"
                     >
                       Sign In to Review
                     </Link>
@@ -865,7 +865,7 @@ export default function BeachProfilePage({
                         onClick={() => setReviewCategory(category.id)}
                         className={`shrink-0 snap-start py-2 px-3 text-xs font-bold whitespace-nowrap rounded-full flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                           isActive
-                            ? 'bg-[#1F3F74] text-white shadow-xs'
+                            ? 'bg-brand-navy-500 text-white shadow-xs'
                             : 'bg-slate-100 hover:bg-slate-200 dark:bg-neutral-900 dark:hover:bg-neutral-800 text-slate-700 dark:text-slate-300'
                         }`}
                       >
@@ -918,7 +918,7 @@ export default function BeachProfilePage({
                                   key={index}
                                   className={`h-3.5 w-3.5 ${
                                     index < Number(rev.rating)
-                                      ? 'fill-amber-400 text-amber-500'
+                                      ? 'fill-brand-sun-400 text-brand-navy-700'
                                       : 'text-slate-300 dark:text-neutral-700'
                                   }`}
                                 />

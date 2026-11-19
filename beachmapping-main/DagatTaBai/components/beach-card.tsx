@@ -42,7 +42,7 @@ export function BeachCard({ beach }: { beach: BeachRecord | { id: string; slug?:
 
           {/* Rating Badge */}
           <div className="absolute top-3 right-3 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-bold text-slate-800 dark:text-zinc-200 flex items-center gap-1 shadow-2xs">
-            <Star className="w-3.5 h-3.5 fill-amber-400 text-amber-400" />
+            <Star className="w-3.5 h-3.5 fill-brand-sun-400 text-brand-sun-700" />
             <span>{beach.average_rating.toFixed(1)}</span>
           </div>
         </div>
@@ -50,7 +50,7 @@ export function BeachCard({ beach }: { beach: BeachRecord | { id: string; slug?:
         {/* Card Content */}
         <div className="p-5 space-y-3">
           <div>
-            <h3 className="font-bold text-base text-slate-900 dark:text-white group-hover:text-sky-600 dark:group-hover:text-sky-400 transition-colors line-clamp-1">
+            <h3 className="font-bold text-base text-slate-900 dark:text-white group-hover:text-brand-teal-600 dark:group-hover:text-brand-teal-400 transition-colors line-clamp-1">
               {beach.name}
             </h3>
             <div className="flex items-center text-xs text-slate-500 dark:text-zinc-400 mt-1">
@@ -68,7 +68,7 @@ export function BeachCard({ beach }: { beach: BeachRecord | { id: string; slug?:
             {beach.activities?.slice(0, 2).map((act: string) => (
               <span
                 key={act}
-                className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-sky-50 dark:bg-sky-950/60 text-sky-700 dark:text-sky-300"
+                className="px-2.5 py-0.5 rounded-full text-[11px] font-medium bg-brand-teal-50 dark:bg-brand-teal-700/60 text-brand-teal-700 dark:text-brand-teal-300"
               >
                 {act}
               </span>
@@ -94,7 +94,7 @@ export function BeachCard({ beach }: { beach: BeachRecord | { id: string; slug?:
 
         <Link
           href={`/beaches/${beach.slug || beach.id}`}
-          className="inline-flex items-center gap-1 font-semibold text-sky-600 dark:text-sky-400 hover:text-sky-700 dark:hover:text-sky-300 transition-colors"
+          className="inline-flex items-center gap-1 font-semibold text-brand-teal-600 dark:text-brand-teal-400 hover:text-brand-teal-700 dark:hover:text-brand-teal-300 transition-colors"
         >
           <span>Details</span>
           <ArrowRight className="w-3.5 h-3.5" />

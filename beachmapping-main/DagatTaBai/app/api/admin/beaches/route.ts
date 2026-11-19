@@ -187,7 +187,7 @@ export async function DELETE(request: NextRequest) {
       'beach_posts',
       'beach_tour_requests',
       'beach_coordinate_requests',
-    ];
+    ] as const;
     await Promise.allSettled(
       childTables.map((table) =>
         (adminClient.from(table) as any).delete().eq('beach_id', id)

@@ -33,7 +33,7 @@ export async function POST(req: NextRequest) {
       );
 
       if (!result.success) {
-        return NextResponse.json({ error: result.error }, { status: 500 });
+        return NextResponse.json({ error: result.error }, { status: result.invalidName ? 400 : 500 });
       }
 
       return NextResponse.json({
@@ -44,8 +44,7 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({ message: 'No action required for this event.' });
   } catch (error: unknown) {
-    const msg = error instanceof Error ? error.message : 'Webhook error';
-    console.error('Webhook error:', msg);
-    return NextResponse.json({ error: msg }, { status: 500 });
+    console.error('Owner approval webhook failed:', error);
+    return NextResponse.json({ error: 'Could not process the owner approval event.' }, { status: 500 });
   }
 }

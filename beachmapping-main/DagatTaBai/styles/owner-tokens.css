@@ -5,27 +5,27 @@
 
 :root,
 [data-theme='light'] {
-  /* Coastal Palette: Sun-bleached sand, deep ocean ink, seafoam, coral */
-  --color-sand-50: #FBF7EF;       /* Canvas / Page background */
-  --color-sand-100: #F3EBDC;      /* Subtle panels, cards & ledger */
-  --color-sand-200: #E8DCB8;      /* Hairline borders & dividers */
-  --color-sand-300: #D8C6A5;      /* Secondary borders & disabled */
+  /* Brand palette aliases and neutral owner-console surfaces */
+  --color-sand-50: rgb(var(--brand-sand-50));
+  --color-sand-100: rgb(var(--brand-sand-100));
+  --color-sand-200: rgb(var(--brand-sand-200));
+  --color-sand-300: rgb(var(--brand-sand-300));
   --color-surface: #FFFDF9;       /* Elevated white sand surface */
-  
-  --color-sea-900: #0B2E36;       /* Deep ocean ink (sidebar & strong headers) */
-  --color-sea-700: #145A66;       /* Mid-depth coastal sea */
-  --color-seafoam-200: #CFE6DF;   /* Shallow-water seafoam highlight */
-  --color-seafoam-100: #E7F3F0;   /* Light seafoam tint */
-  
-  --color-coral: #CF4530;         /* Singular primary action accent (white text) */
-  --color-coral-hover: #B83B28;   /* Hover state */
-  --color-sun: #F0A93A;           /* Warm sunlight accent (rating star & open dot) */
-  
+
+  --color-sea-900: rgb(var(--brand-navy-500));
+  --color-sea-700: rgb(var(--brand-teal-600));
+  --color-seafoam-200: rgb(var(--brand-teal-200));
+  --color-seafoam-100: rgb(var(--brand-teal-50));
+
+  --color-coral: rgb(var(--brand-navy-500));
+  --color-coral-hover: rgb(var(--brand-navy-600));
+  --color-sun: rgb(var(--brand-sun-400));
+
   --color-text: #14262B;          /* High-contrast sea ink reading text */
   --color-muted: #56686B;         /* Subtle secondary reading text */
-  --color-sidebar-bg: #0B2E36;    /* Sidebar background */
-  --color-sidebar-text: #FBF7EF;  /* Sidebar text */
-  --color-sidebar-muted: #8EA7AC; /* Sidebar secondary text */
+  --color-sidebar-bg: rgb(var(--brand-navy-500));
+  --color-sidebar-text: #FFFFFF;
+  --color-sidebar-muted: rgb(var(--brand-navy-200));
 
   /* Type Scale: 12 / 14 / 16 / 20 / 28 / 40 */
   --font-serif: var(--font-serif), 'Newsreader', 'Fraunces', Georgia, serif;
@@ -68,24 +68,24 @@
    ========================================================================== */
 [data-theme='dark'],
 .dark {
-  --color-sand-50: #0A0D0E;       /* Deep warm charcoal-black canvas */
-  --color-sand-100: #121516;      /* Subtle panel & card background */
-  --color-sand-200: #222627;      /* Subtle hairline borders */
-  --color-sand-300: #303637;      /* Secondary borders */
+  --color-sand-50: #0A0D0E;
+  --color-sand-100: #121516;
+  --color-sand-200: #222627;
+  --color-sand-300: #303637;
   --color-surface: #151819;       /* Elevated dark surface */
   
-  --color-sea-900: #0E1213;       /* Neutral black-toned ink */
-  --color-sea-700: #29383A;       /* Subtle dark sea tone */
-  --color-seafoam-200: #A3C7BD;   /* Seafoam accent with high AA contrast */
-  --color-seafoam-100: #162425;   /* Dark seafoam tint */
+  --color-sea-900: rgb(var(--brand-navy-300));
+  --color-sea-700: rgb(var(--brand-teal-300));
+  --color-seafoam-200: rgb(var(--brand-teal-300));
+  --color-seafoam-100: #162425;
   
-  --color-coral: #CF4530;         /* Same energetic coral */
-  --color-coral-hover: #B83B28;
-  --color-sun: #F0A93A;           /* Same warm sun */
+  --color-coral: rgb(var(--brand-navy-400));
+  --color-coral-hover: rgb(var(--brand-navy-300));
+  --color-sun: rgb(var(--brand-sun-400));
   
   --color-text: #F4F6F5;          /* Crisp high-contrast light text */
   --color-muted: #96A0A2;         /* Muted neutral gray text */
-  --color-sidebar-bg: #090B0C;    /* Deep black sidebar */
+  --color-sidebar-bg: #090B0C;
   --color-sidebar-text: #F4F6F5;
   --color-sidebar-muted: #7F8A8C;
 

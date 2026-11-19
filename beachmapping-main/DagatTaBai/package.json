@@ -6,13 +6,20 @@
     "dev": "node --max-http-header-size=65536 ./node_modules/next/dist/bin/next dev",
     "build": "next build",
     "start": "node --max-http-header-size=65536 ./node_modules/next/dist/bin/next start",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "test:image-upload": "tsx --test tests/image-upload.test.ts",
+    "test:live-verification": "tsx --test tests/live-verification.test.ts",
+    "images:migrate-profile:dry-run": "node --env-file=.env.image-migration.local --import tsx scripts/migrate-profile-images.ts",
+    "images:migrate-profile:apply": "node --env-file=.env.image-migration.local --import tsx scripts/migrate-profile-images.ts --apply",
+    "images:migrate-profile:rollback": "node --env-file=.env.image-migration.local --import tsx scripts/migrate-profile-images.ts --rollback"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.0",
     "@hookform/resolvers": "^3.10.0",
+    "@mediapipe/tasks-vision": "^1.2.3",
     "@supabase/ssr": "^0.5.2",
     "@supabase/supabase-js": "^2.48.1",
+    "@techstark/opencv-js": "^5.0.0-release.1",
     "@types/nodemailer": "^8.0.2",
     "leaflet": "^1.9.4",
     "lucide-react": "^0.475.0",
@@ -22,6 +29,7 @@
     "react-dom": "^19.0.0",
     "react-hook-form": "^7.54.2",
     "react-leaflet": "^5.0.0",
+    "sharp": "^0.35.5",
     "zod": "^3.24.2"
   },
   "devDependencies": {
@@ -33,7 +41,9 @@
     "eslint": "^9.20.1",
     "eslint-config-next": "^16.3.6",
     "postcss": "^8.5.2",
+    "supabase": "^3.2.0",
     "tailwindcss": "^3.4.17",
+    "tsx": "^4.23.15",
     "typescript": "^5.7.3"
   }
 }

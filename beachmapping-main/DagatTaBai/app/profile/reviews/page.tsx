@@ -46,7 +46,7 @@ export default function MyReviewsPage() {
   };
 
   return (
-    <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto space-y-6 text-slate-900 dark:text-sand-100">
+    <div className="py-8 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto space-y-6 text-slate-900 dark:text-brand-sand-100">
       <Link
         href="/profile"
         className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-slate-900 dark:hover:text-white transition-colors"
@@ -64,21 +64,21 @@ export default function MyReviewsPage() {
             Manage and view the reviews you&apos;ve shared with other visitors.
           </p>
         </div>
-        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-sky-100 dark:bg-sky-950 text-sky-800 dark:text-sky-300">
+        <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-brand-teal-100 dark:bg-brand-teal-700 text-brand-teal-700 dark:text-brand-teal-300">
           {reviews.length} {reviews.length === 1 ? 'Review' : 'Reviews'}
         </span>
       </div>
 
       {loading ? (
         <div className="py-16 flex flex-col items-center justify-center gap-3 text-slate-500">
-          <Loader2 className="w-6 h-6 animate-spin text-sky-600" />
+          <Loader2 className="w-6 h-6 animate-spin text-brand-teal-600" />
           <span className="text-xs">Loading your reviews...</span>
         </div>
       ) : (
         <div className="space-y-4">
           {reviews.map((r) => (
             <div key={r.id} className="space-y-2">
-              <div className="text-xs font-bold text-sky-700 dark:text-sky-400">
+              <div className="text-xs font-bold text-brand-teal-700 dark:text-brand-teal-400">
                 Review on{' '}
                 <Link href={`/beaches/${r.beach_slug || r.beach_id}`} className="underline">
                   {r.beach_name || 'Beach Resort'}
@@ -89,11 +89,11 @@ export default function MyReviewsPage() {
           ))}
 
           {reviews.length === 0 && (
-            <div className="py-12 bg-white dark:bg-ocean-900 rounded-2xl border border-slate-200 dark:border-ocean-800 text-center text-xs text-slate-500 dark:text-slate-400 space-y-3 p-6">
+            <div className="py-12 bg-white dark:bg-brand-navy-900 rounded-2xl border border-slate-200 dark:border-brand-navy-800 text-center text-xs text-slate-500 dark:text-slate-400 space-y-3 p-6">
               <p>You haven&apos;t posted any reviews yet.</p>
               <Link
                 href="/map"
-                className="inline-block px-4 py-2 bg-sky-600 text-white rounded-xl font-semibold hover:bg-sky-700 transition-colors"
+                className="inline-block px-4 py-2 bg-brand-teal-600 text-white rounded-xl font-semibold hover:bg-brand-teal-700 transition-colors"
               >
                 Explore Catmon Beaches
               </Link>

@@ -44,42 +44,42 @@ function WeatherIcon({ code, className, isNight = false }: { code: number; class
   return (
     <svg viewBox="0 0 64 64" className={className} aria-hidden="true">
       {showSun && (
-        <g fill="#fbbf24" stroke="#f59e0b" strokeWidth="2.5" strokeLinecap="round">
+        <g fill="#FCC255" stroke="rgb(var(--brand-sun-700))" strokeWidth="2.5" strokeLinecap="round">
           <path d="M22 5v5M22 34v5M5 22h5M34 22h5M10 10l4 4M30 30l4 4M10 34l4-4M30 14l4-4" />
           <circle cx="22" cy="22" r="9" stroke="none" />
         </g>
       )}
       {showMoon && (
-        <path d="M34 8a15 15 0 1 0 18 20A17 17 0 0 1 34 8Z" fill="#fef3c7" stroke="#fcd34d" strokeWidth="2" />
+        <path d="M34 8a15 15 0 1 0 18 20A17 17 0 0 1 34 8Z" fill="rgb(var(--brand-sun-50))" stroke="rgb(var(--brand-sun-400))" strokeWidth="2" />
       )}
       {showCloud && (
         <path
           d={isStorm
             ? 'M15 43h34a10 10 0 0 0-2-20 15 15 0 0 0-28-3 12 12 0 0 0-4 23Z'
             : 'M13 43h37a10 10 0 0 0-2-20 15 15 0 0 0-28-3 12 12 0 0 0-7 23Z'}
-          fill={isNight || isPartlyCloudy ? '#f8fafc' : '#e0f2fe'}
+          fill={isNight || isPartlyCloudy ? '#f8fafc' : '#EEF6F7'}
           stroke="#94a3b8"
           strokeWidth="2"
           strokeLinejoin="round"
         />
       )}
       {isRain && (
-        <g stroke="#38bdf8" strokeWidth="3" strokeLinecap="round">
+        <g stroke="#6AABB5" strokeWidth="3" strokeLinecap="round">
           <path d="m22 49-3 6M34 49l-3 6M46 49l-3 6" />
         </g>
       )}
       {isDrizzle && (
-        <g fill="#38bdf8">
+        <g fill="#6AABB5">
           <circle cx="23" cy="52" r="2.5" />
           <circle cx="34" cy="55" r="2.5" />
           <circle cx="45" cy="52" r="2.5" />
         </g>
       )}
       {isStorm && (
-        <path d="m35 42-9 13h8l-3 9 13-16h-9l4-6Z" fill="#facc15" stroke="#eab308" strokeWidth="1.5" strokeLinejoin="round" />
+        <path d="m35 42-9 13h8l-3 9 13-16h-9l4-6Z" fill="#FCC255" stroke="#FCC255" strokeWidth="1.5" strokeLinejoin="round" />
       )}
       {isSnow && (
-        <g stroke="#e0f2fe" strokeWidth="2.2" strokeLinecap="round">
+        <g stroke="#EEF6F7" strokeWidth="2.2" strokeLinecap="round">
           <path d="M20 49v10m-4-8 8 6m0-6-8 6M34 49v10m-4-8 8 6m0-6-8 6M48 49v10m-4-8 8 6m0-6-8 6" />
         </g>
       )}
@@ -244,8 +244,8 @@ function getAirQualityLabel(usAqi: number) {
 
 function getAirQualityColor(usAqi: number) {
   if (usAqi <= 50) return 'text-emerald-200';
-  if (usAqi <= 100) return 'text-amber-200';
-  if (usAqi <= 150) return 'text-orange-200';
+  if (usAqi <= 100) return 'text-brand-sun-200';
+  if (usAqi <= 150) return 'text-brand-sun-200';
   return 'text-rose-200';
 }
 
@@ -289,10 +289,10 @@ function getActivityAssessments(weather: WeatherData | null, tide: CurrentTideSt
       activity,
       status: caution ? 'Use caution' : limitedData ? 'Limited data' : 'No warning detected',
       statusStyle: caution
-        ? 'bg-amber-100 text-amber-800 dark:bg-amber-950/60 dark:text-amber-300'
+        ? 'bg-brand-sun-100 text-brand-navy-700 dark:bg-brand-navy-900/60 dark:text-brand-sun-300'
         : limitedData
           ? 'bg-slate-200 text-slate-700 dark:bg-neutral-800 dark:text-slate-300'
-          : 'bg-blue-100 text-[#1F3F74] dark:bg-blue-950/60 dark:text-blue-300',
+          : 'bg-brand-navy-100 text-brand-navy-500 dark:bg-brand-navy-900/60 dark:text-brand-navy-300',
       note: caution
         ? `Current readings: ${activeSignals.join(', ')}. Follow resort boundaries and ask staff before entering the water.`
         : limitedData
@@ -423,57 +423,57 @@ export default function WeatherPage() {
     ? currentMinutes < sunriseMinutes || currentMinutes >= sunsetMinutes
     : currentHour >= 18 || currentHour < 6;
   const heroBackground = isNight
-    ? 'from-[#101a3c]/45 via-[#243d72]/30 to-[#365b79]/20'
+    ? 'from-brand-navy-900/45 via-brand-navy-500/30 to-brand-teal-700/20'
     : weather?.weatherCode && weather.weatherCode >= 95
-        ? 'from-[#334155]/50 via-[#526579]/35 to-[#284461]/25'
+        ? 'from-brand-navy-700/50 via-brand-teal-700/35 to-brand-teal-600/25'
       : weather?.weatherCode && weather.weatherCode >= 51 && weather.weatherCode <= 82
-          ? 'from-[#24566d]/45 via-[#347e96]/30 to-[#5c9eac]/20'
+          ? 'from-brand-navy-500/45 via-brand-teal-600/30 to-brand-teal-600/20'
         : weather?.weatherCode === 3 || (weather?.weatherCode !== undefined && weather.weatherCode >= 45 && weather.weatherCode <= 48)
-            ? 'from-[#627c8d]/40 via-[#829baa]/25 to-[#a9c1c5]/15'
-            : 'from-[#0789b5]/35 via-[#49b6cf]/20 to-[#8bd4d2]/10';
+            ? 'from-brand-navy-500/40 via-brand-teal-600/25 to-brand-teal-600/15'
+                : 'from-brand-navy-500/35 via-brand-teal-600/20 to-brand-teal-600/10';
   const nightSkyBackground = weather?.weatherCode && weather.weatherCode >= 95
     ? [
-        'radial-gradient(ellipse at 72% 54%, rgba(110, 142, 165, 0.32), transparent 50%)',
-        'radial-gradient(ellipse at 18% 72%, rgba(75, 108, 139, 0.48), transparent 54%)',
-        'linear-gradient(180deg, #08101f 0%, #111f35 42%, #213b53 76%, #182c3d 100%)',
+        'radial-gradient(ellipse at 72% 54%, rgb(var(--brand-teal-400) / 0.32), transparent 50%)',
+        'radial-gradient(ellipse at 18% 72%, rgb(var(--brand-navy-500) / 0.48), transparent 54%)',
+        'linear-gradient(180deg, rgb(var(--brand-navy-900)) 0%, rgb(var(--brand-navy-500)) 55%, rgb(var(--brand-teal-600)) 100%)',
       ]
     : weather?.weatherCode && weather.weatherCode >= 3
       ? [
-          'radial-gradient(ellipse at 72% 58%, rgba(125, 151, 174, 0.38), transparent 52%)',
-          'radial-gradient(ellipse at 18% 74%, rgba(83, 117, 150, 0.42), transparent 56%)',
-          'linear-gradient(180deg, #080f20 0%, #17243b 46%, #29445d 100%)',
+          'radial-gradient(ellipse at 72% 58%, rgb(var(--brand-teal-400) / 0.38), transparent 52%)',
+          'radial-gradient(ellipse at 18% 74%, rgb(var(--brand-navy-500) / 0.42), transparent 56%)',
+          'linear-gradient(180deg, rgb(var(--brand-navy-900)) 0%, rgb(var(--brand-navy-500)) 55%, rgb(var(--brand-teal-600)) 100%)',
         ]
       : [
           'radial-gradient(1.5px 1.5px at 7% 14%, rgba(255,255,255,.9) 50%, transparent 100%)',
-          'radial-gradient(1px 1px at 18% 32%, rgba(220,237,255,.85) 50%, transparent 100%)',
+          'radial-gradient(1px 1px at 18% 32%, rgb(var(--brand-teal-100) / .85) 50%, transparent 100%)',
           'radial-gradient(1.5px 1.5px at 31% 11%, rgba(255,255,255,.8) 50%, transparent 100%)',
-          'radial-gradient(1px 1px at 44% 26%, rgba(220,237,255,.85) 50%, transparent 100%)',
+          'radial-gradient(1px 1px at 44% 26%, rgb(var(--brand-teal-100) / .85) 50%, transparent 100%)',
           'radial-gradient(1.5px 1.5px at 57% 9%, rgba(255,255,255,.9) 50%, transparent 100%)',
-          'radial-gradient(1px 1px at 68% 30%, rgba(220,237,255,.8) 50%, transparent 100%)',
-          'radial-gradient(1.5px 1.5px at 81% 16%, rgba(255,255,255,.9) 50%, transparent 100%)',
-          'radial-gradient(1px 1px at 94% 35%, rgba(220,237,255,.8) 50%, transparent 100%)',
+          'radial-gradient(1px 1px at 68% 30%, rgb(var(--brand-teal-100) / .8) 50%, transparent 100%)',
+          'radial-gradient(1.5px 1.5px at 81% 16%, rgb(var(--brand-teal-100) / .9) 50%, transparent 100%)',
+          'radial-gradient(1px 1px at 94% 35%, rgb(var(--brand-teal-100) / .8) 50%, transparent 100%)',
           'radial-gradient(1px 1px at 13% 51%, rgba(255,255,255,.75) 50%, transparent 100%)',
-          'radial-gradient(1.5px 1.5px at 38% 44%, rgba(220,237,255,.8) 50%, transparent 100%)',
+          'radial-gradient(1.5px 1.5px at 38% 44%, rgb(var(--brand-teal-100) / .8) 50%, transparent 100%)',
           'radial-gradient(1px 1px at 62% 52%, rgba(255,255,255,.8) 50%, transparent 100%)',
-          'radial-gradient(1px 1px at 88% 48%, rgba(220,237,255,.75) 50%, transparent 100%)',
-          'linear-gradient(180deg, #050b1b 0%, #101c38 48%, #192e4e 78%, #18344b 100%)',
+          'radial-gradient(1px 1px at 88% 48%, rgb(var(--brand-teal-100) / .75) 50%, transparent 100%)',
+          'linear-gradient(180deg, rgb(var(--brand-navy-900)) 0%, rgb(var(--brand-navy-500)) 55%, rgb(var(--brand-teal-600)) 100%)',
         ];
   const pageBackgrounds = {
     dawn: [
-      'radial-gradient(ellipse at 82% 18%, rgba(255, 191, 128, 0.75), transparent 28%)',
-      'linear-gradient(180deg, #716b9c 0%, #d295a0 38%, #f5c59b 70%, #b8dce2 100%)',
+      'radial-gradient(ellipse at 82% 18%, rgb(var(--brand-teal-400) / 0.45), transparent 28%)',
+      'linear-gradient(180deg, rgb(var(--brand-navy-500)) 0%, rgb(var(--brand-teal-600)) 100%)',
     ],
     morning: [
-      'radial-gradient(circle at 84% 12%, rgba(255, 226, 145, 0.8), transparent 21%)',
-      'linear-gradient(180deg, #82c9eb 0%, #b8e3f2 42%, #e8f4ef 76%, #a7d6df 100%)',
+      'radial-gradient(circle at 84% 12%, rgb(var(--brand-teal-400) / 0.45), transparent 21%)',
+      'linear-gradient(180deg, rgb(var(--brand-navy-500)) 0%, rgb(var(--brand-teal-600)) 100%)',
     ],
     afternoon: [
-      'radial-gradient(circle at 78% 8%, rgba(255, 235, 160, 0.85), transparent 20%)',
-      'linear-gradient(180deg, #55b4df 0%, #9cdaea 42%, #e0f3ed 77%, #93cad9 100%)',
+      'radial-gradient(circle at 78% 8%, rgb(var(--brand-teal-400) / 0.45), transparent 20%)',
+      'linear-gradient(180deg, rgb(var(--brand-navy-500)) 0%, rgb(var(--brand-teal-600)) 100%)',
     ],
     evening: [
-      'radial-gradient(ellipse at 82% 18%, rgba(255, 174, 112, 0.7), transparent 27%)',
-      'linear-gradient(180deg, #465b86 0%, #a66f86 42%, #edaa8a 72%, #789bad 100%)',
+      'radial-gradient(ellipse at 82% 18%, rgb(var(--brand-teal-400) / 0.45), transparent 27%)',
+      'linear-gradient(180deg, rgb(var(--brand-navy-500)) 0%, rgb(var(--brand-teal-600)) 100%)',
     ],
     midnight: nightSkyBackground,
   } satisfies Record<string, string[]>;
@@ -507,7 +507,7 @@ export default function WeatherPage() {
         <div className="pointer-events-none absolute inset-0 -z-10 bg-black/10" />
         <div className="relative mx-auto max-w-7xl space-y-6">
           <div className="h-14 w-72 animate-pulse rounded-xl bg-slate-200 dark:bg-neutral-800" />
-          <div className="h-56 animate-pulse rounded-2xl bg-[#1f3f74]/15 dark:bg-[#1f3f74]/30" />
+          <div className="h-56 animate-pulse rounded-2xl bg-brand-navy-500/15 dark:bg-brand-navy-500/30" />
           <div className="grid gap-5 lg:grid-cols-2">
             <div className="h-72 animate-pulse rounded-2xl bg-slate-200 dark:bg-neutral-800" />
             <div className="h-72 animate-pulse rounded-2xl bg-slate-200 dark:bg-neutral-800" />
@@ -546,10 +546,10 @@ export default function WeatherPage() {
         <div className="flex flex-col items-center gap-2 text-center">
           <div className="w-full min-w-0 text-center">
             <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight text-white [text-shadow:0_1px_4px_rgba(0,0,0,0.75)]">
-              Barangay Binongkalan
+              Weather Forecast
             </h1>
             <p className="mt-1 flex flex-col items-center justify-center gap-0.5 text-sm font-medium leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.75)] sm:flex-row sm:gap-1.5">
-              <span>Catmon, Cebu</span>
+              <span>Barangay Binongkalan, Catmon, Cebu</span>
               <span className="hidden text-white/80 sm:inline">•</span>
               <span className="font-mono text-xs text-white/90">
                 {BINONGKALAN_LATITUDE.toFixed(4)}° N, {BINONGKALAN_LONGITUDE.toFixed(4)}° E
@@ -565,17 +565,17 @@ export default function WeatherPage() {
         </div>
 
         {dataError && (
-          <div role="status" className="glass-card flex items-center gap-2 rounded-xl border-amber-300/70 bg-amber-50/75 px-4 py-3 text-xs text-amber-900 dark:border-amber-700/50 dark:bg-amber-950/55 dark:text-amber-300 sm:text-sm">
-            <AlertTriangle className="w-4 h-4 text-amber-600 flex-shrink-0" />
+          <div role="status" className="glass-card flex items-center gap-2 rounded-xl border-brand-sun-300/70 bg-brand-sun-50/75 px-4 py-3 text-xs text-brand-navy-700 dark:border-brand-sun-600/50 dark:bg-brand-navy-900/55 dark:text-brand-sun-300 sm:text-sm">
+            <AlertTriangle className="w-4 h-4 text-brand-navy-700 flex-shrink-0" />
             <span>{dataError}</span>
           </div>
         )}
 
-        {/* ── ZONE 1: BALANCED HERO OVERVIEW (Dive Blue #1F3F74) ── */}
+        {/* ── ZONE 1: BALANCED HERO OVERVIEW (Dive Blue #124168) ── */}
         <div className="relative overflow-hidden rounded-3xl border border-white/30 bg-slate-950/30 p-5 text-white shadow-2xl backdrop-blur-xl sm:p-7">
           <div className={`pointer-events-none absolute inset-0 bg-gradient-to-br ${heroBackground}`} />
           <div className="pointer-events-none absolute -right-20 -top-32 h-80 w-80 rounded-full border border-white/15 bg-white/10 blur-2xl" />
-          <div className="pointer-events-none absolute -bottom-36 left-1/4 h-64 w-64 rounded-full bg-cyan-100/10 blur-3xl" />
+          <div className="pointer-events-none absolute -bottom-36 left-1/4 h-64 w-64 rounded-full bg-brand-teal-100/10 blur-3xl" />
           <div className="relative z-10 flex flex-col lg:flex-row lg:items-center justify-between gap-6">
             
             <div className="flex items-center justify-center gap-2 sm:gap-3 lg:justify-start">
@@ -588,8 +588,8 @@ export default function WeatherPage() {
                 />
                 {isNight && (
                   <>
-                    <StarSparkle className="absolute right-2 top-1 h-3 w-3 text-blue-100 animate-pulse" />
-                    <StarSparkle className="absolute bottom-3 left-2 h-2.5 w-2.5 text-amber-100 animate-pulse delay-700" />
+                    <StarSparkle className="absolute right-2 top-1 h-3 w-3 text-brand-navy-100 animate-pulse" />
+                    <StarSparkle className="absolute bottom-3 left-2 h-2.5 w-2.5 text-brand-sun-100 animate-pulse delay-700" />
                     <StarSparkle className="absolute left-5 top-4 h-2 w-2 text-white/80 animate-pulse" />
                   </>
                 )}
@@ -655,7 +655,7 @@ export default function WeatherPage() {
               </div>
 
               <div className="rounded-xl border border-white/20 bg-white/15 p-3 backdrop-blur-xl transition-colors hover:bg-white/20">
-                <div className="text-xs text-blue-100">Air quality estimate</div>
+                <div className="text-xs text-brand-navy-100">Air quality estimate</div>
                 <div className={`mt-1 text-base font-bold sm:text-lg ${weather?.airQuality ? getAirQualityColor(weather.airQuality.usAqi) : 'text-white'}`}>
                   {weather?.airQuality ? `AQI ${weather.airQuality.usAqi}` : 'Unavailable'}
                 </div>
@@ -680,7 +680,7 @@ export default function WeatherPage() {
           <section className="glass-card space-y-3 rounded-3xl p-4 shadow-lg shadow-slate-200/40 dark:shadow-black/10 sm:p-5">
             <div>
               <div className="mb-1 flex items-center gap-2">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-[#1F3F74] dark:text-white">4-day forecast</h2>
+                <h2 className="text-sm font-bold uppercase tracking-wider text-brand-navy-500 dark:text-white">4-day forecast</h2>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">Daily conditions for Barangay Binongkalan</p>
             </div>
@@ -689,7 +689,7 @@ export default function WeatherPage() {
               {weather?.dailyForecast.length ? weather.dailyForecast.map((day) => {
                 const date = new Date(`${day.date}T12:00:00+08:00`);
                 return (
-                  <div key={day.date} className="grid grid-cols-[3rem_2.5rem_minmax(0,1fr)_auto] items-center gap-2 rounded-2xl border border-white/20 bg-gradient-to-r from-[#2f80bd]/90 to-[#55a9db]/85 px-2 py-3 text-white shadow-sm backdrop-blur-md sm:grid-cols-[4rem_3rem_minmax(0,1fr)_auto] sm:gap-3 sm:px-3">
+                  <div key={day.date} className="grid grid-cols-[3rem_2.5rem_minmax(0,1fr)_auto] items-center gap-2 rounded-2xl border border-white/20 bg-gradient-to-r from-brand-navy-500/90 to-brand-teal-600/85 px-2 py-3 text-white shadow-sm backdrop-blur-md sm:grid-cols-[4rem_3rem_minmax(0,1fr)_auto] sm:gap-3 sm:px-3">
                     <div className="shrink-0 text-center">
                       <div className="text-xs font-bold uppercase text-white">
                         {date.toLocaleDateString('en-US', { timeZone: 'Asia/Manila', weekday: 'short' }).toUpperCase()}
@@ -703,7 +703,7 @@ export default function WeatherPage() {
                       <div className="truncate text-xs font-semibold text-white">{day.conditionLabel}</div>
                       <div className="mt-1 flex flex-wrap gap-x-2.5 text-[10px] text-white/80">
                         <span className="inline-flex items-center gap-1">
-                          <Droplets className="h-3 w-3 text-sky-100" />
+                          <Droplets className="h-3 w-3 text-brand-teal-100" />
                           {day.precipitationProbability == null ? 'Rain —' : `Rain ${day.precipitationProbability}%`}
                         </span>
                         <span>UV {day.uvIndexMax == null ? '—' : day.uvIndexMax.toFixed(0)}</span>
@@ -728,18 +728,18 @@ export default function WeatherPage() {
 
         <div className="grid gap-3 md:grid-cols-2">
           <section className="glass-card rounded-3xl p-4 shadow-sm backdrop-blur-xl sm:p-5" aria-label="Sunrise and sunset">
-            <div className="flex items-center gap-2 text-sm font-bold text-[#1F3F74] dark:text-white">
-              <Sun className="h-4 w-4 text-amber-500" />
+            <div className="flex items-center gap-2 text-sm font-bold text-brand-navy-500 dark:text-white">
+              <Sun className="h-4 w-4 text-brand-navy-700" />
               <h2>Sunrise &amp; sunset</h2>
             </div>
             <div className="mt-4 flex items-end justify-between">
               <div>
-                <Sunrise className="mb-1 h-5 w-5 text-amber-500" />
+                <Sunrise className="mb-1 h-5 w-5 text-brand-navy-700" />
                 <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Sunrise</div>
                 <div className="text-base font-bold text-slate-800 dark:text-white">{formatWeatherTime(weather?.sunrise ?? null)}</div>
               </div>
               <div className="text-right">
-                <Sunset className="mb-1 ml-auto h-5 w-5 text-orange-500" />
+                <Sunset className="mb-1 ml-auto h-5 w-5 text-brand-navy-700" />
                 <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Sunset</div>
                 <div className="text-base font-bold text-slate-800 dark:text-white">{formatWeatherTime(weather?.sunset ?? null)}</div>
               </div>
@@ -747,8 +747,8 @@ export default function WeatherPage() {
             <div className="relative mt-4 h-2 rounded-full bg-slate-200 dark:bg-slate-700" aria-label={daylightProgress === null ? 'Daylight progress unavailable' : `${Math.round(daylightProgress * 100)} percent through daylight`}>
               {daylightProgress !== null && (
                 <>
-                  <div className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-amber-300 via-yellow-400 to-orange-400" style={{ width: `${daylightProgress * 100}%` }} />
-                  <span className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-amber-400 shadow dark:border-slate-900" style={{ left: `${daylightProgress * 100}%` }} />
+                  <div className="absolute inset-y-0 left-0 rounded-full bg-gradient-to-r from-brand-navy-500 to-brand-teal-400" style={{ width: `${daylightProgress * 100}%` }} />
+                  <span className="absolute top-1/2 h-4 w-4 -translate-x-1/2 -translate-y-1/2 rounded-full border-2 border-white bg-brand-sun-400 shadow dark:border-slate-900" style={{ left: `${daylightProgress * 100}%` }} />
                 </>
               )}
             </div>
@@ -760,7 +760,7 @@ export default function WeatherPage() {
           <section className="glass-card flex items-center gap-4 rounded-3xl p-4 shadow-sm backdrop-blur-xl sm:p-5" aria-label="Moon phase and moonrise and moonset">
             <MoonPhaseIcon phase={moonPhase} />
             <div className="min-w-0 flex-1">
-              <div className="text-sm font-bold text-[#1F3F74] dark:text-white">{moonPhase.name}</div>
+              <div className="text-sm font-bold text-brand-navy-500 dark:text-white">{moonPhase.name}</div>
               <div className="mb-3 text-[10px] text-slate-500 dark:text-slate-400">{moonPhase.illumination}% illuminated</div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
@@ -780,7 +780,7 @@ export default function WeatherPage() {
           <section className="glass-card min-w-0 space-y-3 rounded-3xl p-4 sm:p-5">
             <div>
               <div className="mb-1 flex items-start gap-2">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-[#1F3F74] dark:text-white">Beach Activity Feasibility</h2>
+                <h2 className="text-sm font-bold uppercase tracking-wider text-brand-navy-500 dark:text-white">Beach Activity Feasibility</h2>
               </div>
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 These are just safety announcements, kindly ask resort staff for the latest information.
@@ -808,7 +808,7 @@ export default function WeatherPage() {
 
           <section className="glass-card space-y-3 rounded-3xl p-4 shadow-lg shadow-slate-200/40 dark:shadow-black/10 sm:p-5">
             <div>
-              <h2 className="mb-1 text-sm font-bold uppercase tracking-wider text-[#1F3F74] dark:text-white">Coastal Reminders</h2>
+              <h2 className="mb-1 text-sm font-bold uppercase tracking-wider text-brand-navy-500 dark:text-white">Coastal Reminders</h2>
               <p className="text-xs text-slate-500 dark:text-slate-400">
                 Advisories are based on current weather and tidal readings.
               </p>
@@ -822,8 +822,8 @@ export default function WeatherPage() {
                     reminder.type === 'alert'
                       ? 'border-red-500 bg-red-50/65 text-red-900 backdrop-blur-md dark:bg-red-950/35 dark:text-red-300'
                       : reminder.type === 'warning'
-                        ? 'border-amber-400 bg-amber-50/65 text-amber-900 backdrop-blur-md dark:bg-amber-950/35 dark:text-amber-300'
-                        : 'border-sky-500 bg-white/45 text-slate-700 backdrop-blur-md dark:bg-black/25 dark:text-neutral-300'
+                        ? 'border-brand-sun-400 bg-brand-sun-50/65 text-brand-navy-700 backdrop-blur-md dark:bg-brand-navy-900/35 dark:text-brand-sun-300'
+                        : 'border-brand-teal-500 bg-white/45 text-slate-700 backdrop-blur-md dark:bg-black/25 dark:text-neutral-300'
                   }`}
                 >
                   <p className="text-xs font-medium leading-relaxed">{reminder.text}</p>

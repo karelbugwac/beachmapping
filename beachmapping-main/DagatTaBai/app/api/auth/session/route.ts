@@ -18,9 +18,10 @@ export async function GET() {
       }
     );
   } catch (err: unknown) {
+    console.error('Failed to load current session:', err);
     return NextResponse.json(
-      { user: null },
-      {
+      { error: 'Could not load your account status.' },
+      { status: 503,
         headers: {
           'Cache-Control': 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0',
           Pragma: 'no-cache',
