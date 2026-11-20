@@ -6,8 +6,14 @@ const nextConfig: NextConfig = {
   outputFileTracingRoot: path.join(__dirname, "./"),
   devIndicators: false, // Disables the floating Next.js ("N") dev indicator badge
 
-  // Allow access from your phone through local network
-  allowedDevOrigins: ["10.240.253.248"],
+  // Allow access from your phone and local network devices
+  allowedDevOrigins: [
+    "192.168.254.105:3000",
+    "192.168.254.105",
+    "192.168.254.*",
+    "10.240.253.248",
+    "localhost:3000",
+  ],
 
 
   experimental: {
