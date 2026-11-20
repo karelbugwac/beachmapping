@@ -14,6 +14,15 @@ import {
   ExternalLink,
   ChevronLeft,
   ChevronRight,
+  MapPin,
+  Waves,
+  Send,
+  Sparkles,
+  ShieldCheck,
+  CheckCircle2,
+  Navigation,
+  Wind,
+  Thermometer,
 } from 'lucide-react';
 import { HeroMapSection } from '@/components/hero-map-section';
 import { ScrollReveal } from '@/components/ui/scroll-reveal';
@@ -34,8 +43,8 @@ const VIRTUAL_TOURS: VirtualTourItem[] = [
     id: 'ranola',
     name: 'Rañola Beach',
     tagline: 'Experience Comfort & Serenity',
-    description: 'Tranquil shoreline with authentic open cottages and crystal shallows.',
-    coverImage: 'https://rywgvumqhdptolijfdys.supabase.co/storage/v1/object/public/beach-media/ecc03e08-aae1-48d2-87ed-096bb02219e0/395195f5-525e-4628-a3cb-80cb697d9da0/8752e2f5-ce05-45c0-8ff9-4491f96dcc59.webp',
+    description: 'Tranquil shoreline with authentic open cottages and crystal shallows in Binongkalan.',
+    coverImage: '/ranola.jpg',
     tourUrl: 'https://tour.panoee.net/6ac4b494035368b0747a8077',
     slug: 'ra-ola-beach',
   },
@@ -43,8 +52,8 @@ const VIRTUAL_TOURS: VirtualTourItem[] = [
     id: 'litebay',
     name: 'LiteBay Resort',
     tagline: 'Your Comfortable Coastal Retreat',
-    description: 'Peaceful private cove with shaded cottage huts and relaxing ocean breezes.',
-    coverImage: 'https://rywgvumqhdptolijfdys.supabase.co/storage/v1/object/public/beach-media/b77372e3-937e-4d6d-8c9f-70140337ec9e/4c491f53-f43f-4519-b2cd-f4b5bbf67cf1/a633e921-b0c5-4afd-aa96-a758927a8b6d.jpg',
+    description: 'Peaceful private cove with shaded cottage huts and relaxing Camotes Sea breezes.',
+    coverImage: '/litebay.jpg',
     tourUrl: 'https://tour.panoee.net/6ac4b494035368b0747a8077',
     slug: 'litebay-resort',
   },
@@ -53,7 +62,7 @@ const VIRTUAL_TOURS: VirtualTourItem[] = [
     name: 'Majestique View Resort',
     tagline: 'Indulge in Tranquility & Sea Views',
     description: 'Cliffside vistas overlooking the open Camotes Sea with coral reef shallows.',
-    coverImage: 'https://rywgvumqhdptolijfdys.supabase.co/storage/v1/object/public/beach-media/e6aa7181-7d43-435d-9701-96d9b1cd220c/ae36c165-2f63-4566-80ac-1d44f7b62f87/fd8165c8-83dc-420c-8a52-9b4059be1d9d.webp',
+    coverImage: '/majestique.webp',
     tourUrl: 'https://tour.panoee.net/6ac4b494035368b0747a8077',
     slug: 'majestique-beach',
   },
@@ -62,7 +71,7 @@ const VIRTUAL_TOURS: VirtualTourItem[] = [
     name: 'Hinagdan Beach',
     tagline: 'Natural Rock Steps & Crystal Waters',
     description: 'Iconic limestone staircase descending directly into refreshing natural tidal pools.',
-    coverImage: 'https://rywgvumqhdptolijfdys.supabase.co/storage/v1/object/public/beach-media/6322f704-b8b8-4600-bb3c-d16ebc6b7494/fa4c9520-8b31-443e-b7dd-0b40a6d3c182/45569d84-fc76-4fa9-9310-837bbef53e28.jpg',
+    coverImage: '/hinagdan.jpg',
     tourUrl: 'https://tour.panoee.net/6ac4b494035368b0747a8077',
     slug: 'hinagdan-beach',
   },
@@ -225,11 +234,253 @@ export default function HomePage() {
       {/* Hero Section */}
       <HeroMapSection
         isAuthenticated={false}
-        ctaText="-> Start Exploring"
+        ctaText="Start Exploring"
         ctaHref="/register"
       />
 
-      {/* Section 1: How It Works (Clean Pure White & Black — Zero Beige, Zero Pill Badges) */}
+      {/* Section 1: Your Beach Guide (Modern IDE / Product Showcase UI — Interactive & Functional) */}
+      <section className="w-full bg-white dark:bg-black border-b border-slate-100 dark:border-neutral-900 transition-colors duration-200 py-14 sm:py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto space-y-12 sm:space-y-16">
+          <ScrollReveal direction="up" duration={650}>
+            <div className="text-center max-w-2xl mx-auto space-y-2.5">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-medium tracking-tight text-[#1F3F74] dark:text-white leading-tight">
+                Your Beach Guide
+              </h2>
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-lg mx-auto leading-relaxed">
+                Discover verified resorts, monitor live marine tide telemetry, and navigate Binongkalan with real-time coastal intelligence.
+              </p>
+            </div>
+          </ScrollReveal>
+
+          {/* 3 Modern Feature Showcases (IDE / SaaS Style UI Previews) */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:gap-8">
+            
+            {/* Feature 1: Interactive GIS Beach Map & Cottage Navigator */}
+            <ScrollReveal direction="up" delay={100} duration={600} className="flex flex-col">
+              <div className="flex-1 rounded-2xl bg-slate-50/70 dark:bg-[#0c0c0c] border border-slate-200/90 dark:border-neutral-800 overflow-hidden shadow-sm hover:border-[#1F3F74]/30 dark:hover:border-sky-500/30 transition-all flex flex-col justify-between">
+                {/* Mockup Header Bar */}
+                <div className="px-4 py-3 bg-white dark:bg-neutral-900/80 border-b border-slate-200/80 dark:border-neutral-800 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                  </div>
+                  <span className="font-mono text-[10px] text-slate-400 dark:text-neutral-500 truncate max-w-[180px]">
+                    gis.dagattabai.ph/binongkalan
+                  </span>
+                  <Map className="w-3.5 h-3.5 text-slate-400" />
+                </div>
+
+                {/* Mockup Screen Content */}
+                <div className="p-4 sm:p-5 space-y-3.5 flex-1">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg bg-[#1F3F74]/10 dark:bg-sky-500/10 text-[#1F3F74] dark:text-[#F4BF3E]">
+                        <Compass className="w-4 h-4" />
+                      </div>
+                      <span className="text-xs font-bold font-display uppercase tracking-wider text-slate-900 dark:text-white">
+                        GIS Shoreline Radar
+                      </span>
+                    </div>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
+                      4 Resorts Active
+                    </span>
+                  </div>
+
+                  {/* Active Destination Card Preview */}
+                  <div className="p-3.5 rounded-xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 space-y-2 shadow-xs">
+                    <div className="flex items-start justify-between gap-2">
+                      <div>
+                        <h4 className="text-xs font-bold text-slate-900 dark:text-white">Rañola Beach Resort</h4>
+                        <p className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                          <MapPin className="w-3 h-3 text-[#1F3F74] dark:text-[#F4BF3E]" />
+                          Binongkalan, Catmon • 8.4 km
+                        </p>
+                      </div>
+                      <span className="text-[10px] font-semibold px-2 py-0.5 rounded-full bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-[#F4BF3E] border border-amber-200/50 dark:border-amber-900/50">
+                        ₱50 Entrance
+                      </span>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-1.5 pt-1 text-[10px] text-slate-600 dark:text-slate-300">
+                      <div className="p-1.5 rounded-md bg-slate-50 dark:bg-neutral-800/60 border border-slate-100 dark:border-neutral-700/50">
+                        <span className="text-slate-400 block text-[9px] uppercase font-mono">Cottages</span>
+                        <span className="font-semibold text-slate-800 dark:text-white">₱300 - ₱1,500</span>
+                      </div>
+                      <div className="p-1.5 rounded-md bg-slate-50 dark:bg-neutral-800/60 border border-slate-100 dark:border-neutral-700/50">
+                        <span className="text-slate-400 block text-[9px] uppercase font-mono">Shoreline</span>
+                        <span className="font-semibold text-slate-800 dark:text-white">White Pebble / Sand</span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer Feature Note */}
+                <div className="p-4 bg-white/70 dark:bg-neutral-900/50 border-t border-slate-200/70 dark:border-neutral-800/80">
+                  <h3 className="text-xs font-display font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+                    Interactive Coastal Map
+                  </h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pt-1">
+                    Inspect cottage rates, road accessibility, and verified amenity details for all 4 beaches.
+                  </p>
+                </div>
+              </div>
+            </ScrollReveal>
+
+            {/* Feature 2: Real-Time Marine Telemetry & Tide Forecast */}
+            <ScrollReveal direction="up" delay={200} duration={600} className="flex flex-col">
+              <div className="flex-1 rounded-2xl bg-slate-50/70 dark:bg-[#0c0c0c] border border-slate-200/90 dark:border-neutral-800 overflow-hidden shadow-sm hover:border-[#1F3F74]/30 dark:hover:border-sky-500/30 transition-all flex flex-col justify-between">
+                {/* Mockup Header Bar */}
+                <div className="px-4 py-3 bg-white dark:bg-neutral-900/80 border-b border-slate-200/80 dark:border-neutral-800 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                  </div>
+                  <span className="font-mono text-[10px] text-slate-400 dark:text-neutral-500 truncate max-w-[180px]">
+                    telemetry.visayan-sea/tides
+                  </span>
+                  <CloudSun className="w-3.5 h-3.5 text-slate-400" />
+                </div>
+
+                {/* Mockup Screen Content */}
+                <div className="p-4 sm:p-5 space-y-3.5 flex-1">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg bg-[#1F3F74]/10 dark:bg-sky-500/10 text-[#1F3F74] dark:text-[#F4BF3E]">
+                        <Waves className="w-4 h-4" />
+                      </div>
+                      <span className="text-xs font-bold font-display uppercase tracking-wider text-slate-900 dark:text-white">
+                        Coastal Marine HUD
+                      </span>
+                    </div>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">
+                      <CheckCircle2 className="w-3 h-3" />
+                      Safe for Swimming
+                    </span>
+                  </div>
+
+                  {/* Tide HUD Gauge */}
+                  <div className="p-3.5 rounded-xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 space-y-3 shadow-xs">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <span className="text-[10px] font-mono uppercase text-slate-400 block">Next Peak Tide</span>
+                        <div className="text-base font-extrabold text-[#1F3F74] dark:text-[#F4BF3E]">
+                          High Tide +1.4m
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="text-[10px] font-mono text-slate-400 block">Estimated Time</span>
+                        <div className="text-xs font-bold text-slate-800 dark:text-white">
+                          2:15 PM Today
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="grid grid-cols-2 gap-1.5 pt-1 text-[10px] text-slate-600 dark:text-slate-300">
+                      <div className="p-1.5 rounded-md bg-slate-50 dark:bg-neutral-800/60 border border-slate-100 dark:border-neutral-700/50 flex items-center gap-2">
+                        <Wind className="w-3.5 h-3.5 text-[#1F3F74] dark:text-sky-400" />
+                        <div>
+                          <span className="text-slate-400 block text-[9px] uppercase font-mono">Breeze</span>
+                          <span className="font-semibold text-slate-800 dark:text-white">12 km/h NE</span>
+                        </div>
+                      </div>
+                      <div className="p-1.5 rounded-md bg-slate-50 dark:bg-neutral-800/60 border border-slate-100 dark:border-neutral-700/50 flex items-center gap-2">
+                        <Thermometer className="w-3.5 h-3.5 text-amber-500" />
+                        <div>
+                          <span className="text-slate-400 block text-[9px] uppercase font-mono">Sea Temp</span>
+                          <span className="font-semibold text-slate-800 dark:text-white">28°C Warm</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer Feature Note */}
+                <div className="p-4 bg-white/70 dark:bg-neutral-900/50 border-t border-slate-200/70 dark:border-neutral-800/80">
+                  <h3 className="text-xs font-display font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+                    Tide &amp; Weather Telemetry
+                  </h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pt-1">
+                    Real-time water level forecasts and sea conditions so you arrive right when the water is optimal.
+                  </p>
+                </div>
+              </div>
+            </ScrollReveal>
+
+            {/* Feature 3: Bai AI 24/7 Local Coastal Assistant */}
+            <ScrollReveal direction="up" delay={300} duration={600} className="flex flex-col">
+              <div className="flex-1 rounded-2xl bg-slate-50/70 dark:bg-[#0c0c0c] border border-slate-200/90 dark:border-neutral-800 overflow-hidden shadow-sm hover:border-[#1F3F74]/30 dark:hover:border-sky-500/30 transition-all flex flex-col justify-between">
+                {/* Mockup Header Bar */}
+                <div className="px-4 py-3 bg-white dark:bg-neutral-900/80 border-b border-slate-200/80 dark:border-neutral-800 flex items-center justify-between">
+                  <div className="flex items-center gap-1.5">
+                    <span className="w-2.5 h-2.5 rounded-full bg-rose-400" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-amber-400" />
+                    <span className="w-2.5 h-2.5 rounded-full bg-emerald-400" />
+                  </div>
+                  <span className="font-mono text-[10px] text-slate-400 dark:text-neutral-500 truncate max-w-[180px]">
+                    ai.dagattabai.ph/assistant
+                  </span>
+                  <Bot className="w-3.5 h-3.5 text-slate-400" />
+                </div>
+
+                {/* Mockup Chat Screen Content */}
+                <div className="p-4 sm:p-5 space-y-3 flex-1">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <div className="p-1.5 rounded-lg bg-[#1F3F74]/10 dark:bg-sky-500/10 text-[#1F3F74] dark:text-[#F4BF3E]">
+                        <Bot className="w-4 h-4" />
+                      </div>
+                      <span className="text-xs font-bold font-display uppercase tracking-wider text-slate-900 dark:text-white">
+                        Bai Assistant
+                      </span>
+                    </div>
+                    <span className="inline-flex items-center gap-1 text-[10px] font-semibold text-emerald-600 dark:text-emerald-400 bg-emerald-50 dark:bg-emerald-950/40 px-2 py-0.5 rounded-full">
+                      <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                      Online 24/7
+                    </span>
+                  </div>
+
+                  {/* Chat Bubbles */}
+                  <div className="space-y-2.5 pt-1 text-[11px]">
+                    <div className="flex justify-end">
+                      <div className="max-w-[85%] rounded-2xl rounded-tr-xs bg-[#1F3F74] text-white px-3.5 py-2 shadow-xs leading-relaxed">
+                        Asa nindot mag overnight sa Binongkalan nga naay cottage?
+                      </div>
+                    </div>
+
+                    <div className="flex justify-start">
+                      <div className="max-w-[88%] rounded-2xl rounded-tl-xs bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-800 dark:text-slate-200 px-3.5 py-2 shadow-xs leading-relaxed space-y-1">
+                        <div className="flex items-center gap-1 text-[9px] font-bold text-[#1F3F74] dark:text-[#F4BF3E]">
+                          <Sparkles className="w-3 h-3" />
+                          <span>Bai AI</span>
+                        </div>
+                        <p>
+                          Maayong adlaw! Girekomendar ang <strong className="text-slate-900 dark:text-white">LiteBay Resort</strong> ug <strong className="text-slate-900 dark:text-white">Majestique View</strong>. Naay open cottages sugod ₱500 ug high tide karong 2:15 PM!
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Footer Feature Note */}
+                <div className="p-4 bg-white/70 dark:bg-neutral-900/50 border-t border-slate-200/70 dark:border-neutral-800/80">
+                  <h3 className="text-xs font-display font-bold uppercase tracking-wider text-slate-900 dark:text-white">
+                    Bai Coastal Assistant
+                  </h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed pt-1">
+                    Ask questions anytime in Bisaya or English for verified rates, travel tips, and route recommendations.
+                  </p>
+                </div>
+              </div>
+            </ScrollReveal>
+
+          </div>
+        </div>
+      </section>
+
+      {/* Section 2: How It Works (Clean Pure White & Black — Zero Beige, Zero Pill Badges) */}
       <section className="w-full bg-white dark:bg-black border-b border-slate-100 dark:border-neutral-900 transition-colors duration-200 py-14 sm:py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <ScrollReveal direction="up" duration={650}>
@@ -292,117 +543,36 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Section 2: Your Beach Guide (WHITE Background - Harmonious Spacing, Dive Header) */}
-      <section className="w-full bg-white dark:bg-black border-b border-slate-100 dark:border-neutral-900 transition-colors duration-200 relative">
-        <div className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-          <ScrollReveal direction="up" duration={650}>
-            <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-14 space-y-2.5">
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-medium tracking-tight text-[#1F3F74] dark:text-white leading-tight">
-                Your Beach Guide
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
-                Explore helpful tools and information for a more informed beach experience.
-              </p>
-            </div>
-          </ScrollReveal>
-
-          {/* 3 Columns divided by vertical borders with clean freestanding icons */}
-          <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-slate-200 dark:divide-neutral-800 text-center">
-            {/* Column 1: Interactive Map (Map Icon - same as hero button) */}
-            <ScrollReveal direction="up" delay={100} duration={600} className="px-6 sm:px-8 py-5 md:py-2 flex flex-col items-center space-y-3 group">
-              <div className="h-10 flex items-center justify-center">
-                <Map className="w-9 h-9 text-[#1F3F74] dark:text-[#F4BF3E] stroke-[1.8] transition-transform duration-300 group-hover:scale-110" />
-              </div>
-              <h3 className="text-xs sm:text-sm font-display font-bold tracking-widest uppercase text-slate-900 dark:text-white">
-                Interactive Map
-              </h3>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-xs font-sans">
-                Explore verified beach resorts, inspect cottage amenities, check terrain conditions, and view authentic coastal routes across Binongkalan.
-              </p>
-            </ScrollReveal>
-
-            {/* Column 2: Weather Forecast (CloudSun Icon - Sun & Clouds) */}
-            <ScrollReveal direction="up" delay={200} duration={600} className="px-6 sm:px-8 py-5 md:py-2 flex flex-col items-center space-y-3 group">
-              <div className="h-10 flex items-center justify-center">
-                <CloudSun className="w-9 h-9 text-[#1F3F74] dark:text-[#F4BF3E] stroke-[1.8] transition-transform duration-300 group-hover:scale-110" />
-              </div>
-              <h3 className="text-xs sm:text-sm font-display font-bold tracking-widest uppercase text-slate-900 dark:text-white">
-                Weather Forecast
-              </h3>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-xs font-sans">
-                Stay updated with real-time wave telemetry, tide levels, wind advisories, and marine weather forecasts for safe and well-planned beach trips.
-              </p>
-            </ScrollReveal>
-
-            {/* Column 3: Bai Coastal Chatbot (Bot Icon) */}
-            <ScrollReveal direction="up" delay={300} duration={600} className="px-6 sm:px-8 py-5 md:py-2 flex flex-col items-center space-y-3 group">
-              <div className="h-10 flex items-center justify-center">
-                <Bot className="w-9 h-9 text-[#1F3F74] dark:text-[#F4BF3E] stroke-[1.8] transition-transform duration-300 group-hover:scale-110" />
-              </div>
-              <h3 className="text-xs sm:text-sm font-display font-bold tracking-widest uppercase text-slate-900 dark:text-white">
-                Bai Coastal Chatbot
-              </h3>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-xs font-sans">
-                Ask our 24/7 local AI guide about entrance fees, cottage reservations, travel guidelines, and local Catmon tips right when you need them.
-              </p>
-            </ScrollReveal>
-          </div>
-        </div>
-      </section>
-
-      {/* Section 3: Take a 360° Look Around (3D Perspective Resort Carousel — Style of Bluewater) */}
+      {/* Section 3: Take a 360° Look Around (Touch-Swipeable 3D Carousel with Generous Spacing — No Overlapping Cards) */}
       <section className="w-full bg-white dark:bg-black border-b border-slate-100 dark:border-neutral-900 transition-colors duration-200 py-16 sm:py-24 px-4 sm:px-6 lg:px-8 overflow-hidden select-none">
         <div className="max-w-7xl mx-auto">
-          {/* Centered Header & Subheader (Zero Pill Badges) */}
+          {/* Centered Header & Subheader */}
           <ScrollReveal direction="up" duration={650}>
             <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-14 space-y-3">
               <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-medium tracking-tight text-[#1F3F74] dark:text-white leading-tight">
                 Take a 360° Look Around
               </h2>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-xl mx-auto leading-relaxed font-sans">
-                Inspect Binongkalan&apos;s coastlines before you visit. Explore real shoreline panoramas, open cabanas, and tide conditions for each destination.
+                Inspect Binongkalan&apos;s coastlines before you visit. Swipe through real shoreline panoramas, open cabanas, and beach views.
               </p>
             </div>
           </ScrollReveal>
 
-          {/* 3D Perspective Carousel Container */}
+          {/* Swipeable 3D Perspective Carousel Container */}
           <div
-            className="relative w-full max-w-5xl mx-auto flex items-center justify-center [perspective:1400px] min-h-[490px] sm:min-h-[530px]"
+            className="relative w-full max-w-6xl mx-auto flex items-center justify-center [perspective:1400px] min-h-[490px] sm:min-h-[530px] touch-pan-y"
             onTouchStart={(e) => {
               tourTouchStartX.current = e.touches[0].clientX;
             }}
             onTouchEnd={(e) => {
               if (tourTouchStartX.current === null) return;
               const diff = tourTouchStartX.current - e.changedTouches[0].clientX;
-              if (diff > 50) nextTour();
-              else if (diff < -50) prevTour();
+              if (diff > 40) nextTour();
+              else if (diff < -40) prevTour();
               tourTouchStartX.current = null;
             }}
           >
-            {/* Desktop Navigation Chevrons */}
-            <div className="hidden sm:flex absolute -left-2 lg:-left-6 top-1/2 -translate-y-1/2 z-30 pointer-events-none">
-              <button
-                type="button"
-                onClick={prevTour}
-                aria-label="Previous beach tour"
-                className="pointer-events-auto w-11 h-11 rounded-full border border-slate-200 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 text-slate-800 dark:text-white shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center cursor-pointer hover:border-[#1F3F74]/50"
-              >
-                <ChevronLeft className="w-5 h-5 -translate-x-0.5" />
-              </button>
-            </div>
-
-            <div className="hidden sm:flex absolute -right-2 lg:-right-6 top-1/2 -translate-y-1/2 z-30 pointer-events-none">
-              <button
-                type="button"
-                onClick={nextTour}
-                aria-label="Next beach tour"
-                className="pointer-events-auto w-11 h-11 rounded-full border border-slate-200 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 text-slate-800 dark:text-white shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center cursor-pointer hover:border-[#1F3F74]/50"
-              >
-                <ChevronRight className="w-5 h-5 translate-x-0.5" />
-              </button>
-            </div>
-
-            {/* The 3D Cards Stack */}
+            {/* The 3D Cards Stack: Generous Spacing on Desktop (translate ±108%), Clean Centered Card on Mobile */}
             <div className="relative w-full h-[470px] sm:h-[510px] flex items-center justify-center">
               {VIRTUAL_TOURS.map((tour, idx) => {
                 let offset = idx - activeTourIndex;
@@ -412,22 +582,24 @@ export default function HomePage() {
                 const isCenter = offset === 0;
                 const isLeft = offset === -1 || (offset === 3 - VIRTUAL_TOURS.length);
                 const isRight = offset === 1 || (offset === VIRTUAL_TOURS.length - 3);
-                const isVisible = isCenter || isLeft || isRight;
 
-                let zIndex = 0;
-                let transformValue = '';
+                // Desktop 3D positions with clear separation (no overlapping cards clipping text)
+                let desktopTransform = 'translate3d(0, 0, -200px) scale(0.5)';
+                let desktopZIndex = 0;
+                let desktopOpacity = 0;
+
                 if (isCenter) {
-                  transformValue = 'translate3d(0, 0, 0) scale(1) rotateY(0deg)';
-                  zIndex = 25;
+                  desktopTransform = 'translate3d(0, 0, 0) scale(1) rotateY(0deg)';
+                  desktopZIndex = 30;
+                  desktopOpacity = 1;
                 } else if (isLeft) {
-                  transformValue = 'translate3d(-52%, 0, -60px) scale(0.88) rotateY(20deg)';
-                  zIndex = 10;
+                  desktopTransform = 'translate3d(-108%, 0, -40px) scale(0.92) rotateY(12deg)';
+                  desktopZIndex = 15;
+                  desktopOpacity = 0.85;
                 } else if (isRight) {
-                  transformValue = 'translate3d(52%, 0, -60px) scale(0.88) rotateY(-20deg)';
-                  zIndex = 10;
-                } else {
-                  transformValue = 'translate3d(0, 0, -200px) scale(0.5)';
-                  zIndex = 0;
+                  desktopTransform = 'translate3d(108%, 0, -40px) scale(0.92) rotateY(-12deg)';
+                  desktopZIndex = 15;
+                  desktopOpacity = 0.85;
                 }
 
                 return (
@@ -438,16 +610,16 @@ export default function HomePage() {
                       if (isRight) nextTour();
                     }}
                     style={{
-                      transform: transformValue,
-                      zIndex,
-                      opacity: isVisible ? (isCenter ? 1 : 0.72) : 0,
-                      pointerEvents: isVisible ? 'auto' : 'none',
+                      transform: desktopTransform,
+                      zIndex: desktopZIndex,
                     }}
-                    className={`absolute w-[290px] sm:w-[340px] md:w-[380px] transition-all duration-500 ease-out origin-center cursor-pointer ${
-                      isCenter ? 'cursor-default' : 'hover:opacity-90'
+                    className={`absolute w-[88vw] max-w-[340px] md:max-w-[360px] lg:max-w-[380px] transition-all duration-500 ease-out origin-center cursor-pointer ${
+                      isCenter
+                        ? 'opacity-100 pointer-events-auto cursor-default'
+                        : 'hidden md:block hover:opacity-100 pointer-events-auto'
                     }`}
                   >
-                    <div className="flex flex-col bg-white dark:bg-[#0c0c0c] border border-slate-200 dark:border-neutral-800 shadow-[0_16px_40px_rgba(0,0,0,0.12)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.6)] overflow-hidden transition-all duration-300">
+                    <div className="flex flex-col bg-white dark:bg-[#0c0c0c] border border-slate-200 dark:border-neutral-800 shadow-[0_16px_40px_rgba(0,0,0,0.1)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.7)] overflow-hidden transition-all duration-300">
                       {/* Photo Top with aspect 4:3 */}
                       <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 dark:bg-neutral-800">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -461,19 +633,19 @@ export default function HomePage() {
                           style={{ width: '100%', height: '100%', aspectRatio: '4 / 3' }}
                           className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
                         />
-                        {/* Left / Right 3D shadow gradient overlay */}
+                        {/* 3D side card subtle shadow */}
                         {!isCenter && (
                           <div
-                            className={`absolute inset-0 bg-gradient-to-${
+                            className={`hidden md:block absolute inset-0 bg-gradient-to-${
                               isLeft ? 'r' : 'l'
-                            } from-black/40 to-transparent pointer-events-none`}
+                            } from-black/30 to-transparent pointer-events-none`}
                           />
                         )}
                       </div>
 
-                      {/* Card Body (Inspired by Bluewater Maribago in Image 4) */}
+                      {/* Card Body */}
                       <div className="p-6 sm:p-7 flex-1 flex flex-col justify-between text-center space-y-4">
-                        <div className="space-y-2">
+                        <div className="space-y-1.5">
                           <h3 className="font-display font-medium text-xl sm:text-2xl text-slate-900 dark:text-white tracking-tight">
                             {tour.name}
                           </h3>
@@ -482,7 +654,7 @@ export default function HomePage() {
                           </p>
                         </div>
 
-                        {/* Yellow Action Button */}
+                        {/* Yellow Action Button: Black text, not bold */}
                         <div className="pt-2">
                           <button
                             type="button"
@@ -490,7 +662,7 @@ export default function HomePage() {
                               e.stopPropagation();
                               setSelectedTour(tour);
                             }}
-                            className="w-full px-6 py-3 rounded-none bg-[#F4BF3E] hover:bg-[#e2af35] text-[#1F3F74] font-display uppercase tracking-[0.16em] font-black text-xs transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 cursor-pointer text-center"
+                            className="w-full px-6 py-3 rounded-none bg-[#F4BF3E] hover:bg-[#e2af35] text-black font-display uppercase tracking-[0.14em] font-medium text-xs transition-all duration-200 shadow-xs hover:shadow-md active:scale-95 cursor-pointer text-center"
                           >
                             Explore 360°
                           </button>
@@ -501,26 +673,6 @@ export default function HomePage() {
                 );
               })}
             </div>
-          </div>
-
-          {/* Indicator Dots Below */}
-          <div className="flex items-center justify-center gap-2.5 pt-6 sm:pt-8">
-            {VIRTUAL_TOURS.map((tour, idx) => {
-              const isActive = idx === activeTourIndex;
-              return (
-                <button
-                  key={tour.id}
-                  type="button"
-                  onClick={() => setActiveTourIndex(idx)}
-                  aria-label={`View tour for ${tour.name}`}
-                  className={`h-2 transition-all duration-300 rounded-full cursor-pointer ${
-                    isActive
-                      ? 'w-8 bg-[#F4BF3E]'
-                      : 'w-2 bg-slate-300 dark:bg-neutral-700 hover:bg-slate-400'
-                  }`}
-                />
-              );
-            })}
           </div>
         </div>
       </section>
@@ -640,10 +792,10 @@ export default function HomePage() {
             </div>
 
             <div className="flex justify-center pt-6 sm:pt-7">
-              {/* Yellow Button */}
+              {/* Yellow Button: Black text, not bold */}
               <Link
                 href="/apply"
-                className="inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-[#F4BF3E] hover:bg-[#e2af35] text-[#1F3F74] text-xs sm:text-sm font-display uppercase tracking-[0.14em] font-black transition-all duration-200 shadow-lg shadow-amber-500/20 hover:-translate-y-0.5 active:translate-y-0"
+                className="inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-[#F4BF3E] hover:bg-[#e2af35] text-black text-xs sm:text-sm font-display uppercase tracking-[0.14em] font-medium transition-all duration-200 shadow-lg shadow-amber-500/20 hover:-translate-y-0.5 active:translate-y-0"
               >
                 Apply as Beach Owner
               </Link>
@@ -671,7 +823,7 @@ export default function HomePage() {
               <div className="flex items-center gap-2">
                 <Link
                   href={`/beaches/${selectedTour.slug}`}
-                  className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F4BF3E] hover:bg-[#e2af35] text-[#1F3F74] text-xs font-bold transition-colors"
+                  className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F4BF3E] hover:bg-[#e2af35] text-black text-xs font-medium transition-colors"
                 >
                   <span>View Beach Profile</span>
                   <ExternalLink className="w-3 h-3" />

@@ -101,11 +101,11 @@ export function CookieConsent() {
                 Decline
               </button>
 
-              {/* Oblong (pill-shaped) Yellow Accept All Cookies Button with Dark Blue Text */}
+              {/* Oblong (pill-shaped) Yellow Accept All Cookies Button with Black Text, Not Bold */}
               <button
                 type="button"
                 onClick={() => dismissWithAction('accepted')}
-                className="px-6 sm:px-8 py-2.5 sm:py-3 rounded-full bg-[#F4BF3E] hover:bg-[#e2af35] active:scale-95 text-[#1F3F74] font-black text-xs sm:text-sm tracking-tight transition-all duration-200 shadow-md text-center cursor-pointer shrink-0"
+                className="px-6 sm:px-8 py-2.5 sm:py-3 rounded-full bg-[#F4BF3E] hover:bg-[#e2af35] active:scale-95 text-black font-medium text-xs sm:text-sm tracking-tight transition-all duration-200 shadow-md text-center cursor-pointer shrink-0"
               >
                 Accept All Cookies
               </button>
@@ -174,7 +174,7 @@ export function CookieConsent() {
               <button
                 type="button"
                 onClick={() => dismissWithAction('accepted')}
-                className="px-6 py-2.5 text-xs font-black rounded-none bg-[#F4BF3E] hover:bg-[#e2af35] text-[#1F3F74] transition-colors shadow-xs cursor-pointer"
+                className="px-6 py-2.5 text-xs font-medium rounded-none bg-[#F4BF3E] hover:bg-[#e2af35] text-black transition-colors shadow-xs cursor-pointer"
               >
                 Accept All
               </button>

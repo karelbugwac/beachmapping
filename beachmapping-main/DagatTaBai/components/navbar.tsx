@@ -71,11 +71,9 @@ export function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Desktop navigation links with strictly unique IDs
+  // Desktop navigation links with strictly unique IDs (Public landing: Clean Home, Apply, About, Contact)
   const desktopLinks = [
     { id: 'desk-home', label: 'Home', href: user ? '/home' : '/' },
-    { id: 'desk-weather', label: 'Weather', href: '/weather' },
-    { id: 'desk-beaches', label: 'Explore Beaches', href: '/beaches' },
     { id: 'desk-apply', label: 'Apply', href: '/apply' },
     ...(user ? [{ id: 'desk-status', label: 'My application', href: '/apply/status' }] : []),
     { id: 'desk-about', label: 'About', href: '/about' },
@@ -257,7 +255,7 @@ export function Navbar() {
         } z-40 transition-all duration-300 ease-in-out ${
           isTransparent
             ? 'bg-transparent border-transparent shadow-none'
-            : 'bg-white/95 dark:bg-[#0c1424]/95 backdrop-blur-md border-b border-slate-200/80 dark:border-neutral-800/80 shadow-xs'
+            : 'bg-white/95 dark:bg-black/95 backdrop-blur-md border-b border-slate-200/80 dark:border-neutral-900 shadow-xs'
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -409,10 +407,10 @@ export function Navbar() {
                   </button>
                 </div>
               ) : (
-                /* Public / Visitor: Sign Up Button */
+                /* Public / Visitor: Sign Up Button (Yellow with black text, not bold) */
                 <Link
                   href="/register"
-                  className="inline-flex items-center justify-center px-4 sm:px-5 py-2 font-display uppercase tracking-[0.16em] font-black text-xs text-[#1F3F74] bg-[#F4BF3E] hover:bg-[#e2af35] rounded-full transition-all shadow-md hover:shadow-lg active:scale-95 border border-amber-300/40"
+                  className="inline-flex items-center justify-center px-4 sm:px-5 py-2 font-display uppercase tracking-[0.14em] font-medium text-xs text-black bg-[#F4BF3E] hover:bg-[#e2af35] rounded-full transition-all shadow-md hover:shadow-lg active:scale-95 border border-amber-300/40"
                 >
                   Sign Up
                 </Link>

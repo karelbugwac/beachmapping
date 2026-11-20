@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Store } from 'lucide-react';
+import { Store, ArrowRight } from 'lucide-react';
 
 interface HeroSlide {
   id: string;
@@ -183,6 +183,7 @@ export function HeroMapSection({
                 alt={slide.resortName}
                 fill
                 priority={idx === 0}
+                unoptimized
                 sizes="100vw"
                 className={`object-cover object-center transition-transform duration-[8000ms] ease-out ${
                   isActive ? 'scale-105' : 'scale-100'
@@ -196,7 +197,7 @@ export function HeroMapSection({
         <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/90 via-black/45 to-black/55 pointer-events-none" />
       </div>
 
-      {/* ── Main Hero Content (Automatic Beach Showcase — Beach Name as Title, Zero Arrow Buttons, Zero Pill Badge) ── */}
+      {/* ── Main Hero Content (Automatic Beach Showcase — Beach Name as Title, Zero Arrow Buttons, Zero Pill Badge, Clean CTA) ── */}
       <div className="relative z-30 flex flex-col items-center justify-center h-full px-5 sm:px-8 lg:px-12 text-center pt-20 sm:pt-24 pb-16 sm:pb-20 max-w-5xl mx-auto">
         <div className="space-y-4 sm:space-y-6 w-full">
 
@@ -216,13 +217,14 @@ export function HeroMapSection({
             {activeSlide.subtext}
           </p>
 
-          {/* Call to Action Button Row */}
+          {/* Call to Action Button Row: Yellow button with black text, not bold, and arrow icon after exploring */}
           <div className="pt-4 sm:pt-6 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
               href={resolvedCtaHref}
-              className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-[#F4BF3E] hover:bg-[#e2af35] text-[#1F3F74] font-display uppercase tracking-[0.14em] font-black text-xs sm:text-sm transition-all duration-200 shadow-xl shadow-amber-500/25 hover:shadow-amber-500/40 hover:-translate-y-0.5 active:translate-y-0 group border border-amber-300/60 cursor-pointer"
+              className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-[#F4BF3E] hover:bg-[#e2af35] text-black font-display uppercase tracking-[0.14em] font-medium text-xs sm:text-sm transition-all duration-200 shadow-xl shadow-amber-500/25 hover:shadow-amber-500/40 hover:-translate-y-0.5 active:translate-y-0 group border border-amber-300/60 cursor-pointer"
             >
-              <span>{resolvedCtaText}</span>
+              <span>{isAuthenticated || userRole !== 'visitor' ? 'Explore Beaches' : 'Start Exploring'}</span>
+              <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
             </Link>
 
             {showOwnerButton && (
@@ -248,26 +250,6 @@ export function HeroMapSection({
           </p>
 
         </div>
-      </div>
-
-      {/* ── Slide Indicators / Dashes at the Bottom ── */}
-      <div className="absolute bottom-6 sm:bottom-8 inset-x-0 z-30 flex items-center justify-center gap-2.5">
-        {HERO_SLIDES.map((slide, idx) => {
-          const isActive = idx === currentSlide;
-          return (
-            <button
-              key={slide.id}
-              type="button"
-              onClick={() => goToSlide(idx)}
-              aria-label={`Switch to slide ${idx + 1}: ${slide.resortName}`}
-              className={`h-1.5 transition-all duration-300 rounded-full cursor-pointer ${
-                isActive
-                  ? 'w-8 bg-[#F4BF3E]'
-                  : 'w-2 bg-white/40 hover:bg-white/75'
-              }`}
-            />
-          );
-        })}
       </div>
     </section>
   );
