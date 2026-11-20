@@ -222,14 +222,6 @@ export default function HomePage() {
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-xs">
                 Explore verified beach resorts, inspect cottage amenities, check terrain conditions, and view authentic coastal routes across Binongkalan.
               </p>
-              <div className="pt-2">
-                <Link
-                  href="/register"
-                  className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-[#1F3F74] hover:bg-[#16325c] text-white text-xs font-bold transition shadow-xs"
-                >
-                  -&gt; Start Exploring
-                </Link>
-              </div>
             </ScrollReveal>
 
             {/* Column 2: Weather Forecast (CloudSun Icon - Sun & Clouds) */}
@@ -243,14 +235,6 @@ export default function HomePage() {
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-xs">
                 Stay updated with real-time wave telemetry, tide levels, wind advisories, and marine weather forecasts for safe and well-planned beach trips.
               </p>
-              <div className="pt-2">
-                <Link
-                  href="/weather"
-                  className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-[#1F3F74] hover:bg-[#16325c] text-white text-xs font-bold transition shadow-xs"
-                >
-                  View Weather Forecast
-                </Link>
-              </div>
             </ScrollReveal>
 
             {/* Column 3: Bai Coastal Chatbot (Bot Icon) */}
@@ -264,15 +248,6 @@ export default function HomePage() {
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-xs">
                 Ask our 24/7 local AI guide about entrance fees, cottage reservations, travel guidelines, and local Catmon tips right when you need them.
               </p>
-              <div className="pt-2">
-                <button
-                  type="button"
-                  onClick={() => window.dispatchEvent(new CustomEvent('open-bai-chat'))}
-                  className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-[#1F3F74] hover:bg-[#16325c] text-white text-xs font-bold transition shadow-xs cursor-pointer"
-                >
-                  Talk with Bai
-                </button>
-              </div>
             </ScrollReveal>
           </div>
         </div>
@@ -464,32 +439,6 @@ export default function HomePage() {
               >
                 Apply as Beach Owner
               </Link>
-            </div>
-          </ScrollReveal>
-        </div>
-      </section>
-
-      {/* Section 6: Help Make Dagat Ta Bai Better (WHITE Background - Harmonious Spacing, Dive Header) */}
-      <section className="w-full bg-white dark:bg-black border-b border-slate-100 dark:border-neutral-900 transition-colors duration-200 relative">
-        <div className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
-          <ScrollReveal direction="up" duration={650}>
-            <div className="max-w-2xl mx-auto text-center space-y-5">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-brand-navy-500 dark:text-brand-teal-300 leading-tight">
-                Help Make Dagat Ta Bai Better
-              </h2>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed max-w-lg mx-auto">
-                Your feedback helps us create a more reliable experience for everyone.
-              </p>
-
-              <div className="pt-5 sm:pt-6">
-                {/* Sign in to review button */}
-                <Link
-                  href="/login?redirect=/feedback"
-                  className="inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-[#1F3F74] hover:bg-[#285091] dark:bg-[#1F3F74] dark:hover:bg-[#285091] text-white text-xs sm:text-sm font-bold shadow-md transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
-                >
-                  <span>Sign In to Review</span>
-                </Link>
-              </div>
             </div>
           </ScrollReveal>
         </div>

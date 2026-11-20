@@ -16,25 +16,41 @@ export function ThemeToggle({ className = '', variant = 'minimal', isTransparent
 
   if (variant === 'drawer') {
     return (
-      <button
-        type="button"
-        onClick={toggleTheme}
-        disabled={isTransitioning}
-        className={`w-full flex items-center justify-between px-3.5 py-3 text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-neutral-800 rounded-xl transition-colors cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed ${className}`}
-        aria-label={isDark ? 'Switch to light theme' : 'Switch to dark theme'}
-      >
-        <span className="flex items-center gap-2.5">
+      <div className={`w-full flex items-center justify-between py-2.5 px-3 rounded-xl bg-white/5 border border-white/10 ${className}`}>
+        <span className="flex items-center gap-2.5 text-xs font-semibold text-white">
           {isDark ? (
-            <Sun className="w-4 h-4 text-amber-400" />
+            <Moon className="w-4 h-4 text-[#F4BF3E]" />
           ) : (
-            <Moon className="w-4 h-4 text-[#1F3F74]" />
+            <Sun className="w-4 h-4 text-[#F4BF3E]" />
           )}
-          <span>{isDark ? 'Light Theme' : 'Dark Theme'}</span>
+          <span>{isDark ? 'Night Mode' : 'Sunlit Mode'}</span>
         </span>
-        <span className="text-[10px] text-slate-400 font-bold uppercase tracking-wider">
-          {isDark ? 'Sunlit' : 'Night'}
-        </span>
-      </button>
+
+        {/* Modern iOS / Material style pill toggle switch */}
+        <button
+          type="button"
+          role="switch"
+          aria-checked={isDark}
+          onClick={toggleTheme}
+          disabled={isTransitioning}
+          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed ${
+            isDark ? 'bg-[#1F3F74]' : 'bg-slate-400'
+          }`}
+          aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
+        >
+          <span
+            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out flex items-center justify-center ${
+              isDark ? 'translate-x-5' : 'translate-x-0'
+            }`}
+          >
+            {isDark ? (
+              <Moon className="w-3 h-3 text-[#1F3F74]" />
+            ) : (
+              <Sun className="w-3 h-3 text-amber-500" />
+            )}
+          </span>
+        </button>
+      </div>
     );
   }
 

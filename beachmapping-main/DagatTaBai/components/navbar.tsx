@@ -82,17 +82,11 @@ export function Navbar() {
     { id: 'desk-contact', label: 'Contact', href: '/contact' },
   ];
 
-  // Mobile drawer links with strictly unique IDs
+  // Mobile drawer links — simplified for landing page (no icons, no descriptions)
   const mobileDrawerLinks = [
-    { id: 'mob-home', label: 'Home', href: user ? '/home' : '/', icon: Home, description: 'Return to main portal' },
-    { id: 'mob-beaches', label: 'Explore Beaches', href: '/beaches', icon: Compass, description: 'Verified resort profiles & amenities' },
-    { id: 'mob-map', label: 'Interactive Map', href: '/map', icon: Map, description: 'Full-screen coastline map & route calculator' },
-    { id: 'mob-weather', label: 'Weather & Tides', href: '/weather', icon: CloudSun, description: 'Live sea conditions & forecasts' },
-    { id: 'mob-planner', label: 'Trip Planner', href: user ? '/home#planner' : '/map?planner=true', icon: Calendar, description: '4-day beach weather planner' },
-    { id: 'mob-apply', label: 'Apply as Beach Owner', href: '/apply', icon: Store, description: 'Register your resort or cottage' },
-    ...(user ? [{ id: 'mob-status', label: 'My Application Status', href: '/apply/status', icon: ShieldCheck, description: 'Track your application' }] : []),
-    { id: 'mob-about', label: 'About Catmon', href: '/about', icon: Info, description: 'Learn about Binongkalan coastline' },
-    { id: 'mob-contact', label: 'Contact & Support', href: '/contact', icon: Mail, description: 'Inquiries & direct assistance' },
+    { id: 'mob-home', label: 'Home', href: user ? '/home' : '/' },
+    { id: 'mob-about', label: 'About', href: '/about' },
+    { id: 'mob-contact', label: 'Contact', href: '/contact' },
   ];
 
   // Fetch session user once on mount
@@ -291,14 +285,14 @@ export function Navbar() {
 
               {/* Modern Title Case Typography with Distinct Brand Accent */}
               <span
-                className={`font-display font-extrabold text-lg sm:text-xl md:text-2xl tracking-tight transition-colors duration-200 ${
+                className={`font-display font-extrabold text-lg sm:text-xl md:text-2xl tracking-tight transition-colors duration-200 translate-y-[1.5px] inline-flex items-center ${
                   isTransparent
                     ? 'text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]'
                     : 'text-[#1F3F74] dark:text-white'
                 }`}
               >
-                Dagat Ta{' '}
-                <span className="text-[#F59E0B] dark:text-amber-400 font-black transition-transform duration-200 group-hover:scale-105 inline-block">
+                <span>Dagat Ta&nbsp;</span>
+                <span className="text-[#F4BF3E] dark:text-[#F4BF3E] font-black transition-transform duration-200 group-hover:scale-105 inline-block">
                   Bai
                 </span>
               </span>
@@ -335,10 +329,12 @@ export function Navbar() {
               })}
             </nav>
 
-            {/* ── RIGHT: Modern Container-less Theme Toggle + CTA Button / User Profile ── */}
+            {/* ── RIGHT: Theme Toggle (Desktop only) + CTA Button / User Profile ── */}
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-              {/* Container-less Theme Toggle (Modern circular icon button, mobile touch friendly) */}
-              <ThemeToggle isTransparent={isTransparent} />
+              {/* Theme Toggle visible only on desktop — mobile uses the sidebar toggle */}
+              <div className="hidden md:block">
+                <ThemeToggle isTransparent={isTransparent} />
+              </div>
 
               {user ? (
                 <div className="flex items-center gap-2 sm:gap-2.5">
@@ -452,13 +448,13 @@ export function Navbar() {
 
           {/* Drawer Panel */}
           <aside
-            className="fixed inset-y-0 right-0 z-[10001] w-full max-w-xs sm:max-w-sm bg-white dark:bg-[#0c1424] text-slate-900 dark:text-white shadow-2xl flex flex-col justify-between overflow-y-auto animate-in slide-in-from-right duration-300 border-l border-slate-200 dark:border-neutral-800"
+            className="fixed inset-y-0 right-0 z-[10001] w-full max-w-xs sm:max-w-sm bg-[#0e1d35] dark:bg-[#071324] text-white shadow-2xl flex flex-col justify-between overflow-y-auto animate-in slide-in-from-right duration-300 border-l border-white/10"
             role="dialog"
             aria-modal="true"
             aria-label="Mobile Navigation Menu"
           >
             {/* Drawer Header */}
-            <div className="p-5 border-b border-slate-100 dark:border-neutral-800/80 flex items-center justify-between">
+            <div className="p-5 border-b border-white/10 flex items-center justify-between">
               <Link
                 href={user ? '/home' : '/'}
                 onClick={() => setMobileMenuOpen(false)}
@@ -474,9 +470,9 @@ export function Navbar() {
                     className="object-contain"
                   />
                 </div>
-                <span className="font-display font-extrabold text-base tracking-tight text-[#1F3F74] dark:text-white">
-                  Dagat Ta{' '}
-                  <span className="text-[#F59E0B] dark:text-amber-400 font-black">
+                <span className="font-display font-extrabold text-base tracking-tight text-white translate-y-[1px] inline-flex items-center">
+                  <span>Dagat Ta&nbsp;</span>
+                  <span className="text-[#F4BF3E] font-black">
                     Bai
                   </span>
                 </span>
@@ -484,63 +480,52 @@ export function Navbar() {
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-2 rounded-full text-slate-400 hover:text-slate-700 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+                className="p-2 rounded-full text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
                 aria-label="Close menu"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Navigation Links with Strictly Unique IDs */}
+            {/* Navigation Links: Pure White Text, No Icons, No Descriptions */}
             <div className="p-4 space-y-1.5 flex-1 overflow-y-auto">
               {mobileDrawerLinks.map((link) => {
-                const Icon = link.icon;
-                const isActive =
-                  pathname === link.href ||
-                  (link.href !== '/' &&
-                    pathname?.startsWith(link.href) &&
-                    !(link.href === '/apply' && pathname?.startsWith('/apply/status')));
+                const isActive = pathname === link.href;
                 return (
                   <Link
                     key={link.id}
                     href={link.href}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all duration-150 ${
+                    className={`block px-4 py-3 rounded-xl text-base font-bold transition-all ${
                       isActive
-                        ? 'bg-[#1F3F74]/10 dark:bg-[#1F3F74]/30 text-[#1F3F74] dark:text-[#5B9BD5] font-bold border-l-4 border-[#1F3F74] dark:border-[#5B9BD5]'
-                        : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-neutral-800/70 hover:text-slate-900 dark:hover:text-white'
+                        ? 'text-[#F4BF3E] bg-white/10 font-extrabold'
+                        : 'text-white hover:text-[#F4BF3E] hover:bg-white/5'
                     }`}
                   >
-                    <Icon className={`w-5 h-5 flex-shrink-0 ${isActive ? 'text-[#1F3F74] dark:text-[#5B9BD5]' : 'text-slate-400 dark:text-slate-500'}`} />
-                    <div className="min-w-0">
-                      <div className="text-sm font-semibold leading-tight">{link.label}</div>
-                      <div className="text-[11px] text-slate-400 dark:text-slate-500 truncate leading-tight mt-0.5">
-                        {link.description}
-                      </div>
-                    </div>
+                    {link.label}
                   </Link>
                 );
               })}
             </div>
 
-            {/* Drawer Footer */}
-            <div className="p-5 border-t border-slate-100 dark:border-neutral-800/80 space-y-4 bg-slate-50/50 dark:bg-black/20">
-              {/* Theme Toggle */}
+            {/* Drawer Footer: Modern Theme Toggle & Auth State if Logged In */}
+            <div className="p-5 border-t border-white/10 space-y-4 bg-black/20">
+              {/* Modern Style Theme Switch */}
               <ThemeToggle variant="drawer" />
 
-              {/* Auth Actions */}
-              {user ? (
-                <div className="space-y-2">
+              {/* Logged in User Management (if authenticated) */}
+              {user && (
+                <div className="space-y-2 pt-2 border-t border-white/10">
                   <Link
                     href="/profile"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-neutral-800"
+                    className="flex items-center gap-3 px-3 py-2 rounded-xl text-xs font-semibold text-white hover:bg-white/10 transition-colors"
                   >
                     <div className="w-6 h-6 rounded-full bg-[#1F3F74] text-white flex items-center justify-center font-bold text-[10px]">
                       {getDisplayName(user).charAt(0).toUpperCase()}
                     </div>
                     <div className="truncate">
-                      <div>{getDisplayName(user)}</div>
+                      <div className="text-white font-medium">{getDisplayName(user)}</div>
                       <div className="text-[10px] text-slate-400 font-normal truncate">{user.email}</div>
                     </div>
                   </Link>
@@ -550,40 +535,13 @@ export function Navbar() {
                       setMobileMenuOpen(false);
                       handleSignOut();
                     }}
-                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 rounded-xl cursor-pointer"
+                    className="w-full flex items-center gap-2.5 px-3 py-2 text-xs font-semibold text-rose-400 hover:bg-rose-500/10 rounded-xl cursor-pointer transition-colors"
                   >
                     <LogOut className="w-4 h-4" />
                     <span>Log Out</span>
                   </button>
                 </div>
-              ) : !authLoading ? (
-                <div className="grid grid-cols-2 gap-2 pt-1">
-                  <Link
-                    href="/login"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="text-center px-4 py-2 text-xs font-bold text-slate-700 dark:text-slate-200 border border-slate-300 dark:border-neutral-700 hover:bg-slate-100 dark:hover:bg-neutral-800 rounded-full"
-                  >
-                    Sign In
-                  </Link>
-                  <Link
-                    href="/register"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="text-center px-4 py-2 text-xs font-bold text-white bg-[#1F3F74] hover:bg-[#285091] rounded-full shadow-sm"
-                  >
-                    Sign Up
-                  </Link>
-                </div>
-              ) : null}
-
-              {/* Direct Gmail support link */}
-              <div className="text-center pt-1">
-                <a
-                  href="mailto:support.dagattabai@gmail.com"
-                  className="text-[11px] text-slate-400 hover:text-[#1F3F74] dark:hover:text-[#5B9BD5] transition-colors"
-                >
-                  support.dagattabai@gmail.com
-                </a>
-              </div>
+              )}
             </div>
           </aside>
         </>

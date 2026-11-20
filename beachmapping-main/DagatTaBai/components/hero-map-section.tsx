@@ -132,6 +132,17 @@ export function HeroMapSection({
               </Link>
             )}
           </div>
+
+          {/* Owner feature prompt: Apply here hyperlink in yellow font color */}
+          <p className="text-xs sm:text-sm text-white/90 drop-shadow-md pt-2">
+            Own a beach or resort in Binongkalan and want to get featured?{' '}
+            <Link
+              href={isAuthenticated ? '/apply' : '/register?redirect=/apply'}
+              className="text-[#F4BF3E] hover:text-[#ffe082] font-bold underline underline-offset-4 transition-colors"
+            >
+              Apply here
+            </Link>
+          </p>
         </div>
       </div>
     </section>

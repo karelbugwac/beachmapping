@@ -18,6 +18,12 @@ export function VisitorTracker() {
         return;
       }
 
+      // Respect user's cookie preferences: if user declined or opted for essential only, do not track telemetry
+      const consent = localStorage.getItem('dtb_cookie_consent_v1');
+      if (consent === 'declined' || consent === 'essential_only') {
+        return;
+      }
+
       let sessionId = sessionStorage.getItem(SESSION_STORAGE_KEY);
       if (!sessionId) {
         sessionId = generateUUID();
