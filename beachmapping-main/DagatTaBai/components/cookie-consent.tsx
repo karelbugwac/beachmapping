@@ -26,7 +26,7 @@ export function CookieConsent() {
       const stored = localStorage.getItem(COOKIE_CONSENT_KEY);
       if (!stored) {
         // Smooth slide-up after page settles
-        const timer = setTimeout(() => setShowBanner(true), 800);
+        const timer = setTimeout(() => setShowBanner(true), 700);
         return () => clearTimeout(timer);
       }
     } catch {
@@ -47,28 +47,28 @@ export function CookieConsent() {
       setShowBanner(false);
       setIsExiting(false);
       setShowSettingsModal(false);
-    }, 450);
+    }, 600);
   };
 
   return (
     <>
-      {/* Full-Width Bottom Cookie Banner (matches reference design) */}
+      {/* Full-Width Bottom Cookie Banner with Tall Spacious Container & Silky Smooth Slide-Up */}
       <aside
         aria-label="Cookie and Privacy Consent"
-        className={`fixed bottom-0 inset-x-0 w-full z-[9999] pointer-events-auto transition-transform duration-500 ease-out ${
-          showBanner && !isExiting ? 'translate-y-0' : 'translate-y-full'
+        className={`fixed bottom-0 inset-x-0 w-full z-[9999] pointer-events-auto transform transition-all duration-700 ease-[cubic-bezier(0.16,1,0.3,1)] will-change-transform ${
+          showBanner && !isExiting ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
         }`}
       >
-        <div className="w-full bg-[#0d1f35] text-white border-t border-slate-700/60 shadow-2xl backdrop-blur-md">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 sm:py-5 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4 sm:gap-6">
+        <div className="w-full bg-[#0d223a]/98 dark:bg-[#071322]/98 text-white border-t border-sky-400/25 shadow-[0_-12px_40px_rgba(0,0,0,0.45)] backdrop-blur-xl">
+          <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 py-6 sm:py-8 lg:py-9 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 sm:gap-8">
             
-            {/* Left: Comprehensive Legal Text */}
-            <div className="flex-1 text-[11px] sm:text-xs text-slate-200 leading-relaxed max-w-4xl">
+            {/* Left: Comprehensive Legal Text with ample vertical rhythm */}
+            <div className="flex-1 text-xs sm:text-[13px] text-slate-200 leading-relaxed max-w-4xl space-y-1.5">
               <p>
                 This site uses cookies and other automated tools to understand and improve our site, provide personalized content and customized experiences, maintain your authentication session, and remember your theme preferences. In compliance with the Philippine Data Privacy Act (RA 10173), we do not sell your personal data or track you across third-party websites. To understand more about how we use cookies or to change your preferences, click on &ldquo;Cookies Settings&rdquo;. By clicking &ldquo;Accept All Cookies&rdquo;, you agree to the storing of cookies on your device consistent with our{' '}
                 <Link
                   href="/privacy"
-                  className="text-white underline font-medium hover:text-amber-300 transition-colors"
+                  className="text-white underline font-semibold hover:text-amber-300 transition-colors"
                 >
                   Privacy Policy
                 </Link>
@@ -77,11 +77,11 @@ export function CookieConsent() {
             </div>
 
             {/* Right: Actions Row (Cookies Settings, Decline, Accept All Cookies) */}
-            <div className="flex items-center flex-wrap gap-4 sm:gap-6 shrink-0 text-xs self-end lg:self-center">
+            <div className="flex items-center flex-wrap gap-4 sm:gap-7 shrink-0 text-xs sm:text-sm self-end lg:self-center pt-2 lg:pt-0">
               <button
                 type="button"
                 onClick={() => setShowSettingsModal(true)}
-                className="text-slate-200 hover:text-white font-medium underline underline-offset-4 hover:text-amber-300 transition-colors cursor-pointer"
+                className="text-slate-200 hover:text-white font-semibold underline underline-offset-4 hover:text-amber-300 transition-colors cursor-pointer"
               >
                 Cookies Settings
               </button>
@@ -89,16 +89,16 @@ export function CookieConsent() {
               <button
                 type="button"
                 onClick={() => dismissWithAction('declined')}
-                className="text-slate-200 hover:text-white font-medium underline underline-offset-4 hover:text-amber-300 transition-colors cursor-pointer"
+                className="text-slate-200 hover:text-white font-semibold underline underline-offset-4 hover:text-amber-300 transition-colors cursor-pointer"
               >
                 Decline
               </button>
 
-              {/* Bold Amber/Gold Accept Button matching reference image */}
+              {/* Bold Amber/Gold Accept Button */}
               <button
                 type="button"
                 onClick={() => dismissWithAction('accepted')}
-                className="px-5 sm:px-6 py-2.5 rounded-xs bg-[#F59E0B] hover:bg-[#D97706] active:scale-98 text-slate-950 font-extrabold text-xs tracking-tight transition-all shadow-md cursor-pointer"
+                className="px-6 sm:px-8 py-3 rounded-md bg-[#F59E0B] hover:bg-[#D97706] active:scale-95 text-slate-950 font-black text-xs sm:text-sm tracking-tight transition-all duration-200 shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 cursor-pointer"
               >
                 Accept All Cookies
               </button>

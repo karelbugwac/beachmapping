@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import {
   Menu,
   X,
@@ -37,7 +37,6 @@ export function Navbar() {
   const [isScrolled, setIsScrolled] = useState(false);
 
   const pathname = usePathname();
-  const router = useRouter();
 
   const isDedicatedPortal =
     pathname?.startsWith('/admin') ||
@@ -51,38 +50,52 @@ export function Navbar() {
   const hasTransparentHero = pathname === '/' || pathname === '/home';
   const isTransparent = hasTransparentHero && !isScrolled;
 
+  // Ultra-efficient passive scroll listener with RAF throttling to prevent long tasks
   useEffect(() => {
-    let frameId: number | null = null;
-    const updateScrollState = () => {
-      frameId = null;
+    let isTicking = false;
+    const checkScroll = () => {
       const scrolled = window.scrollY > 35;
-      setIsScrolled((current) => (current === scrolled ? current : scrolled));
-    };
-    const scheduleScrollStateUpdate = () => {
-      if (frameId === null) frameId = window.requestAnimationFrame(updateScrollState);
+      setIsScrolled((prev) => (prev !== scrolled ? scrolled : prev));
+      isTicking = false;
     };
 
-    scheduleScrollStateUpdate();
-    window.addEventListener('scroll', scheduleScrollStateUpdate, { passive: true });
-    return () => {
-      if (frameId !== null) window.cancelAnimationFrame(frameId);
-      window.removeEventListener('scroll', scheduleScrollStateUpdate);
+    const handleScroll = () => {
+      if (!isTicking) {
+        isTicking = true;
+        window.requestAnimationFrame(checkScroll);
+      }
     };
+
+    checkScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  const navLinks = [
-    { label: 'Home', href: user ? '/home' : '/', icon: Home, description: 'Return to main portal' },
-    { label: 'Explore Beaches', href: '/beaches', icon: Compass, description: 'Verified resort profiles & amenities' },
-    { label: 'Interactive Map', href: '/map', icon: Map, description: 'Full-screen coastline map & route calculator' },
-    { label: 'Weather & Tides', href: '/weather', icon: CloudSun, description: 'Live sea conditions & forecasts' },
-    { label: 'Trip Planner', href: user ? '/home#planner' : '/map', icon: Calendar, description: '4-day beach weather planner' },
-    { label: 'Apply as Beach Owner', href: '/apply', icon: Store, description: 'Register your resort or cottage' },
-    ...(user ? [{ label: 'My Application Status', href: '/apply/status', icon: ShieldCheck, description: 'Track your application' }] : []),
-    { label: 'About Catmon', href: '/about', icon: Info, description: 'Learn about Binongkalan coastline' },
-    { label: 'Contact & Support', href: '/contact', icon: Mail, description: 'Inquiries & direct assistance' },
+  // Desktop navigation links with strictly unique IDs
+  const desktopLinks = [
+    { id: 'desk-home', label: 'Home', href: user ? '/home' : '/' },
+    { id: 'desk-weather', label: 'Weather', href: '/weather' },
+    { id: 'desk-beaches', label: 'Explore Beaches', href: '/beaches' },
+    { id: 'desk-apply', label: 'Apply', href: '/apply' },
+    ...(user ? [{ id: 'desk-status', label: 'My application', href: '/apply/status' }] : []),
+    { id: 'desk-about', label: 'About', href: '/about' },
+    { id: 'desk-contact', label: 'Contact', href: '/contact' },
   ];
 
-  // Fetch session user once on mount (or when leaving dedicated portal), and listen for auth/profile updates
+  // Mobile drawer links with strictly unique IDs
+  const mobileDrawerLinks = [
+    { id: 'mob-home', label: 'Home', href: user ? '/home' : '/', icon: Home, description: 'Return to main portal' },
+    { id: 'mob-beaches', label: 'Explore Beaches', href: '/beaches', icon: Compass, description: 'Verified resort profiles & amenities' },
+    { id: 'mob-map', label: 'Interactive Map', href: '/map', icon: Map, description: 'Full-screen coastline map & route calculator' },
+    { id: 'mob-weather', label: 'Weather & Tides', href: '/weather', icon: CloudSun, description: 'Live sea conditions & forecasts' },
+    { id: 'mob-planner', label: 'Trip Planner', href: user ? '/home#planner' : '/map?planner=true', icon: Calendar, description: '4-day beach weather planner' },
+    { id: 'mob-apply', label: 'Apply as Beach Owner', href: '/apply', icon: Store, description: 'Register your resort or cottage' },
+    ...(user ? [{ id: 'mob-status', label: 'My Application Status', href: '/apply/status', icon: ShieldCheck, description: 'Track your application' }] : []),
+    { id: 'mob-about', label: 'About Catmon', href: '/about', icon: Info, description: 'Learn about Binongkalan coastline' },
+    { id: 'mob-contact', label: 'Contact & Support', href: '/contact', icon: Mail, description: 'Inquiries & direct assistance' },
+  ];
+
+  // Fetch session user once on mount
   useEffect(() => {
     if (isDedicatedPortal) return;
     let isMounted = true;
@@ -238,6 +251,10 @@ export function Navbar() {
 
   if (isDedicatedPortal) return null;
 
+  // On hero pages at top: nav links are hidden to keep the transparent video hero serene and clean.
+  // On scroll (or on non-hero pages): nav links smoothly appear!
+  const showDesktopLinks = !hasTransparentHero || isScrolled;
+
   return (
     <>
       <header
@@ -250,78 +267,78 @@ export function Navbar() {
         }`}
       >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-18 sm:h-20">
-            {/* ── LEFT: Hamburger Menu Button ── */}
-            <div className="flex-1 flex items-center justify-start">
-              <button
-                type="button"
-                onClick={() => setMobileMenuOpen(true)}
-                className={`inline-flex items-center gap-2 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-full transition-all duration-200 cursor-pointer ${
+          <div className="flex items-center justify-between h-16 md:h-18">
+            
+            {/* ── LEFT: Logo & Brand Name (Title Case, Clean & Modern) ── */}
+            <Link
+              href={user ? '/home' : '/'}
+              className="group flex items-center gap-2.5 sm:gap-3 flex-shrink-0 select-none py-1 transition-transform duration-200 hover:scale-[1.02]"
+              aria-label="Dagat Ta Bai Home"
+            >
+              <div className="relative w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0 transition-transform duration-300 group-hover:scale-105">
+                <Image
+                  src="/logo.png"
+                  alt="Dagat Ta Bai Logo"
+                  width={36}
+                  height={36}
+                  style={{ width: 'auto', height: 'auto' }}
+                  className={`object-contain transition-all duration-200 ${
+                    isTransparent ? 'drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]' : ''
+                  }`}
+                  priority={false}
+                />
+              </div>
+
+              {/* Modern Title Case Typography */}
+              <span
+                className={`font-sans font-extrabold text-lg sm:text-xl md:text-2xl tracking-tight transition-colors duration-200 ${
                   isTransparent
-                    ? 'text-white hover:bg-white/15 drop-shadow-[0_1px_3px_rgba(0,0,0,0.5)]'
-                    : 'text-slate-800 dark:text-neutral-100 hover:bg-slate-100 dark:hover:bg-neutral-800'
+                    ? 'text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]'
+                    : 'text-[#1F3F74] dark:text-[#5B9BD5]'
                 }`}
-                aria-label="Open Navigation Menu"
               >
-                <Menu className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
-                <span className="hidden sm:inline text-[11px] font-bold uppercase tracking-[0.2em]">
-                  Menu
-                </span>
-              </button>
-            </div>
+                Dagat Ta Bai
+              </span>
+            </Link>
 
-            {/* ── CENTER: Brand Crest (Stacked Logo & Luxury Typography) ── */}
-            <div className="flex-shrink-0 flex items-center justify-center">
-              <Link
-                href={user ? '/home' : '/'}
-                className="group flex flex-col items-center justify-center text-center select-none py-1 transition-transform duration-200 hover:scale-[1.02]"
-                aria-label="Dagat Ta Bai Home"
-              >
-                {/* Crest Icon */}
-                <div className="relative w-7 h-7 sm:w-8 sm:h-8 mb-0.5 transition-transform duration-300 group-hover:scale-110">
-                  <Image
-                    src="/logo.png"
-                    alt="Dagat Ta Bai Logo"
-                    fill
-                    sizes="36px"
-                    className={`object-contain transition-all duration-200 ${
-                      isTransparent ? 'drop-shadow-[0_2px_8px_rgba(0,0,0,0.6)]' : ''
+            {/* ── CENTER: Desktop Navigation Links (Appears smoothly when scrolled) ── */}
+            <nav
+              aria-label="Main Navigation"
+              className={`hidden md:flex items-center gap-1 lg:gap-1.5 transition-all duration-300 ease-out ${
+                showDesktopLinks
+                  ? 'opacity-100 translate-y-0 pointer-events-auto'
+                  : 'opacity-0 -translate-y-2 pointer-events-none'
+              }`}
+            >
+              {desktopLinks.map((link) => {
+                const isActive =
+                  pathname === link.href ||
+                  (link.href !== '/' &&
+                    pathname?.startsWith(link.href) &&
+                    !(link.href === '/apply' && pathname?.startsWith('/apply/status')));
+                return (
+                  <Link
+                    key={link.id}
+                    href={link.href}
+                    className={`relative px-3 py-1.5 rounded-full text-xs lg:text-[13px] font-semibold transition-all duration-150 ${
+                      isActive
+                        ? 'text-[#1F3F74] dark:text-[#5B9BD5] bg-sky-50/80 dark:bg-sky-950/40 font-bold'
+                        : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-neutral-800/60'
                     }`}
-                    priority
-                  />
-                </div>
+                  >
+                    <span>{link.label}</span>
+                  </Link>
+                );
+              })}
+            </nav>
 
-                {/* Brand Title: High-end coastal typography */}
-                <span
-                  className={`font-display text-sm sm:text-base md:text-lg font-black tracking-[0.22em] sm:tracking-[0.26em] uppercase leading-none transition-colors duration-200 ${
-                    isTransparent
-                      ? 'text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]'
-                      : 'text-[#1F3F74] dark:text-[#5B9BD5]'
-                  }`}
-                >
-                  Dagat Ta Bai
-                </span>
-
-                {/* Subtitle: Binongkalan · Catmon */}
-                <span
-                  className={`text-[7.5px] sm:text-[8.5px] font-sans font-semibold tracking-[0.28em] sm:tracking-[0.32em] uppercase mt-1 leading-none transition-colors duration-200 ${
-                    isTransparent
-                      ? 'text-white/85 drop-shadow-[0_1px_2px_rgba(0,0,0,0.5)]'
-                      : 'text-slate-500 dark:text-slate-400'
-                  }`}
-                >
-                  Binongkalan · Catmon
-                </span>
-              </Link>
-            </div>
-
-            {/* ── RIGHT: Theme Toggle & Actions (Sign Up / User Profile) ── */}
-            <div className="flex-1 flex items-center justify-end gap-2 sm:gap-3">
-              {/* Theme Toggle Button with wave sailboat transition */}
+            {/* ── RIGHT: Modern Container-less Theme Toggle + CTA Button / User Profile ── */}
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+              {/* Container-less Theme Toggle (Modern circular icon button, mobile touch friendly) */}
               <ThemeToggle isTransparent={isTransparent} />
 
               {user ? (
-                <div className="flex items-center gap-2 sm:gap-3">
+                <div className="flex items-center gap-2 sm:gap-2.5">
                   {/* Notifications Bell */}
                   <Link
                     href="/notifications"
@@ -343,7 +360,7 @@ export function Navbar() {
                     )}
                   </Link>
 
-                  {/* Circular Profile Avatar */}
+                  {/* Circular Profile Avatar with explicit dimensions */}
                   <Link
                     href="/profile"
                     title={`Account Settings (${getDisplayName(user)})`}
@@ -367,7 +384,7 @@ export function Navbar() {
                           loading="lazy"
                           decoding="async"
                           referrerPolicy="no-referrer"
-                          style={{ aspectRatio: '1 / 1' }}
+                          style={{ width: '32px', height: '32px', aspectRatio: '1 / 1' }}
                           onError={(event) => {
                             event.currentTarget.style.display = 'none';
                           }}
@@ -377,11 +394,11 @@ export function Navbar() {
                     </div>
                   </Link>
 
-                  {/* Sign Out Button */}
+                  {/* Sign Out Button (Desktop) */}
                   <button
                     type="button"
                     onClick={handleSignOut}
-                    className={`p-2 rounded-full transition-colors cursor-pointer ${
+                    className={`hidden sm:inline-flex p-2 rounded-full transition-colors cursor-pointer ${
                       isTransparent
                         ? 'text-white/80 hover:text-rose-300 hover:bg-white/15'
                         : 'text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-950/40'
@@ -392,23 +409,35 @@ export function Navbar() {
                     <LogOut className="w-4 h-4" />
                   </button>
                 </div>
-              ) : !authLoading ? (
+              ) : (
                 /* Public / Visitor: Sign Up Button */
                 <Link
                   href="/register"
-                  className="inline-flex items-center justify-center px-4 sm:px-5 py-2 text-xs font-bold text-white bg-[#1F3F74] hover:bg-[#285091] rounded-full transition-all shadow-md hover:shadow-lg active:scale-95 border border-white/20"
+                  className="inline-flex items-center justify-center px-4 sm:px-5 py-2 text-xs sm:text-[13px] font-bold text-white bg-[#1F3F74] hover:bg-[#285091] rounded-full transition-all shadow-md hover:shadow-lg active:scale-95 border border-white/15"
                 >
                   Sign Up
                 </Link>
-              ) : (
-                <div className="h-8 w-20" aria-hidden="true" />
               )}
+
+              {/* Mobile Menu Hamburger Toggle (Visible ONLY on mobile devices) */}
+              <button
+                type="button"
+                onClick={() => setMobileMenuOpen(true)}
+                className={`md:hidden p-2 rounded-xl transition-all duration-200 cursor-pointer ${
+                  isTransparent
+                    ? 'text-white hover:bg-white/15'
+                    : 'text-slate-800 dark:text-neutral-100 hover:bg-slate-100 dark:hover:bg-neutral-800'
+                }`}
+                aria-label="Open Mobile Menu"
+              >
+                <Menu className="w-5 h-5 sm:w-6 sm:h-6 stroke-[2.2]" />
+              </button>
             </div>
           </div>
         </div>
       </header>
 
-      {/* ── SLIDE-OVER NAVIGATION DRAWER ── */}
+      {/* ── MOBILE SLIDE-OVER NAVIGATION DRAWER (Optimized for Phone Touch UX) ── */}
       {mobileMenuOpen && (
         <>
           {/* Backdrop */}
@@ -420,29 +449,31 @@ export function Navbar() {
 
           {/* Drawer Panel */}
           <aside
-            className="fixed inset-y-0 left-0 z-[10001] w-full max-w-xs sm:max-w-sm bg-white dark:bg-[#0c1424] text-slate-900 dark:text-white shadow-2xl flex flex-col justify-between overflow-y-auto animate-in slide-in-from-left duration-300 border-r border-slate-200 dark:border-neutral-800"
+            className="fixed inset-y-0 right-0 z-[10001] w-full max-w-xs sm:max-w-sm bg-white dark:bg-[#0c1424] text-slate-900 dark:text-white shadow-2xl flex flex-col justify-between overflow-y-auto animate-in slide-in-from-right duration-300 border-l border-slate-200 dark:border-neutral-800"
             role="dialog"
             aria-modal="true"
-            aria-label="Navigation Menu"
+            aria-label="Mobile Navigation Menu"
           >
             {/* Drawer Header */}
             <div className="p-5 border-b border-slate-100 dark:border-neutral-800/80 flex items-center justify-between">
               <Link
                 href={user ? '/home' : '/'}
                 onClick={() => setMobileMenuOpen(false)}
-                className="flex items-center gap-3 group"
+                className="flex items-center gap-2.5 group"
               >
-                <div className="relative w-8 h-8">
-                  <Image src="/logo.png" alt="Logo" fill className="object-contain" priority />
+                <div className="relative w-8 h-8 flex-shrink-0">
+                  <Image
+                    src="/logo.png"
+                    alt="Logo"
+                    width={32}
+                    height={32}
+                    style={{ width: 'auto', height: 'auto' }}
+                    className="object-contain"
+                  />
                 </div>
-                <div>
-                  <div className="font-display font-black text-sm tracking-[0.2em] text-[#1F3F74] dark:text-[#5B9BD5] uppercase leading-none">
-                    Dagat Ta Bai
-                  </div>
-                  <div className="text-[7.5px] tracking-[0.25em] text-slate-400 uppercase font-semibold mt-1 leading-none">
-                    Binongkalan · Catmon
-                  </div>
-                </div>
+                <span className="font-sans font-extrabold text-base tracking-tight text-[#1F3F74] dark:text-[#5B9BD5]">
+                  Dagat Ta Bai
+                </span>
               </Link>
               <button
                 type="button"
@@ -454,9 +485,9 @@ export function Navbar() {
               </button>
             </div>
 
-            {/* Navigation Links */}
+            {/* Navigation Links with Strictly Unique IDs */}
             <div className="p-4 space-y-1.5 flex-1 overflow-y-auto">
-              {navLinks.map((link) => {
+              {mobileDrawerLinks.map((link) => {
                 const Icon = link.icon;
                 const isActive =
                   pathname === link.href ||
@@ -465,7 +496,7 @@ export function Navbar() {
                     !(link.href === '/apply' && pathname?.startsWith('/apply/status')));
                 return (
                   <Link
-                    key={link.href}
+                    key={link.id}
                     href={link.href}
                     onClick={() => setMobileMenuOpen(false)}
                     className={`flex items-center gap-3.5 px-3.5 py-3 rounded-xl transition-all duration-150 ${

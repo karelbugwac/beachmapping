@@ -93,25 +93,6 @@ export default function HomePage() {
     if (!window.location.hash) {
       window.scrollTo({ top: 0, left: 0, behavior: 'instant' as ScrollBehavior });
     }
-
-    const el = tourContainerRef.current;
-    if (!el) return;
-
-    if ('IntersectionObserver' in window) {
-      const observer = new IntersectionObserver(
-        (entries) => {
-          if (entries[0]?.isIntersecting) {
-            setLoadVirtualTour(true);
-            observer.disconnect();
-          }
-        },
-        { rootMargin: '250px' }
-      );
-      observer.observe(el);
-      return () => observer.disconnect();
-    } else {
-      setLoadVirtualTour(true);
-    }
   }, []);
 
   useRealtimeSync(() => {
@@ -313,12 +294,11 @@ export default function HomePage() {
             </div>
           </ScrollReveal>
 
-          {/* Virtual Tour Container: Centered Below, 90-degree straight corners */}
+          {/* Virtual Tour Container: User-initiated launch to maximize performance and avoid skippable history items */}
           <ScrollReveal direction="up" delay={150} duration={650} className="w-full max-w-5xl mx-auto">
             <div
               ref={tourContainerRef}
-              onClick={() => setLoadVirtualTour(true)}
-              className="relative overflow-hidden shadow-2xl border border-white/20 bg-black w-full h-[360px] sm:h-[460px] lg:h-[520px]"
+              className="relative overflow-hidden shadow-2xl border border-white/20 bg-slate-950 w-full h-[360px] sm:h-[460px] lg:h-[520px]"
             >
               {loadVirtualTour ? (
                 <iframe
@@ -329,12 +309,32 @@ export default function HomePage() {
                   height="100%"
                   tabIndex={-1}
                   sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; magnetometer; picture-in-picture; web-share; xr-spatial-tracking; unload"
+                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; magnetometer; picture-in-picture; web-share; xr-spatial-tracking"
                   className="w-full h-full border-0 block"
                 />
               ) : (
-                <div className="flex h-full w-full items-center justify-center bg-slate-950 text-xs sm:text-sm text-blue-100/80">
-                  Loading 360° Virtual Tour…
+                <div className="relative flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-[#123253] via-[#0c1f35] to-[#06101c] p-6 text-center text-white">
+                  <div className="absolute inset-0 bg-[radial-gradient(#ffffff0a_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
+                  <div className="relative z-10 max-w-md space-y-4">
+                    <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-sky-200 text-[11px] font-bold uppercase tracking-wider">
+                      <span>360° Interactive Tour</span>
+                    </div>
+                    <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
+                      Explore Raniola Beach in 360°
+                    </h3>
+                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-sm mx-auto">
+                      Inspect the shoreline, cottages, and crystal waters through an authentic high-definition panoramic experience.
+                    </p>
+                    <div className="pt-2">
+                      <button
+                        type="button"
+                        onClick={() => setLoadVirtualTour(true)}
+                        className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-[#1F3F74] hover:bg-[#285091] text-white font-bold text-xs sm:text-sm shadow-xl transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer border border-white/20"
+                      >
+                        <span>Launch 360° Virtual Tour</span>
+                      </button>
+                    </div>
+                  </div>
                 </div>
               )}
             </div>
@@ -380,8 +380,8 @@ export default function HomePage() {
                                   height={40}
                                   loading="lazy"
                                   decoding="async"
-                                  style={{ aspectRatio: '1 / 1' }}
-                                  className="absolute inset-0 h-full w-full object-cover"
+                                  style={{ width: '40px', height: '40px', aspectRatio: '1 / 1' }}
+                                  className="absolute inset-0 h-10 w-10 rounded-full object-cover shrink-0"
                                   onError={(event) => {
                                     event.currentTarget.style.display = 'none';
                                   }}

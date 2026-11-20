@@ -32,6 +32,20 @@ export function AccountSuspensionGate() {
   const pathname = usePathname();
   const router = useRouter();
   const isAdminRoute = pathname === '/admin' || pathname.startsWith('/admin/');
+  const isPublicRoute =
+    pathname === '/' ||
+    pathname === '/about' ||
+    pathname === '/contact' ||
+    pathname === '/weather' ||
+    pathname === '/beaches' ||
+    pathname.startsWith('/beaches/') ||
+    pathname === '/faq' ||
+    pathname === '/terms' ||
+    pathname === '/privacy' ||
+    pathname.startsWith('/privacy/') ||
+    pathname === '/feedback' ||
+    pathname === '/community-guidelines' ||
+    pathname === '/owner-requirements';
   const bypassGate = isAdminRoute || pathname === '/suspended' || pathname === '/login' || pathname === '/owner/login';
   const [account, setAccount] = useState<AccountState | null>(null);
   const [loading, setLoading] = useState(true);
@@ -99,6 +113,7 @@ export function AccountSuspensionGate() {
 
   const isSuspended = account?.status === 'suspended';
   if (loading && !hasLoaded) {
+    if (isPublicRoute) return null;
     return (
       <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-50 dark:bg-black" role="status" aria-live="polite">
         <span className="text-sm font-medium text-slate-600 dark:text-neutral-300">Checking account status...</span>

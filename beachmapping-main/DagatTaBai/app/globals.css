@@ -623,3 +623,8 @@ html.wave-transitioning *::after {
     animation: none !important;
   }
 }
+
+/* Browser standard rule: Ensure all lazy-loaded images have baseline aspect-ratio to prevent 0x0 CLS */
+img[loading="lazy"] {
+  aspect-ratio: auto;
+}
