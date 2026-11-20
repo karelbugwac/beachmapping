@@ -2,16 +2,70 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
   Star,
   Map,
   CloudSun,
   Bot,
+  Compass,
+  Eye,
+  X,
+  ExternalLink,
 } from 'lucide-react';
 import { HeroMapSection } from '@/components/hero-map-section';
 import { ScrollReveal } from '@/components/ui/scroll-reveal';
 import { useRealtimeSync } from '@/lib/realtime-sync';
+
+interface VirtualTourItem {
+  id: string;
+  name: string;
+  tagline: string;
+  description: string;
+  coverImage: string;
+  tourUrl: string;
+  slug: string;
+}
+
+const VIRTUAL_TOURS: VirtualTourItem[] = [
+  {
+    id: 'ranola',
+    name: 'Rañola Beach',
+    tagline: 'Experience Comfort & Serenity',
+    description: 'Tranquil shoreline with authentic open cottages and crystal shallows.',
+    coverImage: 'https://rywgvumqhdptolijfdys.supabase.co/storage/v1/object/public/beach-media/ecc03e08-aae1-48d2-87ed-096bb02219e0/395195f5-525e-4628-a3cb-80cb697d9da0/8752e2f5-ce05-45c0-8ff9-4491f96dcc59.webp',
+    tourUrl: 'https://tour.panoee.net/6ac4b494035368b0747a8077',
+    slug: 'ra-ola-beach',
+  },
+  {
+    id: 'litebay',
+    name: 'LiteBay Resort',
+    tagline: 'Your Comfortable Coastal Retreat',
+    description: 'Peaceful private cove with shaded cottage huts and relaxing ocean breezes.',
+    coverImage: 'https://rywgvumqhdptolijfdys.supabase.co/storage/v1/object/public/beach-media/b77372e3-937e-4d6d-8c9f-70140337ec9e/4c491f53-f43f-4519-b2cd-f4b5bbf67cf1/a633e921-b0c5-4afd-aa96-a758927a8b6d.jpg',
+    tourUrl: 'https://tour.panoee.net/6ac4b494035368b0747a8077',
+    slug: 'litebay-resort',
+  },
+  {
+    id: 'majestique',
+    name: 'Majestique View Resort',
+    tagline: 'Indulge in Tranquility & Sea Views',
+    description: 'Cliffside vistas overlooking the open Camotes Sea with coral reef shallows.',
+    coverImage: 'https://rywgvumqhdptolijfdys.supabase.co/storage/v1/object/public/beach-media/e6aa7181-7d43-435d-9701-96d9b1cd220c/ae36c165-2f63-4566-80ac-1d44f7b62f87/fd8165c8-83dc-420c-8a52-9b4059be1d9d.webp',
+    tourUrl: 'https://tour.panoee.net/6ac4b494035368b0747a8077',
+    slug: 'majestique-beach',
+  },
+  {
+    id: 'hinagdan',
+    name: 'Hinagdan Beach',
+    tagline: 'Natural Rock Steps & Crystal Waters',
+    description: 'Iconic limestone staircase descending directly into refreshing natural tidal pools.',
+    coverImage: 'https://rywgvumqhdptolijfdys.supabase.co/storage/v1/object/public/beach-media/6322f704-b8b8-4600-bb3c-d16ebc6b7494/fa4c9520-8b31-443e-b7dd-0b40a6d3c182/45569d84-fc76-4fa9-9310-837bbef53e28.jpg',
+    tourUrl: 'https://tour.panoee.net/6ac4b494035368b0747a8077',
+    slug: 'hinagdan-beach',
+  },
+];
 
 interface SystemTestimonial {
   id: string;
@@ -52,6 +106,7 @@ export default function HomePage() {
   const router = useRouter();
   const [systemTestimonials, setSystemTestimonials] = useState<SystemTestimonial[]>([]);
   const [loadVirtualTour, setLoadVirtualTour] = useState(false);
+  const [selectedTour, setSelectedTour] = useState<VirtualTourItem | null>(null);
   const tourContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -162,36 +217,69 @@ export default function HomePage() {
         ctaHref="/register"
       />
 
-      {/* Section 1: See Beyond the Pictures (DARK DIVE BLUE Background #124168 - Harmonious Balanced Spacing) */}
-      <section className="w-full bg-brand-navy-500 dark:bg-brand-navy-700 text-white transition-colors duration-200 relative z-20">
-        <div className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto text-center">
-          <ScrollReveal direction="up" duration={650} className="space-y-5 sm:space-y-6 flex flex-col items-center">
-            <div>
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-white leading-tight">
-                See Beyond the Pictures
+      {/* Section 1: How It Works */}
+      <section className="w-full bg-slate-50 dark:bg-black/95 border-b border-slate-200/80 dark:border-neutral-900 transition-colors duration-200 py-14 sm:py-20 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
+          <ScrollReveal direction="up" duration={650}>
+            <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-14 space-y-2.5">
+              <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#1F3F74] dark:text-[#F4BF3E] bg-[#F4BF3E]/20 dark:bg-amber-950/60 border border-[#F4BF3E]/40 px-3 py-1 rounded-full">
+                Simple 3-Step Guide
+              </span>
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-extrabold tracking-tight text-[#1F3F74] dark:text-white leading-tight">
+                How It Works
               </h2>
-            </div>
-
-            {/* Description: Centered container yet justified text with centered last line */}
-            <div
-              className="text-xs sm:text-sm text-brand-navy-100/90 leading-relaxed max-w-3xl mx-auto"
-              style={{ textAlign: 'justify', textAlignLast: 'center' }}
-            >
-              <p>
-                Planning a beach trip should be exciting, not confusing. Our goal is to give visitors a better understanding of the coastal destinations in Barangay Binongkalan, Catmon, Cebu, so they can make informed decisions before visiting. From the actual beach surroundings to available facilities and other important details, we want people to know what to expect beyond what they see on social media. Because every beach visit deserves a little less uncertainty and a lot more confidence.
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-lg mx-auto leading-relaxed">
+                Everything you need to discover, inspect, and plan your beach visit in Binongkalan, Catmon.
               </p>
             </div>
-
-            <div className="pt-5 sm:pt-6">
-              {/* White button on blue background */}
-              <Link
-                href="/about"
-                className="inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-white hover:bg-slate-100 text-brand-navy-500 font-bold text-xs sm:text-sm shadow-lg shadow-black/20 transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
-              >
-                Learn More
-              </Link>
-            </div>
           </ScrollReveal>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
+            {/* Step 1 */}
+            <ScrollReveal direction="up" delay={100} duration={600} className="relative p-6 sm:p-7 rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200/80 dark:border-neutral-800 shadow-sm flex flex-col justify-between space-y-4 hover:border-[#1F3F74]/30 dark:hover:border-sky-500/30 transition-all">
+              <div className="space-y-3">
+                <div className="w-11 h-11 rounded-xl bg-[#F4BF3E]/20 text-[#1F3F74] dark:text-[#F4BF3E] font-display font-black text-lg flex items-center justify-center">
+                  01
+                </div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white font-display">
+                  Explore Verified Beaches
+                </h3>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                  Browse authentic cottage fees, real entrance rates, available amenities, and terrain conditions for all 4 beaches in Binongkalan.
+                </p>
+              </div>
+            </ScrollReveal>
+
+            {/* Step 2 */}
+            <ScrollReveal direction="up" delay={200} duration={600} className="relative p-6 sm:p-7 rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200/80 dark:border-neutral-800 shadow-sm flex flex-col justify-between space-y-4 hover:border-[#1F3F74]/30 dark:hover:border-sky-500/30 transition-all">
+              <div className="space-y-3">
+                <div className="w-11 h-11 rounded-xl bg-[#F4BF3E]/20 text-[#1F3F74] dark:text-[#F4BF3E] font-display font-black text-lg flex items-center justify-center">
+                  02
+                </div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white font-display">
+                  Inspect in 360° Virtual Tour
+                </h3>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                  Take an interactive panoramic stroll around the shoreline, sea horizons, and cottages directly on your screen before packing.
+                </p>
+              </div>
+            </ScrollReveal>
+
+            {/* Step 3 */}
+            <ScrollReveal direction="up" delay={300} duration={600} className="relative p-6 sm:p-7 rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200/80 dark:border-neutral-800 shadow-sm flex flex-col justify-between space-y-4 hover:border-[#1F3F74]/30 dark:hover:border-sky-500/30 transition-all">
+              <div className="space-y-3">
+                <div className="w-11 h-11 rounded-xl bg-[#F4BF3E]/20 text-[#1F3F74] dark:text-[#F4BF3E] font-display font-black text-lg flex items-center justify-center">
+                  03
+                </div>
+                <h3 className="text-base font-bold text-slate-900 dark:text-white font-display">
+                  Plan Routes &amp; Ask Bai
+                </h3>
+                <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
+                  Calculate travel routes from your starting location and chat with Bai, our 24/7 AI guide, for tide advice and local Catmon tips.
+                </p>
+              </div>
+            </ScrollReveal>
+          </div>
         </div>
       </section>
 
@@ -253,67 +341,79 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Section 3: Take a 360° Look Around (DARK DIVE BLUE Background #124168 - Harmonious Spacing, Centered Header & Tour) */}
-      <section className="w-full bg-brand-navy-500 dark:bg-brand-navy-700 text-white border-b border-white/10 transition-colors duration-200 relative overflow-hidden">
-        <div className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
+      {/* Section 3: Take a 360° Look Around (4 Virtual Tours Luxury Showcase — Style of Reference Image 2) */}
+      <section className="w-full bg-white dark:bg-black border-b border-slate-100 dark:border-neutral-900 transition-colors duration-200 py-16 sm:py-24 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto">
           {/* Centered Header & Subheader */}
           <ScrollReveal direction="up" duration={650}>
-            <div className="text-center max-w-3xl mx-auto mb-10 sm:mb-12 space-y-3">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-white leading-tight">
+            <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16 space-y-3">
+              <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#1F3F74] dark:text-[#F4BF3E] bg-[#F4BF3E]/20 dark:bg-amber-950/60 border border-[#F4BF3E]/40 px-3.5 py-1 rounded-full">
+                Interactive Panoramic Previews
+              </span>
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-extrabold tracking-tight text-[#1F3F74] dark:text-white leading-tight">
                 Take a 360° Look Around
               </h2>
-
-              <p className="text-xs sm:text-sm text-brand-navy-100/90 leading-relaxed max-w-2xl mx-auto">
-                Explore the beach from different angles and see what each destination has to offer. Take a closer look at the surroundings, discover available facilities, and get a better feel for the place through an immersive 360° virtual experience powered by Panoee.
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-xl mx-auto leading-relaxed">
+                Inspect Binongkalan&apos;s coastlines before you visit. Explore real shoreline panoramas, open cabanas, and tide conditions for each destination.
               </p>
             </div>
           </ScrollReveal>
 
-          {/* Virtual Tour Container: User-initiated launch to maximize performance and avoid skippable history items */}
-          <ScrollReveal direction="up" delay={150} duration={650} className="w-full max-w-5xl mx-auto">
-            <div
-              ref={tourContainerRef}
-              className="relative overflow-hidden shadow-2xl border border-white/20 bg-slate-950 w-full h-[360px] sm:h-[460px] lg:h-[520px]"
-            >
-              {loadVirtualTour ? (
-                <iframe
-                  id="tour-embeded"
-                  name="Raniola"
-                  src="https://tour.panoee.net/6ac4b494035368b0747a8077"
-                  width="100%"
-                  height="100%"
-                  tabIndex={-1}
-                  sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
-                  allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; magnetometer; picture-in-picture; web-share; xr-spatial-tracking"
-                  className="w-full h-full border-0 block"
-                />
-              ) : (
-                <div className="relative flex h-full w-full flex-col items-center justify-center bg-gradient-to-br from-[#123253] via-[#0c1f35] to-[#06101c] p-6 text-center text-white">
-                  <div className="absolute inset-0 bg-[radial-gradient(#ffffff0a_1px,transparent_1px)] [background-size:16px_16px] pointer-events-none" />
-                  <div className="relative z-10 max-w-md space-y-4">
-                    <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-sky-200 text-[11px] font-bold uppercase tracking-wider">
-                      <span>360° Interactive Tour</span>
-                    </div>
-                    <h3 className="text-xl sm:text-2xl font-bold tracking-tight text-white">
-                      Explore Raniola Beach in 360°
-                    </h3>
-                    <p className="text-xs sm:text-sm text-slate-300 leading-relaxed max-w-sm mx-auto">
-                      Inspect the shoreline, cottages, and crystal waters through an authentic high-definition panoramic experience.
-                    </p>
-                    <div className="pt-2">
-                      <button
-                        type="button"
-                        onClick={() => setLoadVirtualTour(true)}
-                        className="inline-flex items-center gap-2 px-7 py-3 rounded-full bg-[#1F3F74] hover:bg-[#285091] text-white font-bold text-xs sm:text-sm shadow-xl transition-all duration-200 hover:scale-105 active:scale-95 cursor-pointer border border-white/20"
-                      >
-                        <span>Launch 360° Virtual Tour</span>
-                      </button>
-                    </div>
+          {/* 4 Virtual Tour Cards: Luxury Showcase (Image 2 style with perspective card feel) */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-7">
+            {VIRTUAL_TOURS.map((tour, idx) => (
+              <ScrollReveal
+                key={tour.id}
+                direction="up"
+                delay={idx * 100}
+                duration={600}
+                className="group flex flex-col bg-white dark:bg-neutral-900 border border-slate-200/90 dark:border-neutral-800 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+              >
+                {/* Image Top with 360 Badge */}
+                <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 dark:bg-neutral-800">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={tour.coverImage}
+                    alt={tour.name}
+                    width={400}
+                    height={300}
+                    loading="lazy"
+                    decoding="async"
+                    style={{ width: '100%', height: '100%', aspectRatio: '4 / 3' }}
+                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                  />
+                  <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[10px] font-bold tracking-wider uppercase border border-white/20">
+                    <Eye className="w-3 h-3 text-[#F4BF3E]" />
+                    <span>360° Tour</span>
                   </div>
                 </div>
-              )}
-            </div>
-          </ScrollReveal>
+
+                {/* Card Body */}
+                <div className="p-5 flex-1 flex flex-col justify-between text-center space-y-3 bg-gradient-to-b from-transparent to-slate-50/50 dark:to-neutral-950/40">
+                  <div className="space-y-1.5">
+                    <h3 className="font-display font-bold text-lg sm:text-xl text-slate-900 dark:text-white tracking-tight">
+                      {tour.name}
+                    </h3>
+                    <p className="text-xs text-slate-500 dark:text-slate-400 italic leading-snug">
+                      {tour.tagline}
+                    </p>
+                  </div>
+
+                  {/* Yellow Action Button */}
+                  <div className="pt-2">
+                    <button
+                      type="button"
+                      onClick={() => setSelectedTour(tour)}
+                      className="w-full px-5 py-2.5 rounded-none bg-[#F4BF3E] hover:bg-[#e2af35] text-[#1F3F74] font-black text-xs uppercase tracking-wider transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 cursor-pointer inline-flex items-center justify-center gap-1.5"
+                    >
+                      <Eye className="w-3.5 h-3.5" />
+                      <span>Explore 360°</span>
+                    </button>
+                  </div>
+                </div>
+              </ScrollReveal>
+            ))}
+          </div>
         </div>
       </section>
 
@@ -432,10 +532,10 @@ export default function HomePage() {
             </div>
 
             <div className="flex justify-center pt-6 sm:pt-7">
-              {/* Single White button with no icon */}
+              {/* Yellow Button */}
               <Link
                 href="/apply"
-                className="inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-white hover:bg-slate-100 text-brand-navy-500 text-xs sm:text-sm font-bold transition-all duration-200 shadow-lg shadow-black/20 hover:-translate-y-0.5 active:translate-y-0"
+                className="inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-[#F4BF3E] hover:bg-[#e2af35] text-[#1F3F74] text-xs sm:text-sm font-black transition-all duration-200 shadow-lg shadow-amber-500/20 hover:-translate-y-0.5 active:translate-y-0"
               >
                 Apply as Beach Owner
               </Link>
@@ -443,6 +543,58 @@ export default function HomePage() {
           </ScrollReveal>
         </div>
       </section>
+
+      {/* 360° Interactive Viewer Modal */}
+      {selectedTour && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          className="fixed inset-0 z-[10002] flex items-center justify-center p-3 sm:p-6 bg-black/80 backdrop-blur-sm animate-in fade-in duration-200"
+        >
+          <div className="relative w-full max-w-5xl bg-slate-950 border border-white/20 shadow-2xl flex flex-col overflow-hidden max-h-[92vh]">
+            {/* Modal Header */}
+            <div className="p-4 bg-slate-900 border-b border-white/10 flex items-center justify-between gap-3 text-white">
+              <div className="flex items-center gap-2.5">
+                <span className="w-2.5 h-2.5 rounded-full bg-[#F4BF3E] animate-pulse" />
+                <h3 className="font-display font-bold text-base sm:text-lg">
+                  {selectedTour.name} — 360° Virtual Tour
+                </h3>
+              </div>
+              <div className="flex items-center gap-2">
+                <Link
+                  href={`/beaches/${selectedTour.slug}`}
+                  className="hidden sm:inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-[#F4BF3E] hover:bg-[#e2af35] text-[#1F3F74] text-xs font-bold transition-colors"
+                >
+                  <span>View Beach Profile</span>
+                  <ExternalLink className="w-3 h-3" />
+                </Link>
+                <button
+                  type="button"
+                  onClick={() => setSelectedTour(null)}
+                  className="p-1.5 rounded-full text-slate-400 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                  aria-label="Close 360 Tour"
+                >
+                  <X className="w-5 h-5" />
+                </button>
+              </div>
+            </div>
+
+            {/* Modal Iframe Content */}
+            <div className="relative w-full h-[55vh] sm:h-[65vh] bg-black">
+              <iframe
+                title={selectedTour.name}
+                src={selectedTour.tourUrl}
+                width="100%"
+                height="100%"
+                tabIndex={-1}
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; magnetometer; picture-in-picture; web-share; xr-spatial-tracking"
+                className="w-full h-full border-0 block"
+              />
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

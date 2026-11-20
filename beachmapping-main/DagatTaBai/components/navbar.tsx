@@ -412,7 +412,7 @@ export function Navbar() {
                 /* Public / Visitor: Sign Up Button */
                 <Link
                   href="/register"
-                  className="inline-flex items-center justify-center px-4 sm:px-5 py-2 text-xs sm:text-[13px] font-bold text-white bg-[#1F3F74] hover:bg-[#285091] rounded-full transition-all shadow-md hover:shadow-lg active:scale-95 border border-white/15"
+                  className="inline-flex items-center justify-center px-4 sm:px-5 py-2 text-xs sm:text-[13px] font-black text-[#1F3F74] bg-[#F4BF3E] hover:bg-[#e2af35] rounded-full transition-all shadow-md hover:shadow-lg active:scale-95 border border-amber-300/40"
                 >
                   Sign Up
                 </Link>

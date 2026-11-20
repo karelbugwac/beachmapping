@@ -117,7 +117,7 @@ export function HeroMapSection({
           <div className="pt-6 sm:pt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
               href={resolvedCtaHref}
-              className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-[#1F3F74] hover:bg-[#16325c] text-white font-extrabold text-xs sm:text-sm transition-all duration-200 shadow-xl shadow-brand-navy-900/40 hover:shadow-brand-navy-900/60 hover:-translate-y-0.5 active:translate-y-0 group border border-white/20 cursor-pointer"
+              className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-[#F4BF3E] hover:bg-[#e2af35] text-[#1F3F74] font-black text-xs sm:text-sm transition-all duration-200 shadow-xl shadow-amber-500/20 hover:shadow-amber-500/35 hover:-translate-y-0.5 active:translate-y-0 group border border-amber-300/50 cursor-pointer"
             >
               <span>{resolvedCtaText}</span>
             </Link>

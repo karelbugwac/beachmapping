@@ -71,6 +71,13 @@ export function CookieConsent() {
                   className="text-[#1F3F74] dark:text-[#F4BF3E] underline font-bold hover:opacity-80 transition-opacity"
                 >
                   Privacy Policy
+                </Link>{' '}
+                and{' '}
+                <Link
+                  href="/environmental-policy"
+                  className="text-[#1F3F74] dark:text-[#F4BF3E] underline font-bold hover:opacity-80 transition-opacity"
+                >
+                  Environmental Policy
                 </Link>
                 .
               </p>

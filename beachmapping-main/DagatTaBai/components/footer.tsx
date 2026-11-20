@@ -105,6 +105,11 @@ export function Footer() {
                   </Link>
                 </li>
                 <li>
+                  <Link href="/environmental-policy" className="hover:text-brand-navy-500 dark:hover:text-white transition-colors">
+                    Environmental Policy
+                  </Link>
+                </li>
+                <li>
                   <Link href="/terms" className="hover:text-brand-navy-500 dark:hover:text-white transition-colors">
                     Terms of Use
                   </Link>
