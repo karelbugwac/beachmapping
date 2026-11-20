@@ -12,6 +12,8 @@ import {
   Compass,
   X,
   ExternalLink,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 import { HeroMapSection } from '@/components/hero-map-section';
 import { ScrollReveal } from '@/components/ui/scroll-reveal';
@@ -106,6 +108,17 @@ export default function HomePage() {
   const [systemTestimonials, setSystemTestimonials] = useState<SystemTestimonial[]>([]);
   const [loadVirtualTour, setLoadVirtualTour] = useState(false);
   const [selectedTour, setSelectedTour] = useState<VirtualTourItem | null>(null);
+  const [activeTourIndex, setActiveTourIndex] = useState(0);
+  const tourTouchStartX = useRef<number | null>(null);
+
+  const prevTour = () => {
+    setActiveTourIndex((prev) => (prev - 1 + VIRTUAL_TOURS.length) % VIRTUAL_TOURS.length);
+  };
+
+  const nextTour = () => {
+    setActiveTourIndex((prev) => (prev + 1) % VIRTUAL_TOURS.length);
+  };
+
   const tourContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -216,15 +229,12 @@ export default function HomePage() {
         ctaHref="/register"
       />
 
-      {/* Section 1: How It Works (Clean Pure White & Black — Zero Beige) */}
+      {/* Section 1: How It Works (Clean Pure White & Black — Zero Beige, Zero Pill Badges) */}
       <section className="w-full bg-white dark:bg-black border-b border-slate-100 dark:border-neutral-900 transition-colors duration-200 py-14 sm:py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <ScrollReveal direction="up" duration={650}>
             <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-14 space-y-2.5">
-              <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#1F3F74] dark:text-sky-300 bg-sky-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 px-3 py-1 rounded-full">
-                Simple 3-Step Guide
-              </span>
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-extrabold tracking-tight text-[#1F3F74] dark:text-white leading-tight">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-medium tracking-tight text-[#1F3F74] dark:text-white leading-tight">
                 How It Works
               </h2>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-lg mx-auto leading-relaxed">
@@ -286,11 +296,11 @@ export default function HomePage() {
       <section className="w-full bg-white dark:bg-black border-b border-slate-100 dark:border-neutral-900 transition-colors duration-200 relative">
         <div className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <ScrollReveal direction="up" duration={650}>
-            <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-14">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-brand-navy-500 dark:text-brand-teal-300 leading-tight">
+            <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-14 space-y-2.5">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-medium tracking-tight text-[#1F3F74] dark:text-white leading-tight">
                 Your Beach Guide
               </h2>
-              <p className="mt-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400">
                 Explore helpful tools and information for a more informed beach experience.
               </p>
             </div>
@@ -301,12 +311,12 @@ export default function HomePage() {
             {/* Column 1: Interactive Map (Map Icon - same as hero button) */}
             <ScrollReveal direction="up" delay={100} duration={600} className="px-6 sm:px-8 py-5 md:py-2 flex flex-col items-center space-y-3 group">
               <div className="h-10 flex items-center justify-center">
-                <Map className="w-9 h-9 text-brand-navy-500 dark:text-brand-teal-300 stroke-[1.8] transition-transform duration-300 group-hover:scale-110" />
+                <Map className="w-9 h-9 text-[#1F3F74] dark:text-[#F4BF3E] stroke-[1.8] transition-transform duration-300 group-hover:scale-110" />
               </div>
-              <h3 className="text-xs sm:text-sm font-bold tracking-widest uppercase text-slate-900 dark:text-white font-heading">
+              <h3 className="text-xs sm:text-sm font-display font-bold tracking-widest uppercase text-slate-900 dark:text-white">
                 Interactive Map
               </h3>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-xs">
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-xs font-sans">
                 Explore verified beach resorts, inspect cottage amenities, check terrain conditions, and view authentic coastal routes across Binongkalan.
               </p>
             </ScrollReveal>
@@ -314,12 +324,12 @@ export default function HomePage() {
             {/* Column 2: Weather Forecast (CloudSun Icon - Sun & Clouds) */}
             <ScrollReveal direction="up" delay={200} duration={600} className="px-6 sm:px-8 py-5 md:py-2 flex flex-col items-center space-y-3 group">
               <div className="h-10 flex items-center justify-center">
-                <CloudSun className="w-9 h-9 text-brand-navy-500 dark:text-brand-teal-300 stroke-[1.8] transition-transform duration-300 group-hover:scale-110" />
+                <CloudSun className="w-9 h-9 text-[#1F3F74] dark:text-[#F4BF3E] stroke-[1.8] transition-transform duration-300 group-hover:scale-110" />
               </div>
-              <h3 className="text-xs sm:text-sm font-bold tracking-widest uppercase text-slate-900 dark:text-white font-heading">
+              <h3 className="text-xs sm:text-sm font-display font-bold tracking-widest uppercase text-slate-900 dark:text-white">
                 Weather Forecast
               </h3>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-xs">
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-xs font-sans">
                 Stay updated with real-time wave telemetry, tide levels, wind advisories, and marine weather forecasts for safe and well-planned beach trips.
               </p>
             </ScrollReveal>
@@ -327,12 +337,12 @@ export default function HomePage() {
             {/* Column 3: Bai Coastal Chatbot (Bot Icon) */}
             <ScrollReveal direction="up" delay={300} duration={600} className="px-6 sm:px-8 py-5 md:py-2 flex flex-col items-center space-y-3 group">
               <div className="h-10 flex items-center justify-center">
-                <Bot className="w-9 h-9 text-brand-navy-500 dark:text-brand-teal-300 stroke-[1.8] transition-transform duration-300 group-hover:scale-110" />
+                <Bot className="w-9 h-9 text-[#1F3F74] dark:text-[#F4BF3E] stroke-[1.8] transition-transform duration-300 group-hover:scale-110" />
               </div>
-              <h3 className="text-xs sm:text-sm font-bold tracking-widest uppercase text-slate-900 dark:text-white font-heading">
+              <h3 className="text-xs sm:text-sm font-display font-bold tracking-widest uppercase text-slate-900 dark:text-white">
                 Bai Coastal Chatbot
               </h3>
-              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-xs">
+              <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-xs font-sans">
                 Ask our 24/7 local AI guide about entrance fees, cottage reservations, travel guidelines, and local Catmon tips right when you need them.
               </p>
             </ScrollReveal>
@@ -340,73 +350,177 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Section 3: Take a 360° Look Around (4 Virtual Tours Luxury Showcase — Clean Standard, Zero Beige) */}
-      <section className="w-full bg-white dark:bg-black border-b border-slate-100 dark:border-neutral-900 transition-colors duration-200 py-16 sm:py-24 px-4 sm:px-6 lg:px-8">
+      {/* Section 3: Take a 360° Look Around (3D Perspective Resort Carousel — Style of Bluewater) */}
+      <section className="w-full bg-white dark:bg-black border-b border-slate-100 dark:border-neutral-900 transition-colors duration-200 py-16 sm:py-24 px-4 sm:px-6 lg:px-8 overflow-hidden select-none">
         <div className="max-w-7xl mx-auto">
-          {/* Centered Header & Subheader */}
+          {/* Centered Header & Subheader (Zero Pill Badges) */}
           <ScrollReveal direction="up" duration={650}>
-            <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16 space-y-3">
-              <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#1F3F74] dark:text-sky-300 bg-sky-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 px-3.5 py-1 rounded-full">
-                Interactive Panoramic Previews
-              </span>
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-extrabold tracking-tight text-[#1F3F74] dark:text-white leading-tight">
+            <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-14 space-y-3">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-medium tracking-tight text-[#1F3F74] dark:text-white leading-tight">
                 Take a 360° Look Around
               </h2>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-xl mx-auto leading-relaxed">
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-xl mx-auto leading-relaxed font-sans">
                 Inspect Binongkalan&apos;s coastlines before you visit. Explore real shoreline panoramas, open cabanas, and tide conditions for each destination.
               </p>
             </div>
           </ScrollReveal>
 
-          {/* 4 Virtual Tour Cards: Clean Luxury Showcase (Zero badges on images, clean text buttons) */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-7">
-            {VIRTUAL_TOURS.map((tour, idx) => (
-              <ScrollReveal
-                key={tour.id}
-                direction="up"
-                delay={idx * 100}
-                duration={600}
-                className="group flex flex-col bg-white dark:bg-[#0a0a0a] border border-slate-200/90 dark:border-neutral-800 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+          {/* 3D Perspective Carousel Container */}
+          <div
+            className="relative w-full max-w-5xl mx-auto flex items-center justify-center [perspective:1400px] min-h-[490px] sm:min-h-[530px]"
+            onTouchStart={(e) => {
+              tourTouchStartX.current = e.touches[0].clientX;
+            }}
+            onTouchEnd={(e) => {
+              if (tourTouchStartX.current === null) return;
+              const diff = tourTouchStartX.current - e.changedTouches[0].clientX;
+              if (diff > 50) nextTour();
+              else if (diff < -50) prevTour();
+              tourTouchStartX.current = null;
+            }}
+          >
+            {/* Desktop Navigation Chevrons */}
+            <div className="hidden sm:flex absolute -left-2 lg:-left-6 top-1/2 -translate-y-1/2 z-30 pointer-events-none">
+              <button
+                type="button"
+                onClick={prevTour}
+                aria-label="Previous beach tour"
+                className="pointer-events-auto w-11 h-11 rounded-full border border-slate-200 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 text-slate-800 dark:text-white shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center cursor-pointer hover:border-[#1F3F74]/50"
               >
-                {/* Image Top (Clean without badge overlay) */}
-                <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 dark:bg-neutral-800">
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={tour.coverImage}
-                    alt={tour.name}
-                    width={400}
-                    height={300}
-                    loading="lazy"
-                    decoding="async"
-                    style={{ width: '100%', height: '100%', aspectRatio: '4 / 3' }}
-                    className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                  />
-                </div>
+                <ChevronLeft className="w-5 h-5 -translate-x-0.5" />
+              </button>
+            </div>
 
-                {/* Card Body */}
-                <div className="p-5 flex-1 flex flex-col justify-between text-center space-y-3 bg-gradient-to-b from-transparent to-slate-50/50 dark:to-neutral-950/40">
-                  <div className="space-y-1.5">
-                    <h3 className="font-display font-bold text-lg sm:text-xl text-slate-900 dark:text-white tracking-tight">
-                      {tour.name}
-                    </h3>
-                    <p className="text-xs text-slate-500 dark:text-slate-400 italic leading-snug">
-                      {tour.tagline}
-                    </p>
-                  </div>
+            <div className="hidden sm:flex absolute -right-2 lg:-right-6 top-1/2 -translate-y-1/2 z-30 pointer-events-none">
+              <button
+                type="button"
+                onClick={nextTour}
+                aria-label="Next beach tour"
+                className="pointer-events-auto w-11 h-11 rounded-full border border-slate-200 dark:border-neutral-800 bg-white/95 dark:bg-neutral-900/95 text-slate-800 dark:text-white shadow-xl hover:scale-105 active:scale-95 transition-all flex items-center justify-center cursor-pointer hover:border-[#1F3F74]/50"
+              >
+                <ChevronRight className="w-5 h-5 translate-x-0.5" />
+              </button>
+            </div>
 
-                  {/* Yellow Action Button (Clean text only, no eye icon) */}
-                  <div className="pt-2">
-                    <button
-                      type="button"
-                      onClick={() => setSelectedTour(tour)}
-                      className="w-full px-5 py-2.5 rounded-none bg-[#F4BF3E] hover:bg-[#e2af35] text-[#1F3F74] font-black text-xs uppercase tracking-wider transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 cursor-pointer text-center"
-                    >
-                      Explore 360°
-                    </button>
+            {/* The 3D Cards Stack */}
+            <div className="relative w-full h-[470px] sm:h-[510px] flex items-center justify-center">
+              {VIRTUAL_TOURS.map((tour, idx) => {
+                let offset = idx - activeTourIndex;
+                if (offset > 2) offset -= VIRTUAL_TOURS.length;
+                if (offset < -2) offset += VIRTUAL_TOURS.length;
+
+                const isCenter = offset === 0;
+                const isLeft = offset === -1 || (offset === 3 - VIRTUAL_TOURS.length);
+                const isRight = offset === 1 || (offset === VIRTUAL_TOURS.length - 3);
+                const isVisible = isCenter || isLeft || isRight;
+
+                let zIndex = 0;
+                let transformValue = '';
+                if (isCenter) {
+                  transformValue = 'translate3d(0, 0, 0) scale(1) rotateY(0deg)';
+                  zIndex = 25;
+                } else if (isLeft) {
+                  transformValue = 'translate3d(-52%, 0, -60px) scale(0.88) rotateY(20deg)';
+                  zIndex = 10;
+                } else if (isRight) {
+                  transformValue = 'translate3d(52%, 0, -60px) scale(0.88) rotateY(-20deg)';
+                  zIndex = 10;
+                } else {
+                  transformValue = 'translate3d(0, 0, -200px) scale(0.5)';
+                  zIndex = 0;
+                }
+
+                return (
+                  <div
+                    key={tour.id}
+                    onClick={() => {
+                      if (isLeft) prevTour();
+                      if (isRight) nextTour();
+                    }}
+                    style={{
+                      transform: transformValue,
+                      zIndex,
+                      opacity: isVisible ? (isCenter ? 1 : 0.72) : 0,
+                      pointerEvents: isVisible ? 'auto' : 'none',
+                    }}
+                    className={`absolute w-[290px] sm:w-[340px] md:w-[380px] transition-all duration-500 ease-out origin-center cursor-pointer ${
+                      isCenter ? 'cursor-default' : 'hover:opacity-90'
+                    }`}
+                  >
+                    <div className="flex flex-col bg-white dark:bg-[#0c0c0c] border border-slate-200 dark:border-neutral-800 shadow-[0_16px_40px_rgba(0,0,0,0.12)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.6)] overflow-hidden transition-all duration-300">
+                      {/* Photo Top with aspect 4:3 */}
+                      <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 dark:bg-neutral-800">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img
+                          src={tour.coverImage}
+                          alt={tour.name}
+                          width={400}
+                          height={300}
+                          loading="lazy"
+                          decoding="async"
+                          style={{ width: '100%', height: '100%', aspectRatio: '4 / 3' }}
+                          className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
+                        />
+                        {/* Left / Right 3D shadow gradient overlay */}
+                        {!isCenter && (
+                          <div
+                            className={`absolute inset-0 bg-gradient-to-${
+                              isLeft ? 'r' : 'l'
+                            } from-black/40 to-transparent pointer-events-none`}
+                          />
+                        )}
+                      </div>
+
+                      {/* Card Body (Inspired by Bluewater Maribago in Image 4) */}
+                      <div className="p-6 sm:p-7 flex-1 flex flex-col justify-between text-center space-y-4">
+                        <div className="space-y-2">
+                          <h3 className="font-display font-medium text-xl sm:text-2xl text-slate-900 dark:text-white tracking-tight">
+                            {tour.name}
+                          </h3>
+                          <p className="text-xs sm:text-[13px] text-slate-500 dark:text-slate-400 font-sans italic leading-relaxed">
+                            {tour.tagline}
+                          </p>
+                        </div>
+
+                        {/* Yellow Action Button */}
+                        <div className="pt-2">
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setSelectedTour(tour);
+                            }}
+                            className="w-full px-6 py-3 rounded-none bg-[#F4BF3E] hover:bg-[#e2af35] text-[#1F3F74] font-display uppercase tracking-[0.16em] font-black text-xs transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 cursor-pointer text-center"
+                          >
+                            Explore 360°
+                          </button>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                </div>
-              </ScrollReveal>
-            ))}
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Indicator Dots Below */}
+          <div className="flex items-center justify-center gap-2.5 pt-6 sm:pt-8">
+            {VIRTUAL_TOURS.map((tour, idx) => {
+              const isActive = idx === activeTourIndex;
+              return (
+                <button
+                  key={tour.id}
+                  type="button"
+                  onClick={() => setActiveTourIndex(idx)}
+                  aria-label={`View tour for ${tour.name}`}
+                  className={`h-2 transition-all duration-300 rounded-full cursor-pointer ${
+                    isActive
+                      ? 'w-8 bg-[#F4BF3E]'
+                      : 'w-2 bg-slate-300 dark:bg-neutral-700 hover:bg-slate-400'
+                  }`}
+                />
+              );
+            })}
           </div>
         </div>
       </section>
@@ -415,11 +529,11 @@ export default function HomePage() {
       <section className="w-full bg-white dark:bg-black border-b border-slate-100 dark:border-neutral-900 transition-colors duration-200 relative">
         <div className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <ScrollReveal direction="up" duration={600}>
-            <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-brand-navy-500 dark:text-brand-teal-300 leading-tight">
+            <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12 space-y-2.5">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-medium tracking-tight text-[#1F3F74] dark:text-white leading-tight">
                 What People Are Saying
               </h2>
-              <p className="mt-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
+              <p className="mt-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-sans">
                 Read honest feedback from users how Dagat Ta Bai helps people make informed beach decisions
               </p>
             </div>
@@ -517,10 +631,10 @@ export default function HomePage() {
         <div className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto relative z-10 text-center space-y-5">
           <ScrollReveal direction="up" duration={650}>
             <div className="space-y-3">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-white leading-tight">
+              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-medium tracking-tight text-white leading-tight">
                 Be Part of Dagat Ta Bai
               </h2>
-              <p className="text-xs sm:text-sm text-brand-navy-100/90 max-w-lg mx-auto leading-relaxed">
+              <p className="text-xs sm:text-sm text-brand-navy-100/90 max-w-lg mx-auto leading-relaxed font-sans">
                 Are you a beach or resort owner? Join our platform and let more people discover your place
               </p>
             </div>
@@ -529,7 +643,7 @@ export default function HomePage() {
               {/* Yellow Button */}
               <Link
                 href="/apply"
-                className="inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-[#F4BF3E] hover:bg-[#e2af35] text-[#1F3F74] text-xs sm:text-sm font-black transition-all duration-200 shadow-lg shadow-amber-500/20 hover:-translate-y-0.5 active:translate-y-0"
+                className="inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-[#F4BF3E] hover:bg-[#e2af35] text-[#1F3F74] text-xs sm:text-sm font-display uppercase tracking-[0.14em] font-black transition-all duration-200 shadow-lg shadow-amber-500/20 hover:-translate-y-0.5 active:translate-y-0"
               >
                 Apply as Beach Owner
               </Link>

@@ -317,7 +317,7 @@ export function Navbar() {
                   <Link
                     key={link.id}
                     href={link.href}
-                    className={`relative px-3 py-1.5 rounded-full text-xs lg:text-[13px] font-semibold transition-all duration-150 ${
+                    className={`relative px-3.5 py-1.5 rounded-full font-display uppercase tracking-[0.16em] text-[11px] lg:text-xs font-semibold transition-all duration-150 ${
                       isActive
                         ? 'text-[#1F3F74] dark:text-[#5B9BD5] bg-sky-50/80 dark:bg-sky-950/40 font-bold'
                         : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-neutral-800/60'
@@ -412,7 +412,7 @@ export function Navbar() {
                 /* Public / Visitor: Sign Up Button */
                 <Link
                   href="/register"
-                  className="inline-flex items-center justify-center px-4 sm:px-5 py-2 text-xs sm:text-[13px] font-black text-[#1F3F74] bg-[#F4BF3E] hover:bg-[#e2af35] rounded-full transition-all shadow-md hover:shadow-lg active:scale-95 border border-amber-300/40"
+                  className="inline-flex items-center justify-center px-4 sm:px-5 py-2 font-display uppercase tracking-[0.16em] font-black text-xs text-[#1F3F74] bg-[#F4BF3E] hover:bg-[#e2af35] rounded-full transition-all shadow-md hover:shadow-lg active:scale-95 border border-amber-300/40"
                 >
                   Sign Up
                 </Link>
@@ -496,7 +496,7 @@ export function Navbar() {
                     key={link.id}
                     href={link.href}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`block px-4 py-3 rounded-xl text-base font-bold transition-all ${
+                    className={`block px-4 py-3 rounded-xl font-display uppercase tracking-[0.16em] text-xs font-bold transition-all ${
                       isActive
                         ? 'text-[#F4BF3E] bg-white/10 font-extrabold'
                         : 'text-white hover:text-[#F4BF3E] hover:bg-white/5'
