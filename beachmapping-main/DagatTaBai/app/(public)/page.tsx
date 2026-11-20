@@ -10,7 +10,6 @@ import {
   CloudSun,
   Bot,
   Compass,
-  Eye,
   X,
   ExternalLink,
 } from 'lucide-react';
@@ -217,12 +216,12 @@ export default function HomePage() {
         ctaHref="/register"
       />
 
-      {/* Section 1: How It Works */}
-      <section className="w-full bg-slate-50 dark:bg-black/95 border-b border-slate-200/80 dark:border-neutral-900 transition-colors duration-200 py-14 sm:py-20 px-4 sm:px-6 lg:px-8">
+      {/* Section 1: How It Works (Clean Pure White & Black — Zero Beige) */}
+      <section className="w-full bg-white dark:bg-black border-b border-slate-100 dark:border-neutral-900 transition-colors duration-200 py-14 sm:py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           <ScrollReveal direction="up" duration={650}>
             <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-14 space-y-2.5">
-              <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#1F3F74] dark:text-[#F4BF3E] bg-[#F4BF3E]/20 dark:bg-amber-950/60 border border-[#F4BF3E]/40 px-3 py-1 rounded-full">
+              <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#1F3F74] dark:text-sky-300 bg-sky-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 px-3 py-1 rounded-full">
                 Simple 3-Step Guide
               </span>
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-extrabold tracking-tight text-[#1F3F74] dark:text-white leading-tight">
@@ -236,7 +235,7 @@ export default function HomePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
             {/* Step 1 */}
-            <ScrollReveal direction="up" delay={100} duration={600} className="relative p-6 sm:p-7 rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200/80 dark:border-neutral-800 shadow-sm flex flex-col justify-between space-y-4 hover:border-[#1F3F74]/30 dark:hover:border-sky-500/30 transition-all">
+            <ScrollReveal direction="up" delay={100} duration={600} className="relative p-6 sm:p-7 rounded-2xl bg-white dark:bg-[#0a0a0a] border border-slate-200/80 dark:border-neutral-800 shadow-sm flex flex-col justify-between space-y-4 hover:border-[#1F3F74]/30 dark:hover:border-sky-500/30 transition-all">
               <div className="space-y-3">
                 <div className="w-11 h-11 rounded-xl bg-[#F4BF3E]/20 text-[#1F3F74] dark:text-[#F4BF3E] font-display font-black text-lg flex items-center justify-center">
                   01
@@ -251,7 +250,7 @@ export default function HomePage() {
             </ScrollReveal>
 
             {/* Step 2 */}
-            <ScrollReveal direction="up" delay={200} duration={600} className="relative p-6 sm:p-7 rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200/80 dark:border-neutral-800 shadow-sm flex flex-col justify-between space-y-4 hover:border-[#1F3F74]/30 dark:hover:border-sky-500/30 transition-all">
+            <ScrollReveal direction="up" delay={200} duration={600} className="relative p-6 sm:p-7 rounded-2xl bg-white dark:bg-[#0a0a0a] border border-slate-200/80 dark:border-neutral-800 shadow-sm flex flex-col justify-between space-y-4 hover:border-[#1F3F74]/30 dark:hover:border-sky-500/30 transition-all">
               <div className="space-y-3">
                 <div className="w-11 h-11 rounded-xl bg-[#F4BF3E]/20 text-[#1F3F74] dark:text-[#F4BF3E] font-display font-black text-lg flex items-center justify-center">
                   02
@@ -266,7 +265,7 @@ export default function HomePage() {
             </ScrollReveal>
 
             {/* Step 3 */}
-            <ScrollReveal direction="up" delay={300} duration={600} className="relative p-6 sm:p-7 rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200/80 dark:border-neutral-800 shadow-sm flex flex-col justify-between space-y-4 hover:border-[#1F3F74]/30 dark:hover:border-sky-500/30 transition-all">
+            <ScrollReveal direction="up" delay={300} duration={600} className="relative p-6 sm:p-7 rounded-2xl bg-white dark:bg-[#0a0a0a] border border-slate-200/80 dark:border-neutral-800 shadow-sm flex flex-col justify-between space-y-4 hover:border-[#1F3F74]/30 dark:hover:border-sky-500/30 transition-all">
               <div className="space-y-3">
                 <div className="w-11 h-11 rounded-xl bg-[#F4BF3E]/20 text-[#1F3F74] dark:text-[#F4BF3E] font-display font-black text-lg flex items-center justify-center">
                   03
@@ -341,13 +340,13 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Section 3: Take a 360° Look Around (4 Virtual Tours Luxury Showcase — Style of Reference Image 2) */}
+      {/* Section 3: Take a 360° Look Around (4 Virtual Tours Luxury Showcase — Clean Standard, Zero Beige) */}
       <section className="w-full bg-white dark:bg-black border-b border-slate-100 dark:border-neutral-900 transition-colors duration-200 py-16 sm:py-24 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
           {/* Centered Header & Subheader */}
           <ScrollReveal direction="up" duration={650}>
             <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16 space-y-3">
-              <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#1F3F74] dark:text-[#F4BF3E] bg-[#F4BF3E]/20 dark:bg-amber-950/60 border border-[#F4BF3E]/40 px-3.5 py-1 rounded-full">
+              <span className="text-[11px] font-extrabold uppercase tracking-widest text-[#1F3F74] dark:text-sky-300 bg-sky-50 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 px-3.5 py-1 rounded-full">
                 Interactive Panoramic Previews
               </span>
               <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-extrabold tracking-tight text-[#1F3F74] dark:text-white leading-tight">
@@ -359,7 +358,7 @@ export default function HomePage() {
             </div>
           </ScrollReveal>
 
-          {/* 4 Virtual Tour Cards: Luxury Showcase (Image 2 style with perspective card feel) */}
+          {/* 4 Virtual Tour Cards: Clean Luxury Showcase (Zero badges on images, clean text buttons) */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-7">
             {VIRTUAL_TOURS.map((tour, idx) => (
               <ScrollReveal
@@ -367,9 +366,9 @@ export default function HomePage() {
                 direction="up"
                 delay={idx * 100}
                 duration={600}
-                className="group flex flex-col bg-white dark:bg-neutral-900 border border-slate-200/90 dark:border-neutral-800 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden"
+                className="group flex flex-col bg-white dark:bg-[#0a0a0a] border border-slate-200/90 dark:border-neutral-800 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 overflow-hidden"
               >
-                {/* Image Top with 360 Badge */}
+                {/* Image Top (Clean without badge overlay) */}
                 <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 dark:bg-neutral-800">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img
@@ -382,10 +381,6 @@ export default function HomePage() {
                     style={{ width: '100%', height: '100%', aspectRatio: '4 / 3' }}
                     className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
                   />
-                  <div className="absolute top-3 left-3 inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/60 backdrop-blur-md text-white text-[10px] font-bold tracking-wider uppercase border border-white/20">
-                    <Eye className="w-3 h-3 text-[#F4BF3E]" />
-                    <span>360° Tour</span>
-                  </div>
                 </div>
 
                 {/* Card Body */}
@@ -399,15 +394,14 @@ export default function HomePage() {
                     </p>
                   </div>
 
-                  {/* Yellow Action Button */}
+                  {/* Yellow Action Button (Clean text only, no eye icon) */}
                   <div className="pt-2">
                     <button
                       type="button"
                       onClick={() => setSelectedTour(tour)}
-                      className="w-full px-5 py-2.5 rounded-none bg-[#F4BF3E] hover:bg-[#e2af35] text-[#1F3F74] font-black text-xs uppercase tracking-wider transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 cursor-pointer inline-flex items-center justify-center gap-1.5"
+                      className="w-full px-5 py-2.5 rounded-none bg-[#F4BF3E] hover:bg-[#e2af35] text-[#1F3F74] font-black text-xs uppercase tracking-wider transition-all duration-200 shadow-sm hover:shadow-md active:scale-95 cursor-pointer text-center"
                     >
-                      <Eye className="w-3.5 h-3.5" />
-                      <span>Explore 360°</span>
+                      Explore 360°
                     </button>
                   </div>
                 </div>

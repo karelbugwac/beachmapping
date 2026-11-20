@@ -59,7 +59,7 @@ export function CookieConsent() {
           showBanner && !isExiting ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
         }`}
       >
-        <div className="w-full bg-white dark:bg-[#1F3F74] text-slate-900 dark:text-white border-t border-slate-200 dark:border-[#2d5aa3] shadow-[0_-12px_40px_rgba(0,0,0,0.15)] dark:shadow-[0_-12px_40px_rgba(0,0,0,0.5)]">
+        <div className="w-full bg-white dark:bg-black text-slate-900 dark:text-white border-t border-slate-200 dark:border-neutral-800 shadow-[0_-12px_40px_rgba(0,0,0,0.15)] dark:shadow-[0_-12px_40px_rgba(0,0,0,0.8)]">
           <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 py-5 sm:py-7 lg:py-8 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 sm:gap-8">
             
             {/* Left: Justified Legal & Transparency Text */}
@@ -122,18 +122,18 @@ export function CookieConsent() {
           aria-modal="true"
           className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
         >
-          <div className="bg-white dark:bg-[#132A4A] border border-slate-300 dark:border-[#204578] rounded-none max-w-lg w-full p-6 sm:p-7 shadow-2xl space-y-4 text-slate-900 dark:text-white">
+          <div className="bg-white dark:bg-[#0a0a0a] border border-slate-300 dark:border-neutral-800 rounded-none max-w-lg w-full p-6 sm:p-7 shadow-2xl space-y-4 text-slate-900 dark:text-white">
             <h3 className="text-lg font-extrabold text-[#1F3F74] dark:text-white tracking-tight">
               Cookie &amp; Privacy Preferences
             </h3>
             
-            <p className="text-xs text-slate-600 dark:text-slate-200 leading-relaxed text-justify">
+            <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed text-justify">
               Dagat Ta Bai operates under Republic Act No. 10173 (Philippine Data Privacy Act). We only store what is strictly necessary to run this platform and measure aggregate beach interest:
             </p>
 
             <div className="space-y-3 pt-2 text-xs">
-              {/* Essential Storage: Blue outline, no beige container */}
-              <div className="p-4 bg-transparent border border-[#1F3F74]/25 dark:border-sky-400/30 rounded-none flex items-start justify-between gap-3">
+              {/* Essential Storage: Clean outline, no beige container */}
+              <div className="p-4 bg-transparent border border-[#1F3F74]/25 dark:border-neutral-700 rounded-none flex items-start justify-between gap-3">
                 <div className="space-y-1">
                   <span className="font-bold text-sm block text-[#1F3F74] dark:text-white">
                     Login &amp; Site Settings
@@ -147,8 +147,8 @@ export function CookieConsent() {
                 </span>
               </div>
 
-              {/* Beach & Page Visit Counts: Blue outline, no beige container */}
-              <div className="p-4 bg-transparent border border-[#1F3F74]/25 dark:border-sky-400/30 rounded-none flex items-start justify-between gap-3">
+              {/* Beach & Page Visit Counts: Clean outline, no beige container */}
+              <div className="p-4 bg-transparent border border-[#1F3F74]/25 dark:border-neutral-700 rounded-none flex items-start justify-between gap-3">
                 <div className="space-y-1">
                   <span className="font-bold text-sm block text-[#1F3F74] dark:text-white">
                     Beach &amp; Page Visit Counts

@@ -283,17 +283,17 @@ export function Navbar() {
                 />
               </div>
 
-              {/* Modern Title Case Typography with Distinct Brand Accent */}
+              {/* Luxury Geometric Resort Typography (Style of Bluewater) */}
               <span
-                className={`font-display font-extrabold text-lg sm:text-xl md:text-2xl tracking-tight transition-colors duration-200 translate-y-[1.5px] inline-flex items-center ${
+                className={`font-display font-semibold text-xs sm:text-sm md:text-base tracking-[0.22em] uppercase transition-colors duration-200 inline-flex items-center ${
                   isTransparent
                     ? 'text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]'
                     : 'text-[#1F3F74] dark:text-white'
                 }`}
               >
-                <span>Dagat Ta&nbsp;</span>
-                <span className="text-[#F4BF3E] dark:text-[#F4BF3E] font-black transition-transform duration-200 group-hover:scale-105 inline-block">
-                  Bai
+                <span>DAGAT TA&nbsp;</span>
+                <span className="text-[#F4BF3E] dark:text-[#F4BF3E] font-bold transition-transform duration-200 group-hover:scale-105 inline-block">
+                  BAI
                 </span>
               </span>
             </Link>
@@ -470,10 +470,10 @@ export function Navbar() {
                     className="object-contain"
                   />
                 </div>
-                <span className="font-display font-extrabold text-base tracking-tight text-white translate-y-[1px] inline-flex items-center">
-                  <span>Dagat Ta&nbsp;</span>
-                  <span className="text-[#F4BF3E] font-black">
-                    Bai
+                <span className="font-display font-semibold text-xs sm:text-sm tracking-[0.22em] uppercase text-white inline-flex items-center">
+                  <span>DAGAT TA&nbsp;</span>
+                  <span className="text-[#F4BF3E] font-bold">
+                    BAI
                   </span>
                 </span>
               </Link>

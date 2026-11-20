@@ -31,9 +31,9 @@ export function Footer() {
                   className="object-contain"
                 />
               </div>
-              <span className="font-display font-extrabold text-xl tracking-tight text-[#1F3F74] dark:text-white translate-y-[1.5px] inline-flex items-center">
-                <span>Dagat Ta&nbsp;</span>
-                <span className="text-[#F4BF3E] dark:text-[#F4BF3E] font-black">Bai</span>
+              <span className="font-display font-semibold text-sm sm:text-base tracking-[0.22em] uppercase text-[#1F3F74] dark:text-white inline-flex items-center">
+                <span>DAGAT TA&nbsp;</span>
+                <span className="text-[#F4BF3E] dark:text-[#F4BF3E] font-bold">BAI</span>
               </span>
             </Link>
             <div className="space-y-1.5">
