@@ -333,7 +333,7 @@ export default function BeachProfilePage({
               href={`https://www.google.com/maps/dir/?api=1&destination=${beach.latitude},${beach.longitude}`}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-white dark:bg-neutral-900 border border-slate-300 dark:border-neutral-700 hover:bg-slate-50 dark:hover:bg-neutral-800 text-slate-800 dark:text-neutral-100 text-xs font-bold transition shadow-2xs hover:-translate-y-0.5 active:translate-y-0"
+              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-white dark:bg-neutral-900 border border-slate-300 dark:border-neutral-700 hover:bg-white dark:hover:bg-neutral-800 text-slate-800 dark:text-neutral-100 text-xs font-bold transition shadow-2xs hover:-translate-y-0.5 active:translate-y-0"
             >
               <MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
               <span>Get Directions</span>
@@ -374,7 +374,7 @@ export default function BeachProfilePage({
                 className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
                   isActive
                     ? 'bg-brand-navy-500 text-white shadow-md shadow-brand-navy-500/20'
-                    : 'bg-slate-100 dark:bg-neutral-900 text-slate-700 dark:text-neutral-300 hover:bg-slate-200 dark:hover:bg-neutral-800'
+                    : 'bg-white dark:bg-neutral-900 text-slate-700 dark:text-neutral-300 hover:bg-white dark:hover:bg-neutral-800'
                 }`}
               >
                 <Icon className="w-3.5 h-3.5" />
@@ -404,7 +404,7 @@ export default function BeachProfilePage({
                     />
                   </div>
                 ) : (
-                  <div className="p-8 text-center border border-dashed border-slate-200 dark:border-neutral-800 bg-slate-50/50 dark:bg-neutral-900/30 space-y-2">
+                  <div className="p-8 text-center border border-dashed border-slate-200 dark:border-neutral-800 bg-white/50 dark:bg-neutral-900/30 space-y-2">
                     <Compass className="w-8 h-8 mx-auto text-brand-navy-500 dark:text-brand-teal-300 opacity-70" />
                     <p className="text-xs font-bold text-slate-700 dark:text-neutral-300">
                       No virtual tour available yet
@@ -427,7 +427,7 @@ export default function BeachProfilePage({
                   </div>
                   <div className="grid grid-cols-2 gap-2">
                     {Object.entries(getEntranceFeeValues(beach)).map(([label, amount]) => (
-                      <div key={label} className="flex min-w-0 flex-col items-center justify-center rounded-xl bg-slate-50 px-2 py-3 text-center dark:bg-neutral-900/60">
+                      <div key={label} className="flex min-w-0 flex-col items-center justify-center rounded-xl bg-white px-2 py-3 text-center dark:bg-neutral-900/60">
                         <span className="text-[11px] leading-tight text-slate-700 dark:text-neutral-300 sm:text-xs">
                           {label === 'adults' ? 'Adult' : 'Children / Senior'}
                         </span>
@@ -441,14 +441,14 @@ export default function BeachProfilePage({
 
                 <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950">
                   <div className="mb-3 flex items-center gap-2.5">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-50 text-brand-navy-500 dark:bg-neutral-900 dark:text-brand-teal-300">
+                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-brand-navy-500 dark:bg-neutral-900 dark:text-brand-teal-300">
                       <Clock className="h-4 w-4" aria-hidden="true" />
                     </span>
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Operating Schedule</span>
                   </div>
                   <div className="space-y-1.5">
                     {formatOpeningHoursGroups(beach.opening_hours).map((group) => (
-                      <div key={`${group.days}-${group.hours}`} className="flex flex-col gap-3 rounded-xl bg-slate-50 p-3 dark:bg-neutral-900/60 sm:flex-row sm:items-center sm:justify-between">
+                      <div key={`${group.days}-${group.hours}`} className="flex flex-col gap-3 rounded-xl bg-white p-3 dark:bg-neutral-900/60 sm:flex-row sm:items-center sm:justify-between">
                         <div className="min-w-0">
                           <span className="block text-[11px] font-medium text-slate-500 dark:text-neutral-400">{group.days}</span>
                           <span className="block text-base font-extrabold text-brand-navy-500 dark:text-brand-teal-300">{group.hours}</span>
@@ -463,19 +463,19 @@ export default function BeachProfilePage({
               {(beach.peak_days || beach.peak_hours || beach.best_visiting_time) && (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                   {beach.peak_days && (
-                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 space-y-1">
+                    <div className="p-4 rounded-2xl bg-white dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 space-y-1">
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Peak Visiting Days</span>
                       <p className="text-sm font-bold text-brand-navy-500 dark:text-brand-teal-300">{beach.peak_days}</p>
                     </div>
                   )}
                   {beach.peak_hours && (
-                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 space-y-1">
+                    <div className="p-4 rounded-2xl bg-white dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 space-y-1">
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Peak Visiting Hours</span>
                       <p className="text-sm font-bold text-brand-navy-500 dark:text-brand-teal-300">{beach.peak_hours}</p>
                     </div>
                   )}
                   {beach.best_visiting_time && (
-                    <div className="p-4 rounded-2xl bg-slate-50 dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 space-y-1">
+                    <div className="p-4 rounded-2xl bg-white dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 space-y-1">
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Best Time to Visit</span>
                       <p className="text-sm font-bold text-brand-navy-500 dark:text-brand-teal-300">{beach.best_visiting_time}</p>
                     </div>
@@ -588,7 +588,7 @@ export default function BeachProfilePage({
                 </div>
 
                 {beach.cottage_fee && (
-                  <div className="p-5 rounded-2xl bg-slate-50 dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 flex items-center justify-between shadow-2xs">
+                  <div className="p-5 rounded-2xl bg-white dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 flex items-center justify-between shadow-2xs">
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Base Cottage Daily Rate</span>
                       <div className="text-lg font-extrabold text-brand-navy-500 dark:text-brand-teal-300">
@@ -628,7 +628,7 @@ export default function BeachProfilePage({
                     ))}
                   </div>
                 ) : (
-                  <div className="py-14 text-center rounded-2xl border border-dashed border-slate-200 dark:border-neutral-800 bg-slate-50/50 dark:bg-neutral-900/30 p-6 space-y-3">
+                  <div className="py-14 text-center rounded-2xl border border-dashed border-slate-200 dark:border-neutral-800 bg-white/50 dark:bg-neutral-900/30 p-6 space-y-3">
                     <div className="w-12 h-12 rounded-full bg-brand-navy-100 dark:bg-neutral-800 text-brand-navy-500 dark:text-brand-teal-300 flex items-center justify-center mx-auto">
                       <Home className="w-6 h-6" />
                     </div>
@@ -689,7 +689,7 @@ export default function BeachProfilePage({
                     ))}
                   </div>
                 ) : (
-                  <div className="py-14 text-center rounded-2xl border border-dashed border-slate-200 dark:border-neutral-800 bg-slate-50/50 dark:bg-neutral-900/30 p-6 space-y-3">
+                  <div className="py-14 text-center rounded-2xl border border-dashed border-slate-200 dark:border-neutral-800 bg-white/50 dark:bg-neutral-900/30 p-6 space-y-3">
                     <div className="w-12 h-12 rounded-full bg-brand-navy-100 dark:bg-neutral-800 text-brand-navy-500 dark:text-brand-teal-300 flex items-center justify-center mx-auto">
                       <ShieldCheck className="w-6 h-6" />
                     </div>
@@ -891,7 +891,7 @@ export default function BeachProfilePage({
                     </button>
                   </form>
                 ) : (
-                  <div className="py-5 px-6 rounded-2xl bg-slate-50 dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                  <div className="py-5 px-6 rounded-2xl bg-white dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                     <div>
                       <h3 className="text-sm font-bold text-slate-900 dark:text-white">Have you visited {beach.name}?</h3>
                       <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">Sign in to drop your verified rating and review.</p>
@@ -931,7 +931,7 @@ export default function BeachProfilePage({
                         className={`shrink-0 snap-start py-2 px-3 text-xs font-bold whitespace-nowrap rounded-full flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
                           isActive
                             ? 'bg-brand-navy-500 text-white shadow-xs'
-                            : 'bg-slate-100 hover:bg-slate-200 dark:bg-neutral-900 dark:hover:bg-neutral-800 text-slate-700 dark:text-slate-300'
+                            : 'bg-white hover:bg-white dark:bg-neutral-900 dark:hover:bg-neutral-800 text-slate-700 dark:text-slate-300'
                         }`}
                       >
                         <span>{category.label}</span>
@@ -939,7 +939,7 @@ export default function BeachProfilePage({
                           className={`text-[11px] px-1.5 py-0.2 rounded-full ${
                             isActive
                               ? 'bg-white/20 text-white'
-                              : 'bg-slate-200 dark:bg-neutral-800 text-slate-600 dark:text-slate-400'
+                              : 'bg-white dark:bg-neutral-800 text-slate-600 dark:text-slate-400'
                           }`}
                         >
                           {count}
@@ -959,7 +959,7 @@ export default function BeachProfilePage({
                   if (filtered.length === 0) {
                     return (
                       <div className="flex flex-col items-center justify-center py-14 text-center">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-slate-100 text-slate-400 dark:bg-neutral-800 dark:text-neutral-500 mb-2">
+                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-slate-400 dark:bg-neutral-800 dark:text-neutral-500 mb-2">
                           <Star className="h-6 w-6 stroke-[1.5]" />
                         </div>
                         <p className="text-sm font-semibold text-slate-700 dark:text-neutral-300">

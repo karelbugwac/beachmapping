@@ -12,7 +12,7 @@ export function Footer() {
   if (pathname !== '/') return null;
 
   return (
-    <footer className="bg-white dark:bg-black border-t border-slate-200/80 dark:border-neutral-900 transition-colors duration-200 pt-12 pb-8 text-slate-800 dark:text-slate-200">
+    <footer className="bg-white dark:bg-black border-t border-slate-200/80 dark:border-neutral-900 transition-colors duration-200 pt-12 pb-8 text-slate-800 dark:text-slate-200 font-display">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-10">
 
         {/* ── Main Footer Layout (Brand on Left, 3 Balanced Sections on Right) ── */}
@@ -51,7 +51,7 @@ export function Footer() {
 
             {/* Section 1: Explore */}
             <div className="space-y-3">
-              <h4 className="font-bold text-xs uppercase tracking-wider text-slate-900 dark:text-white font-heading">
+              <h4 className="font-bold text-xs uppercase tracking-wider text-slate-900 dark:text-white font-display">
                 Explore
               </h4>
               <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-400">
@@ -95,7 +95,7 @@ export function Footer() {
 
             {/* Section 2: Legal & Guidelines */}
             <div className="space-y-3">
-              <h4 className="font-bold text-xs uppercase tracking-wider text-slate-900 dark:text-white font-heading">
+              <h4 className="font-bold text-xs uppercase tracking-wider text-slate-900 dark:text-white font-display">
                 Legal &amp; Guidelines
               </h4>
               <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-400">
@@ -124,7 +124,7 @@ export function Footer() {
 
             {/* Section 3: Get in Touch */}
             <div className="space-y-3">
-              <h4 className="font-bold text-xs uppercase tracking-wider text-slate-900 dark:text-white font-heading">
+              <h4 className="font-bold text-xs uppercase tracking-wider text-slate-900 dark:text-white font-display">
                 Get in Touch
               </h4>
               <div className="space-y-2.5 text-xs text-slate-600 dark:text-slate-400">

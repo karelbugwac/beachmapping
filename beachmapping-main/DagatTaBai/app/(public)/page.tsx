@@ -12,15 +12,10 @@ import {
   Compass,
   X,
   ExternalLink,
-  ChevronLeft,
-  ChevronRight,
   MapPin,
   Waves,
-  Send,
   Sparkles,
-  ShieldCheck,
   CheckCircle2,
-  Navigation,
   Wind,
   Thermometer,
 } from 'lucide-react';
@@ -115,20 +110,9 @@ function formatRole(role: string | undefined): string {
 export default function HomePage() {
   const router = useRouter();
   const [systemTestimonials, setSystemTestimonials] = useState<SystemTestimonial[]>([]);
-  const [loadVirtualTour, setLoadVirtualTour] = useState(false);
+  const [loadVirtualTour, setLoadVirtualTour] = useState(true);
   const [selectedTour, setSelectedTour] = useState<VirtualTourItem | null>(null);
   const [activeTourIndex, setActiveTourIndex] = useState(0);
-  const tourTouchStartX = useRef<number | null>(null);
-
-  const prevTour = () => {
-    setActiveTourIndex((prev) => (prev - 1 + VIRTUAL_TOURS.length) % VIRTUAL_TOURS.length);
-  };
-
-  const nextTour = () => {
-    setActiveTourIndex((prev) => (prev + 1) % VIRTUAL_TOURS.length);
-  };
-
-  const tourContainerRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     fetch('/api/auth/session', { cache: 'no-store' })
@@ -230,7 +214,7 @@ export default function HomePage() {
   }, [loadVirtualTour]);
 
   return (
-    <div className="flex flex-col min-h-screen bg-white dark:bg-black text-slate-900 dark:text-white font-sans transition-colors duration-200 selection:bg-brand-navy-100 selection:text-brand-navy-900 overflow-x-hidden">
+    <div className="flex flex-col min-h-screen bg-white dark:bg-black text-slate-900 dark:text-white font-display transition-colors duration-200 selection:bg-brand-navy-100 selection:text-brand-navy-900 overflow-x-hidden">
       {/* Hero Section */}
       <HeroMapSection
         isAuthenticated={false}
@@ -243,7 +227,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto space-y-12 sm:space-y-16">
           <ScrollReveal direction="up" duration={650}>
             <div className="text-center max-w-2xl mx-auto space-y-2.5">
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-medium tracking-tight text-[#1F3F74] dark:text-white leading-tight">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-medium tracking-tight text-[#1F3F74] dark:text-white leading-tight">
                 Your Beach Guide
               </h2>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-lg mx-auto leading-relaxed">
@@ -257,7 +241,7 @@ export default function HomePage() {
             
             {/* Feature 1: Interactive GIS Beach Map & Cottage Navigator */}
             <ScrollReveal direction="up" delay={100} duration={600} className="flex flex-col">
-              <div className="flex-1 rounded-2xl bg-slate-50/70 dark:bg-[#0c0c0c] border border-slate-200/90 dark:border-neutral-800 overflow-hidden shadow-sm hover:border-[#1F3F74]/30 dark:hover:border-sky-500/30 transition-all flex flex-col justify-between">
+              <div className="flex-1 rounded-2xl bg-white dark:bg-[#0c0c0c] border border-slate-200/90 dark:border-neutral-800 overflow-hidden shadow-sm hover:border-[#1F3F74]/30 dark:hover:border-sky-500/30 transition-all flex flex-col justify-between">
                 {/* Mockup Header Bar */}
                 <div className="px-4 py-3 bg-white dark:bg-neutral-900/80 border-b border-slate-200/80 dark:border-neutral-800 flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
@@ -304,11 +288,11 @@ export default function HomePage() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-1.5 pt-1 text-[10px] text-slate-600 dark:text-slate-300">
-                      <div className="p-1.5 rounded-md bg-slate-50 dark:bg-neutral-800/60 border border-slate-100 dark:border-neutral-700/50">
+                      <div className="p-1.5 rounded-md bg-white dark:bg-neutral-800/60 border border-slate-100 dark:border-neutral-700/50">
                         <span className="text-slate-400 block text-[9px] uppercase font-mono">Cottages</span>
                         <span className="font-semibold text-slate-800 dark:text-white">₱300 - ₱1,500</span>
                       </div>
-                      <div className="p-1.5 rounded-md bg-slate-50 dark:bg-neutral-800/60 border border-slate-100 dark:border-neutral-700/50">
+                      <div className="p-1.5 rounded-md bg-white dark:bg-neutral-800/60 border border-slate-100 dark:border-neutral-700/50">
                         <span className="text-slate-400 block text-[9px] uppercase font-mono">Shoreline</span>
                         <span className="font-semibold text-slate-800 dark:text-white">White Pebble / Sand</span>
                       </div>
@@ -330,7 +314,7 @@ export default function HomePage() {
 
             {/* Feature 2: Real-Time Marine Telemetry & Tide Forecast */}
             <ScrollReveal direction="up" delay={200} duration={600} className="flex flex-col">
-              <div className="flex-1 rounded-2xl bg-slate-50/70 dark:bg-[#0c0c0c] border border-slate-200/90 dark:border-neutral-800 overflow-hidden shadow-sm hover:border-[#1F3F74]/30 dark:hover:border-sky-500/30 transition-all flex flex-col justify-between">
+              <div className="flex-1 rounded-2xl bg-white dark:bg-[#0c0c0c] border border-slate-200/90 dark:border-neutral-800 overflow-hidden shadow-sm hover:border-[#1F3F74]/30 dark:hover:border-sky-500/30 transition-all flex flex-col justify-between">
                 {/* Mockup Header Bar */}
                 <div className="px-4 py-3 bg-white dark:bg-neutral-900/80 border-b border-slate-200/80 dark:border-neutral-800 flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
@@ -379,14 +363,14 @@ export default function HomePage() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-1.5 pt-1 text-[10px] text-slate-600 dark:text-slate-300">
-                      <div className="p-1.5 rounded-md bg-slate-50 dark:bg-neutral-800/60 border border-slate-100 dark:border-neutral-700/50 flex items-center gap-2">
+                      <div className="p-1.5 rounded-md bg-white dark:bg-neutral-800/60 border border-slate-100 dark:border-neutral-700/50 flex items-center gap-2">
                         <Wind className="w-3.5 h-3.5 text-[#1F3F74] dark:text-sky-400" />
                         <div>
                           <span className="text-slate-400 block text-[9px] uppercase font-mono">Breeze</span>
                           <span className="font-semibold text-slate-800 dark:text-white">12 km/h NE</span>
                         </div>
                       </div>
-                      <div className="p-1.5 rounded-md bg-slate-50 dark:bg-neutral-800/60 border border-slate-100 dark:border-neutral-700/50 flex items-center gap-2">
+                      <div className="p-1.5 rounded-md bg-white dark:bg-neutral-800/60 border border-slate-100 dark:border-neutral-700/50 flex items-center gap-2">
                         <Thermometer className="w-3.5 h-3.5 text-amber-500" />
                         <div>
                           <span className="text-slate-400 block text-[9px] uppercase font-mono">Sea Temp</span>
@@ -411,7 +395,7 @@ export default function HomePage() {
 
             {/* Feature 3: Bai AI 24/7 Local Coastal Assistant */}
             <ScrollReveal direction="up" delay={300} duration={600} className="flex flex-col">
-              <div className="flex-1 rounded-2xl bg-slate-50/70 dark:bg-[#0c0c0c] border border-slate-200/90 dark:border-neutral-800 overflow-hidden shadow-sm hover:border-[#1F3F74]/30 dark:hover:border-sky-500/30 transition-all flex flex-col justify-between">
+              <div className="flex-1 rounded-2xl bg-white dark:bg-[#0c0c0c] border border-slate-200/90 dark:border-neutral-800 overflow-hidden shadow-sm hover:border-[#1F3F74]/30 dark:hover:border-sky-500/30 transition-all flex flex-col justify-between">
                 {/* Mockup Header Bar */}
                 <div className="px-4 py-3 bg-white dark:bg-neutral-900/80 border-b border-slate-200/80 dark:border-neutral-800 flex items-center justify-between">
                   <div className="flex items-center gap-1.5">
@@ -485,7 +469,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto">
           <ScrollReveal direction="up" duration={650}>
             <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-14 space-y-2.5">
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-medium tracking-tight text-[#1F3F74] dark:text-white leading-tight">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-medium tracking-tight text-[#1F3F74] dark:text-white leading-tight">
                 How It Works
               </h2>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-lg mx-auto leading-relaxed">
@@ -543,157 +527,121 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* Section 3: Take a 360° Look Around (Touch-Swipeable 3D Carousel with Generous Spacing — No Overlapping Cards) */}
-      <section className="w-full bg-white dark:bg-black border-b border-slate-100 dark:border-neutral-900 transition-colors duration-200 py-16 sm:py-24 px-4 sm:px-6 lg:px-8 overflow-hidden select-none">
+      {/* Section 3: Take a 360° Look Around — Card Grid */}
+      <section className="w-full bg-white dark:bg-black border-b border-slate-100 dark:border-neutral-900 transition-colors duration-200 py-14 sm:py-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto">
-          {/* Centered Header & Subheader */}
+          {/* Header */}
           <ScrollReveal direction="up" duration={650}>
-            <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-14 space-y-3">
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-medium tracking-tight text-[#1F3F74] dark:text-white leading-tight">
+            <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-14 space-y-2.5">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-medium tracking-tight text-[#1F3F74] dark:text-white leading-tight">
                 Take a 360° Look Around
               </h2>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-xl mx-auto leading-relaxed font-sans">
-                Inspect Binongkalan&apos;s coastlines before you visit. Swipe through real shoreline panoramas, open cabanas, and beach views.
+              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-xl mx-auto leading-relaxed font-display">
+                Explore Binongkalan&apos;s coastlines before you visit. Pan, tilt, and zoom through real shoreline panoramas.
               </p>
             </div>
           </ScrollReveal>
 
-          {/* Swipeable 3D Perspective Carousel Container */}
-          <div
-            className="relative w-full max-w-5xl mx-auto flex items-center justify-center [perspective:1200px] min-h-[480px] sm:min-h-[520px] touch-pan-y"
-            onTouchStart={(e) => {
-              tourTouchStartX.current = e.touches[0].clientX;
-            }}
-            onTouchEnd={(e) => {
-              if (tourTouchStartX.current === null) return;
-              const diff = tourTouchStartX.current - e.changedTouches[0].clientX;
-              if (diff > 40) nextTour();
-              else if (diff < -40) prevTour();
-              tourTouchStartX.current = null;
-            }}
-          >
-            {/* The 3D Cards Stack: Slanted 3D Perspective with Depth Shading Matching Image 1 Reference */}
-            <div className="relative w-full h-[470px] sm:h-[510px] flex items-center justify-center [transform-style:preserve-3d]">
-              {VIRTUAL_TOURS.map((tour, idx) => {
-                let offset = idx - activeTourIndex;
-                if (offset > 2) offset -= VIRTUAL_TOURS.length;
-                if (offset < -2) offset += VIRTUAL_TOURS.length;
-
-                const isCenter = offset === 0;
-                const isLeft = offset === -1 || (offset === 3 - VIRTUAL_TOURS.length);
-                const isRight = offset === 1 || (offset === VIRTUAL_TOURS.length - 3);
-
-                // 3D Transforms matching Image 1: Left card slanted with rotateY(-24deg), Right card slanted with rotateY(24deg)
-                let desktopTransform = 'translate3d(0, 0, -300px) scale(0.5)';
-                let desktopZIndex = 0;
-
-                if (isCenter) {
-                  desktopTransform = 'translate3d(0, 0, 0) scale(1) rotateY(0deg)';
-                  desktopZIndex = 30;
-                } else if (isLeft) {
-                  desktopTransform = 'translate3d(-78%, 0, -40px) scale(0.92) rotateY(-24deg)';
-                  desktopZIndex = 10;
-                } else if (isRight) {
-                  desktopTransform = 'translate3d(78%, 0, -40px) scale(0.92) rotateY(24deg)';
-                  desktopZIndex = 10;
-                }
-
-                return (
-                  <div
-                    key={tour.id}
-                    onClick={() => {
-                      if (isLeft) prevTour();
-                      if (isRight) nextTour();
-                    }}
-                    style={{
-                      transform: desktopTransform,
-                      zIndex: desktopZIndex,
-                    }}
-                    className={`absolute w-[88vw] max-w-[320px] sm:max-w-[340px] md:max-w-[350px] lg:max-w-[360px] transition-all duration-500 ease-out origin-center cursor-pointer ${
-                      isCenter
-                        ? 'opacity-100 pointer-events-auto cursor-default'
-                        : 'hidden md:block opacity-90 hover:opacity-100 pointer-events-auto'
-                    }`}
-                  >
-                    <div
-                      className={`relative flex flex-col bg-white dark:bg-[#0c0c0c] border border-slate-200/90 dark:border-neutral-800 shadow-[0_20px_50px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.85)] overflow-hidden transition-all duration-300 ${
-                        isCenter ? 'ring-1 ring-black/5 dark:ring-white/10' : ''
-                      }`}
-                    >
-                      {/* Photo Top with aspect 4:3 */}
-                      <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 dark:bg-neutral-800">
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img
-                          src={tour.coverImage}
-                          alt={tour.name}
-                          width={400}
-                          height={300}
-                          loading="lazy"
-                          decoding="async"
-                          style={{ width: '100%', height: '100%', aspectRatio: '4 / 3' }}
-                          className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
-                        />
-                      </div>
-
-                      {/* Card Body with Perspective Gradient Shading matching Image 1 */}
-                      <div
-                        className={`p-6 sm:p-7 flex-1 flex flex-col justify-between text-center space-y-4 relative ${
-                          isLeft
-                            ? 'bg-gradient-to-r from-white via-slate-100/90 to-slate-300/80 dark:from-neutral-900 dark:via-neutral-900 dark:to-neutral-950'
-                            : isRight
-                              ? 'bg-gradient-to-l from-white via-slate-100/90 to-slate-300/80 dark:from-neutral-900 dark:via-neutral-900 dark:to-neutral-950'
-                              : 'bg-white dark:bg-[#0c0c0c]'
-                        }`}
-                      >
-                        <div className="space-y-1.5">
-                          <h3 className="font-display font-medium text-xl sm:text-2xl text-slate-900 dark:text-white tracking-tight">
-                            {tour.name}
-                          </h3>
-                          <p className="text-xs sm:text-[13px] text-slate-500 dark:text-slate-400 font-sans italic leading-relaxed">
-                            {tour.tagline}
-                          </p>
-                        </div>
-
-                        {/* Yellow Action Button: Black text, not bold */}
-                        <div className="pt-2">
-                          <button
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedTour(tour);
-                            }}
-                            className="w-full px-6 py-3 rounded-none bg-[#F4BF3E] hover:bg-[#e2af35] text-black font-display uppercase tracking-[0.14em] font-medium text-xs transition-all duration-200 shadow-xs hover:shadow-md active:scale-95 cursor-pointer text-center"
-                          >
-                            Explore 360°
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* 3D Depth Shadow Overlay across the whole card for Left & Right (Image 1 reference) */}
-                      {isLeft && (
-                        <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-transparent via-black/10 to-black/35 pointer-events-none" />
-                      )}
-                      {isRight && (
-                        <div className="hidden md:block absolute inset-0 bg-gradient-to-l from-transparent via-black/10 to-black/35 pointer-events-none" />
-                      )}
-                    </div>
+          {/* Card Grid */}
+          <ScrollReveal direction="up" duration={500}>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {VIRTUAL_TOURS.map((tour, idx) => (
+                <div
+                  key={tour.id}
+                  className="group relative overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 bg-white dark:bg-neutral-900 flex flex-col"
+                >
+                  {/* Image */}
+                  <div className="relative w-full h-48 sm:h-56 overflow-hidden">
+                    <Image
+                      src={tour.coverImage}
+                      alt={tour.name}
+                      fill
+                      className="object-cover group-hover:scale-105 transition-transform duration-300"
+                      quality={85}
+                      unoptimized
+                    />
                   </div>
-                );
-              })}
+
+                  {/* Content */}
+                  <div className="flex flex-col flex-1 p-5 space-y-3">
+                    <div className="flex-1">
+                      <h3 className="font-display font-medium text-base sm:text-lg text-slate-900 dark:text-white mb-1">
+                        {tour.name}
+                      </h3>
+                      <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
+                        {tour.description}
+                      </p>
+                    </div>
+
+                    {/* Button */}
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setActiveTourIndex(idx);
+                        setSelectedTour(tour);
+                        setLoadVirtualTour(true);
+                      }}
+                      className="mt-auto inline-flex items-center justify-center gap-2 px-4 py-2.5 bg-[#F4BF3E] hover:bg-[#e2af35] text-black text-xs font-display font-medium tracking-wide transition-all duration-200 shadow-sm hover:shadow-md cursor-pointer"
+                    >
+                      <span>EXPLORE 360°</span>
+                      <ExternalLink className="w-3.5 h-3.5" />
+                    </button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </ScrollReveal>
+        </div>
+      </section>
+
+      {/* Virtual Tour Modal */}
+      {loadVirtualTour && selectedTour && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 backdrop-blur-sm p-4">
+          <div className="relative w-full max-w-5xl bg-black overflow-hidden shadow-2xl">
+            {/* Close Button */}
+            <button
+              type="button"
+              onClick={() => setLoadVirtualTour(false)}
+              className="absolute top-4 right-4 z-10 w-10 h-10 rounded-full bg-white/20 backdrop-blur-sm flex items-center justify-center text-white hover:bg-white/30 transition-colors cursor-pointer"
+            >
+              <X className="w-5 h-5" />
+            </button>
+
+            {/* iframe */}
+            <div className="relative w-full h-[70vh] sm:h-[80vh]">
+              <iframe
+                title={`${selectedTour.name} — 360° Virtual Tour`}
+                src={selectedTour.tourUrl}
+                width="100%"
+                height="100%"
+                sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
+                allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; magnetometer; picture-in-picture; web-share; xr-spatial-tracking"
+                className="w-full h-full border-0 block"
+              />
+            </div>
+
+            {/* Tour Info */}
+            <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-6">
+              <h3 className="font-display font-medium text-xl sm:text-2xl text-white mb-1">
+                {selectedTour.name}
+              </h3>
+              <p className="text-sm text-white/80 font-light">
+                {selectedTour.tagline}
+              </p>
             </div>
           </div>
         </div>
-      </section>
+      )}
 
       {/* Section 4: What People Are Saying (WHITE Background - Harmonious Spacing, Dive Header) */}
       <section className="w-full bg-white dark:bg-black border-b border-slate-100 dark:border-neutral-900 transition-colors duration-200 relative">
         <div className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <ScrollReveal direction="up" duration={600}>
             <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12 space-y-2.5">
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-medium tracking-tight text-[#1F3F74] dark:text-white leading-tight">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-medium tracking-tight text-[#1F3F74] dark:text-white leading-tight">
                 What People Are Saying
               </h2>
-              <p className="mt-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-sans">
+              <p className="mt-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-display">
                 Read honest feedback from users how Dagat Ta Bai helps people make informed beach decisions
               </p>
             </div>
@@ -772,7 +720,7 @@ export default function HomePage() {
             </div>
           ) : (
             <ScrollReveal direction="up" duration={600}>
-              <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-slate-50 px-6 py-10 text-center dark:border-neutral-800 dark:bg-neutral-900">
+              <div className="mx-auto max-w-xl rounded-2xl border border-slate-200 bg-white px-6 py-10 text-center dark:border-neutral-800 dark:bg-neutral-900">
                 <h3 className="text-base font-semibold text-slate-900 dark:text-white">No community feedback yet</h3>
                 <p className="mx-auto mt-2 max-w-md text-sm leading-6 text-slate-600 dark:text-slate-400">
                   Share how Dagat Ta Bai has helped you plan your next beach visit.
@@ -791,10 +739,10 @@ export default function HomePage() {
         <div className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto relative z-10 text-center space-y-5">
           <ScrollReveal direction="up" duration={650}>
             <div className="space-y-3">
-              <h2 className="text-3xl sm:text-4xl lg:text-5xl font-display font-medium tracking-tight text-white leading-tight">
+              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-medium tracking-tight text-white leading-tight">
                 Be Part of Dagat Ta Bai
               </h2>
-              <p className="text-xs sm:text-sm text-brand-navy-100/90 max-w-lg mx-auto leading-relaxed font-sans">
+              <p className="text-xs sm:text-sm text-brand-navy-100/90 max-w-lg mx-auto leading-relaxed font-display">
                 Are you a beach or resort owner? Join our platform and let more people discover your place
               </p>
             </div>

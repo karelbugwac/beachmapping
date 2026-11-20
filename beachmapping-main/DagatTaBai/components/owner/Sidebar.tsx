@@ -128,7 +128,7 @@ export function Sidebar({
                   </button>
                 </div>
                 <Link href="/owner/dashboard" prefetch={false} className="flex flex-col items-center gap-3" title={beachName}>
-                  <Image src="/logo.png" alt="Dagat Ta Bai logo" width={64} height={64} className="object-contain" />
+                  <Image src="/logo.png" alt="Dagat Ta Bai logo" width={64} height={64} style={{ width: 'auto', height: 'auto' }} className="object-contain" />
                 </Link>
                 <div className="text-center mt-4 space-y-3 w-full">
                   <p className="text-xs font-medium text-slate-600 dark:text-neutral-400 truncate" title={beachName}>

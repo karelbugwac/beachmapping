@@ -7,6 +7,7 @@ import {
   recordRateLimitHit,
   clearRateLimit,
 } from '@/lib/utils/rate-limit';
+import { getSafeInternalRedirect } from '@/lib/utils/safe-redirect';
 
 const LOGIN_RATE_LIMIT = {
   maxRequests: 10,
@@ -58,11 +59,13 @@ export async function GET(request: NextRequest) {
     if (emailKey) clearRateLimit(emailKey);
 
     // Clean up temporary OAuth code-verifier and state cookies to prevent header bloat
+    let oauthRedirect: string | null = null;
     try {
       const cookieStore = await cookies();
+      oauthRedirect = cookieStore.get('dtb_oauth_redirect')?.value ?? null;
       const allCookies = cookieStore.getAll();
       for (const c of allCookies) {
-        if (c.name.includes('code-verifier') || c.name.includes('oauth-state')) {
+        if (c.name.includes('code-verifier') || c.name.includes('oauth-state') || c.name === 'dtb_oauth_redirect') {
           cookieStore.delete(c.name);
         }
       }
@@ -128,7 +131,11 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    return NextResponse.redirect(`${siteUrl}/`);
+    const target = getSafeInternalRedirect(
+      oauthRedirect,
+      isPlatformAdmin ? '/admin/dashboard' : '/home'
+    );
+    return NextResponse.redirect(`${siteUrl}${target}`);
   } catch (error) {
     console.error('Google OAuth callback error:', error);
     return NextResponse.redirect(`${siteUrl}/login?error=oauth_processing_error`);

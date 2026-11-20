@@ -33,7 +33,7 @@ export default function EnvironmentalPolicyPage() {
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-24 space-y-8 text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
         
         {/* Guiding Principles */}
-        <section className="p-5 rounded-2xl bg-slate-50 dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 space-y-3">
+        <section className="p-5 rounded-2xl bg-white dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 space-y-3">
           <h2 className="text-sm sm:text-base font-bold text-[#1F3F74] dark:text-[#F4BF3E] flex items-center gap-2">
             <HeartHandshake className="w-4 h-4 text-[#F4BF3E]" />
             Our Coastal Commitment
@@ -142,7 +142,7 @@ export default function EnvironmentalPolicyPage() {
             If you witness environmental violations or have questions regarding data privacy in Barangay Binongkalan, you may reach out directly to our team or the local barangay council:
           </p>
 
-          <div className="p-4 rounded-xl bg-slate-50 dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 space-y-1 text-xs">
+          <div className="p-4 rounded-xl bg-white dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 space-y-1 text-xs">
             <p className="font-semibold text-slate-900 dark:text-white">Dagat Ta Bai Environmental Support</p>
             <p>
               Email:{' '}

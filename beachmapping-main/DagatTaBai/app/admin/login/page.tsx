@@ -184,6 +184,7 @@ export default function AdminLoginPage() {
                 alt="Dagat Ta Bai Logo"
                 width={64}
                 height={64}
+                style={{ width: 'auto', height: 'auto' }}
                 className="object-contain"
                 priority
               />

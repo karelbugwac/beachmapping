@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { Bell, Check, CircleAlert, Clock3, MonitorSmartphone, ShieldCheck, MapPin } from 'lucide-react';
+import { Bell, Check, CircleAlert, Clock3, MonitorSmartphone, ShieldCheck, MapPin, LogOut } from 'lucide-react';
 import { showToast } from '@/components/ui/feedback-toasts';
 import { SignOutAllDevicesButton } from '@/components/auth/sign-out-all-devices';
 
@@ -60,7 +60,7 @@ export default function NotificationsPage() {
     };
   }, [router]);
 
-  const handleAction = async (notification: NotificationItem, action: 'read' | 'confirmed' | 'unrecognized') => {
+  const handleAction = async (notification: NotificationItem, action: 'read' | 'confirmed' | 'unrecognized' | 'logout_device') => {
     setBusyId(notification.id);
     try {
       const response = await fetch(`/api/notifications/${notification.id}`, {
@@ -76,6 +76,7 @@ export default function NotificationsPage() {
       if (!response.ok) throw new Error(result.error || 'Could not update this notification.');
       if (action === 'confirmed') showToast('Activity confirmed as authorized.');
       if (action === 'unrecognized') showToast('Activity reported. Check your email for a password reset link.');
+      if (action === 'logout_device') showToast('Signed out from this device successfully.');
       if (action === 'read') showToast('Notification marked as read.');
     } catch (error: unknown) {
       showToast(error instanceof Error ? error.message : 'Could not update this notification.', 'error');
@@ -87,7 +88,7 @@ export default function NotificationsPage() {
   const unreadCount = notifications.filter((item) => !item.read_at).length;
 
   return (
-    <main className="min-h-[70vh] bg-slate-50 px-4 py-10 dark:bg-neutral-950 sm:px-6 sm:py-14">
+    <main className="min-h-[70vh] bg-white dark:bg-black px-4 py-10 sm:px-6 sm:py-14">
       <div className="mx-auto max-w-3xl">
         <header className="mb-10 flex items-center justify-between gap-4">
           <h1 className="text-3xl font-bold tracking-tight text-brand-navy-500 dark:text-white sm:text-4xl">Notifications</h1>
@@ -127,6 +128,7 @@ export default function NotificationsPage() {
             {notifications.map((notification) => {
               const isLocationAlert = notification.type === 'new_location_login';
               const isTourAlert = notification.type === 'tour_status';
+              const isDeviceAlert = notification.type === 'new_device_login';
               return (
                 <article
                   key={notification.id}
@@ -222,6 +224,17 @@ export default function NotificationsPage() {
                           >
                             This wasn&apos;t me
                           </button>
+                          {isDeviceAlert && (
+                            <button
+                              type="button"
+                              disabled={busyId === notification.id}
+                              onClick={() => void handleAction(notification, 'logout_device')}
+                              className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700 transition-colors hover:bg-slate-50 disabled:cursor-wait disabled:opacity-60 dark:border-neutral-700 dark:text-slate-300 dark:hover:bg-neutral-800"
+                            >
+                              <LogOut className="h-4 w-4 inline-block mr-1" />
+                              Log out from this device
+                            </button>
+                          )}
                         </div>
                       )}
                     </div>

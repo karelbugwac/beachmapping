@@ -366,6 +366,7 @@ export default function AdminLayout({
                     alt="Dagat Ta Bai Logo"
                     width={64}
                     height={64}
+                    style={{ width: 'auto', height: 'auto' }}
                     className="rounded-xl bg-sand-50 p-1.5 object-contain"
                   />
                 </Link>

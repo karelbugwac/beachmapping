@@ -115,8 +115,13 @@ export function AccountSuspensionGate() {
   if (loading && !hasLoaded) {
     if (isPublicRoute) return null;
     return (
-      <div className="fixed inset-0 z-[200] flex items-center justify-center bg-slate-50 dark:bg-black" role="status" aria-live="polite">
-        <span className="text-sm font-medium text-slate-600 dark:text-neutral-300">Checking account status...</span>
+      <div className="fixed inset-0 z-[200] flex items-center justify-center bg-white dark:bg-black" role="status" aria-live="polite">
+        <img
+          src="/logo.png"
+          alt="Dagat Ta Bai"
+          className="w-16 h-16 animate-spin"
+          style={{ width: '64px', height: '64px' }}
+        />
       </div>
     );
   }

@@ -150,7 +150,7 @@ export function BeachTripPlanner({ beachName, latitude, longitude }: BeachTripPl
                   className={`p-3 rounded-xl border text-left transition-all cursor-pointer flex flex-col justify-between gap-2 ${
                     isActive
                       ? 'border-[#1F3F74] dark:border-[#4987BA] bg-blue-50/70 dark:bg-blue-950/40 shadow-xs ring-1 ring-[#1F3F74]/20'
-                      : 'border-slate-200 dark:border-neutral-800 bg-slate-50/50 dark:bg-neutral-800/40 hover:bg-slate-100 dark:hover:bg-neutral-800'
+                      : 'border-slate-200 dark:border-neutral-800 bg-white/50 dark:bg-neutral-800/40 hover:bg-white dark:hover:bg-neutral-800'
                   }`}
                 >
                   <div className="flex items-center justify-between gap-1">
@@ -173,7 +173,7 @@ export function BeachTripPlanner({ beachName, latitude, longitude }: BeachTripPl
 
           {/* Selected Day Detailed Breakdown */}
           {selectedDay && (
-            <div className="rounded-xl border border-slate-100 dark:border-neutral-800 bg-slate-50/70 dark:bg-neutral-800/50 p-4 space-y-3">
+            <div className="rounded-xl border border-slate-100 dark:border-neutral-800 bg-white/70 dark:bg-neutral-800/50 p-4 space-y-3">
               <div className="flex items-center justify-between gap-3 flex-wrap">
                 <div className="flex items-center gap-2">
                   <div className="w-8 h-8 rounded-lg bg-white dark:bg-neutral-900 flex items-center justify-center shadow-xs">

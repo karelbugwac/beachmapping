@@ -49,7 +49,7 @@ export default function CommunityGuidelinesPage() {
       
       {/* ── Page Header (Placed Higher Up, Frameless) ── */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-6 text-center space-y-1.5">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold text-brand-navy-500 dark:text-brand-teal-300 tracking-tight leading-tight">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-display font-medium text-[#1F3F74] dark:text-white tracking-tight leading-tight">
           Community Guidelines
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
@@ -69,7 +69,7 @@ export default function CommunityGuidelinesPage() {
             key={item.num}
             className="border-t border-slate-200 dark:border-neutral-800 pt-5 space-y-1.5"
           >
-            <h2 className="text-base sm:text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300">
+            <h2 className="text-base sm:text-lg font-display font-medium text-[#1F3F74] dark:text-white">
               {item.num}. {item.title}
             </h2>
             <p className="text-slate-600 dark:text-slate-400" style={{ textAlign: 'justify' }}>

@@ -18,6 +18,10 @@ import {
   ShieldCheck,
   Info,
   Mail,
+  Check,
+  Clock3,
+  CircleAlert,
+  ChevronUp,
 } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 import type { AuthUser } from '@/lib/db/auth';
@@ -35,6 +39,9 @@ export function Navbar() {
   const [authLoading, setAuthLoading] = useState(true);
   const [unreadNotifications, setUnreadNotifications] = useState(0);
   const [isScrolled, setIsScrolled] = useState(false);
+  const [notificationHoverOpen, setNotificationHoverOpen] = useState(false);
+  const [notifications, setNotifications] = useState<any[]>([]);
+  const [loadingNotifications, setLoadingNotifications] = useState(false);
 
   const pathname = usePathname();
 
@@ -211,6 +218,22 @@ export function Navbar() {
     };
   }, [user, pathname, isDedicatedPortal]);
 
+  const loadNotificationsOnHover = async () => {
+    if (loadingNotifications || notifications.length > 0) return;
+    setLoadingNotifications(true);
+    try {
+      const response = await fetch('/api/notifications', { cache: 'no-store' });
+      if (response.ok) {
+        const result = await response.json();
+        setNotifications(result.notifications || []);
+      }
+    } catch (error) {
+      console.error('Failed to load notifications:', error);
+    } finally {
+      setLoadingNotifications(false);
+    }
+  };
+
   useEffect(() => {
     if (!mobileMenuOpen) return;
 
@@ -318,7 +341,7 @@ export function Navbar() {
                     className={`relative px-3.5 py-1.5 rounded-full font-display uppercase tracking-[0.16em] text-[11px] lg:text-xs font-semibold transition-all duration-150 ${
                       isActive
                         ? 'text-[#1F3F74] dark:text-[#5B9BD5] bg-sky-50/80 dark:bg-sky-950/40 font-bold'
-                        : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100/70 dark:hover:bg-neutral-800/60'
+                        : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/70 dark:hover:bg-neutral-800/60'
                     }`}
                   >
                     <span>{link.label}</span>
@@ -336,26 +359,101 @@ export function Navbar() {
 
               {user ? (
                 <div className="flex items-center gap-2 sm:gap-2.5">
-                  {/* Notifications Bell */}
-                  <Link
-                    href="/notifications"
-                    title="Notifications"
-                    aria-label={unreadNotifications ? `Notifications, ${unreadNotifications} unread` : 'Notifications'}
-                    className={`relative rounded-full p-2 transition-colors ${
-                      isTransparent
-                        ? 'text-white hover:bg-white/15 drop-shadow-sm'
-                        : pathname === '/notifications'
-                          ? 'text-[#1F3F74] dark:text-[#5B9BD5]'
-                          : 'text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-neutral-800'
-                    }`}
+                  {/* Notifications Bell with Hover Modal */}
+                  <div 
+                    className="relative"
+                    onMouseEnter={() => { setNotificationHoverOpen(true); void loadNotificationsOnHover(); }}
+                    onMouseLeave={() => setNotificationHoverOpen(false)}
                   >
-                    <Bell className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
-                    {unreadNotifications > 0 && (
-                      <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-rose-600 px-1 text-center text-[10px] font-bold leading-4 text-white">
-                        {unreadNotifications > 9 ? '9+' : unreadNotifications}
-                      </span>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        if (user) window.location.href = '/notifications';
+                      }}
+                      aria-label={unreadNotifications ? `Notifications, ${unreadNotifications} unread` : 'Notifications'}
+                      className={`relative rounded-full p-2 transition-colors ${
+                        isTransparent
+                          ? 'text-white hover:bg-white/15 drop-shadow-sm'
+                          : pathname === '/notifications'
+                            ? 'text-[#1F3F74] dark:text-[#5B9BD5]'
+                            : 'text-slate-600 dark:text-slate-300 hover:bg-white dark:hover:bg-neutral-800'
+                      }`}
+                    >
+                      <Bell className="h-4.5 w-4.5 sm:h-5 sm:w-5" />
+                      {unreadNotifications > 0 && (
+                        <span className="absolute -right-0.5 -top-0.5 min-w-4 rounded-full bg-rose-600 px-1 text-center text-[10px] font-bold leading-4 text-white">
+                          {unreadNotifications > 9 ? '9+' : unreadNotifications}
+                        </span>
+                      )}
+                    </button>
+
+                    {/* Hover Modal */}
+                    {notificationHoverOpen && user && (
+                      <>
+                        {/* Connecting Arrow */}
+                        <div className="absolute -top-1.5 right-4 text-white dark:text-neutral-900">
+                          <ChevronUp className="w-4 h-4" />
+                        </div>
+                        <div className="absolute right-0 top-full mt-2 w-80 max-h-96 overflow-y-auto rounded-2xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 shadow-xl z-50 p-3">
+                        <div className="flex items-center justify-between mb-3 pb-2 border-b border-slate-100 dark:border-neutral-800">
+                          <span className="text-xs font-bold text-slate-900 dark:text-white">Notifications</span>
+                          <Link
+                            href="/notifications"
+                            className="text-[10px] font-semibold text-[#1F3F74] dark:text-[#4987BA] hover:underline"
+                          >
+                            View all
+                          </Link>
+                        </div>
+                        {loadingNotifications ? (
+                          <div className="flex items-center justify-center py-8">
+                            <span className="h-5 w-5 animate-spin rounded-full border-2 border-slate-300 border-t-[#1F3F74]" />
+                          </div>
+                        ) : notifications.length === 0 ? (
+                          <div className="py-6 text-center text-xs text-slate-500 dark:text-neutral-400">
+                            No notifications
+                          </div>
+                        ) : (
+                          <div className="space-y-2">
+                            {notifications.slice(0, 5).map((notif) => (
+                              <Link
+                                key={notif.id}
+                                href="/notifications"
+                                className={`block p-2.5 rounded-xl text-xs leading-relaxed transition-colors ${
+                                  notif.read_at
+                                    ? 'bg-slate-50 dark:bg-neutral-800 text-slate-500 dark:text-neutral-400 hover:bg-slate-100 dark:hover:bg-neutral-700'
+                                    : 'bg-brand-navy-50 dark:bg-brand-navy-900/50 text-slate-900 dark:text-white hover:bg-brand-navy-100 dark:hover:bg-brand-navy-800'
+                                }`}
+                              >
+                                <div className="flex items-start gap-2">
+                                  {notif.type === 'new_device_login' && (
+                                    <MonitorSmartphone className="w-4 h-4 shrink-0 text-brand-navy-500 dark:text-brand-teal-300 mt-0.5" />
+                                  )}
+                                  {notif.type === 'new_location_login' && (
+                                    <MapPin className="w-4 h-4 shrink-0 text-brand-teal-500 dark:text-brand-teal-300 mt-0.5" />
+                                  )}
+                                  {notif.type === 'tour_status' && (
+                                    <Check className="w-4 h-4 shrink-0 text-emerald-500 dark:text-emerald-300 mt-0.5" />
+                                  )}
+                                  <div className="flex-1 min-w-0">
+                                    <p className="font-semibold text-[11px] text-slate-900 dark:text-white">
+                                      {notif.title || 'Notification'}
+                                    </p>
+                                    <p className="text-[10px] text-slate-600 dark:text-neutral-400 line-clamp-2">
+                                      {notif.message || ''}
+                                    </p>
+                                    <p className="text-[9px] text-slate-400 dark:text-neutral-500 mt-1">
+                                      {new Date(notif.created_at).toLocaleString()}
+                                    </p>
+                                  </div>
+                                </div>
+                              </Link>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      </>
                     )}
-                  </Link>
+                  </div>
 
                   {/* Circular Profile Avatar with explicit dimensions */}
                   <Link
@@ -423,7 +521,7 @@ export function Navbar() {
                 className={`md:hidden p-2 rounded-xl transition-all duration-200 cursor-pointer ${
                   isTransparent
                     ? 'text-white hover:bg-white/15'
-                    : 'text-slate-800 dark:text-neutral-100 hover:bg-slate-100 dark:hover:bg-neutral-800'
+                    : 'text-slate-800 dark:text-neutral-100 hover:bg-white dark:hover:bg-neutral-800'
                 }`}
                 aria-label="Open Mobile Menu"
               >
@@ -478,7 +576,7 @@ export function Navbar() {
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-2 rounded-full text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
+                className="p-2 rounded-full text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-white dark:hover:bg-neutral-800 transition-colors cursor-pointer"
                 aria-label="Close menu"
               >
                 <X className="w-5 h-5" />
@@ -496,8 +594,8 @@ export function Navbar() {
                     onClick={() => setMobileMenuOpen(false)}
                     className={`block px-4 py-3 rounded-xl font-display uppercase tracking-[0.16em] text-xs font-bold transition-all ${
                       isActive
-                        ? 'text-[#1F3F74] dark:text-[#F4BF3E] bg-slate-100 dark:bg-neutral-900 font-extrabold'
-                        : 'text-slate-700 dark:text-white hover:text-[#1F3F74] dark:hover:text-[#F4BF3E] hover:bg-slate-50 dark:hover:bg-neutral-900/60'
+                        ? 'text-[#1F3F74] dark:text-[#F4BF3E] bg-white dark:bg-neutral-900 font-extrabold'
+                        : 'text-slate-700 dark:text-white hover:text-[#1F3F74] dark:hover:text-[#F4BF3E] hover:bg-white dark:hover:bg-neutral-900/60'
                     }`}
                   >
                     {link.label}
@@ -507,7 +605,7 @@ export function Navbar() {
             </div>
 
             {/* Drawer Footer: Modern Theme Toggle & Auth State if Logged In */}
-            <div className="p-5 border-t border-slate-100 dark:border-neutral-800 space-y-4 bg-slate-50/70 dark:bg-neutral-950 transition-colors duration-200">
+            <div className="p-5 border-t border-slate-100 dark:border-neutral-800 space-y-4 bg-white/70 dark:bg-neutral-950 transition-colors duration-200">
               {/* Modern Style Theme Switch */}
               <ThemeToggle variant="drawer" />
 

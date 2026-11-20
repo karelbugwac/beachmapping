@@ -39,7 +39,7 @@ const HERO_SLIDES: HeroSlide[] = [
     id: 'majestique',
     resortName: 'Majestique View Resort',
     subtext: 'Elevated cliffside ocean deck and sunset viewing overlooking pristine coral reefs.',
-    image: '/majestique.webp',
+    image: '/majestique.jpg',
     slug: 'majestique-beach',
   },
 ];
@@ -115,12 +115,12 @@ export function HeroMapSection({
     };
   }, []);
 
-  // Automatic slideshow timer: transitions cleanly every 5.5s
+  // Automatic slideshow timer: transitions cleanly every 3 seconds
   useEffect(() => {
     if (isPaused) return;
     const interval = setInterval(() => {
       setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
-    }, 5500);
+    }, 3000);
     return () => clearInterval(interval);
   }, [isPaused]);
 
@@ -161,8 +161,6 @@ export function HeroMapSection({
   return (
     <section
       aria-label="Binongkalan Beach Resorts Showcase"
-      onMouseEnter={() => setIsPaused(true)}
-      onMouseLeave={() => setIsPaused(false)}
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
       className="relative w-full h-[85vh] sm:h-[90vh] lg:h-[94vh] min-h-[560px] overflow-hidden text-white select-none transition-colors duration-200"
@@ -183,11 +181,9 @@ export function HeroMapSection({
                 alt={slide.resortName}
                 fill
                 priority={idx === 0}
-                unoptimized
+                quality={100}
                 sizes="100vw"
-                className={`object-cover object-center transition-transform duration-[8000ms] ease-out ${
-                  isActive ? 'scale-105' : 'scale-100'
-                }`}
+                className="object-cover object-center"
               />
             </div>
           );
@@ -212,7 +208,7 @@ export function HeroMapSection({
           {/* Subtitle: Resort Vibe Description */}
           <p
             key={`desc-${activeSlide.id}`}
-            className="text-xs sm:text-[13px] md:text-sm text-white/90 font-light leading-relaxed max-w-lg mx-auto md:mx-0 drop-shadow-md animate-in fade-in duration-700"
+            className="text-xs sm:text-[13px] md:text-sm text-white/90 font-display font-light leading-relaxed max-w-lg mx-auto md:mx-0 drop-shadow-md animate-in fade-in duration-700"
           >
             {activeSlide.subtext}
           </p>
@@ -239,7 +235,7 @@ export function HeroMapSection({
           </div>
 
           {/* Owner feature prompt: Apply here hyperlink in yellow font color */}
-          <p className="text-[11px] sm:text-xs text-white/85 drop-shadow-md pt-0.5 font-sans">
+          <p className="text-[11px] sm:text-xs text-white/85 drop-shadow-md pt-0.5 font-display">
             Own a beach or resort in Binongkalan and want to get featured?{' '}
             <Link
               href={isAuthenticated ? '/apply' : '/register?redirect=/apply'}

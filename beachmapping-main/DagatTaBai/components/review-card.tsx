@@ -70,7 +70,7 @@ export function ReviewCard({ review, canDelete = false, onDelete }: ReviewCardPr
           {review.photos.map((photoUrl, index) => (
             <div
               key={index}
-              className="relative w-20 h-20 rounded-md overflow-hidden border border-slate-200 bg-slate-100"
+              className="relative w-20 h-20 rounded-md overflow-hidden border border-slate-200 bg-white"
             >
               <Image
                 src={photoUrl}

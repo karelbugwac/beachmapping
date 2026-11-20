@@ -238,6 +238,7 @@ export default function OwnerLoginPage() {
               alt="Dagat Ta Bai logo"
               width={64}
               height={64}
+              style={{ width: 'auto', height: 'auto' }}
               className="object-contain"
               priority
             />

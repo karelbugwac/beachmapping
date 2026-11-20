@@ -19,12 +19,12 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
   const action = typeof body === 'object' && body !== null && 'action' in body
     ? (body as { action: unknown }).action
     : null;
-  if (action !== 'read' && action !== 'confirmed' && action !== 'unrecognized') {
+  if (action !== 'read' && action !== 'confirmed' && action !== 'unrecognized' && action !== 'logout_device') {
     return NextResponse.json({ error: 'Choose a valid notification action.' }, { status: 400 });
   }
 
   const now = new Date().toISOString();
-  const update = action === 'read'
+  const update = action === 'read' || action === 'logout_device'
     ? { read_at: now }
     : { read_at: now, response: action, responded_at: now };
 
@@ -66,6 +66,32 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       await supabase.auth.resetPasswordForEmail(user.email, {
         redirectTo: `${request.nextUrl.origin}/reset-password`,
       });
+    }
+    if (action === 'logout_device') {
+      // Delete the login device associated with this notification
+      try {
+        const admin = createAdminClient();
+        const { data: authUserData } = await admin.auth.admin.getUserById(user.id);
+        const metadata = authUserData?.user?.user_metadata || {};
+        const loginDevices: any[] = Array.isArray(metadata.login_devices)
+          ? [...metadata.login_devices]
+          : [];
+        
+        // Find and remove the device that matches this notification
+        const filteredDevices = loginDevices.filter((device: any) => {
+          // Match by checking if device login matches notification timestamp
+          return !(device.login_at === dbNotification.created_at);
+        });
+        
+        await admin.auth.admin.updateUserById(user.id, {
+          user_metadata: {
+            ...metadata,
+            login_devices: filteredDevices,
+          },
+        });
+      } catch (err) {
+        console.warn('Failed to remove login device:', err);
+      }
     }
     return NextResponse.json({ notification: dbNotification });
   }

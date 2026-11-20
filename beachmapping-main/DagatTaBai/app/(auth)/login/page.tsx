@@ -144,12 +144,16 @@ function UserLoginForm() {
     if (lockoutSeconds > 0) {
       return;
     }
-    const emailQuery = email.trim() ? `?email=${encodeURIComponent(email.trim())}` : '';
-    window.location.href = `/api/auth/google${emailQuery}`;
+    const params = new URLSearchParams();
+    if (email.trim()) {
+      params.set('email', email.trim());
+    }
+    params.set('redirect', getSafeInternalRedirect(searchParams.get('redirect'), '/home'));
+    window.location.href = `/api/auth/google?${params.toString()}`;
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-between items-center px-4 py-8 bg-[#f8fafc] dark:bg-black transition-colors duration-200">
+    <div className="min-h-screen flex flex-col justify-between items-center px-4 py-8 bg-white dark:bg-black transition-colors duration-200">
       {/* ── Floating Rate Limit / Login Error Message ────── */}
       {(lockoutSeconds > 0 || loginErrorMessage) && (
         <div
@@ -185,7 +189,7 @@ function UserLoginForm() {
       <div className="w-full px-4 sm:px-8 md:px-12 flex items-center justify-start">
         <Link
           href="/"
-          className="inline-flex items-center gap-1 text-xs sm:text-sm font-medium text-slate-500 hover:text-brand-navy-500 dark:text-neutral-400 dark:hover:text-white transition-colors group"
+          className="inline-flex items-center gap-1 text-xs sm:text-sm font-display font-medium text-slate-500 hover:text-brand-navy-500 dark:text-neutral-400 dark:hover:text-white transition-colors group"
         >
           <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
           <span>Back to Home</span>
@@ -204,15 +208,16 @@ function UserLoginForm() {
                 alt="Dagat Ta Bai Logo"
                 width={64}
                 height={64}
+                style={{ width: 'auto', height: 'auto' }}
                 className="object-contain"
                 priority
               />
             </div>
           </Link>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-brand-navy-500 dark:text-brand-teal-300">
+          <h1 className="text-2xl sm:text-3xl font-display font-bold tracking-tight text-brand-navy-500 dark:text-brand-teal-300">
             Welcome back
           </h1>
-          <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1 font-normal leading-relaxed max-w-xs mx-auto">
+          <p className="text-xs font-display text-slate-500 dark:text-neutral-400 mt-1 font-normal leading-relaxed max-w-xs mx-auto">
             Sign in to discover, rate, and share your favorite coastal destinations in Catmon.
           </p>
         </div>
@@ -221,7 +226,7 @@ function UserLoginForm() {
         <form onSubmit={handleEmailLogin} className="space-y-5">
           {/* Email Category (Standard Sentence Case label, oblong field) */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-slate-700 dark:text-neutral-300 ml-1">
+            <label className="block text-xs font-display font-semibold text-slate-700 dark:text-neutral-300 ml-1">
               Email address
             </label>
             <div className="relative">
@@ -231,10 +236,10 @@ function UserLoginForm() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 onBlur={() => setTouched((t) => ({ ...t, email: true }))}
-                className={`w-full px-5 py-3.5 text-sm bg-white dark:bg-neutral-900 border rounded-full text-slate-900 dark:text-white caret-brand-navy-500 dark:caret-brand-teal-600 placeholder:text-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:ring-2 transition-all duration-200 ${
+                className={`w-full px-5 py-3.5 text-sm bg-white dark:bg-neutral-900 border rounded-full text-slate-900 dark:text-white caret-brand-navy-500 dark:caret-brand-teal-600 placeholder:text-transparent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#1F3F74]/30 focus:ring-1 transition-all duration-200 ${
                   touched.email && !emailValid && email
                     ? 'border-red-400 dark:border-red-600 focus:ring-red-500/20'
-                    : 'border-slate-300 dark:border-neutral-800 focus:border-brand-navy-500 dark:focus:border-brand-teal-600 focus:ring-brand-teal-400 dark:focus:ring-brand-teal-400'
+                    : 'border-[#1F3F74]/40 dark:border-[#4987BA]/40 focus:border-[#1F3F74] dark:focus:border-[#4987BA] focus:ring-[#1F3F74]/30 dark:focus:ring-[#4987BA]/30'
                 }`}
               />
               {touched.email && email && !emailValid && (
@@ -254,12 +259,12 @@ function UserLoginForm() {
           {/* Password Category (Standard Sentence Case label, oblong field) */}
           <div className="space-y-1.5">
             <div className="flex items-center justify-between px-1">
-              <label className="block text-xs font-semibold text-slate-700 dark:text-neutral-300">
+              <label className="block text-xs font-display font-semibold text-slate-700 dark:text-neutral-300">
                 Password
               </label>
               <Link
                 href="/forgot-password"
-                className="text-[11px] text-brand-navy-500 dark:text-brand-teal-300 font-semibold hover:underline transition-colors"
+                className="text-[11px] font-display font-semibold text-brand-navy-500 dark:text-brand-teal-300 hover:underline transition-colors"
               >
                 Forgot password?
               </Link>
@@ -271,10 +276,10 @@ function UserLoginForm() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 onBlur={() => setTouched((t) => ({ ...t, password: true }))}
-                className={`w-full pl-5 pr-12 py-3.5 text-sm bg-white dark:bg-neutral-900 border rounded-full text-slate-900 dark:text-white caret-brand-navy-500 dark:caret-brand-teal-600 placeholder:text-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:ring-2 transition-all duration-200 ${
+                className={`w-full pl-5 pr-12 py-3.5 text-sm bg-white dark:bg-neutral-900 border rounded-full text-slate-900 dark:text-white caret-brand-navy-500 dark:caret-brand-teal-600 placeholder:text-transparent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#1F3F74]/30 focus:ring-1 transition-all duration-200 ${
                   touched.password && !password
                     ? 'border-red-400 dark:border-red-600 focus:ring-red-500/20'
-                    : 'border-slate-300 dark:border-neutral-800 focus:border-brand-navy-500 dark:focus:border-brand-teal-600 focus:ring-brand-teal-400 dark:focus:ring-brand-teal-400'
+                    : 'border-[#1F3F74]/40 dark:border-[#4987BA]/40 focus:border-[#1F3F74] dark:focus:border-[#4987BA] focus:ring-[#1F3F74]/30 dark:focus:ring-[#4987BA]/30'
                 }`}
               />
               <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
@@ -342,11 +347,11 @@ function UserLoginForm() {
 
         {/* ── Standard Divider: Clean lowercase/sentence case, no all-caps ─ */}
         <div className="relative flex items-center gap-3 my-5">
-          <div className="flex-1 h-px bg-slate-200 dark:bg-neutral-800" />
-          <span className="text-xs text-slate-400 dark:text-neutral-500 font-normal select-none">
+          <div className="flex-1 h-px bg-[#1F3F74]/15 dark:bg-[#4987BA]/20" />
+          <span className="text-xs text-slate-400 dark:text-neutral-500 font-display font-normal select-none">
             or continue with
           </span>
-          <div className="flex-1 h-px bg-slate-200 dark:bg-neutral-800" />
+          <div className="flex-1 h-px bg-[#1F3F74]/15 dark:bg-[#4987BA]/20" />
         </div>
 
         {/* ── Google OAuth Button (Oblong rounded-full) ────── */}
@@ -354,7 +359,7 @@ function UserLoginForm() {
           type="button"
           onClick={handleGoogleSignIn}
           disabled={loading || lockoutSeconds > 0}
-          className="w-full py-3.5 px-5 bg-white dark:bg-neutral-900 border border-slate-300 dark:border-neutral-800 hover:bg-slate-50 dark:hover:bg-neutral-900 disabled:opacity-50 disabled:cursor-not-allowed rounded-full text-slate-700 dark:text-neutral-200 text-xs sm:text-sm font-display font-medium tracking-wide transition-all duration-200 flex items-center justify-center gap-3 shadow-2xs hover:shadow-xs cursor-pointer"
+          className="w-full py-3.5 px-5 bg-white dark:bg-neutral-900 border border-[#1F3F74]/40 dark:border-[#4987BA]/40 hover:bg-white dark:hover:bg-neutral-900 disabled:opacity-50 disabled:cursor-not-allowed rounded-full text-slate-700 dark:text-neutral-200 text-xs sm:text-sm font-display font-medium tracking-wide transition-all duration-200 flex items-center justify-center gap-3 shadow-2xs hover:shadow-xs cursor-pointer"
         >
           <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24">
             <path
@@ -378,7 +383,7 @@ function UserLoginForm() {
         </button>
 
         {/* ── Link to Register (Line above completely removed) ── */}
-        <p className="text-center text-sm text-slate-600 dark:text-neutral-400 pt-5">
+        <p className="text-center text-sm font-display text-slate-600 dark:text-neutral-400 pt-5">
           Don&apos;t have an account?{' '}
           <Link
             href="/register"
@@ -397,7 +402,7 @@ function UserLoginForm() {
 
 export default function UserLoginPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-slate-50 dark:bg-black" />}>
+    <Suspense fallback={<div className="min-h-screen bg-white dark:bg-black" />}>
       <UserLoginForm />
     </Suspense>
   );

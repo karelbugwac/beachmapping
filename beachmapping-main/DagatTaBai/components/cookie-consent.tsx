@@ -167,7 +167,7 @@ export function CookieConsent() {
               <button
                 type="button"
                 onClick={() => dismissWithAction('essential_only')}
-                className="px-4 py-2.5 text-xs font-semibold rounded-none border border-[#1F3F74]/40 dark:border-white/40 text-[#1F3F74] dark:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                className="px-4 py-2.5 text-xs font-semibold rounded-none border border-[#1F3F74]/40 dark:border-white/40 text-[#1F3F74] dark:text-white hover:bg-white dark:hover:bg-white/10 transition-colors cursor-pointer"
               >
                 Save Essential Only
               </button>

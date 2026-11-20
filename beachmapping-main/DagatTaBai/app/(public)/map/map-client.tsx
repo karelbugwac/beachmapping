@@ -358,7 +358,7 @@ export default function MapPageClient() {
     : null;
 
   return (
-    <div className="relative isolate z-0 w-full h-[calc(100dvh-var(--navbar-height))] overflow-hidden flex flex-col bg-slate-100 dark:bg-black">
+    <div className="relative isolate z-0 w-full h-[calc(100dvh-var(--navbar-height))] overflow-hidden flex flex-col bg-white dark:bg-black">
       {/* 1. TOP FLOATING SEARCH & ACTION BAR (OBLONG / ROUNDED-FULL, Shifts smoothly on desktop when Sidebar docks) */}
       <div className={`absolute top-3 sm:top-4 left-3 right-3 transition-all duration-300 ${selectedBeach && !routeActive ? 'sm:left-[445px]' : 'sm:left-6'} sm:right-6 z-30 pointer-events-none`}>
         <div className="max-w-2xl mx-auto flex items-center gap-2">
@@ -427,7 +427,7 @@ export default function MapPageClient() {
                     key={beach.id}
                     type="button"
                     onClick={() => setSelectedBeach(beach)}
-                    className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left hover:bg-slate-100 dark:hover:bg-neutral-800"
+                    className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left hover:bg-white dark:hover:bg-neutral-800"
                   >
                     <span className="min-w-0">
                       <span className="block truncate text-xs font-bold text-slate-900 dark:text-white">
@@ -482,7 +482,7 @@ export default function MapPageClient() {
         <div className="absolute top-20 left-3 right-3 sm:left-6 sm:right-6 z-30 pointer-events-none">
           <div className="max-w-2xl mx-auto pointer-events-auto bg-white/95 dark:bg-black/95 text-slate-900 dark:text-white backdrop-blur-md p-4 rounded-none shadow-2xl border border-slate-200 dark:border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
             <div className="flex items-center gap-3.5">
-              <div className="w-10 h-10 rounded-full bg-slate-100 dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 flex items-center justify-center flex-shrink-0 text-brand-navy-500 dark:text-brand-teal-300 shadow-sm">
+              <div className="w-10 h-10 rounded-full bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 flex items-center justify-center flex-shrink-0 text-brand-navy-500 dark:text-brand-teal-300 shadow-sm">
                 {travelMode === 'motorcycle' ? (
                   <Bike className="w-5 h-5" />
                 ) : travelMode === 'commute' ? (
@@ -689,7 +689,7 @@ export default function MapPageClient() {
                   className={`rounded-full border py-2 px-1 text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
                     travelMode === 'car'
                       ? 'border-brand-navy-500 bg-brand-navy-500 text-white shadow-xs'
-                      : 'border-slate-200 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-neutral-800'
+                      : 'border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-neutral-800'
                   }`}
                 >
                   <Car className="w-3.5 h-3.5" />
@@ -702,7 +702,7 @@ export default function MapPageClient() {
                   className={`rounded-full border py-2 px-1 text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
                     travelMode === 'motorcycle'
                       ? 'border-brand-navy-500 bg-brand-navy-500 text-white shadow-xs'
-                      : 'border-slate-200 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-neutral-800'
+                      : 'border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-neutral-800'
                   }`}
                 >
                   <Bike className="w-3.5 h-3.5" />
@@ -715,7 +715,7 @@ export default function MapPageClient() {
                   className={`rounded-full border py-2 px-1 text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
                     travelMode === 'commute'
                       ? 'border-brand-navy-500 bg-brand-navy-500 text-white shadow-xs'
-                      : 'border-slate-200 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-neutral-800'
+                      : 'border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-neutral-800'
                   }`}
                 >
                   <Bus className="w-3.5 h-3.5" />
@@ -728,7 +728,7 @@ export default function MapPageClient() {
                   className={`rounded-full border py-2 px-1 text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
                     travelMode === 'walking'
                       ? 'border-brand-navy-500 bg-brand-navy-500 text-white shadow-xs'
-                      : 'border-slate-200 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900 text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-neutral-800'
+                      : 'border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-neutral-800'
                   }`}
                 >
                   <Footprints className="w-3.5 h-3.5" />
@@ -767,7 +767,7 @@ export default function MapPageClient() {
             {/* View Details button (Oblong secondary) */}
             <Link
               href={`/beaches/${selectedBeach.slug}`}
-              className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-4 border-2 border-brand-navy-500 dark:border-brand-teal-400 bg-transparent hover:bg-slate-50 dark:hover:bg-neutral-900 text-brand-navy-500 dark:text-brand-teal-400 text-xs font-bold rounded-full transition-colors text-center cursor-pointer"
+              className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-4 border-2 border-brand-navy-500 dark:border-brand-teal-400 bg-transparent hover:bg-white dark:hover:bg-neutral-900 text-brand-navy-500 dark:text-brand-teal-400 text-xs font-bold rounded-full transition-colors text-center cursor-pointer"
             >
               <span>View Details</span>
               <ArrowRight className="w-3.5 h-3.5" />

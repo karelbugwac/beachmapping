@@ -52,7 +52,7 @@ export function FacilityCard({
           aria-label={`View ${name}`}
           className="flex min-w-0 flex-1 items-center gap-2.5 sm:gap-4 rounded-xl text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 dark:focus-visible:ring-brand-teal-400"
         >
-          <span className="relative h-18 w-20 sm:h-[88px] sm:w-[120px] shrink-0 overflow-hidden rounded-xl bg-slate-100 dark:bg-neutral-800">
+          <span className="relative h-18 w-20 sm:h-[88px] sm:w-[120px] shrink-0 overflow-hidden rounded-xl bg-white dark:bg-neutral-800">
             {imageUrl ? (
               <Image
                 src={imageUrl}
@@ -72,7 +72,7 @@ export function FacilityCard({
           <span className="flex min-w-0 flex-1 flex-col items-start gap-0.5 sm:gap-1">
             <span className={`max-w-full truncate rounded-full px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider sm:text-[11px] ${
               neutralCategoryBadge
-                ? 'whitespace-nowrap bg-slate-100 text-slate-800 dark:bg-neutral-800 dark:text-neutral-100'
+                ? 'whitespace-nowrap bg-white text-slate-800 dark:bg-neutral-800 dark:text-neutral-100'
                 : getFacilityCategoryStyle(category)
             }`}>
               {getFacilityCategoryLabel(category)}
@@ -98,7 +98,7 @@ export function FacilityCard({
                   onEdit();
                 }}
                 aria-label={`Edit ${name}`}
-                className="flex h-9 w-9 items-center justify-center rounded-full text-brand-navy-500 transition hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 dark:text-brand-teal-300 dark:hover:bg-neutral-800"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-brand-navy-500 transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 dark:text-brand-teal-300 dark:hover:bg-neutral-800"
               >
                 <Pencil className="h-4 w-4" />
               </button>
@@ -111,7 +111,7 @@ export function FacilityCard({
                   onDelete();
                 }}
                 aria-label={`Delete ${name}`}
-                className="flex h-9 w-9 items-center justify-center rounded-full text-rose-600 transition hover:bg-rose-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 dark:text-rose-400 dark:hover:bg-rose-950/40"
+                className="flex h-9 w-9 items-center justify-center rounded-full text-rose-600 transition hover:bg-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-500 dark:text-rose-400 dark:hover:bg-rose-950/40"
               >
                 <Trash2 className="h-4 w-4" />
               </button>
@@ -126,7 +126,7 @@ export function FacilityCard({
             {feeItems.map((item, index) => {
               const isFree = item.amount === null || item.amount === 0;
               return (
-                <div key={`${item.label}-${index}`} className="rounded-lg bg-slate-50 px-3 py-2 dark:bg-neutral-900">
+                <div key={`${item.label}-${index}`} className="rounded-lg bg-white px-3 py-2 dark:bg-neutral-900">
                   <div className="text-xs text-slate-500 dark:text-neutral-400">{item.label}</div>
                   <div className={`text-[15px] font-medium ${isFree ? 'text-brand-navy-500 dark:text-brand-navy-300' : 'text-slate-900 dark:text-white'}`}>
                     {formatFacilityFeeAmount(item.amount)}

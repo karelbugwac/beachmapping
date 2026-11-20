@@ -25,7 +25,7 @@ export function BeachCard({ beach }: { beach: BeachRecord | { id: string; slug?:
     <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200/80 dark:border-zinc-800 shadow-2xs hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col justify-between group">
       <div>
         {/* Cover Image */}
-        <div className="relative h-48 sm:h-52 w-full bg-slate-100 dark:bg-zinc-800 overflow-hidden">
+        <div className="relative h-48 sm:h-52 w-full bg-white dark:bg-zinc-800 overflow-hidden">
           {beach.cover_image ? (
             <Image
               src={beach.cover_image}

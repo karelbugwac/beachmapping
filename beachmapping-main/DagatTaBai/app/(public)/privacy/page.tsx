@@ -6,7 +6,7 @@ export default function PrivacyPolicyPage() {
       
       {/* ── Page Header (Placed Higher Up, Frameless) ── */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-6 text-center space-y-1.5">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold text-brand-navy-500 dark:text-brand-teal-300 tracking-tight leading-tight">
+        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-display font-medium text-[#1F3F74] dark:text-white tracking-tight leading-tight">
           Privacy Policy
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
@@ -19,7 +19,7 @@ export default function PrivacyPolicyPage() {
         
         {/* Section 1 */}
         <section className="space-y-1.5">
-          <h2 className="text-base sm:text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300">
+          <h2 className="text-base sm:text-lg font-display font-medium text-[#1F3F74] dark:text-white">
             1. Personal Information Controller
           </h2>
           <p style={{ textAlign: 'justify' }}>
@@ -32,7 +32,7 @@ export default function PrivacyPolicyPage() {
 
         {/* Section 2 */}
         <section className="space-y-2 border-t border-slate-200 dark:border-neutral-800 pt-5">
-          <h2 className="text-base sm:text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300">
+          <h2 className="text-base sm:text-lg font-display font-medium text-[#1F3F74] dark:text-white">
             2. Personal Information We Collect
           </h2>
           <p style={{ textAlign: 'justify' }}>
@@ -78,7 +78,7 @@ export default function PrivacyPolicyPage() {
 
         {/* Section 3 */}
         <section className="space-y-2 border-t border-slate-200 dark:border-neutral-800 pt-5">
-          <h2 className="text-base sm:text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300">
+          <h2 className="text-base sm:text-lg font-display font-medium text-[#1F3F74] dark:text-white">
             3. Purpose of Data Collection
           </h2>
           <p style={{ textAlign: 'justify' }}>We collect and process personal information for the following purposes:</p>
@@ -98,7 +98,7 @@ export default function PrivacyPolicyPage() {
 
         {/* Section 4 */}
         <section className="space-y-2 border-t border-slate-200 dark:border-neutral-800 pt-5">
-          <h2 className="text-base sm:text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300">
+          <h2 className="text-base sm:text-lg font-display font-medium text-[#1F3F74] dark:text-white">
             4. Legal Basis for Processing
           </h2>
           <p style={{ textAlign: 'justify' }}>
@@ -123,7 +123,7 @@ export default function PrivacyPolicyPage() {
 
         {/* Section 5 */}
         <section className="space-y-2 border-t border-slate-200 dark:border-neutral-800 pt-5">
-          <h2 className="text-base sm:text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300">
+          <h2 className="text-base sm:text-lg font-display font-medium text-[#1F3F74] dark:text-white">
             5. Third-Party Services and Information Sharing
           </h2>
           <p style={{ textAlign: 'justify' }}>
@@ -168,7 +168,7 @@ export default function PrivacyPolicyPage() {
 
         {/* Section 6 */}
         <section className="space-y-1.5 border-t border-slate-200 dark:border-neutral-800 pt-5">
-          <h2 className="text-base sm:text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300">
+          <h2 className="text-base sm:text-lg font-display font-medium text-[#1F3F74] dark:text-white">
             6. Data Storage and Retention
           </h2>
           <p style={{ textAlign: 'justify' }}>
@@ -193,7 +193,7 @@ export default function PrivacyPolicyPage() {
 
         {/* Section 7 */}
         <section className="space-y-2 border-t border-slate-200 dark:border-neutral-800 pt-5">
-          <h2 className="text-base sm:text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300">
+          <h2 className="text-base sm:text-lg font-display font-medium text-[#1F3F74] dark:text-white">
             7. Data Security and Protection
           </h2>
           <p style={{ textAlign: 'justify' }}>
@@ -215,7 +215,7 @@ export default function PrivacyPolicyPage() {
 
         {/* Section 8 */}
         <section className="space-y-2 border-t border-slate-200 dark:border-neutral-800 pt-5">
-          <h2 className="text-base sm:text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300">
+          <h2 className="text-base sm:text-lg font-display font-medium text-[#1F3F74] dark:text-white">
             8. Your Rights as a Data Subject
           </h2>
           <p style={{ textAlign: 'justify' }}>
@@ -259,7 +259,7 @@ export default function PrivacyPolicyPage() {
 
         {/* Section 9 */}
         <section className="space-y-1.5 border-t border-slate-200 dark:border-neutral-800 pt-5">
-          <h2 className="text-base sm:text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300">
+          <h2 className="text-base sm:text-lg font-display font-medium text-[#1F3F74] dark:text-white">
             9. Cookies and Website Technologies
           </h2>
           <p style={{ textAlign: 'justify' }}>
@@ -275,7 +275,7 @@ export default function PrivacyPolicyPage() {
 
         {/* Section 10 */}
         <section className="space-y-1.5 border-t border-slate-200 dark:border-neutral-800 pt-5">
-          <h2 className="text-base sm:text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300">
+          <h2 className="text-base sm:text-lg font-display font-medium text-[#1F3F74] dark:text-white">
             10. Protection of Children&apos;s Information
           </h2>
           <p style={{ textAlign: 'justify' }}>
@@ -288,7 +288,7 @@ export default function PrivacyPolicyPage() {
 
         {/* Section 11 */}
         <section className="space-y-1.5 border-t border-slate-200 dark:border-neutral-800 pt-5">
-          <h2 className="text-base sm:text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300">
+          <h2 className="text-base sm:text-lg font-display font-medium text-[#1F3F74] dark:text-white">
             11. Data Breach and Security Incidents
           </h2>
           <p style={{ textAlign: 'justify' }}>
@@ -301,7 +301,7 @@ export default function PrivacyPolicyPage() {
 
         {/* Section 12 */}
         <section className="space-y-1.5 border-t border-slate-200 dark:border-neutral-800 pt-5">
-          <h2 className="text-base sm:text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300">
+          <h2 className="text-base sm:text-lg font-display font-medium text-[#1F3F74] dark:text-white">
             12. Changes to This Privacy Policy
           </h2>
           <p style={{ textAlign: 'justify' }}>
@@ -314,7 +314,7 @@ export default function PrivacyPolicyPage() {
 
         {/* Section 13 */}
         <section className="space-y-1.5 border-t border-slate-200 dark:border-neutral-800 pt-5">
-          <h2 className="text-base sm:text-lg font-bold text-brand-navy-500 dark:text-brand-teal-300">
+          <h2 className="text-base sm:text-lg font-display font-medium text-[#1F3F74] dark:text-white">
             13. Contact Us
           </h2>
           <p style={{ textAlign: 'justify' }}>

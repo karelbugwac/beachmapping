@@ -6,6 +6,7 @@ import {
   peekRateLimit,
   recordRateLimitHit,
 } from '@/lib/utils/rate-limit';
+import { getSafeInternalRedirect } from '@/lib/utils/safe-redirect';
 
 const LOGIN_RATE_LIMIT = {
   maxRequests: 10,
@@ -60,7 +61,19 @@ export async function GET(request: NextRequest) {
       return NextResponse.redirect(`${siteUrl}/login?error=google_auth_failed`);
     }
 
-    return NextResponse.redirect(data.url);
+    const redirectTarget = getSafeInternalRedirect(
+      request.nextUrl.searchParams.get('redirect'),
+      '/home'
+    );
+
+    const res = NextResponse.redirect(data.url);
+    res.cookies.set('dtb_oauth_redirect', redirectTarget, {
+      httpOnly: true,
+      sameSite: 'lax',
+      path: '/',
+      maxAge: 600,
+    });
+    return res;
   } catch (error) {
     console.error('Google OAuth redirect error:', error);
     const hit = recordRateLimitHit(ipKey, LOGIN_RATE_LIMIT);

@@ -186,14 +186,7 @@ export function AiChatWidget() {
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
   const [signedIn, setSignedIn] = useState(false);
-  const [messages, setMessages] = useState<ChatMessage[]>([
-    {
-      id: 'welcome-1',
-      sender: 'assistant',
-      text: "Hello! I'm **Bai**, your Dagat Ta Bai local guide for Barangay Binongkalan, Catmon. Ask me anything about **Rañola Beach**, **Lite Bay Resort**, **Majestique View Resort**, or **Hinagdan Beach**!",
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-    },
-  ]);
+  const [messages, setMessages] = useState<ChatMessage[]>([]);
 
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const historyLoadedRef = useRef(false);
@@ -270,7 +263,7 @@ export function AiChatWidget() {
     if (!questionText.trim() || loading) return;
 
     const recentHistory = messages
-      .filter((m) => m.id !== 'welcome-1' && m.text.trim().length > 0)
+      .filter((m) => m.text.trim().length > 0)
       .slice(-8)
       .map((m) => ({ role: m.sender, text: m.text }));
 
@@ -387,6 +380,7 @@ export function AiChatWidget() {
     (msg) => msg.sender === 'user' || (msg.sender === 'assistant' && msg.text.trim().length > 0)
   );
   const hasUserMessages = visibleMessages.some((msg) => msg.sender === 'user');
+  const hasWelcomeMessage = messages.some((msg) => msg.id === 'welcome-1');
 
   // Check if AI is thinking before first text chunk arrives
   const isThinking =
@@ -400,7 +394,7 @@ export function AiChatWidget() {
   if (!loading && visibleMessages.length >= 2) {
     const lastMsg = visibleMessages[visibleMessages.length - 1];
     const prevUserMsg = [...visibleMessages].reverse().find((m) => m.sender === 'user');
-    if (lastMsg.sender === 'assistant' && lastMsg.id !== 'welcome-1' && prevUserMsg) {
+    if (lastMsg.sender === 'assistant' && prevUserMsg) {
       branchQuestions = getContextualBranchQuestions(prevUserMsg.text, lastMsg.text);
     }
   }
@@ -436,97 +430,137 @@ export function AiChatWidget() {
       {isOpen && (
         <section
           aria-label="Chat with Bai"
-          className="flex h-[min(520px,calc(100dvh-5rem))] max-h-[calc(100dvh-4rem)] w-[min(340px,calc(100vw-1.5rem))] sm:h-[min(520px,calc(100dvh-6rem))] sm:w-[350px] sm:max-h-[75vh] flex-col overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-[0_20px_50px_-15px_rgba(15,23,42,0.4)] animate-in fade-in slide-in-from-bottom-2 duration-200 dark:border-neutral-800 dark:bg-brand-navy-900"
+          className="flex h-[min(520px,calc(100dvh-5rem))] max-h-[calc(100dvh-4rem)] w-[min(340px,calc(100vw-1.5rem))] sm:h-[min(520px,calc(100dvh-6rem))] sm:w-[350px] sm:max-h-[75vh] flex-col overflow-hidden border border-slate-200 bg-white font-display shadow-[0_20px_50px_-15px_rgba(15,23,42,0.4)] animate-in fade-in slide-in-from-bottom-2 duration-200 dark:border-neutral-800 dark:bg-brand-navy-900"
         >
-          {/* Branded compact header */}
-          <div className="flex shrink-0 items-center justify-between gap-2 border-b border-white/10 bg-brand-navy-500 px-3.5 py-2.5 text-white dark:bg-brand-navy-800 sm:px-4 sm:py-2.5">
-            <div className="flex min-w-0 items-center gap-2">
-              <Image
-                src="/images/bai.png"
-                alt="Bai"
-                width={28}
-                height={28}
-                className="w-7 h-7 shrink-0 object-contain"
-              />
-              <div className="min-w-0">
-                <div className="flex items-center gap-1.5">
-                  <h3 className="font-sans text-xs sm:text-sm font-bold leading-tight tracking-tight text-white">Bai</h3>
-                  <span
-                    className={`h-1.5 w-1.5 rounded-full ${loading ? 'animate-ping bg-amber-300' : 'bg-emerald-400'}`}
-                    aria-label="Online"
-                  />
-                  <span className="text-[9px] sm:text-[10px] font-medium leading-tight text-brand-navy-100/90">
-                    {loading ? 'Generating answer...' : 'Local Guide'}
-                  </span>
+          {/* Branded compact header - only show if signed in */}
+          {signedIn && (
+            <div className="flex shrink-0 items-center justify-between gap-2 border-b border-white/10 bg-brand-navy-500 px-3.5 py-2.5 text-white dark:bg-brand-navy-800 sm:px-4 sm:py-2.5">
+              <div className="flex min-w-0 items-center gap-2">
+                <Image
+                  src="/images/bai.png"
+                  alt="Bai"
+                  width={28}
+                  height={28}
+                  className="w-7 h-7 shrink-0 object-contain"
+                />
+                <div className="min-w-0">
+                  <div className="flex items-center gap-1.5">
+                    <h3 className="font-display text-xs sm:text-sm font-bold leading-tight tracking-tight text-white">Bai</h3>
+                    <span
+                      className={`h-1.5 w-1.5 rounded-full ${loading ? 'animate-ping bg-amber-300' : 'bg-emerald-400'}`}
+                      aria-label="Online"
+                    />
+                    <span className="text-[9px] sm:text-[10px] font-medium leading-tight text-brand-navy-100/90">
+                      {loading ? 'Generating answer...' : 'Local Guide'}
+                    </span>
+                  </div>
                 </div>
               </div>
-            </div>
 
-            <div className="flex shrink-0 items-center gap-0.5">
-              <button
-                type="button"
-                onClick={() => void handleClearHistory()}
-                disabled={!signedIn}
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-brand-navy-100/80 transition-colors hover:bg-white/15 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
-                aria-label="Delete saved chat history"
-                title={signedIn ? 'Delete your saved chat history' : 'Sign in to save or delete history'}
-              >
-                <Trash2 size={13} />
-              </button>
-              <button
-                type="button"
-                onClick={() => setIsOpen(false)}
-                className="flex h-7 w-7 items-center justify-center rounded-lg text-brand-navy-100/80 transition-colors hover:bg-white/15 hover:text-white"
-                aria-label="Close Chat"
-              >
-                <X size={15} />
-              </button>
+              <div className="flex shrink-0 items-center gap-0.5">
+                <button
+                  type="button"
+                  onClick={() => void handleClearHistory()}
+                  disabled={!signedIn}
+                  className="flex h-7 w-7 items-center justify-center text-brand-navy-100/80 transition-colors hover:bg-white/15 hover:text-white disabled:cursor-not-allowed disabled:opacity-40"
+                  aria-label="Delete saved chat history"
+                  title={signedIn ? 'Delete your saved chat history' : 'Sign in to save or delete history'}
+                >
+                  <Trash2 size={13} />
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setIsOpen(false)}
+                  className="flex h-7 w-7 items-center justify-center text-brand-navy-100/80 transition-colors hover:bg-white/15 hover:text-white"
+                  aria-label="Close Chat"
+                >
+                  <X size={15} />
+                </button>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Conversation stream */}
           <div
             role="log"
             aria-live="polite"
             aria-relevant="additions text"
-            className="flex-1 space-y-3 overflow-y-auto bg-slate-50/70 px-3 py-3 text-xs dark:bg-brand-navy-900 sm:px-3.5"
+            className="flex-1 space-y-3 overflow-y-auto bg-white px-3 py-3 text-xs dark:bg-brand-navy-900 sm:px-3.5 relative"
           >
-            {visibleMessages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex min-w-0 items-end gap-1.5 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+            {/* Close button for non-signed-in users */}
+            {!signedIn && (
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                className="absolute top-2 right-2 flex h-7 w-7 items-center justify-center text-slate-500 hover:bg-slate-100 hover:text-slate-700 transition-colors"
+                aria-label="Close Chat"
               >
-                {msg.sender === 'assistant' && (
-                  <Image
-                    src="/images/bai.png"
-                    alt=""
-                    width={24}
-                    height={24}
-                    className="mb-4 w-6 h-6 shrink-0 object-contain"
-                  />
-                )}
-                <div
-                  className={`max-w-[85%] min-w-0 space-y-1 px-3 py-2 shadow-2xs sm:max-w-[82%] ${
-                    msg.sender === 'user'
-                      ? 'rounded-2xl rounded-br-md border border-brand-navy-700 bg-brand-navy-500 text-white dark:bg-brand-navy-500'
-                      : 'rounded-2xl rounded-bl-md border border-slate-200 bg-white text-slate-800 dark:border-slate-800 dark:bg-brand-navy-800 dark:text-slate-100'
-                  }`}
-                >
-                  <p className="break-words whitespace-pre-line leading-relaxed [overflow-wrap:anywhere] text-[11px] sm:text-xs">
-                    {renderFormattedText(msg.text, msg.sender === 'user')}
+                <X size={15} />
+              </button>
+            )}
+
+            {!signedIn && visibleMessages.length === 0 ? (
+              <div className="flex flex-col items-center justify-center h-full space-y-5 text-center px-4">
+                <Image
+                  src="/images/bai.png"
+                  alt="Bai AI Guide"
+                  width={100}
+                  height={100}
+                  className="w-24 h-24 object-contain"
+                />
+                <div className="space-y-3">
+                  <p className="text-sm font-bold text-slate-900 dark:text-white">
+                    Sign in to talk with Bai
                   </p>
-                  <span
-                    className={`block text-right text-[9px] font-medium ${
-                      msg.sender === 'user' ? 'text-brand-navy-200/80' : 'text-slate-400 dark:text-slate-500'
-                    }`}
+                  <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed max-w-[220px]">
+                    Get answers about beaches, directions, and local tips
+                  </p>
+                  <Link
+                    href="/login"
+                    className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-[#F4BF3E] hover:bg-[#e2af35] text-black text-xs font-bold shadow-md transition-all hover:scale-105 cursor-pointer"
                   >
-                    {msg.timestamp}
-                  </span>
+                    Sign In
+                  </Link>
                 </div>
               </div>
-            ))}
+            ) : (
+              visibleMessages.map((msg) => (
+                <div
+                  key={msg.id}
+                  className={`flex min-w-0 items-end gap-1.5 ${msg.sender === 'user' ? 'justify-end' : 'justify-start'}`}
+                >
+                  {msg.sender === 'assistant' && (
+                    <Image
+                      src="/images/bai.png"
+                      alt=""
+                      width={24}
+                      height={24}
+                      className="mb-4 w-6 h-6 shrink-0 object-contain"
+                    />
+                  )}
+                  <div
+                    className={`max-w-[85%] min-w-0 space-y-1 px-3 py-2 shadow-2xs sm:max-w-[82%] ${
+                      msg.sender === 'user'
+                        ? 'border border-brand-navy-700 bg-brand-navy-500 text-white dark:bg-brand-navy-500'
+                        : 'border border-slate-200 bg-white text-slate-800 dark:border-slate-800 dark:bg-brand-navy-800 dark:text-slate-100'
+                    }`}
+                  >
+                    <p className="break-words whitespace-pre-line leading-relaxed [overflow-wrap:anywhere] text-[11px] sm:text-xs">
+                      {renderFormattedText(msg.text, msg.sender === 'user')}
+                    </p>
+                    <span
+                      className={`block text-right text-[9px] font-medium ${
+                        msg.sender === 'user' ? 'text-brand-navy-200/80' : 'text-slate-400 dark:text-slate-500'
+                      }`}
+                    >
+                      {msg.timestamp}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
 
-            {!hasUserMessages && !loading && (
+            {signedIn && !hasUserMessages && !loading && (
               <div className="ml-7 space-y-1.5 pt-0.5">
                 <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Try asking</p>
                 <div className="flex flex-wrap gap-1.5">
@@ -535,7 +569,7 @@ export function AiChatWidget() {
                       key={item.label}
                       type="button"
                       onClick={() => void submitQuestion(item.question)}
-                      className="rounded-full border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-medium text-brand-navy-500 transition-colors hover:border-brand-navy-500/40 hover:bg-brand-navy-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 dark:border-slate-700 dark:bg-brand-navy-800 dark:text-brand-navy-200 dark:hover:bg-brand-navy-800 dark:focus-visible:ring-brand-teal-400"
+                      className="border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-medium text-brand-navy-500 transition-colors hover:border-brand-navy-500/40 hover:bg-brand-navy-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 dark:border-slate-700 dark:bg-brand-navy-800 dark:text-brand-navy-200 dark:hover:bg-brand-navy-800 dark:focus-visible:ring-brand-teal-400"
                     >
                       {item.label}
                     </button>
@@ -557,7 +591,7 @@ export function AiChatWidget() {
                       type="button"
                       disabled={loading}
                       onClick={() => void submitQuestion(item.question)}
-                      className="rounded-full border border-brand-navy-200/80 bg-brand-navy-50/80 px-2.5 py-1 text-[10px] font-medium text-brand-navy-500 transition-colors hover:bg-brand-navy-500 hover:text-white dark:border-brand-navy-900/60 dark:bg-brand-navy-800 dark:text-brand-navy-200 dark:hover:bg-brand-navy-500 dark:hover:text-white"
+                      className="border border-brand-navy-200/80 bg-brand-navy-50/80 px-2.5 py-1 text-[10px] font-medium text-brand-navy-500 transition-colors hover:bg-brand-navy-500 hover:text-white dark:border-brand-navy-900/60 dark:bg-brand-navy-800 dark:text-brand-navy-200 dark:hover:bg-brand-navy-500 dark:hover:text-white"
                     >
                       {item.label}
                     </button>
@@ -575,7 +609,7 @@ export function AiChatWidget() {
                   height={24}
                   className="mb-1 h-6 w-6 shrink-0 object-contain"
                 />
-                <div className="inline-flex flex-col gap-1 rounded-2xl rounded-bl-md border border-slate-200 bg-white px-3.5 py-2.5 shadow-2xs dark:border-slate-800 dark:bg-brand-navy-800">
+                <div className="inline-flex flex-col gap-1 border border-slate-200 bg-white px-3.5 py-2.5 shadow-2xs dark:border-slate-800 dark:bg-brand-navy-800">
                   <div className="flex items-center gap-2">
                     <div className="flex items-center gap-1">
                       <span className="h-1.5 w-1.5 animate-bounce rounded-full bg-brand-navy-500 dark:bg-brand-teal-400" />
@@ -596,25 +630,8 @@ export function AiChatWidget() {
             <div ref={messagesEndRef} />
           </div>
 
-          {/* Compact docked message composer or Sign In prompt */}
-          {!signedIn ? (
-            <div className="flex flex-col items-center justify-center p-3.5 border-t border-slate-200 dark:border-neutral-800 bg-slate-50 dark:bg-[#0c1424] text-center space-y-2">
-              <div className="space-y-0.5">
-                <p className="text-xs font-bold text-slate-900 dark:text-white">
-                  Sign in to talk with Bai
-                </p>
-                <p className="text-[11px] text-slate-500 dark:text-neutral-400 max-w-xs leading-relaxed">
-                  Sign in to ask questions about beaches, directions, entrance fees, and local tips in Binongkalan.
-                </p>
-              </div>
-              <Link
-                href="/login"
-                className="inline-flex items-center justify-center px-5 py-2 rounded-full bg-[#1F3F74] hover:bg-[#285091] text-white text-xs font-bold shadow-md transition-all hover:scale-105 cursor-pointer"
-              >
-                Sign In to Talk with Bai
-              </Link>
-            </div>
-          ) : (
+          {/* Compact docked message composer */}
+          {signedIn && (
             <form
               onSubmit={handleSend}
               className="flex shrink-0 items-center gap-2 border-t border-slate-200 bg-white p-2.5 dark:border-neutral-800 dark:bg-[#0c1424] sm:p-3"
@@ -626,12 +643,12 @@ export function AiChatWidget() {
                 disabled={loading}
                 placeholder={loading ? 'Generating answer, please wait...' : 'Ask Bai anything...'}
                 aria-label="Message Bai"
-                className="min-w-0 flex-1 rounded-full border border-slate-200 bg-slate-50 px-3.5 py-2 text-xs text-slate-900 transition focus:border-[#1F3F74] focus:outline-none focus:ring-2 focus:ring-[#1F3F74]/15 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-[#132035] dark:text-slate-100 dark:focus:border-[#4987BA] dark:focus:ring-[#4987BA]/20"
+                className="min-w-0 flex-1 border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 transition focus:border-[#1F3F74] focus:outline-none focus:ring-2 focus:ring-[#1F3F74]/15 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-[#132035] dark:text-slate-100 dark:focus:border-[#4987BA] dark:focus:ring-[#4987BA]/20"
               />
               <button
                 type="submit"
                 disabled={loading || !input.trim()}
-                className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-[#1F3F74] text-white shadow-xs transition hover:bg-[#16305a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74] focus-visible:ring-offset-2 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 dark:focus-visible:ring-offset-[#0c1424]"
+                className="flex h-8 w-8 shrink-0 items-center justify-center bg-[#1F3F74] text-white shadow-xs transition hover:bg-[#16305a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74] focus-visible:ring-offset-2 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 dark:focus-visible:ring-offset-[#0c1424]"
                 aria-label="Send message"
               >
                 <Send size={14} />

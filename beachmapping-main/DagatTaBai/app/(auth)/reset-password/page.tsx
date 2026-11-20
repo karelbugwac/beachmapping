@@ -128,6 +128,7 @@ export default function ResetPasswordPage() {
                     alt="Dagat Ta Bai Logo"
                     width={64}
                     height={64}
+                    style={{ width: 'auto', height: 'auto' }}
                     className="object-contain"
                     priority
                   />
@@ -136,7 +137,7 @@ export default function ResetPasswordPage() {
               <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-brand-navy-500 dark:text-brand-teal-300">
                 Set New Password
               </h1>
-              <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1 font-normal leading-relaxed max-w-xs mx-auto">
+              <p className="text-xs font-display text-slate-500 dark:text-neutral-400 mt-1 font-normal leading-relaxed max-w-xs mx-auto">
                 Create a secure new password for your Dagat Ta Bai account.
               </p>
             </div>
@@ -155,10 +156,10 @@ export default function ResetPasswordPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   onBlur={() => setTouched((t) => ({ ...t, password: true }))}
-                  className={`w-full pl-5 pr-12 py-3.5 text-sm bg-white dark:bg-neutral-900 border rounded-full text-slate-900 dark:text-white caret-brand-navy-500 dark:caret-brand-teal-600 placeholder:text-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:ring-2 transition-all duration-200 ${
+                  className={`w-full pl-5 pr-12 py-3.5 text-sm bg-white dark:bg-neutral-900 border rounded-full text-slate-900 dark:text-white caret-brand-navy-500 dark:caret-brand-teal-600 placeholder:text-transparent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#1F3F74]/30 focus:ring-1 transition-all duration-200 ${
                     touched.password && !passwordValid && password
                       ? 'border-red-400 dark:border-red-600 focus:ring-red-500/20'
-                      : 'border-slate-300 dark:border-neutral-800 focus:border-brand-navy-500 dark:focus:border-brand-teal-600 focus:ring-brand-teal-400 dark:focus:ring-brand-teal-400'
+                      : 'border-[#1F3F74]/40 dark:border-[#4987BA]/40 focus:border-[#1F3F74] dark:focus:border-[#4987BA] focus:ring-[#1F3F74]/30 dark:focus:ring-[#4987BA]/30'
                   }`}
                 />
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
@@ -223,10 +224,10 @@ export default function ResetPasswordPage() {
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   onBlur={() => setTouched((t) => ({ ...t, confirm: true }))}
-                  className={`w-full pl-5 pr-12 py-3.5 text-sm bg-white dark:bg-neutral-900 border rounded-full text-slate-900 dark:text-white caret-brand-navy-500 dark:caret-brand-teal-600 placeholder:text-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:ring-2 transition-all duration-200 ${
+                  className={`w-full pl-5 pr-12 py-3.5 text-sm bg-white dark:bg-neutral-900 border rounded-full text-slate-900 dark:text-white caret-brand-navy-500 dark:caret-brand-teal-600 placeholder:text-transparent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#1F3F74]/30 focus:ring-1 transition-all duration-200 ${
                     touched.confirm && !confirmValid && confirmPassword
                       ? 'border-red-400 dark:border-red-600 focus:ring-red-500/20'
-                      : 'border-slate-300 dark:border-neutral-800 focus:border-brand-navy-500 dark:focus:border-brand-teal-600 focus:ring-brand-teal-400 dark:focus:ring-brand-teal-400'
+                      : 'border-[#1F3F74]/40 dark:border-[#4987BA]/40 focus:border-[#1F3F74] dark:focus:border-[#4987BA] focus:ring-[#1F3F74]/30 dark:focus:ring-[#4987BA]/30'
                   }`}
                 />
                 <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5">

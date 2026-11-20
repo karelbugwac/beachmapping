@@ -123,23 +123,23 @@ export default function UserRegisterPage() {
   };
 
   const handleGoogleSignIn = () => {
-    window.location.href = '/api/auth/google';
+    window.location.href = '/api/auth/google?redirect=/home';
   };
 
   const inputCls = (fieldTouched: boolean, isValid: boolean, hasValue: boolean) =>
-    `w-full px-5 py-3.5 text-sm bg-white dark:bg-neutral-900 border rounded-full text-slate-900 dark:text-white caret-brand-navy-500 dark:caret-brand-teal-600 placeholder:text-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:ring-2 transition-all duration-200 ${
+    `w-full px-5 py-3.5 text-sm bg-white dark:bg-neutral-900 border rounded-full text-slate-900 dark:text-white caret-brand-navy-500 dark:caret-brand-teal-600 placeholder:text-transparent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#1F3F74]/30 focus:ring-1 transition-all duration-200 ${
       fieldTouched && !isValid && hasValue
         ? 'border-red-400 dark:border-red-600 focus:ring-red-500/20'
-        : 'border-slate-300 dark:border-neutral-800 focus:border-brand-navy-500 dark:focus:border-brand-teal-600 focus:ring-brand-teal-400 dark:focus:ring-brand-teal-400'
+        : 'border-[#1F3F74]/40 dark:border-[#4987BA]/40 focus:border-[#1F3F74] dark:focus:border-[#4987BA] focus:ring-[#1F3F74]/30 dark:focus:ring-[#4987BA]/30'
     }`;
 
   return (
-    <div className="min-h-screen flex flex-col justify-between items-center px-4 py-8 bg-slate-50 dark:bg-black transition-colors duration-200">
+    <div className="min-h-screen flex flex-col justify-between items-center px-4 py-8 bg-white dark:bg-black transition-colors duration-200">
       {/* ── Top Navigation (Left-aligned) ─────────────────── */}
       <div className="w-full px-4 sm:px-8 md:px-12 flex items-center justify-start">
         <Link
           href="/"
-          className="inline-flex items-center gap-1 text-xs sm:text-sm font-medium text-slate-500 hover:text-brand-navy-500 dark:text-neutral-400 dark:hover:text-white transition-colors group"
+          className="inline-flex items-center gap-1 text-xs sm:text-sm font-display font-medium text-slate-500 hover:text-brand-navy-500 dark:text-neutral-400 dark:hover:text-white transition-colors group"
         >
           <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
           <span>Back to Home</span>
@@ -158,15 +158,16 @@ export default function UserRegisterPage() {
                 alt="Dagat Ta Bai Logo"
                 width={64}
                 height={64}
+                style={{ width: 'auto', height: 'auto' }}
                 className="object-contain"
                 priority
               />
             </div>
           </Link>
-          <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-brand-navy-500 dark:text-brand-teal-300">
+          <h1 className="text-2xl sm:text-3xl font-display font-bold tracking-tight text-brand-navy-500 dark:text-brand-teal-300">
             Join the Coast
           </h1>
-          <p className="text-xs text-slate-500 dark:text-neutral-400 mt-1 font-normal leading-relaxed max-w-xs mx-auto">
+          <p className="text-xs font-display text-slate-500 dark:text-neutral-400 mt-1 font-normal leading-relaxed max-w-xs mx-auto">
             Discover. Explore. Experience Binongkalan.
           </p>
         </div>
@@ -175,7 +176,7 @@ export default function UserRegisterPage() {
         <form onSubmit={handleSubmit} className="space-y-5">
           {/* Full Name Category (Sentence case, proper category spacing) */}
           <div className="space-y-1.5">
-            <label htmlFor="register-full-name" className="block text-xs font-semibold text-slate-700 dark:text-neutral-300 ml-1">
+            <label htmlFor="register-full-name" className="block text-xs font-display font-semibold text-slate-700 dark:text-neutral-300 ml-1">
               Full name
             </label>
             <div className="relative">
@@ -226,7 +227,7 @@ export default function UserRegisterPage() {
 
           {/* Email Address Category (Sentence case) */}
           <div className="space-y-1.5">
-            <label htmlFor="register-email" className="block text-xs font-semibold text-slate-700 dark:text-neutral-300 ml-1">
+            <label htmlFor="register-email" className="block text-xs font-display font-semibold text-slate-700 dark:text-neutral-300 ml-1">
               Email address
             </label>
             <div className="relative">
@@ -266,7 +267,7 @@ export default function UserRegisterPage() {
 
           {/* Password Category (Sentence case) */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-slate-700 dark:text-neutral-300 ml-1">
+            <label className="block text-xs font-display font-semibold text-slate-700 dark:text-neutral-300 ml-1">
               Password
             </label>
             <div className="relative">
@@ -278,10 +279,10 @@ export default function UserRegisterPage() {
                   setFormData({ ...formData, password: e.target.value })
                 }
                 onBlur={() => setTouched((t) => ({ ...t, password: true }))}
-                className={`w-full pl-5 pr-12 py-3.5 text-sm bg-white dark:bg-neutral-900 border rounded-full text-slate-900 dark:text-white caret-brand-navy-500 dark:caret-brand-teal-600 placeholder:text-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:ring-2 transition-all duration-200 ${
+                className={`w-full pl-5 pr-12 py-3.5 text-sm bg-white dark:bg-neutral-900 border rounded-full text-slate-900 dark:text-white caret-brand-navy-500 dark:caret-brand-teal-600 placeholder:text-transparent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#1F3F74]/30 focus:ring-1 transition-all duration-200 ${
                   touched.password && !passwordValid && formData.password
                     ? 'border-red-400 dark:border-red-600 focus:ring-red-500/20'
-                    : 'border-slate-300 dark:border-neutral-800 focus:border-brand-navy-500 dark:focus:border-brand-teal-600 focus:ring-brand-teal-400 dark:focus:ring-brand-teal-400'
+                    : 'border-[#1F3F74]/40 dark:border-[#4987BA]/40 focus:border-[#1F3F74] dark:focus:border-[#4987BA] focus:ring-[#1F3F74]/30 dark:focus:ring-[#4987BA]/30'
                 }`}
               />
               <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
@@ -337,7 +338,7 @@ export default function UserRegisterPage() {
 
           {/* Confirm Password Category (Sentence case) */}
           <div className="space-y-1.5">
-            <label className="block text-xs font-semibold text-slate-700 dark:text-neutral-300 ml-1">
+            <label className="block text-xs font-display font-semibold text-slate-700 dark:text-neutral-300 ml-1">
               Confirm password
             </label>
             <div className="relative">
@@ -351,12 +352,12 @@ export default function UserRegisterPage() {
                 onBlur={() =>
                   setTouched((t) => ({ ...t, confirmPassword: true }))
                 }
-                className={`w-full pl-5 pr-12 py-3.5 text-sm bg-white dark:bg-neutral-900 border rounded-full text-slate-900 dark:text-white caret-brand-navy-500 dark:caret-brand-teal-600 placeholder:text-transparent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:ring-2 transition-all duration-200 ${
+                className={`w-full pl-5 pr-12 py-3.5 text-sm bg-white dark:bg-neutral-900 border rounded-full text-slate-900 dark:text-white caret-brand-navy-500 dark:caret-brand-teal-600 placeholder:text-transparent focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#1F3F74]/30 focus:ring-1 transition-all duration-200 ${
                   touched.confirmPassword &&
                   !confirmValid &&
                   formData.confirmPassword
                     ? 'border-red-400 dark:border-red-600 focus:ring-red-500/20'
-                    : 'border-slate-300 dark:border-neutral-800 focus:border-brand-navy-500 dark:focus:border-brand-teal-600 focus:ring-brand-teal-400 dark:focus:ring-brand-teal-400'
+                    : 'border-[#1F3F74]/40 dark:border-[#4987BA]/40 focus:border-[#1F3F74] dark:focus:border-[#4987BA] focus:ring-[#1F3F74]/30 dark:focus:ring-[#4987BA]/30'
                 }`}
               />
               <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-1.5">
@@ -402,14 +403,14 @@ export default function UserRegisterPage() {
                 }
                 className="mt-0.5 w-4 h-4 rounded border-slate-300 dark:border-neutral-700 text-brand-navy-500 focus:ring-brand-teal-400/30 cursor-pointer accent-brand-navy-500"
               />
-              <span className="text-[11px] text-slate-600 dark:text-neutral-400 leading-relaxed">
+              <span className="text-[11px] font-display text-slate-600 dark:text-neutral-400 leading-relaxed">
                 I agree to the{' '}
                 <Link
                   href="/privacy"
                   target="_blank"
                   className="text-brand-navy-500 dark:text-brand-teal-300 font-semibold underline hover:opacity-80"
                 >
-                  Privacy Policy (RA 10173)
+                  Privacy Policy
                 </Link>{' '}
                 and{' '}
                 <Link
@@ -461,18 +462,18 @@ export default function UserRegisterPage() {
 
         {/* ── Standard Divider: Clean sentence case ───────── */}
         <div className="relative flex items-center gap-3 my-4">
-          <div className="flex-1 h-px bg-slate-200 dark:bg-neutral-800" />
-          <span className="text-xs text-slate-400 dark:text-neutral-500 font-normal select-none">
+          <div className="flex-1 h-px bg-[#1F3F74]/15 dark:bg-[#4987BA]/20" />
+          <span className="text-xs text-slate-400 dark:text-neutral-500 font-display font-normal select-none">
             or register with
           </span>
-          <div className="flex-1 h-px bg-slate-200 dark:bg-neutral-800" />
+          <div className="flex-1 h-px bg-[#1F3F74]/15 dark:bg-[#4987BA]/20" />
         </div>
 
         {/* ── Google OAuth Button (Oblong rounded-full) ────── */}
         <button
           type="button"
           onClick={handleGoogleSignIn}
-          className="w-full py-3.5 px-5 bg-white dark:bg-neutral-900 border border-slate-300 dark:border-neutral-800 hover:bg-slate-50 dark:hover:bg-neutral-900 rounded-full text-slate-700 dark:text-neutral-200 text-xs sm:text-sm font-display font-medium tracking-wide transition-all duration-200 flex items-center justify-center gap-3 shadow-2xs hover:shadow-xs cursor-pointer"
+          className="w-full py-3.5 px-5 bg-white dark:bg-neutral-900 border border-[#1F3F74]/40 dark:border-[#4987BA]/40 hover:bg-white dark:hover:bg-neutral-900 rounded-full text-slate-700 dark:text-neutral-200 text-xs sm:text-sm font-display font-medium tracking-wide transition-all duration-200 flex items-center justify-center gap-3 shadow-2xs hover:shadow-xs cursor-pointer"
         >
           <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24">
             <path
@@ -496,7 +497,7 @@ export default function UserRegisterPage() {
         </button>
 
         {/* ── Link to Login (Line above completely removed) ── */}
-        <p className="text-center text-sm text-slate-600 dark:text-neutral-400 pt-5">
+        <p className="text-center text-sm font-display text-slate-600 dark:text-neutral-400 pt-5">
           Already have an account?{' '}
           <Link
             href="/login"

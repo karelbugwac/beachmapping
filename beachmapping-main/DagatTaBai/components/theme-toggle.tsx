@@ -16,7 +16,7 @@ export function ThemeToggle({ className = '', variant = 'minimal', isTransparent
 
   if (variant === 'drawer') {
     return (
-      <div className={`w-full flex items-center justify-between py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 transition-colors duration-200 ${className}`}>
+      <div className={`w-full flex items-center justify-between py-2.5 px-3 rounded-xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 transition-colors duration-200 ${className}`}>
         <span className="flex items-center gap-2.5 text-xs font-semibold text-slate-800 dark:text-white">
           {isDark ? (
             <Moon className="w-4 h-4 text-[#F4BF3E]" />
@@ -34,7 +34,7 @@ export function ThemeToggle({ className = '', variant = 'minimal', isTransparent
           onClick={toggleTheme}
           disabled={isTransitioning}
           className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed ${
-            isDark ? 'bg-[#1F3F74]' : 'bg-slate-300'
+            isDark ? 'bg-[#1F3F74]' : 'bg-slate-200'
           }`}
           aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
         >
@@ -63,7 +63,7 @@ export function ThemeToggle({ className = '', variant = 'minimal', isTransparent
       className={`group relative flex items-center justify-center w-10 h-10 rounded-full transition-all duration-200 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed select-none ${
         isTransparent
           ? 'text-white hover:bg-white/15 active:bg-white/25'
-          : 'text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-neutral-800/80 active:bg-slate-200 dark:active:bg-neutral-700'
+          : 'text-slate-700 dark:text-slate-200 hover:bg-white dark:hover:bg-neutral-800/80 active:bg-white dark:active:bg-neutral-700'
       } ${className}`}
       aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
       title={isDark ? 'Switch to light mode' : 'Switch to dark mode'}

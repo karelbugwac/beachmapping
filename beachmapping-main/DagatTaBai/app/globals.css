@@ -72,6 +72,15 @@
     outline-offset: 2px !important;
   }
 
+  :where(input, textarea, select):focus-visible {
+    outline: 1px solid #1F3F74 !important;
+    outline-offset: 1px !important;
+  }
+
+  .dark :where(input, textarea, select):focus-visible {
+    outline-color: #4987BA !important;
+  }
+
   .dark body {
     background-color: var(--color-sand-50);
     color: var(--color-text);
@@ -609,4 +618,9 @@ html.wave-transitioning *::after {
 /* Browser standard rule: Ensure all lazy-loaded images have baseline aspect-ratio to prevent 0x0 CLS */
 img[loading="lazy"] {
   aspect-ratio: auto;
+}
+
+/* 3D Carousel Perspective */
+.perspective-1000 {
+  perspective: 1000px;
 }
