@@ -193,18 +193,18 @@ export function HeroMapSection({
           );
         })}
 
-        {/* High-Contrast Gradient Overlay for Crisp Text & Navbar Legibility */}
-        <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/90 via-black/45 to-black/55 pointer-events-none" />
+        {/* Light & Clean Gradient Overlay: Keeps middle of photos bright, vivid & crystal clear */}
+        <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/85 via-black/15 to-black/35 pointer-events-none" />
       </div>
 
-      {/* ── Main Hero Content (Aligned to Side on Desktop to Showcase Photo, Centered Lower on Mobile) ── */}
-      <div className="relative z-30 flex flex-col justify-end md:justify-center items-center md:items-start h-full px-5 sm:px-8 lg:px-12 text-center md:text-left pt-20 pb-12 sm:pb-16 md:pb-0 max-w-7xl mx-auto w-full">
-        <div className="space-y-3 sm:space-y-4 max-w-2xl w-full">
+      {/* ── Main Hero Content (Adjusted lower down to emphasize resort scenery, refined sizing) ── */}
+      <div className="relative z-30 flex flex-col justify-end items-center md:items-start h-full px-5 sm:px-8 lg:px-12 text-center md:text-left pt-24 pb-8 sm:pb-10 md:pb-12 max-w-7xl mx-auto w-full">
+        <div className="space-y-2.5 sm:space-y-3 max-w-xl w-full">
 
-          {/* Dynamic Beach Name Headline: Refined & Elegant Size, Never Dominating Screen */}
+          {/* Dynamic Beach Name Headline: Refined & Elegant Size, Emphasizing Beach Photography */}
           <h1
             key={`title-${activeSlide.id}`}
-            className="font-display font-medium tracking-tight text-white leading-[1.14] text-2xl sm:text-3xl md:text-4xl lg:text-5xl drop-shadow-[0_4px_24px_rgba(0,0,0,0.85)] animate-in fade-in slide-in-from-bottom-2 duration-700"
+            className="font-display font-medium tracking-tight text-white leading-[1.16] text-xl sm:text-2xl md:text-3xl lg:text-4xl drop-shadow-[0_2px_16px_rgba(0,0,0,0.85)] animate-in fade-in slide-in-from-bottom-2 duration-700"
           >
             {activeSlide.resortName}
           </h1>
@@ -212,34 +212,34 @@ export function HeroMapSection({
           {/* Subtitle: Resort Vibe Description */}
           <p
             key={`desc-${activeSlide.id}`}
-            className="text-xs sm:text-sm md:text-base text-white/90 font-light leading-relaxed max-w-xl mx-auto md:mx-0 drop-shadow-md animate-in fade-in duration-700"
+            className="text-xs sm:text-[13px] md:text-sm text-white/90 font-light leading-relaxed max-w-lg mx-auto md:mx-0 drop-shadow-md animate-in fade-in duration-700"
           >
             {activeSlide.subtext}
           </p>
 
-          {/* Call to Action Button Row: Aligned to side on desktop, centered on mobile */}
-          <div className="pt-2 sm:pt-4 flex flex-col sm:flex-row items-center justify-center md:justify-start gap-3">
+          {/* Call to Action Button Row: Compact & Refined Button */}
+          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center md:justify-start gap-2.5">
             <Link
               href={resolvedCtaHref}
-              className="inline-flex items-center justify-center gap-2 px-7 py-3 rounded-full bg-[#F4BF3E] hover:bg-[#e2af35] text-black font-display uppercase tracking-[0.14em] font-medium text-xs sm:text-sm transition-all duration-200 shadow-xl shadow-amber-500/25 hover:shadow-amber-500/40 hover:-translate-y-0.5 active:translate-y-0 group border border-amber-300/60 cursor-pointer"
+              className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-[#F4BF3E] hover:bg-[#e2af35] text-black font-display uppercase tracking-[0.12em] font-medium text-xs transition-all duration-200 shadow-lg shadow-amber-500/20 hover:shadow-amber-500/35 hover:-translate-y-0.5 active:translate-y-0 group border border-amber-300/50 cursor-pointer"
             >
               <span>{isAuthenticated || userRole !== 'visitor' ? 'Explore Beaches' : 'Start Exploring'}</span>
-              <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-1" />
+              <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
             </Link>
 
             {showOwnerButton && (
               <Link
                 href="/owner/dashboard"
-                className="inline-flex min-h-[44px] w-full max-w-xs items-center justify-center gap-2 rounded-full border border-white/70 bg-white/10 px-6 py-3 font-display uppercase tracking-[0.12em] font-medium text-xs text-white backdrop-blur-sm transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent sm:w-auto sm:max-w-none sm:text-sm"
+                className="inline-flex min-h-[38px] w-full max-w-xs items-center justify-center gap-2 rounded-full border border-white/70 bg-white/10 px-5 py-2 font-display uppercase tracking-[0.12em] font-medium text-xs text-white backdrop-blur-sm transition-colors hover:bg-white/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus-visible:ring-offset-2 focus-visible:ring-offset-transparent sm:w-auto sm:max-w-none"
               >
-                <Store size={18} className="shrink-0" />
+                <Store size={16} className="shrink-0" />
                 <span>Go to Dashboard</span>
               </Link>
             )}
           </div>
 
           {/* Owner feature prompt: Apply here hyperlink in yellow font color */}
-          <p className="text-xs sm:text-sm text-white/85 drop-shadow-md pt-1 font-sans">
+          <p className="text-[11px] sm:text-xs text-white/85 drop-shadow-md pt-0.5 font-sans">
             Own a beach or resort in Binongkalan and want to get featured?{' '}
             <Link
               href={isAuthenticated ? '/apply' : '/register?redirect=/apply'}

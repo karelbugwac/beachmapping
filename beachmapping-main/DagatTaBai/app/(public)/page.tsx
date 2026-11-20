@@ -800,10 +800,10 @@ export default function HomePage() {
             </div>
 
             <div className="flex justify-center pt-6 sm:pt-7">
-              {/* Yellow Button: Black text, not bold */}
+              {/* Yellow Button: Black text, refined compact padding */}
               <Link
                 href="/apply"
-                className="inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-[#F4BF3E] hover:bg-[#e2af35] text-black text-xs sm:text-sm font-display uppercase tracking-[0.14em] font-medium transition-all duration-200 shadow-lg shadow-amber-500/20 hover:-translate-y-0.5 active:translate-y-0"
+                className="inline-flex items-center justify-center px-6 py-2.5 sm:px-7 sm:py-3 rounded-full bg-[#F4BF3E] hover:bg-[#e2af35] text-black text-xs sm:text-sm font-display uppercase tracking-[0.12em] font-medium transition-all duration-200 shadow-md hover:shadow-lg shadow-amber-500/20 hover:-translate-y-0.5 active:translate-y-0"
               >
                 Apply as Beach Owner
               </Link>

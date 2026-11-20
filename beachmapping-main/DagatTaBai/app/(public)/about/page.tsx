@@ -326,7 +326,7 @@ export default function AboutPage() {
           </h2>
           <Link
             href="/contact"
-            className="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-navy-500 px-7 py-3 text-sm font-bold text-white shadow-sm transition-colors hover:bg-brand-navy-600 dark:bg-brand-teal-600 dark:hover:bg-brand-teal-500"
+            className="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-navy-500 px-6 py-2.5 text-xs sm:text-sm font-display uppercase tracking-[0.12em] font-medium text-white shadow-sm transition-colors hover:bg-brand-navy-600 dark:bg-brand-teal-600 dark:hover:bg-brand-teal-500"
           >
             Contact us
           </Link>

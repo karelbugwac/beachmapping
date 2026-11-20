@@ -297,11 +297,11 @@ function UserLoginForm() {
             </div>
           </div>
 
-          {/* Primary Submit Button: Oblong rounded-full, No arrow */}
+          {/* Primary Submit Button: Oblong rounded-full, Luxury Resort Font Style, Kept Navy Color */}
           <button
             type="submit"
             disabled={loading || lockoutSeconds > 0}
-            className="group relative w-full py-3.5 mt-2 bg-brand-navy-500 hover:bg-brand-navy-600 dark:bg-brand-navy-500 dark:hover:bg-brand-navy-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-bold text-sm rounded-full transition-all duration-200 shadow-md hover:shadow-lg shadow-brand-navy-500/25 flex items-center justify-center cursor-pointer"
+            className="group relative w-full py-3.5 mt-2 bg-brand-navy-500 hover:bg-brand-navy-600 dark:bg-brand-navy-500 dark:hover:bg-brand-navy-600 disabled:opacity-50 disabled:cursor-not-allowed text-white font-display uppercase tracking-[0.14em] font-medium text-xs sm:text-sm rounded-full transition-all duration-200 shadow-md hover:shadow-lg shadow-brand-navy-500/25 flex items-center justify-center cursor-pointer"
           >
             {loading ? (
               <div className="flex items-center justify-center gap-2">
@@ -354,7 +354,7 @@ function UserLoginForm() {
           type="button"
           onClick={handleGoogleSignIn}
           disabled={loading || lockoutSeconds > 0}
-          className="w-full py-3.5 px-5 bg-white dark:bg-neutral-900 border border-slate-300 dark:border-neutral-800 hover:bg-slate-50 dark:hover:bg-neutral-900 disabled:opacity-50 disabled:cursor-not-allowed rounded-full text-slate-700 dark:text-neutral-200 text-sm font-semibold transition-all duration-200 flex items-center justify-center gap-3 shadow-2xs hover:shadow-xs cursor-pointer"
+          className="w-full py-3.5 px-5 bg-white dark:bg-neutral-900 border border-slate-300 dark:border-neutral-800 hover:bg-slate-50 dark:hover:bg-neutral-900 disabled:opacity-50 disabled:cursor-not-allowed rounded-full text-slate-700 dark:text-neutral-200 text-xs sm:text-sm font-display font-medium tracking-wide transition-all duration-200 flex items-center justify-center gap-3 shadow-2xs hover:shadow-xs cursor-pointer"
         >
           <svg className="w-[18px] h-[18px]" viewBox="0 0 24 24">
             <path

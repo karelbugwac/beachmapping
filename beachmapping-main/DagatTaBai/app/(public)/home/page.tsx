@@ -165,11 +165,11 @@ export default function AuthenticatedHomePage() {
             </p>
           </div>
 
-          {/* Quick Actions Row */}
+          {/* Quick Actions Row: Compact Luxury Styling */}
           <div className="flex flex-wrap items-center gap-3 pt-2">
             <Link
               href="/map"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white hover:bg-slate-100 text-[#1F3F74] text-xs sm:text-sm font-bold shadow-lg shadow-black/20 transition-all hover:-translate-y-0.5 active:translate-y-0"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white hover:bg-slate-100 text-[#1F3F74] text-xs font-display uppercase tracking-[0.12em] font-medium shadow-md transition-all hover:-translate-y-0.5 active:translate-y-0"
             >
               <Map className="w-4 h-4 text-[#1F3F74]" />
               <span>Explore Live Map</span>
@@ -178,7 +178,7 @@ export default function AuthenticatedHomePage() {
             <button
               type="button"
               onClick={scrollToPlanner}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-[#38BDF8]/20 hover:bg-[#38BDF8]/30 border border-[#38BDF8]/40 text-white text-xs sm:text-sm font-bold transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-[#38BDF8]/20 hover:bg-[#38BDF8]/30 border border-[#38BDF8]/40 text-white text-xs font-display uppercase tracking-[0.12em] font-medium transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
             >
               <Calendar className="w-4 h-4 text-sky-300" />
               <span>4-Day Trip Planner</span>
@@ -187,7 +187,7 @@ export default function AuthenticatedHomePage() {
             <button
               type="button"
               onClick={() => window.dispatchEvent(new CustomEvent('open-bai-chat'))}
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs sm:text-sm font-bold transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-full bg-white/10 hover:bg-white/20 border border-white/20 text-white text-xs font-display uppercase tracking-[0.12em] font-medium transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
             >
               <Bot className="w-4 h-4 text-amber-300" />
               <span>Chat with Bai</span>

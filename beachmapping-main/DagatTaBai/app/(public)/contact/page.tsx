@@ -320,7 +320,7 @@ export default function ContactPage() {
               <button
                 type="submit"
                 disabled={sending || !validateFullName(formData.name).ok || Boolean(nameInputError)}
-                className="w-full inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-brand-navy-500 hover:bg-brand-navy-600 disabled:opacity-60 disabled:cursor-not-allowed text-white font-bold text-xs sm:text-sm shadow-md transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+                className="w-full inline-flex items-center justify-center px-7 py-3 rounded-full bg-brand-navy-500 hover:bg-brand-navy-600 disabled:opacity-60 disabled:cursor-not-allowed text-white font-display uppercase tracking-[0.12em] font-medium text-xs sm:text-sm shadow-md transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
               >
                 {sending ? 'Sending...' : 'Send Message'}
               </button>
