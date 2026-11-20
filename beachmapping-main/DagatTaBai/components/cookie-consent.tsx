@@ -94,11 +94,11 @@ export function CookieConsent() {
                 Decline
               </button>
 
-              {/* Oblong (pill-shaped) Yellow Accept All Cookies Button */}
+              {/* Oblong (pill-shaped) Yellow Accept All Cookies Button with Dark Blue Text */}
               <button
                 type="button"
                 onClick={() => dismissWithAction('accepted')}
-                className="px-6 sm:px-8 py-2.5 sm:py-3 rounded-full bg-[#F4BF3E] hover:bg-[#e2af35] active:scale-95 text-slate-950 font-black text-xs sm:text-sm tracking-tight transition-all duration-200 shadow-md text-center cursor-pointer shrink-0"
+                className="px-6 sm:px-8 py-2.5 sm:py-3 rounded-full bg-[#F4BF3E] hover:bg-[#e2af35] active:scale-95 text-[#1F3F74] font-black text-xs sm:text-sm tracking-tight transition-all duration-200 shadow-md text-center cursor-pointer shrink-0"
               >
                 Accept All Cookies
               </button>
@@ -116,7 +116,7 @@ export function CookieConsent() {
           className="fixed inset-0 z-[10000] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
         >
           <div className="bg-white dark:bg-[#132A4A] border border-slate-300 dark:border-[#204578] rounded-none max-w-lg w-full p-6 sm:p-7 shadow-2xl space-y-4 text-slate-900 dark:text-white">
-            <h3 className="text-base font-bold text-[#1F3F74] dark:text-[#F4BF3E]">
+            <h3 className="text-lg font-extrabold text-[#1F3F74] dark:text-white tracking-tight">
               Cookie &amp; Privacy Preferences
             </h3>
             
@@ -125,29 +125,33 @@ export function CookieConsent() {
             </p>
 
             <div className="space-y-3 pt-2 text-xs">
-              {/* Essential Cookies */}
-              <div className="p-3.5 bg-slate-100 dark:bg-[#0c1c33] border border-slate-200 dark:border-white/10 rounded-none flex items-start justify-between gap-3">
+              {/* Essential Storage: Blue outline, no beige container */}
+              <div className="p-4 bg-transparent border border-[#1F3F74]/25 dark:border-sky-400/30 rounded-none flex items-start justify-between gap-3">
                 <div className="space-y-1">
-                  <span className="font-bold block text-slate-900 dark:text-white">Strictly Necessary Storage</span>
-                  <span className="text-slate-600 dark:text-slate-300 text-[11px] leading-relaxed block">
-                    Maintains your secure Supabase login session, CSRF security verification, and your preferred dark/light theme setting. Cannot be disabled.
+                  <span className="font-bold text-sm block text-[#1F3F74] dark:text-white">
+                    Login &amp; Site Settings
+                  </span>
+                  <span className="text-slate-600 dark:text-slate-300 text-xs leading-relaxed block">
+                    Keeps you signed in securely and saves your chosen dark or light theme. Required for the website to function.
                   </span>
                 </div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-700 dark:text-emerald-400 bg-emerald-100 dark:bg-emerald-950/60 px-2 py-0.5 rounded-none shrink-0 border border-emerald-300 dark:border-emerald-700/50">
-                  Always Active
+                <span className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 shrink-0">
+                  Always on
                 </span>
               </div>
 
-              {/* Anonymous Page Telemetry */}
-              <div className="p-3.5 bg-slate-100 dark:bg-[#0c1c33] border border-slate-200 dark:border-white/10 rounded-none flex items-start justify-between gap-3">
+              {/* Beach & Page Visit Counts: Blue outline, no beige container */}
+              <div className="p-4 bg-transparent border border-[#1F3F74]/25 dark:border-sky-400/30 rounded-none flex items-start justify-between gap-3">
                 <div className="space-y-1">
-                  <span className="font-bold block text-slate-900 dark:text-white">Anonymous Visit Telemetry</span>
-                  <span className="text-slate-600 dark:text-slate-300 text-[11px] leading-relaxed block">
-                    Gathers anonymous page counts and popular beach profile views for Binongkalan resort owners to evaluate coastal interest. Disabled completely when declined.
+                  <span className="font-bold text-sm block text-[#1F3F74] dark:text-white">
+                    Beach &amp; Page Visit Counts
+                  </span>
+                  <span className="text-slate-600 dark:text-slate-300 text-xs leading-relaxed block">
+                    Counts total visits to beaches and pages so Catmon resort owners know which destinations are popular. No personal identity is saved, and we never track you across other websites.
                   </span>
                 </div>
-                <span className="text-[10px] font-bold text-slate-600 dark:text-slate-300 bg-slate-200 dark:bg-white/10 px-2 py-0.5 rounded-none shrink-0 border border-slate-300 dark:border-white/10">
-                  Functional
+                <span className="text-[11px] font-semibold text-slate-500 dark:text-slate-300 shrink-0">
+                  Optional
                 </span>
               </div>
             </div>
@@ -156,14 +160,14 @@ export function CookieConsent() {
               <button
                 type="button"
                 onClick={() => dismissWithAction('essential_only')}
-                className="px-4 py-2 text-xs font-semibold rounded-none border border-slate-400 dark:border-white/40 text-slate-700 dark:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
+                className="px-4 py-2.5 text-xs font-semibold rounded-none border border-[#1F3F74]/40 dark:border-white/40 text-[#1F3F74] dark:text-white hover:bg-slate-100 dark:hover:bg-white/10 transition-colors cursor-pointer"
               >
                 Save Essential Only
               </button>
               <button
                 type="button"
                 onClick={() => dismissWithAction('accepted')}
-                className="px-6 py-2 text-xs font-black rounded-none bg-[#F4BF3E] hover:bg-[#e2af35] text-slate-950 transition-colors shadow-xs cursor-pointer"
+                className="px-6 py-2.5 text-xs font-black rounded-none bg-[#F4BF3E] hover:bg-[#e2af35] text-[#1F3F74] transition-colors shadow-xs cursor-pointer"
               >
                 Accept All
               </button>
