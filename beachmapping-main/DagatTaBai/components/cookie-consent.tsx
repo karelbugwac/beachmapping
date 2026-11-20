@@ -59,16 +59,16 @@ export function CookieConsent() {
           showBanner && !isExiting ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'
         }`}
       >
-        <div className="w-full bg-[#0d223a]/98 dark:bg-[#071322]/98 text-white border-t border-sky-400/25 shadow-[0_-12px_40px_rgba(0,0,0,0.45)] backdrop-blur-xl">
+        <div className="w-full bg-[#1F3F74] text-white border-t border-[#2d5aa3] shadow-[0_-12px_40px_rgba(0,0,0,0.5)]">
           <div className="max-w-7xl mx-auto px-5 sm:px-8 lg:px-10 py-6 sm:py-8 lg:py-9 flex flex-col lg:flex-row items-start lg:items-center justify-between gap-5 sm:gap-8">
             
-            {/* Left: Comprehensive Legal Text with ample vertical rhythm */}
-            <div className="flex-1 text-xs sm:text-[13px] text-slate-200 leading-relaxed max-w-4xl space-y-1.5">
-              <p>
+            {/* Left: Justified Pure White Legal Paragraph */}
+            <div className="flex-1 text-xs sm:text-[13px] text-white leading-relaxed max-w-4xl space-y-1.5">
+              <p className="text-justify [text-align-last:left]">
                 This site uses cookies and other automated tools to understand and improve our site, provide personalized content and customized experiences, maintain your authentication session, and remember your theme preferences. In compliance with the Philippine Data Privacy Act (RA 10173), we do not sell your personal data or track you across third-party websites. To understand more about how we use cookies or to change your preferences, click on &ldquo;Cookies Settings&rdquo;. By clicking &ldquo;Accept All Cookies&rdquo;, you agree to the storing of cookies on your device consistent with our{' '}
                 <Link
                   href="/privacy"
-                  className="text-white underline font-semibold hover:text-amber-300 transition-colors"
+                  className="text-amber-300 underline font-bold hover:text-white transition-colors"
                 >
                   Privacy Policy
                 </Link>
@@ -76,32 +76,35 @@ export function CookieConsent() {
               </p>
             </div>
 
-            {/* Right: Actions Row (Cookies Settings, Decline, Accept All Cookies) */}
-            <div className="flex items-center flex-wrap gap-4 sm:gap-7 shrink-0 text-xs sm:text-sm self-end lg:self-center pt-2 lg:pt-0">
+            {/* Right: Actions Row with Side-by-Side (Mag-atbang) Decline & Accept Buttons on Mobile & Desktop */}
+            <div className="w-full lg:w-auto flex flex-col sm:flex-row items-stretch sm:items-center justify-between lg:justify-end gap-3.5 sm:gap-6 shrink-0 pt-2 lg:pt-0">
               <button
                 type="button"
                 onClick={() => setShowSettingsModal(true)}
-                className="text-slate-200 hover:text-white font-semibold underline underline-offset-4 hover:text-amber-300 transition-colors cursor-pointer"
+                className="text-white/80 hover:text-white font-semibold underline underline-offset-4 hover:text-amber-300 transition-colors text-xs text-left sm:text-center cursor-pointer"
               >
                 Cookies Settings
               </button>
 
-              <button
-                type="button"
-                onClick={() => dismissWithAction('declined')}
-                className="text-slate-200 hover:text-white font-semibold underline underline-offset-4 hover:text-amber-300 transition-colors cursor-pointer"
-              >
-                Decline
-              </button>
+              {/* Side-by-side on mobile via grid grid-cols-2 */}
+              <div className="grid grid-cols-2 sm:flex sm:items-center gap-3 w-full sm:w-auto">
+                <button
+                  type="button"
+                  onClick={() => dismissWithAction('declined')}
+                  className="px-4 sm:px-6 py-2.5 sm:py-3 rounded-lg border border-white/40 hover:bg-white/10 active:scale-95 text-white font-bold text-xs sm:text-sm transition-all text-center cursor-pointer"
+                >
+                  Decline
+                </button>
 
-              {/* Bold Amber/Gold Accept Button */}
-              <button
-                type="button"
-                onClick={() => dismissWithAction('accepted')}
-                className="px-6 sm:px-8 py-3 rounded-md bg-[#F59E0B] hover:bg-[#D97706] active:scale-95 text-slate-950 font-black text-xs sm:text-sm tracking-tight transition-all duration-200 shadow-lg shadow-amber-500/25 hover:shadow-amber-500/40 cursor-pointer"
-              >
-                Accept All Cookies
-              </button>
+                {/* Bold Yellow Accept All Cookies Button */}
+                <button
+                  type="button"
+                  onClick={() => dismissWithAction('accepted')}
+                  className="px-4 sm:px-8 py-2.5 sm:py-3 rounded-lg bg-[#F59E0B] hover:bg-[#D97706] active:scale-95 text-slate-950 font-black text-xs sm:text-sm tracking-tight transition-all duration-200 shadow-md shadow-amber-500/20 text-center cursor-pointer"
+                >
+                  Accept All Cookies
+                </button>
+              </div>
             </div>
 
           </div>

@@ -79,8 +79,8 @@ export function HeroMapSection({
   }, []);
 
   const showOwnerButton = userRole === 'owner';
-  const resolvedCtaText = ctaText || (isAuthenticated || userRole !== 'visitor' ? 'Explore Beaches' : 'Sign In to Explore Beaches');
-  const resolvedCtaHref = ctaHref || (isAuthenticated || userRole !== 'visitor' ? '/map' : '/login?redirect=/map');
+  const resolvedCtaText = ctaText || (isAuthenticated || userRole !== 'visitor' ? 'Explore Beaches' : '-> Start Exploring');
+  const resolvedCtaHref = ctaHref || (isAuthenticated || userRole !== 'visitor' ? '/map' : '/register');
 
   return (
     <section className="relative w-full h-[80vh] sm:h-[85vh] lg:h-[90vh] min-h-[500px] overflow-hidden text-slate-900 dark:text-white transition-colors duration-200">
@@ -117,9 +117,8 @@ export function HeroMapSection({
           <div className="pt-6 sm:pt-8 flex flex-col sm:flex-row items-center justify-center gap-3">
             <Link
               href={resolvedCtaHref}
-              className="inline-flex items-center justify-center gap-2 px-7 py-3 rounded-full bg-brand-navy-500 hover:bg-brand-navy-600 dark:bg-brand-navy-500 dark:hover:bg-brand-navy-600 text-white font-bold text-xs sm:text-sm transition-all duration-200 shadow-xl shadow-brand-navy-900/30 hover:shadow-brand-navy-900/50 hover:-translate-y-0.5 active:translate-y-0 group border border-white/20 cursor-pointer"
+              className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-[#1F3F74] hover:bg-[#16325c] text-white font-extrabold text-xs sm:text-sm transition-all duration-200 shadow-xl shadow-brand-navy-900/40 hover:shadow-brand-navy-900/60 hover:-translate-y-0.5 active:translate-y-0 group border border-white/20 cursor-pointer"
             >
-              <Map className="w-4 h-4 transition-transform group-hover:scale-110" />
               <span>{resolvedCtaText}</span>
             </Link>
 

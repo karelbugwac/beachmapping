@@ -27,11 +27,12 @@ export function Footer() {
                   alt="Dagat Ta Bai"
                   width={34}
                   height={34}
-                  className="object-contain w-full h-full"
+                  style={{ width: 'auto', height: 'auto' }}
+                  className="object-contain"
                 />
               </div>
-              <span className="font-sans font-extrabold text-xl tracking-tight text-brand-navy-500 dark:text-brand-teal-300">
-                Dagat Ta Bai
+              <span className="font-display font-extrabold text-xl tracking-tight text-[#1F3F74] dark:text-white">
+                Dagat Ta <span className="text-[#F59E0B] dark:text-amber-400 font-black">Bai</span>
               </span>
             </Link>
             <div className="space-y-1.5">

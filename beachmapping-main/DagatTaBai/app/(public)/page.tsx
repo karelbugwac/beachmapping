@@ -158,8 +158,8 @@ export default function HomePage() {
       {/* Hero Section */}
       <HeroMapSection
         isAuthenticated={false}
-        ctaText="Sign In to Explore Beaches"
-        ctaHref="/login?redirect=/map"
+        ctaText="-> Start Exploring"
+        ctaHref="/register"
       />
 
       {/* Section 1: See Beyond the Pictures (DARK DIVE BLUE Background #124168 - Harmonious Balanced Spacing) */}
@@ -224,10 +224,10 @@ export default function HomePage() {
               </p>
               <div className="pt-2">
                 <Link
-                  href="/login?redirect=/map"
-                  className="inline-flex items-center justify-center px-4 py-2 rounded-full bg-[#1F3F74] hover:bg-[#285091] text-white text-xs font-bold transition shadow-xs"
+                  href="/register"
+                  className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-[#1F3F74] hover:bg-[#16325c] text-white text-xs font-bold transition shadow-xs"
                 >
-                  Sign In to Explore Beaches
+                  -&gt; Start Exploring
                 </Link>
               </div>
             </ScrollReveal>
@@ -246,7 +246,7 @@ export default function HomePage() {
               <div className="pt-2">
                 <Link
                   href="/weather"
-                  className="inline-flex items-center justify-center px-4 py-2 rounded-full bg-slate-100 hover:bg-slate-200 dark:bg-neutral-800 dark:hover:bg-neutral-700 text-[#1F3F74] dark:text-[#4987BA] text-xs font-bold transition shadow-2xs"
+                  className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-[#1F3F74] hover:bg-[#16325c] text-white text-xs font-bold transition shadow-xs"
                 >
                   View Weather Forecast
                 </Link>
@@ -268,7 +268,7 @@ export default function HomePage() {
                 <button
                   type="button"
                   onClick={() => window.dispatchEvent(new CustomEvent('open-bai-chat'))}
-                  className="inline-flex items-center justify-center px-4 py-2 rounded-full bg-[#1F3F74] hover:bg-[#285091] text-white text-xs font-bold transition shadow-xs cursor-pointer"
+                  className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-[#1F3F74] hover:bg-[#16325c] text-white text-xs font-bold transition shadow-xs cursor-pointer"
                 >
                   Talk with Bai
                 </button>

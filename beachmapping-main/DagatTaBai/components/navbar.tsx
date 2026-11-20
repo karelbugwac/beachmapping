@@ -289,15 +289,18 @@ export function Navbar() {
                 />
               </div>
 
-              {/* Modern Title Case Typography */}
+              {/* Modern Title Case Typography with Distinct Brand Accent */}
               <span
-                className={`font-sans font-extrabold text-lg sm:text-xl md:text-2xl tracking-tight transition-colors duration-200 ${
+                className={`font-display font-extrabold text-lg sm:text-xl md:text-2xl tracking-tight transition-colors duration-200 ${
                   isTransparent
                     ? 'text-white drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]'
-                    : 'text-[#1F3F74] dark:text-[#5B9BD5]'
+                    : 'text-[#1F3F74] dark:text-white'
                 }`}
               >
-                Dagat Ta Bai
+                Dagat Ta{' '}
+                <span className="text-[#F59E0B] dark:text-amber-400 font-black transition-transform duration-200 group-hover:scale-105 inline-block">
+                  Bai
+                </span>
               </span>
             </Link>
 
@@ -471,8 +474,11 @@ export function Navbar() {
                     className="object-contain"
                   />
                 </div>
-                <span className="font-sans font-extrabold text-base tracking-tight text-[#1F3F74] dark:text-[#5B9BD5]">
-                  Dagat Ta Bai
+                <span className="font-display font-extrabold text-base tracking-tight text-[#1F3F74] dark:text-white">
+                  Dagat Ta{' '}
+                  <span className="text-[#F59E0B] dark:text-amber-400 font-black">
+                    Bai
+                  </span>
                 </span>
               </Link>
               <button
