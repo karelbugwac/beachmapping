@@ -383,24 +383,6 @@ a.bg-brand-navy-500:active {
     outline-color: #f1f0e9 !important;
   }
 
-  .dark img[alt^="Dagat Ta Bai"] {
-    background-color: #FBF7EF;
-    padding: 4px;
-    border-radius: 12px;
-  }
-
-  .dark .bg-white {
-    background-color: var(--color-surface);
-  }
-
-  .dark .bg-black {
-    background-color: var(--color-sand-50);
-  }
-
-  .dark [class~="dark:bg-black"] {
-    background-color: var(--color-sand-50);
-  }
-
   .dark .bg-slate-50 {
     background-color: var(--color-sand-50);
   }

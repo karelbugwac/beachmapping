@@ -444,15 +444,15 @@ export function Navbar() {
             aria-hidden="true"
           />
 
-          {/* Drawer Panel */}
+          {/* Drawer Panel: Light Mode White, Dark Mode Pure Black */}
           <aside
-            className="fixed inset-y-0 right-0 z-[10001] w-full max-w-xs sm:max-w-sm bg-[#0e1d35] dark:bg-[#071324] text-white shadow-2xl flex flex-col justify-between overflow-y-auto animate-in slide-in-from-right duration-300 border-l border-white/10"
+            className="fixed inset-y-0 right-0 z-[10001] w-full max-w-xs sm:max-w-sm bg-white dark:bg-black text-slate-900 dark:text-white shadow-2xl flex flex-col justify-between overflow-y-auto animate-in slide-from-right duration-300 border-l border-slate-200 dark:border-neutral-800 transition-colors duration-200"
             role="dialog"
             aria-modal="true"
             aria-label="Mobile Navigation Menu"
           >
             {/* Drawer Header */}
-            <div className="p-5 border-b border-white/10 flex items-center justify-between">
+            <div className="p-5 border-b border-slate-100 dark:border-neutral-800 flex items-center justify-between">
               <Link
                 href={user ? '/home' : '/'}
                 onClick={() => setMobileMenuOpen(false)}
@@ -468,7 +468,7 @@ export function Navbar() {
                     className="object-contain"
                   />
                 </div>
-                <span className="font-display font-semibold text-xs sm:text-sm tracking-[0.22em] uppercase text-white inline-flex items-center">
+                <span className="font-display font-semibold text-xs sm:text-sm tracking-[0.22em] uppercase text-[#1F3F74] dark:text-white inline-flex items-center">
                   <span>DAGAT TA&nbsp;</span>
                   <span className="text-[#F4BF3E] font-bold">
                     BAI
@@ -478,14 +478,14 @@ export function Navbar() {
               <button
                 type="button"
                 onClick={() => setMobileMenuOpen(false)}
-                className="p-2 rounded-full text-slate-300 hover:text-white hover:bg-white/10 transition-colors cursor-pointer"
+                className="p-2 rounded-full text-slate-500 dark:text-neutral-400 hover:text-slate-900 dark:hover:text-white hover:bg-slate-100 dark:hover:bg-neutral-800 transition-colors cursor-pointer"
                 aria-label="Close menu"
               >
                 <X className="w-5 h-5" />
               </button>
             </div>
 
-            {/* Navigation Links: Pure White Text, No Icons, No Descriptions */}
+            {/* Navigation Links: Adaptive to Dark/Light Theme */}
             <div className="p-4 space-y-1.5 flex-1 overflow-y-auto">
               {mobileDrawerLinks.map((link) => {
                 const isActive = pathname === link.href;
@@ -496,8 +496,8 @@ export function Navbar() {
                     onClick={() => setMobileMenuOpen(false)}
                     className={`block px-4 py-3 rounded-xl font-display uppercase tracking-[0.16em] text-xs font-bold transition-all ${
                       isActive
-                        ? 'text-[#F4BF3E] bg-white/10 font-extrabold'
-                        : 'text-white hover:text-[#F4BF3E] hover:bg-white/5'
+                        ? 'text-[#1F3F74] dark:text-[#F4BF3E] bg-slate-100 dark:bg-neutral-900 font-extrabold'
+                        : 'text-slate-700 dark:text-white hover:text-[#1F3F74] dark:hover:text-[#F4BF3E] hover:bg-slate-50 dark:hover:bg-neutral-900/60'
                     }`}
                   >
                     {link.label}
@@ -507,7 +507,7 @@ export function Navbar() {
             </div>
 
             {/* Drawer Footer: Modern Theme Toggle & Auth State if Logged In */}
-            <div className="p-5 border-t border-white/10 space-y-4 bg-black/20">
+            <div className="p-5 border-t border-slate-100 dark:border-neutral-800 space-y-4 bg-slate-50/70 dark:bg-neutral-950 transition-colors duration-200">
               {/* Modern Style Theme Switch */}
               <ThemeToggle variant="drawer" />
 

@@ -44,8 +44,8 @@ const VIRTUAL_TOURS: VirtualTourItem[] = [
     name: 'Rañola Beach',
     tagline: 'Experience Comfort & Serenity',
     description: 'Tranquil shoreline with authentic open cottages and crystal shallows in Binongkalan.',
-    coverImage: '/ranola.jpg',
-    tourUrl: 'https://tour.panoee.net/6ac4b494035368b0747a8077',
+    coverImage: '/panoee-ranola.webp',
+    tourUrl: 'https://tour.panoee.net/iframe/6ac49842bbd7eb16f94a9d31?embedFullscreen=1&embedVr=0&embedGyro=1',
     slug: 'ra-ola-beach',
   },
   {
@@ -53,8 +53,8 @@ const VIRTUAL_TOURS: VirtualTourItem[] = [
     name: 'LiteBay Resort',
     tagline: 'Your Comfortable Coastal Retreat',
     description: 'Peaceful private cove with shaded cottage huts and relaxing Camotes Sea breezes.',
-    coverImage: '/litebay.jpg',
-    tourUrl: 'https://tour.panoee.net/6ac4b494035368b0747a8077',
+    coverImage: '/panoee-litebay.webp',
+    tourUrl: 'https://tour.panoee.net/iframe/6ac4b494035368b0747a8077?embedFullscreen=1&embedVr=0&embedGyro=1',
     slug: 'litebay-resort',
   },
   {
@@ -62,8 +62,8 @@ const VIRTUAL_TOURS: VirtualTourItem[] = [
     name: 'Majestique View Resort',
     tagline: 'Indulge in Tranquility & Sea Views',
     description: 'Cliffside vistas overlooking the open Camotes Sea with coral reef shallows.',
-    coverImage: '/majestique.webp',
-    tourUrl: 'https://tour.panoee.net/6ac4b494035368b0747a8077',
+    coverImage: '/panoee-majestique.webp',
+    tourUrl: 'https://tour.panoee.net/iframe/6ac4ba6cbbd7eb16f94d41cc?embedFullscreen=1&embedVr=0&embedGyro=1',
     slug: 'majestique-beach',
   },
   {
@@ -71,8 +71,8 @@ const VIRTUAL_TOURS: VirtualTourItem[] = [
     name: 'Hinagdan Beach',
     tagline: 'Natural Rock Steps & Crystal Waters',
     description: 'Iconic limestone staircase descending directly into refreshing natural tidal pools.',
-    coverImage: '/hinagdan.jpg',
-    tourUrl: 'https://tour.panoee.net/6ac4b494035368b0747a8077',
+    coverImage: '/panoee-hinagdan.webp',
+    tourUrl: 'https://tour.panoee.net/6ac4ba7dbbd7eb16f94d4334',
     slug: 'hinagdan-beach',
   },
 ];
@@ -560,7 +560,7 @@ export default function HomePage() {
 
           {/* Swipeable 3D Perspective Carousel Container */}
           <div
-            className="relative w-full max-w-6xl mx-auto flex items-center justify-center [perspective:1400px] min-h-[490px] sm:min-h-[530px] touch-pan-y"
+            className="relative w-full max-w-5xl mx-auto flex items-center justify-center [perspective:1200px] min-h-[480px] sm:min-h-[520px] touch-pan-y"
             onTouchStart={(e) => {
               tourTouchStartX.current = e.touches[0].clientX;
             }}
@@ -572,8 +572,8 @@ export default function HomePage() {
               tourTouchStartX.current = null;
             }}
           >
-            {/* The 3D Cards Stack: Generous Spacing on Desktop (translate ±108%), Clean Centered Card on Mobile */}
-            <div className="relative w-full h-[470px] sm:h-[510px] flex items-center justify-center">
+            {/* The 3D Cards Stack: Slanted 3D Perspective with Depth Shading Matching Image 1 Reference */}
+            <div className="relative w-full h-[470px] sm:h-[510px] flex items-center justify-center [transform-style:preserve-3d]">
               {VIRTUAL_TOURS.map((tour, idx) => {
                 let offset = idx - activeTourIndex;
                 if (offset > 2) offset -= VIRTUAL_TOURS.length;
@@ -583,23 +583,19 @@ export default function HomePage() {
                 const isLeft = offset === -1 || (offset === 3 - VIRTUAL_TOURS.length);
                 const isRight = offset === 1 || (offset === VIRTUAL_TOURS.length - 3);
 
-                // Desktop 3D positions with clear separation (no overlapping cards clipping text)
-                let desktopTransform = 'translate3d(0, 0, -200px) scale(0.5)';
+                // 3D Transforms matching Image 1: Left card slanted with rotateY(-24deg), Right card slanted with rotateY(24deg)
+                let desktopTransform = 'translate3d(0, 0, -300px) scale(0.5)';
                 let desktopZIndex = 0;
-                let desktopOpacity = 0;
 
                 if (isCenter) {
                   desktopTransform = 'translate3d(0, 0, 0) scale(1) rotateY(0deg)';
                   desktopZIndex = 30;
-                  desktopOpacity = 1;
                 } else if (isLeft) {
-                  desktopTransform = 'translate3d(-108%, 0, -40px) scale(0.92) rotateY(12deg)';
-                  desktopZIndex = 15;
-                  desktopOpacity = 0.85;
+                  desktopTransform = 'translate3d(-78%, 0, -40px) scale(0.92) rotateY(-24deg)';
+                  desktopZIndex = 10;
                 } else if (isRight) {
-                  desktopTransform = 'translate3d(108%, 0, -40px) scale(0.92) rotateY(-12deg)';
-                  desktopZIndex = 15;
-                  desktopOpacity = 0.85;
+                  desktopTransform = 'translate3d(78%, 0, -40px) scale(0.92) rotateY(24deg)';
+                  desktopZIndex = 10;
                 }
 
                 return (
@@ -613,13 +609,17 @@ export default function HomePage() {
                       transform: desktopTransform,
                       zIndex: desktopZIndex,
                     }}
-                    className={`absolute w-[88vw] max-w-[340px] md:max-w-[360px] lg:max-w-[380px] transition-all duration-500 ease-out origin-center cursor-pointer ${
+                    className={`absolute w-[88vw] max-w-[320px] sm:max-w-[340px] md:max-w-[350px] lg:max-w-[360px] transition-all duration-500 ease-out origin-center cursor-pointer ${
                       isCenter
                         ? 'opacity-100 pointer-events-auto cursor-default'
-                        : 'hidden md:block hover:opacity-100 pointer-events-auto'
+                        : 'hidden md:block opacity-90 hover:opacity-100 pointer-events-auto'
                     }`}
                   >
-                    <div className="flex flex-col bg-white dark:bg-[#0c0c0c] border border-slate-200 dark:border-neutral-800 shadow-[0_16px_40px_rgba(0,0,0,0.1)] dark:shadow-[0_16px_40px_rgba(0,0,0,0.7)] overflow-hidden transition-all duration-300">
+                    <div
+                      className={`relative flex flex-col bg-white dark:bg-[#0c0c0c] border border-slate-200/90 dark:border-neutral-800 shadow-[0_20px_50px_rgba(0,0,0,0.18)] dark:shadow-[0_20px_50px_rgba(0,0,0,0.85)] overflow-hidden transition-all duration-300 ${
+                        isCenter ? 'ring-1 ring-black/5 dark:ring-white/10' : ''
+                      }`}
+                    >
                       {/* Photo Top with aspect 4:3 */}
                       <div className="relative aspect-[4/3] w-full overflow-hidden bg-slate-100 dark:bg-neutral-800">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -633,18 +633,18 @@ export default function HomePage() {
                           style={{ width: '100%', height: '100%', aspectRatio: '4 / 3' }}
                           className="w-full h-full object-cover transition-transform duration-500 hover:scale-105"
                         />
-                        {/* 3D side card subtle shadow */}
-                        {!isCenter && (
-                          <div
-                            className={`hidden md:block absolute inset-0 bg-gradient-to-${
-                              isLeft ? 'r' : 'l'
-                            } from-black/30 to-transparent pointer-events-none`}
-                          />
-                        )}
                       </div>
 
-                      {/* Card Body */}
-                      <div className="p-6 sm:p-7 flex-1 flex flex-col justify-between text-center space-y-4">
+                      {/* Card Body with Perspective Gradient Shading matching Image 1 */}
+                      <div
+                        className={`p-6 sm:p-7 flex-1 flex flex-col justify-between text-center space-y-4 relative ${
+                          isLeft
+                            ? 'bg-gradient-to-r from-white via-slate-100/90 to-slate-300/80 dark:from-neutral-900 dark:via-neutral-900 dark:to-neutral-950'
+                            : isRight
+                              ? 'bg-gradient-to-l from-white via-slate-100/90 to-slate-300/80 dark:from-neutral-900 dark:via-neutral-900 dark:to-neutral-950'
+                              : 'bg-white dark:bg-[#0c0c0c]'
+                        }`}
+                      >
                         <div className="space-y-1.5">
                           <h3 className="font-display font-medium text-xl sm:text-2xl text-slate-900 dark:text-white tracking-tight">
                             {tour.name}
@@ -668,6 +668,14 @@ export default function HomePage() {
                           </button>
                         </div>
                       </div>
+
+                      {/* 3D Depth Shadow Overlay across the whole card for Left & Right (Image 1 reference) */}
+                      {isLeft && (
+                        <div className="hidden md:block absolute inset-0 bg-gradient-to-r from-transparent via-black/10 to-black/35 pointer-events-none" />
+                      )}
+                      {isRight && (
+                        <div className="hidden md:block absolute inset-0 bg-gradient-to-l from-transparent via-black/10 to-black/35 pointer-events-none" />
+                      )}
                     </div>
                   </div>
                 );

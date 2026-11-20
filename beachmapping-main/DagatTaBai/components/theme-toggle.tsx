@@ -16,12 +16,12 @@ export function ThemeToggle({ className = '', variant = 'minimal', isTransparent
 
   if (variant === 'drawer') {
     return (
-      <div className={`w-full flex items-center justify-between py-2.5 px-3 rounded-xl bg-white/5 border border-white/10 ${className}`}>
-        <span className="flex items-center gap-2.5 text-xs font-semibold text-white">
+      <div className={`w-full flex items-center justify-between py-2.5 px-3 rounded-xl bg-slate-100 dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 transition-colors duration-200 ${className}`}>
+        <span className="flex items-center gap-2.5 text-xs font-semibold text-slate-800 dark:text-white">
           {isDark ? (
             <Moon className="w-4 h-4 text-[#F4BF3E]" />
           ) : (
-            <Sun className="w-4 h-4 text-[#F4BF3E]" />
+            <Sun className="w-4 h-4 text-amber-500" />
           )}
           <span>{isDark ? 'Night Mode' : 'Sunlit Mode'}</span>
         </span>
@@ -34,7 +34,7 @@ export function ThemeToggle({ className = '', variant = 'minimal', isTransparent
           onClick={toggleTheme}
           disabled={isTransitioning}
           className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed ${
-            isDark ? 'bg-[#1F3F74]' : 'bg-slate-400'
+            isDark ? 'bg-[#1F3F74]' : 'bg-slate-300'
           }`}
           aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
         >
