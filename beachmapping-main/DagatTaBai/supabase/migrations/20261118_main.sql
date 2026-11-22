@@ -42,3 +42,20 @@ FOR EACH ROW
 EXECUTE FUNCTION public.prevent_duplicate_pending_owner_application();
 
 COMMIT;
+BEGIN;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_owner_applications_pending_email
+  ON public.owner_applications (lower(trim(applicant_email)))
+  WHERE status = 'pending';
+
+COMMIT;
+BEGIN;
+
+ALTER TABLE public.owner_liveness_sessions
+  ADD COLUMN IF NOT EXISTS user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE;
+
+CREATE INDEX IF NOT EXISTS idx_owner_liveness_user_created
+  ON public.owner_liveness_sessions(user_id, created_at DESC)
+  WHERE user_id IS NOT NULL;
+
+COMMIT;

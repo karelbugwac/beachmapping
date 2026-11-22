@@ -41,7 +41,7 @@ const VIRTUAL_TOURS: VirtualTourItem[] = [
     description: 'Tranquil shoreline with authentic open cottages and crystal shallows in Binongkalan.',
     coverImage: '/panoee-ranola.webp',
     tourUrl: 'https://tour.panoee.net/iframe/6ac49842bbd7eb16f94a9d31?embedFullscreen=1&embedVr=0&embedGyro=1',
-    slug: 'ra-ola-beach',
+    slug: 'ranola',
   },
   {
     id: 'litebay',
@@ -50,7 +50,7 @@ const VIRTUAL_TOURS: VirtualTourItem[] = [
     description: 'Peaceful private cove with shaded cottage huts and relaxing Camotes Sea breezes.',
     coverImage: '/panoee-litebay.webp',
     tourUrl: 'https://tour.panoee.net/iframe/6ac4b494035368b0747a8077?embedFullscreen=1&embedVr=0&embedGyro=1',
-    slug: 'litebay-resort',
+    slug: 'litebay',
   },
   {
     id: 'majestique',
@@ -59,7 +59,7 @@ const VIRTUAL_TOURS: VirtualTourItem[] = [
     description: 'Cliffside vistas overlooking the open Camotes Sea with coral reef shallows.',
     coverImage: '/panoee-majestique.webp',
     tourUrl: 'https://tour.panoee.net/iframe/6ac4ba6cbbd7eb16f94d41cc?embedFullscreen=1&embedVr=0&embedGyro=1',
-    slug: 'majestique-beach',
+    slug: 'majestiqueview',
   },
   {
     id: 'hinagdan',
@@ -68,7 +68,7 @@ const VIRTUAL_TOURS: VirtualTourItem[] = [
     description: 'Iconic limestone staircase descending directly into refreshing natural tidal pools.',
     coverImage: '/panoee-hinagdan.webp',
     tourUrl: 'https://tour.panoee.net/6ac4ba7dbbd7eb16f94d4334',
-    slug: 'hinagdan-beach',
+    slug: 'hinagdan',
   },
 ];
 

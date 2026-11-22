@@ -5,70 +5,37 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
 import {
-  Map,
   MapPin,
   CloudSun,
-  ExternalLink,
-  Route,
-  Navigation,
-  ArrowRight,
-  ShieldCheck,
-  Ticket,
-  Clock,
-  Sparkles,
-  Star,
-  Waves,
   Sun,
   Cloud,
   CloudRain,
   Droplets,
-  Wind,
-  ChevronLeft,
-  ChevronRight,
-  Heart,
-  Search,
-  History,
+  ShieldCheck,
   CheckCircle,
   XCircle,
+  Clock,
   FileText,
+  ArrowRight,
+  Trash2,
 } from 'lucide-react';
-import { ScrollReveal } from '@/components/ui/scroll-reveal';
 import { useRealtimeSync } from '@/lib/realtime-sync';
 import type { BeachRecord } from '@/lib/db/beaches';
 
-interface SystemTestimonial {
-  id: string;
-  user_name: string;
-  profileimageurl?: string | null;
-  user_role?: string;
-  rating: number;
-  comment: string;
-  createdat: string;
-}
-
 interface WeatherData {
-  current: {
-    temp: number;
-    condition: string;
-    icon: string;
-    humidity: number;
-    windSpeed: number;
-  };
-  forecast: Array<{
-    day: string;
+  temperature: number;
+  conditionLabel: string;
+  weatherCode: number;
+  relativeHumidity: number;
+  windSpeed: number;
+  dailyForecast: Array<{
+    date: string;
+    weatherCode: number;
+    conditionLabel: string;
     high: number;
     low: number;
-    icon: string;
-    condition: string;
+    precipitationProbability: number | null;
   }>;
-}
-
-interface RecentActivity {
-  id: string;
-  type: 'beach_view' | 'favorite' | 'search' | 'review';
-  title: string;
-  timestamp: string;
-  beachName?: string;
 }
 
 interface ApplicationStatus {
@@ -77,43 +44,25 @@ interface ApplicationStatus {
   applicationId?: string;
 }
 
-function getBisayaGreeting(name: string): { greeting: string; periodText: string; icon: string } {
+function getBisayaGreeting(name: string): string {
   const hour = new Date().getHours();
-  if (hour >= 5 && hour < 12) {
-    return {
-      greeting: `Maayong buntag, ${name}!`,
-      periodText: 'Maayong buntag gikan sa Catmon',
-      icon: '☀️',
-    };
-  } else if (hour >= 12 && hour < 13) {
-    return {
-      greeting: `Maayong udto, ${name}!`,
-      periodText: 'Maayong udto sa kabaybayonan',
-      icon: '🌤️',
-    };
-  } else if (hour >= 13 && hour < 18) {
-    return {
-      greeting: `Maayong hapon, ${name}!`,
-      periodText: 'Maayong hapon gikan sa Catmon',
-      icon: '🌅',
-    };
-  } else {
-    return {
-      greeting: `Maayong gabii, ${name}!`,
-      periodText: 'Maayong gabii sa Dagat Ta Bai',
-      icon: '🌙',
-    };
-  }
+  if (hour >= 5 && hour < 12) return `Maayong buntag, ${name}!`;
+  if (hour >= 12 && hour < 13) return `Maayong udto, ${name}!`;
+  if (hour >= 13 && hour < 18) return `Maayong hapon, ${name}!`;
+  return `Maayong gabii, ${name}!`;
 }
 
-function getWeatherIcon(condition: string): string {
-  const c = condition.toLowerCase();
-  if (c.includes('sun') || c.includes('clear')) return '☀️';
-  if (c.includes('cloud')) return '☁️';
-  if (c.includes('rain') || c.includes('shower')) return '🌧️';
-  if (c.includes('storm') || c.includes('thunder')) return '⛈️';
-  if (c.includes('fog') || c.includes('mist')) return '🌫️';
-  return '🌤️';
+function getWeatherIcon(code: number): React.ReactNode {
+  // Open-Meteo weather codes
+  if (code === 0) return <Sun className="w-8 h-8" />; // Clear sky
+  if (code >= 1 && code <= 3) return <CloudSun className="w-8 h-8" />; // Mainly clear, partly cloudy, overcast
+  if (code >= 45 && code <= 48) return <Cloud className="w-8 h-8" />; // Fog
+  if (code >= 51 && code <= 67) return <CloudRain className="w-8 h-8" />; // Drizzle and rain
+  if (code >= 71 && code <= 77) return <CloudRain className="w-8 h-8" />; // Snow
+  if (code >= 80 && code <= 82) return <CloudRain className="w-8 h-8" />; // Rain showers
+  if (code >= 85 && code <= 86) return <CloudRain className="w-8 h-8" />; // Snow showers
+  if (code >= 95) return <CloudRain className="w-8 h-8" />; // Thunderstorm
+  return <CloudSun className="w-8 h-8" />;
 }
 
 export default function AuthenticatedHomePage() {
@@ -121,29 +70,27 @@ export default function AuthenticatedHomePage() {
   const [user, setUser] = useState<{ id: string; fullname?: string; email?: string } | null>(null);
   const [authChecked, setAuthChecked] = useState(false);
   const [beaches, setBeaches] = useState<BeachRecord[]>([]);
-  const [testimonials, setTestimonials] = useState<SystemTestimonial[]>([]);
   const [weather, setWeather] = useState<WeatherData | null>(null);
-  const [currentBeachIndex, setCurrentBeachIndex] = useState(0);
-  const [favorites, setFavorites] = useState<Set<string>>(new Set());
-  const [recentActivities, setRecentActivities] = useState<RecentActivity[]>([]);
   const [applicationStatus, setApplicationStatus] = useState<ApplicationStatus>({ status: 'none' });
-  const [searchQuery, setSearchQuery] = useState('');
 
   // Check auth session
   useEffect(() => {
     let active = true;
     fetch('/api/auth/session', { cache: 'no-store' })
-      .then((res) => (res.ok ? res.json() : null))
-      .then((data) => {
+      .then(async (res) => {
+        const data = await res.json();
+        console.log('Auth session response:', { status: res.status, ok: res.ok, data });
         if (!active) return;
         if (data?.user) {
           setUser(data.user);
         } else {
+          console.log('No user in session, redirecting to login');
           router.replace('/login?redirect=/home');
         }
         setAuthChecked(true);
       })
-      .catch(() => {
+      .catch((err) => {
+        console.error('Auth session fetch error:', err);
         if (!active) return;
         router.replace('/login?redirect=/home');
       });
@@ -153,24 +100,17 @@ export default function AuthenticatedHomePage() {
     };
   }, [router]);
 
-  // Load beaches, testimonials, weather, and user-specific data
+  // Load beaches, weather, and application status
   const loadContent = async () => {
     try {
-      const [bRes, tRes, wRes, aRes] = await Promise.all([
+      const [bRes, wRes, aRes] = await Promise.all([
         fetch('/api/beaches', { cache: 'no-store' }),
-        fetch('/api/platform-feedback', { cache: 'no-store' }),
         fetch('/api/weather', { cache: 'no-store' }),
         fetch('/api/applications/status', { cache: 'no-store' }),
       ]);
       if (bRes.ok) {
         const bData = await bRes.json();
         if (Array.isArray(bData)) setBeaches(bData);
-      }
-      if (tRes.ok) {
-        const tData = await tRes.json();
-        if (Array.isArray(tData)) {
-          setTestimonials(tData.filter((i: SystemTestimonial) => i.rating >= 4));
-        }
       }
       if (wRes.ok) {
         const wData = await wRes.json();
@@ -199,271 +139,222 @@ export default function AuthenticatedHomePage() {
     void loadContent();
   });
 
-  // Auto-rotate beach carousel
-  useEffect(() => {
-    if (beaches.length <= 1) return;
-    const interval = setInterval(() => {
-      setCurrentBeachIndex((prev) => (prev + 1) % beaches.length);
-    }, 5000);
-    return () => clearInterval(interval);
-  }, [beaches.length]);
-
   const displayName = user?.fullname?.split(' ')[0] || user?.email?.split('@')[0] || 'Bai';
-  const greetingData = getBisayaGreeting(displayName);
-  const featuredBeaches = beaches.slice(0, 6);
-  const currentBeach = featuredBeaches[currentBeachIndex];
+  const greeting = getBisayaGreeting(displayName);
+  const heroImage = beaches[0]?.cover_image || beaches[0]?.images?.[0]?.photo_url || '/ranola.jpg';
+  
+  // Sort beaches by rating (highest first) and get top-rated ones
+  const topRatedBeaches = [...beaches]
+    .sort((a, b) => b.averagerating - a.averagerating)
+    .filter(b => b.averagerating >= 4.5)
+    .slice(0, 3);
 
-  const toggleFavorite = (beachId: string) => {
-    setFavorites((prev) => {
-      const next = new Set(prev);
-      if (next.has(beachId)) {
-        next.delete(beachId);
-      } else {
-        next.add(beachId);
-      }
-      return next;
-    });
-  };
+  console.log('Home page state:', { user, beachesCount: beaches.length, topRatedBeachesCount: topRatedBeaches.length, heroImage });
 
   if (!authChecked) {
     return (
-      <div className="min-h-[70vh] flex items-center justify-center bg-white dark:bg-black text-[#1F3F74] dark:text-[#4987BA]">
+      <div className="min-h-screen flex items-center justify-center bg-white dark:bg-black text-[#1F3F74] dark:text-[#4987BA]">
         <div className="animate-spin rounded-full h-9 w-9 border-3 border-[#1F3F74] dark:border-[#4987BA] border-t-transparent" />
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black text-slate-900 dark:text-white font-display transition-colors duration-200 pb-20">
+    <div className="min-h-screen bg-white dark:bg-black text-slate-900 dark:text-white font-display pb-24">
       
-      {/* ── 1. HERO HEADER WITH BEACH BACKGROUND ── */}
-      <section className="relative h-[60vh] sm:h-[70vh] min-h-[400px]">
+      {/* ── 1. HERO HEADER CARD ── */}
+      <div className="relative w-full h-[400px] sm:h-[450px] bg-gradient-to-br from-[#1F3F74] to-[#16305a] overflow-hidden shadow-lg">
         {/* Background Image */}
-        <div className="absolute inset-0 bg-gradient-to-br from-[#1F3F74] via-[#16305a] to-[#0c1a30]">
-          {beaches[0]?.cover_image || beaches[0]?.images?.[0]?.photo_url ? (
-            <Image
-              src={beaches[0]?.cover_image || beaches[0]?.images?.[0]?.photo_url || ''}
-              alt="Beach background"
-              fill
-              className="object-cover opacity-40"
-              priority
-            />
-          ) : (
-            <div className="w-full h-full bg-gradient-to-br from-[#1F3F74] to-[#16305a]" />
-          )}
-        </div>
-        
-        {/* Overlay Gradient */}
-        <div className="absolute inset-0 bg-gradient-to-b from-black/30 via-black/50 to-black/70" />
+        {heroImage && (
+          <Image
+            src={heroImage}
+            alt="Beach background"
+            fill
+            className="object-cover opacity-40"
+            priority
+            loading="eager"
+            onError={() => console.log('Hero image failed to load:', heroImage)}
+          />
+        )}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#1F3F74]/90 via-[#1F3F74]/50 to-transparent" />
         
         {/* Content */}
-        <div className="relative z-10 flex flex-col items-center justify-center h-full px-4 sm:px-6 lg:px-8 text-center">
-          <div className="max-w-3xl space-y-6">
-            <h1 className="font-display text-2xl sm:text-3xl font-semibold tracking-tight text-white [text-shadow:0_2px_8px_rgba(0,0,0,0.6)]">
-              {greetingData.greeting}
-            </h1>
-            
-            {/* Search Bar */}
-            <div className="relative max-w-xl w-full">
-              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search beaches, locations, or activities..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="w-full pl-12 pr-4 py-3 rounded-full bg-white/90 backdrop-blur-sm border border-white/30 text-slate-900 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-[#F4BF3E] transition-all"
-              />
-            </div>
-            
-            {/* Explore Button - Landing Page Style */}
-            <Link
-              href="/beaches"
-              className="inline-flex items-center justify-center gap-2 px-8 py-3 rounded-full bg-[#F4BF3E] hover:bg-[#e2af35] text-black font-display uppercase tracking-[0.12em] font-bold text-sm shadow-lg shadow-amber-500/20 hover:shadow-amber-500/35 hover:-translate-y-0.5 active:translate-y-0 transition-all border border-amber-300/50"
-            >
-              <span>Explore Beaches</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
+        <div className="relative z-10 h-full flex flex-col justify-end p-6 sm:p-8">
+          {/* Location Tag */}
+          <div className="inline-flex items-center gap-2 w-fit bg-white/20 backdrop-blur-sm rounded-full px-3 py-1.5 mb-4">
+            <MapPin className="w-4 h-4 text-white" />
+            <span className="text-sm font-medium text-white">Catmon, Cebu</span>
           </div>
+          
+          {/* Greeting */}
+          <h1 className="text-2xl sm:text-3xl font-semibold text-white mb-2">
+            {greeting}
+          </h1>
+          
+          {/* Subtext */}
+          <p className="text-sm sm:text-base text-white/90 mb-6 max-w-md">
+            Ready to discover the best beaches in Binongkalan, Catmon, Cebu?
+          </p>
+          
+          {/* Explore Button */}
+          <Link
+            href="/beaches"
+            className="inline-flex items-center justify-center gap-2 w-fit px-6 py-3 rounded-full bg-[#F4BF3E] hover:bg-[#e2af35] text-black font-semibold text-sm shadow-md transition-all"
+          >
+            <span>Explore Beaches</span>
+            <ArrowRight className="w-4 h-4" />
+          </Link>
         </div>
-      </section>
+      </div>
 
-      {/* ── 2. 4-DAY COASTAL FORECAST ── */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h2 className="font-display text-lg sm:text-xl font-semibold text-[#1F3F74] dark:text-white mb-6">
-          4-Day Coastal Forecast
-        </h2>
-        
-        {weather && weather.forecast ? (
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {weather.forecast.slice(0, 4).map((day, idx) => (
-              <div key={idx} className="bg-white dark:bg-slate-900 rounded-2xl p-4 shadow-sm border border-slate-200 dark:border-slate-800 text-center">
-                <p className="font-display text-sm font-bold text-slate-900 dark:text-white mb-2">{day.day}</p>
-                <p className="text-3xl mb-2">{getWeatherIcon(day.condition)}</p>
-                <p className="font-display text-lg font-bold text-[#1F3F74] dark:text-[#4987BA]">{day.high}°</p>
-                <p className="text-sm text-slate-500 dark:text-slate-400">{day.low}°</p>
-                <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{day.condition}</p>
-              </div>
+      {/* ── 2. TOP-RATED BEACHES ── */}
+      {topRatedBeaches.length > 0 && (
+        <div className="px-4 sm:px-6 mt-8">
+          <h2 className="text-lg font-semibold text-[#1F3F74] dark:text-white mb-4">
+            Top-Rated Beaches
+          </h2>
+          <div className="flex gap-3 overflow-x-auto pb-2 -mx-4 px-4 sm:mx-0 sm:px-0 scrollbar-hide">
+            {topRatedBeaches.map((beach) => (
+              <Link
+                key={beach.id}
+                href={`/beaches/${beach.slug}`}
+                className="flex-shrink-0 w-64 bg-white dark:bg-slate-900 rounded-2xl overflow-hidden shadow-md border border-slate-200 dark:border-slate-800 hover:shadow-lg transition-shadow"
+              >
+                <div className="relative h-32">
+                  {beach.cover_image || beach.images?.[0]?.photo_url ? (
+                    <Image
+                      src={beach.cover_image || beach.images[0].photo_url}
+                      alt={beach.name}
+                      fill
+                      className="object-cover"
+                    />
+                  ) : (
+                    <div className="w-full h-full bg-gradient-to-br from-[#1F3F74] to-[#16305a]" />
+                  )}
+                  <div className="absolute top-2 right-2 bg-[#F4BF3E] text-black text-xs font-bold px-2 py-1 rounded-full flex items-center gap-1">
+                    <span>★</span>
+                    <span>{beach.averagerating.toFixed(1)}</span>
+                  </div>
+                </div>
+                <div className="p-3">
+                  <h3 className="font-display text-sm font-semibold text-[#1F3F74] dark:text-white mb-1 truncate">
+                    {beach.name}
+                  </h3>
+                  <p className="text-xs text-slate-600 dark:text-slate-400 truncate">
+                    {beach.location}
+                  </p>
+                </div>
+              </Link>
             ))}
           </div>
-        ) : (
-          <div className="bg-slate-100 dark:bg-slate-800 rounded-2xl p-8 text-center">
-            <CloudSun className="w-8 h-8 mx-auto text-slate-400 dark:text-slate-600 mb-2" />
-            <p className="text-sm text-slate-600 dark:text-slate-400">Loading forecast...</p>
+        </div>
+      )}
+
+      {/* ── 3. CURRENT WEATHER ── */}
+      <div className="px-4 sm:px-6 mt-8">
+        {weather && (
+          <div className="bg-gradient-to-br from-[#1F3F74] to-[#16305a] rounded-2xl p-6 text-white shadow-md">
+            <div className="flex items-start justify-between">
+              <div>
+                <p className="text-sm font-medium text-white/80 mb-1">Today - Catmon, Cebu</p>
+                <p className="text-lg font-semibold mb-2">
+                  {weather.conditionLabel} - Calm Seas
+                </p>
+                <p className="text-4xl font-bold">{weather.temperature}°C</p>
+              </div>
+              <div className="text-5xl">
+                {getWeatherIcon(weather.weatherCode)}
+              </div>
+            </div>
           </div>
         )}
-      </section>
+      </div>
 
-      {/* ── 3. COASTAL REMINDER ── */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-gradient-to-r from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 rounded-2xl p-6 border border-amber-200 dark:border-amber-800">
-          <h3 className="font-display text-lg font-bold text-amber-800 dark:text-amber-200 mb-4 flex items-center gap-2">
-            <Sun className="w-5 h-5" />
-            Coastal Reminder
-          </h3>
-          <ul className="space-y-2 text-sm text-amber-900 dark:text-amber-100">
-            <li className="flex items-start gap-2">
-              <span className="text-amber-600 dark:text-amber-400">•</span>
-              <span>Reef-safe sunscreen (SPF 30+)</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-amber-600 dark:text-amber-400">•</span>
-              <span>Stay hydrated - bring water</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-amber-600 dark:text-amber-400">•</span>
-              <span>Check tide schedules before swimming</span>
-            </li>
-            <li className="flex items-start gap-2">
-              <span className="text-amber-600 dark:text-amber-400">•</span>
-              <span>Respect marine life - no touching coral</span>
-            </li>
-          </ul>
-        </div>
-      </section>
-
-      {/* ── 4. WHAT'S IN CATMON ── */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <h2 className="font-display text-lg sm:text-xl font-semibold text-[#1F3F74] dark:text-white mb-8">
-          What's in Catmon
+      {/* ── 4. COASTAL REMINDERS ── */}
+      <div className="px-4 sm:px-6 mt-8">
+        <h2 className="text-lg font-semibold text-[#1F3F74] dark:text-white mb-4">
+          Coastal Reminders
         </h2>
         
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Card 1 */}
-          <div className="bg-gradient-to-br from-[#1F3F74] via-[#16305a] to-[#0c1a30] rounded-2xl overflow-hidden shadow-lg group hover:shadow-xl transition-shadow">
-            <div className="relative h-48">
-              {beaches[0]?.cover_image || beaches[0]?.images?.[0]?.photo_url ? (
-                <Image
-                  src={beaches[0]?.cover_image || beaches[0]?.images?.[0]?.photo_url || ''}
-                  alt="White Sand"
-                  fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-[#1F3F74] to-[#16305a]" />
-              )}
+        <div className="space-y-3">
+          {/* Reminder 1 */}
+          <div className="flex items-start gap-3 bg-slate-50 dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800">
+            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
+              <CloudSun className="w-5 h-5 text-amber-600 dark:text-amber-400" />
             </div>
-            <div className="p-5">
-              <h3 className="font-display text-lg font-bold text-white mb-2">White Sand & Calm Coves</h3>
-              <p className="text-sm text-blue-100/90 mb-4">
-                Experience pristine white sand beaches with gentle, protected coves perfect for swimming and relaxation.
-              </p>
-              <Link
-                href="/beaches"
-                className="inline-flex items-center gap-2 text-sm font-semibold text-[#F4BF3E] hover:underline"
-              >
-                Explore <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
+            <p className="text-sm text-slate-700 dark:text-slate-300">
+              Check weather & tide updates before swimming.
+            </p>
           </div>
-
-          {/* Card 2 */}
-          <div className="bg-gradient-to-br from-[#1F3F74] via-[#16305a] to-[#0c1a30] rounded-2xl overflow-hidden shadow-lg group hover:shadow-xl transition-shadow">
-            <div className="relative h-48">
-              {beaches[1]?.cover_image || beaches[1]?.images?.[0]?.photo_url ? (
-                <Image
-                  src={beaches[1]?.cover_image || beaches[1]?.images?.[0]?.photo_url || ''}
-                  alt="Reef Waters"
-                  fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-[#1F3F74] to-[#16305a]" />
-              )}
+          
+          {/* Reminder 2 */}
+          <div className="flex items-start gap-3 bg-slate-50 dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800">
+            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
+              <Droplets className="w-5 h-5 text-blue-600 dark:text-blue-400" />
             </div>
-            <div className="p-5">
-              <h3 className="font-display text-lg font-bold text-white mb-2">Reef & Dive Waters</h3>
-              <p className="text-sm text-blue-100/90 mb-4">
-                Discover vibrant coral reefs and crystal-clear waters ideal for snorkeling and diving adventures.
-              </p>
-              <Link
-                href="/beaches"
-                className="inline-flex items-center gap-2 text-sm font-semibold text-[#F4BF3E] hover:underline"
-              >
-                Explore <ArrowRight className="w-4 h-4" />
-              </Link>
-            </div>
+            <p className="text-sm text-slate-700 dark:text-slate-300">
+              Bring drinking water & reef-safe sunscreen.
+            </p>
           </div>
-
-          {/* Card 3 */}
-          <div className="bg-gradient-to-br from-[#1F3F74] via-[#16305a] to-[#0c1a30] rounded-2xl overflow-hidden shadow-lg group hover:shadow-xl transition-shadow">
-            <div className="relative h-48">
-              {beaches[2]?.cover_image || beaches[2]?.images?.[0]?.photo_url ? (
-                <Image
-                  src={beaches[2]?.cover_image || beaches[2]?.images?.[0]?.photo_url || ''}
-                  alt="Sunset Shorelines"
-                  fill
-                  className="object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-              ) : (
-                <div className="w-full h-full bg-gradient-to-br from-[#1F3F74] to-[#16305a]" />
-              )}
+          
+          {/* Reminder 3 */}
+          <div className="flex items-start gap-3 bg-slate-50 dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800">
+            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
+              <ShieldCheck className="w-5 h-5 text-green-600 dark:text-green-400" />
             </div>
-            <div className="p-5">
-              <h3 className="font-display text-lg font-bold text-white mb-2">Sunset Shorelines</h3>
-              <p className="text-sm text-blue-100/90 mb-4">
-                Enjoy breathtaking sunset views along the picturesque coastlines of Catmon, Cebu.
+            <p className="text-sm text-slate-700 dark:text-slate-300">
+              Follow local beach safety guidelines.
+            </p>
+          </div>
+          
+          {/* Reminder 4 */}
+          <div className="flex items-start gap-3 bg-slate-50 dark:bg-slate-900 rounded-xl p-4 border border-slate-200 dark:border-slate-800">
+            <div className="flex-shrink-0 w-10 h-10 rounded-full bg-teal-100 dark:bg-teal-900/30 flex items-center justify-center">
+              <Trash2 className="w-5 h-5 text-teal-600 dark:text-teal-400" />
+            </div>
+            <p className="text-sm text-slate-700 dark:text-slate-300">
+              Keep the Catmon coastline clean.
+            </p>
+          </div>
+        </div>
+      </div>
+
+      {/* ── 5. CALL TO ACTION - APPLY NOW ── */}
+      <div className="px-4 sm:px-6 mt-8 mb-6">
+        <div className="bg-gradient-to-br from-[#1F3F74] via-[#16305a] to-[#0c1a30] rounded-2xl p-6 text-white shadow-md">
+          <div className="flex items-start gap-4">
+            <div className="flex-shrink-0 w-12 h-12 rounded-full bg-[#F4BF3E]/20 flex items-center justify-center">
+              <FileText className="w-6 h-6 text-[#F4BF3E]" />
+            </div>
+            <div className="flex-1">
+              <h3 className="text-lg font-semibold mb-2">
+                Own a Beach or Resort?
+              </h3>
+              <p className="text-sm text-white/90 mb-4">
+                Showcase your destination and let more travelers discover it.
               </p>
-              <Link
-                href="/beaches"
-                className="inline-flex items-center gap-2 text-sm font-semibold text-[#F4BF3E] hover:underline"
-              >
-                Explore <ArrowRight className="w-4 h-4" />
-              </Link>
+              {applicationStatus.status === 'none' ? (
+                <Link
+                  href="/apply"
+                  className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-[#F4BF3E] hover:bg-[#e2af35] text-black font-semibold text-sm shadow-md transition-all"
+                >
+                  <span>Apply Now</span>
+                  <ArrowRight className="w-4 h-4" />
+                </Link>
+              ) : (
+                <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 border border-white/20">
+                  {applicationStatus.status === 'pending' && <Clock className="w-4 h-4 text-amber-400" />}
+                  {applicationStatus.status === 'approved' && <CheckCircle className="w-4 h-4 text-green-400" />}
+                  {applicationStatus.status === 'rejected' && <XCircle className="w-4 h-4 text-red-400" />}
+                  <span className="text-sm font-semibold capitalize">
+                    {applicationStatus.status}
+                  </span>
+                </div>
+              )}
             </div>
           </div>
         </div>
-      </section>
-
-      {/* ── 5. IMONG BEACH APPLICATION (YOUR BEACH APPLICATION) ── */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-        <div className="bg-gradient-to-br from-[#1F3F74] via-[#16305a] to-[#0c1a30] rounded-2xl p-8 text-white text-center">
-          <FileText className="w-12 h-12 mx-auto mb-4 text-[#F4BF3E]" />
-          <h2 className="font-display text-lg sm:text-xl font-semibold mb-3">
-            Imong beach application
-          </h2>
-          <p className="text-sm sm:text-base text-blue-100/90 mb-6 max-w-md mx-auto">
-            Own a beach or resort in Binongkalan? Apply now to get featured on Dagat Ta Bai.
-          </p>
-          {applicationStatus.status === 'none' ? (
-            <Link
-              href="/apply"
-              className="inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-[#F4BF3E] hover:bg-[#e2af35] text-black font-display uppercase tracking-[0.12em] font-bold text-sm shadow-lg shadow-amber-500/20 hover:shadow-amber-500/35 hover:-translate-y-0.5 active:translate-y-0 transition-all border border-amber-300/50"
-            >
-              <span>Apply Now</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          ) : (
-            <div className="inline-flex items-center gap-3 px-6 py-3 rounded-full bg-white/10 backdrop-blur-sm border border-white/20">
-              {applicationStatus.status === 'pending' && <Clock className="w-5 h-5 text-amber-400" />}
-              {applicationStatus.status === 'approved' && <CheckCircle className="w-5 h-5 text-green-400" />}
-              {applicationStatus.status === 'rejected' && <XCircle className="w-5 h-5 text-red-400" />}
-              <span className="font-display text-sm font-semibold capitalize">
-                {applicationStatus.status}
-              </span>
-            </div>
-          )}
-        </div>
-      </section>
+      </div>
 
     </div>
   );

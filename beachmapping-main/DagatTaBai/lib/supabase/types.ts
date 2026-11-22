@@ -1631,8 +1631,8 @@ export type Database = {
     Views: {
       beach_published_tours: {
         Row: {
-          beachid: string;
-          requestedtoururl: string;
+          beach_id: string;
+          requested_tour_url: string;
           approvedat: string | null;
           statusupdatedat: string;
         };

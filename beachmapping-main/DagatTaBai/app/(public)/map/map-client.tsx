@@ -84,6 +84,7 @@ export default function MapPageClient() {
   const routeFromUrl = searchParams.get('route') === 'true';
 
   const [signedIn, setSignedIn] = useState<boolean | null>(null);
+  const [userProfileImage, setUserProfileImage] = useState<string | null>(null);
   const [beaches, setBeaches] = useState<BeachRecord[]>([]);
   const [selectedBeach, setSelectedBeach] = useState<BeachRecord | null>(null);
   const [userLocation, setUserLocation] = useState<{ lat: number; lng: number } | null>(null);
@@ -110,6 +111,9 @@ export default function MapPageClient() {
       .then((res) => (res.ok ? res.json() : null))
       .then((data) => {
         setSignedIn(Boolean(data?.user));
+        if (data?.user?.profileimageurl) {
+          setUserProfileImage(data.user.profileimageurl);
+        }
       })
       .catch(() => setSignedIn(false));
   }, []);
@@ -374,7 +378,7 @@ export default function MapPageClient() {
                 setSearchQuery(e.target.value);
               }}
               placeholder="Search beaches or resorts..."
-              className="w-full bg-transparent text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 placeholder:italic focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400"
+              className="w-full bg-transparent text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 placeholder:italic focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 font-display"
             />
             {searchQuery && (
               <button
@@ -393,7 +397,7 @@ export default function MapPageClient() {
             type="button"
             onClick={() => handleLocateMe()}
             disabled={locating}
-            className="pointer-events-auto inline-flex items-center gap-2 px-5 py-2.5 bg-brand-navy-500 hover:bg-brand-navy-600 dark:bg-brand-navy-500 dark:hover:bg-brand-navy-600 disabled:opacity-50 text-white text-xs font-bold rounded-full shadow-md transition-colors flex-shrink-0 cursor-pointer"
+            className="pointer-events-auto inline-flex items-center gap-2 px-5 py-2.5 bg-[#F4BF3E] hover:bg-[#e2af35] disabled:opacity-50 text-black text-xs font-medium rounded-full shadow-md transition-colors flex-shrink-0 cursor-pointer font-display"
             title="Detect Current GPS Location"
           >
             <Navigation className={`w-3.5 h-3.5 ${locating ? 'animate-spin' : ''}`} />
@@ -402,14 +406,14 @@ export default function MapPageClient() {
         </div>
         {(searchQuery.trim() || locationFilter !== 'all') && (
           <div className="max-w-2xl mx-auto mt-2 max-h-[45vh] overflow-y-auto rounded-xl border border-slate-200 bg-white/95 p-2 shadow-xl backdrop-blur-md dark:border-neutral-800 dark:bg-neutral-900/95 pointer-events-auto">
-            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 bg-white/95 px-2 py-1.5 text-[11px] text-slate-600 dark:bg-neutral-900/95 dark:text-neutral-300">
+            <div className="sticky top-0 z-10 flex items-center justify-between gap-3 bg-white/95 px-2 py-1.5 text-[11px] text-slate-600 dark:bg-neutral-900/95 dark:text-neutral-300 font-display">
               <span>{filteredBeaches.length} matching beach listings</span>
               <label className="flex items-center gap-2">
                 <span>Map filter</span>
                 <select
                   value={locationFilter}
                   onChange={(event) => setLocationFilter(event.target.value as typeof locationFilter)}
-                  className="rounded-md border border-slate-300 bg-white px-2 py-1 text-slate-800 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white"
+                  className="rounded-md border border-slate-300 bg-white px-2 py-1 text-slate-800 dark:border-neutral-700 dark:bg-neutral-800 dark:text-white font-display"
                 >
                   <option value="all">All listings</option>
                   <option value="mapped">With map location</option>
@@ -427,7 +431,7 @@ export default function MapPageClient() {
                     key={beach.id}
                     type="button"
                     onClick={() => setSelectedBeach(beach)}
-                    className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left hover:bg-white dark:hover:bg-neutral-800"
+                    className="flex w-full items-center justify-between gap-3 rounded-lg px-3 py-2 text-left hover:bg-white dark:hover:bg-neutral-800 font-display"
                   >
                     <span className="min-w-0">
                       <span className="block truncate text-xs font-bold text-slate-900 dark:text-white">
@@ -454,7 +458,7 @@ export default function MapPageClient() {
 
       {/* Geolocation Notice if Error (Oblong) */}
       {beachLoadError && (
-        <div className="absolute top-20 left-1/2 z-30 flex w-[90%] max-w-md -translate-x-1/2 items-center justify-between gap-3 rounded-xl bg-red-700 px-4 py-3 text-xs font-medium text-white shadow-lg pointer-events-auto">
+        <div className="absolute top-20 left-1/2 z-30 flex w-[90%] max-w-md -translate-x-1/2 items-center justify-between gap-3 rounded-xl bg-red-700 px-4 py-3 text-xs font-medium text-white shadow-lg pointer-events-auto font-display">
           <span>Beach listings could not be loaded: {beachLoadError}</span>
           <button
             type="button"
@@ -466,7 +470,7 @@ export default function MapPageClient() {
         </div>
       )}
       {locationError && (
-        <div className="absolute top-18 sm:top-20 left-1/2 -translate-x-1/2 z-30 max-w-md w-[90%] bg-red-600 text-white text-xs font-medium px-5 py-2.5 rounded-full shadow-lg flex items-center justify-between gap-3 pointer-events-auto">
+        <div className="absolute top-18 sm:top-20 left-1/2 -translate-x-1/2 z-30 max-w-md w-[90%] bg-red-600 text-white text-xs font-medium px-5 py-2.5 rounded-full shadow-lg flex items-center justify-between gap-3 pointer-events-auto font-display">
           <div className="flex items-center gap-2">
             <AlertCircle className="w-4 h-4 flex-shrink-0" />
             <span>{locationError}</span>
@@ -480,7 +484,7 @@ export default function MapPageClient() {
       {/* 2. ACTIVE ROUTE BANNER (White in light mode, Dark in dark mode, Flat corners rounded-none, No blinking green light, Dive button) */}
       {routeActive && selectedBeach && routeData && (
         <div className="absolute top-20 left-3 right-3 sm:left-6 sm:right-6 z-30 pointer-events-none">
-          <div className="max-w-2xl mx-auto pointer-events-auto bg-white/95 dark:bg-black/95 text-slate-900 dark:text-white backdrop-blur-md p-4 rounded-none shadow-2xl border border-slate-200 dark:border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4">
+          <div className="max-w-2xl mx-auto pointer-events-auto bg-white/95 dark:bg-black/95 text-slate-900 dark:text-white backdrop-blur-md p-4 rounded-none shadow-2xl border border-slate-200 dark:border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-3 sm:gap-4 font-display">
             <div className="flex items-center gap-3.5">
               <div className="w-10 h-10 rounded-full bg-white dark:bg-neutral-800 border border-slate-200 dark:border-neutral-700 flex items-center justify-center flex-shrink-0 text-brand-navy-500 dark:text-brand-teal-300 shadow-sm">
                 {travelMode === 'motorcycle' ? (
@@ -507,11 +511,11 @@ export default function MapPageClient() {
               </div>
             </div>
 
-            {/* Clear Route Oblong Button: Solid Dive Blue */}
+            {/* Clear Route Oblong Button: Yellow Accent */}
             <button
               type="button"
               onClick={handleClearRoute}
-              className="inline-flex items-center justify-center gap-1.5 px-6 py-2.5 bg-brand-navy-500 hover:bg-brand-navy-600 dark:bg-brand-navy-500 dark:hover:bg-brand-navy-600 text-white text-xs font-bold rounded-full transition-colors self-end sm:self-center cursor-pointer shadow-md"
+              className="inline-flex items-center justify-center gap-1.5 px-6 py-2.5 bg-[#F4BF3E] hover:bg-[#e2af35] text-black text-xs font-bold rounded-full transition-colors self-end sm:self-center cursor-pointer shadow-md font-display"
             >
               <RotateCcw className="w-3.5 h-3.5" />
               <span>Clear Route</span>
@@ -525,6 +529,7 @@ export default function MapPageClient() {
         <MapView
           beaches={filteredBeaches}
           userLocation={userLocation}
+          userProfileImage={userProfileImage}
           onSelectBeach={(b) => setSelectedBeach(b)}
           selectedBeachId={selectedBeach?.id}
           routeActive={routeActive}
@@ -541,15 +546,20 @@ export default function MapPageClient() {
       {selectedBeach && !routeActive && (
         <aside
           aria-label={`${selectedBeach.name} beach details`}
-          className="fixed inset-x-0 bottom-0 z-40 max-h-[85vh] rounded-t-3xl bg-white/98 dark:bg-brand-navy-900/98 backdrop-blur-xl border-t border-slate-200/90 dark:border-neutral-800 shadow-2xl flex flex-col pointer-events-auto animate-in slide-in-from-bottom duration-300 overflow-hidden sm:fixed-none sm:absolute sm:inset-auto sm:top-0 sm:left-0 sm:bottom-0 sm:h-full sm:max-h-full sm:w-[410px] md:w-[430px] sm:rounded-none sm:border-t-0 sm:border-r sm:slide-in-from-left"
+          className="fixed inset-x-0 bottom-0 z-40 max-h-[85vh] rounded-t-3xl bg-white dark:bg-black backdrop-blur-xl border-t border-slate-200/90 dark:border-neutral-800 shadow-2xl flex flex-col pointer-events-auto animate-in slide-in-from-bottom duration-300 overflow-hidden sm:fixed-none sm:absolute sm:inset-auto sm:top-0 sm:left-0 sm:bottom-0 sm:h-full sm:max-h-full sm:w-[410px] md:w-[430px] sm:rounded-none sm:border-t-0 sm:border-r sm:slide-in-from-left font-display"
         >
-          {/* Mobile Drag Indicator Handle */}
-          <div className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-neutral-700 mx-auto mt-2.5 mb-1 sm:hidden flex-shrink-0" />
+          {/* Mobile Drag Indicator Handle - Clickable to close */}
+          <button
+            type="button"
+            onClick={() => setSelectedBeach(null)}
+            className="w-12 h-1.5 rounded-full bg-slate-300 dark:bg-neutral-700 mx-auto mt-2.5 mb-1 sm:hidden flex-shrink-0 cursor-pointer hover:bg-slate-400 dark:hover:bg-neutral-600 transition-colors"
+            aria-label="Close beach details"
+          />
 
           {/* Sidebar Top Header: Title, Location & Close Action (No card background, no border-b) */}
           <div className="px-4 pt-3 pb-2 sm:px-5 sm:pt-4 sm:pb-2.5 flex items-start justify-between gap-3 flex-shrink-0">
             <div className="min-w-0 flex-1">
-              <h3 className="font-extrabold text-lg sm:text-xl text-brand-navy-500 dark:text-brand-teal-400 font-display truncate tracking-tight">
+              <h3 className="font-medium text-lg sm:text-xl text-brand-navy-500 dark:text-brand-teal-400 font-display truncate tracking-tight">
                 {selectedBeach.name}
               </h3>
               <p className="text-xs text-slate-500 dark:text-neutral-400 flex items-center gap-1 mt-0.5 truncate">
@@ -688,7 +698,7 @@ export default function MapPageClient() {
                   aria-pressed={travelMode === 'car'}
                   className={`rounded-full border py-2 px-1 text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
                     travelMode === 'car'
-                      ? 'border-brand-navy-500 bg-brand-navy-500 text-white shadow-xs'
+                      ? 'border-[#F4BF3E] bg-[#F4BF3E] text-black shadow-xs'
                       : 'border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-neutral-800'
                   }`}
                 >
@@ -701,7 +711,7 @@ export default function MapPageClient() {
                   aria-pressed={travelMode === 'motorcycle'}
                   className={`rounded-full border py-2 px-1 text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
                     travelMode === 'motorcycle'
-                      ? 'border-brand-navy-500 bg-brand-navy-500 text-white shadow-xs'
+                      ? 'border-[#F4BF3E] bg-[#F4BF3E] text-black shadow-xs'
                       : 'border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-neutral-800'
                   }`}
                 >
@@ -714,7 +724,7 @@ export default function MapPageClient() {
                   aria-pressed={travelMode === 'commute'}
                   className={`rounded-full border py-2 px-1 text-[11px] font-bold flex items-center justify-center gap-1 transition-all cursor-pointer ${
                     travelMode === 'commute'
-                      ? 'border-brand-navy-500 bg-brand-navy-500 text-white shadow-xs'
+                      ? 'border-[#F4BF3E] bg-[#F4BF3E] text-black shadow-xs'
                       : 'border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-700 dark:text-slate-300 hover:bg-white dark:hover:bg-neutral-800'
                   }`}
                 >
@@ -763,22 +773,22 @@ export default function MapPageClient() {
           </div>
 
           {/* Sticky Bottom Action Bar: View Details & Calculate Route */}
-          <div className="p-4 sm:p-5 bg-white/95 dark:bg-brand-navy-900/95 border-t border-slate-100 dark:border-neutral-800/80 flex items-center gap-2.5 flex-shrink-0">
+          <div className="p-4 sm:p-5 bg-white dark:bg-black border-t border-slate-100 dark:border-neutral-800/80 flex items-center gap-2.5 flex-shrink-0">
             {/* View Details button (Oblong secondary) */}
             <Link
               href={`/beaches/${selectedBeach.slug}`}
-              className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-4 border-2 border-brand-navy-500 dark:border-brand-teal-400 bg-transparent hover:bg-white dark:hover:bg-neutral-900 text-brand-navy-500 dark:text-brand-teal-400 text-xs font-bold rounded-full transition-colors text-center cursor-pointer"
+              className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-4 border-2 border-[#F4BF3E] bg-transparent hover:bg-[#F4BF3E]/10 text-[#F4BF3E] text-xs font-medium rounded-full transition-colors text-center cursor-pointer font-display"
             >
               <span>View Details</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
 
-            {/* Calculate Route button (Oblong primary Dive Blue) */}
+            {/* Calculate Route button (Oblong primary Yellow) */}
             <button
               type="button"
               onClick={handleCalculateRoute}
               disabled={routingLoading}
-              className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-4 bg-brand-navy-500 hover:bg-brand-navy-600 dark:bg-brand-navy-500 dark:hover:bg-brand-navy-600 disabled:opacity-50 text-white text-xs font-bold rounded-full transition-colors shadow-md cursor-pointer"
+              className="flex-1 inline-flex items-center justify-center gap-1.5 py-2.5 px-4 bg-[#F4BF3E] hover:bg-[#e2af35] disabled:opacity-50 text-black text-xs font-medium rounded-full transition-colors shadow-md cursor-pointer font-display"
             >
               {routingLoading ? (
                 <Loader2 className="w-3.5 h-3.5 animate-spin" />

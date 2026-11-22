@@ -19,28 +19,28 @@ const HERO_SLIDES: HeroSlide[] = [
     resortName: 'Rañola Beach Resort',
     subtext: 'Known for its clear waters and rock shoreline.',
     image: '/ranola.jpg',
-    slug: 'ra-ola-beach',
+    slug: 'ranola',
   },
   {
     id: 'litebay',
     resortName: 'LiteBay Resort',
     subtext: 'Known for its peaceful seaside setting and affordable beach getaway.',
     image: '/litebay.jpg',
-    slug: 'litebay-resort',
+    slug: 'litebay',
   },
   {
     id: 'hinagdan',
     resortName: 'Hinagdan Beach Resort',
     subtext: 'Known for its cliffside location and cliff-jumping experience.',
     image: '/hinagdan.jpg',
-    slug: 'hinagdan-beach',
+    slug: 'hinagdan',
   },
   {
     id: 'majestique',
     resortName: 'Majestique View Resort',
     subtext: 'Elevated cliffside ocean deck and sunset viewing overlooking pristine coral reefs.',
     image: '/majestique.jpg',
-    slug: 'majestique-beach',
+    slug: 'majestiqueview',
   },
 ];
 
@@ -50,12 +50,15 @@ interface HeroMapSectionProps {
   ctaHref?: string;
   greeting?: string;
   subGreeting?: string;
+  bare?: boolean;
 }
 
 export function HeroMapSection({
   isAuthenticated = false,
   ctaText,
   ctaHref,
+  greeting,
+  bare = false,
 }: HeroMapSectionProps) {
   const [userRole, setUserRole] = useState<'visitor' | 'owner' | 'other'>(isAuthenticated ? 'other' : 'visitor');
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -195,6 +198,24 @@ export function HeroMapSection({
 
       {/* ── Main Hero Content (Adjusted lower down to emphasize resort scenery, refined sizing) ── */}
       <div className="relative z-30 flex flex-col justify-end items-center md:items-start h-full px-5 sm:px-8 lg:px-12 text-center md:text-left pt-24 pb-32 sm:pb-32 md:pb-36 max-w-7xl mx-auto w-full">
+        {bare ? (
+          <div className="space-y-3 max-w-xl w-full">
+            {greeting && (
+              <h1 className="font-display font-medium tracking-tight text-white leading-[1.16] text-xl sm:text-2xl md:text-3xl lg:text-4xl drop-shadow-[0_2px_16px_rgba(0,0,0,0.85)]">
+                {greeting}
+              </h1>
+            )}
+            <div className="pt-2 flex flex-col sm:flex-row items-center justify-center md:justify-start gap-2.5">
+              <Link
+                href={resolvedCtaHref}
+                className="inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-full bg-[#F4BF3E] hover:bg-[#e2af35] text-black font-display uppercase tracking-[0.12em] font-medium text-xs transition-all duration-200 shadow-lg shadow-amber-500/20 hover:shadow-amber-500/35 hover:-translate-y-0.5 active:translate-y-0 group border border-amber-300/50 cursor-pointer"
+              >
+                <span>{resolvedCtaText}</span>
+                <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-1" />
+              </Link>
+            </div>
+          </div>
+        ) : (
         <div className="space-y-2.5 sm:space-y-3 max-w-xl w-full">
 
           {/* Dynamic Beach Name Headline: Refined & Elegant Size, Emphasizing Beach Photography */}
@@ -246,6 +267,7 @@ export function HeroMapSection({
           </p>
 
         </div>
+        )}
       </div>
 
       {/* ── Scroll Indicator: hints there's more content below ── */}

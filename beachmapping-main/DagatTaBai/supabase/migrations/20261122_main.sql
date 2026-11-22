@@ -1,3 +1,10 @@
+BEGIN;
+
+-- Restore execute permission for register_login_device to authenticated users
+-- This is needed for the device tracking feature to work on login
+GRANT EXECUTE ON FUNCTION public.register_login_device(p_device_id uuid, p_browser text, p_platform text) TO authenticated;
+
+COMMIT;
 -- Rename public schema tables/columns to underscore-free names and update
 -- routine bodies that still referenced the old identifiers.
 -- Idempotent: safe to run on databases where the renames were already applied
@@ -2419,7 +2426,7 @@ END $$;
 DROP VIEW IF EXISTS public.beach_published_tours;
 CREATE VIEW public.beach_published_tours
 WITH (security_invoker = true) AS
-SELECT beachid, requestedtoururl, approvedat, statusupdatedat
+SELECT beachid AS beach_id, requestedtoururl AS requested_tour_url, approvedat, statusupdatedat
 FROM (
   SELECT DISTINCT ON (beachid)
     beachid, requestedtoururl, approvedat, statusupdatedat, status

@@ -4,17 +4,9 @@ import React, { useEffect, useState, useMemo, useRef } from 'react';
 import type { BeachRecord } from '@/lib/db/beaches';
 import { getValidBeachCoordinates } from '@/lib/utils/beach-coordinates';
 
-// Curated Coastal Palette: strictly brand-aligned (Dive Blue, Sky Blue, Golden Amber, Sea Teal)
-// Strictly NO purple!
+// Curated Coastal Palette: All pins are blue
 export const PIN_PALETTE = [
   '#1F3F74', // Signature Dive Blue
-  '#0284C7', // Ocean Sky Blue
-  '#EAB308', // Sunburst Amber Gold
-  '#0D9488', // Deep Lagoon Teal
-  '#2563EB', // Vibrant Coastal Blue
-  '#0891B2', // Tropical Cyan
-  '#16A34A', // Coastal Palm Emerald
-  '#0369A1', // Deep Marina Blue
 ];
 
 export function getBeachPinColorByIndex(index: number): string {
@@ -36,53 +28,46 @@ export function getBeachPinColor(id: string, beaches?: BeachRecord[]): string {
 
 // Senior Frontend Custom SVG Marker: Ultra-crisp, elegant coastal palm teardrop with micro-elevation & selection pulse
 function createTeardropPinSvg(color: string, isSelected: boolean): string {
-  const scale = isSelected ? 1.16 : 1.0;
-  const width = Math.round(36 * scale);
+  const scale = isSelected ? 1.15 : 1.0;
+  const width = Math.round(40 * scale);
   const height = Math.round(48 * scale);
 
   return `
-    <svg width="${width}" height="${height}" viewBox="0 0 36 48" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0px 5px 10px rgba(15,23,42,0.36)); overflow: visible;">
-      ${
-        isSelected
-          ? `
-        <!-- Dynamic Pulse Halo Ring on Selection -->
-        <circle cx="18" cy="17" r="19" fill="${color}" fill-opacity="0.22">
-          <animate attributeName="r" values="17;22;17" dur="2.2s" repeatCount="indefinite" />
-          <animate attributeName="fill-opacity" values="0.28;0.05;0.28" dur="2.2s" repeatCount="indefinite" />
-        </circle>
-        <circle cx="18" cy="17" r="18" stroke="${color}" stroke-width="1.5" stroke-dasharray="3 3" opacity="0.6"/>
-      `
-          : ''
-      }
+    <svg width="${width}" height="${height}" viewBox="0 0 40 48" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0px 4px 8px rgba(15,23,42,0.3)); overflow: visible;">
+      <!-- Chubby Teardrop Pin -->
+      <path d="M20 2C11.16 2 4 9.16 4 18C4 30 17.5 44.5 18.6 45.6C19.1 46.1 20.9 46.1 21.4 45.6C22.5 44.5 36 30 36 18C36 9.16 28.84 2 20 2Z"
+        fill="${color}" />
 
-      <!-- Teardrop Pin Silhouette with Pure White Bezel -->
-      <path d="M18 1.5C9.49 1.5 2.5 8.49 2.5 17C2.5 28.2 16.5 45.2 17.3 46.2C17.7 46.7 18.3 46.7 18.7 46.2C19.5 45.2 33.5 28.2 33.5 17C33.5 8.49 26.51 1.5 18 1.5Z"
-        fill="${color}"
-        stroke="#FFFFFF"
-        stroke-width="2.4"
-            stroke-linejoin="round" />
+      <!-- Inner White Circle (Hole) -->
+      <circle cx="20" cy="16" r="8.5" fill="#FFFFFF" />
 
-      <!-- Inner Crisp White Disc Badge -->
-      <circle cx="18" cy="17" r="9.3" fill="#FFFFFF" />
+      <!-- Inner Blue Circle -->
+      <circle cx="20" cy="16" r="4" fill="#1F3F74" />
+    </svg>
+  `;
+}
 
-      <!-- High-Fidelity Coastal Palm Tree Silhouette -->
-      <g fill="${color}">
-        <!-- Gentle Curved Trunk -->
-        <path d="M17.2 23.5H18.9C18.6 19.8 18.3 17.5 18 15.8H17.2C17 17.5 16.9 19.8 17.2 23.5Z" />
-        <!-- Top Center Frond -->
-        <path d="M17.6 15.8C17.6 12.8 19 10.5 21.2 9.8C20 11.8 19.2 13.8 17.6 15.8Z" />
-        <!-- Top Left Frond -->
-        <path d="M17.6 15.8C15.6 13.2 13.5 11.2 11 12.2C13 13.8 15.2 15 17.6 15.8Z" />
-        <!-- Bottom Left Frond -->
-        <path d="M17.6 16C15 15.2 12.4 16 11.2 18.2C13.5 17.6 15.8 17 17.6 16Z" />
-        <!-- Top Right Frond -->
-        <path d="M18 15.8C20.2 13.2 22.5 11.5 25 12.5C23 14 20.8 15.2 18 15.8Z" />
-        <!-- Bottom Right Frond -->
-        <path d="M18 16C20.5 15.2 23.2 16.2 24.5 18.5C22.2 17.8 19.8 17.2 18 16Z" />
-        <!-- Coconuts at crown -->
-        <circle cx="16.9" cy="16.2" r="1" fill="${color}" stroke="#FFFFFF" stroke-width="0.3"/>
-        <circle cx="18.9" cy="16.2" r="1" fill="${color}" stroke="#FFFFFF" stroke-width="0.3"/>
-      </g>
+// Profile image pin for route destination
+function createProfilePinSvg(profileImageUrl: string): string {
+  const width = 48;
+  const height = 56;
+
+  return `
+    <svg width="${width}" height="${height}" viewBox="0 0 48 56" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0px 4px 8px rgba(15,23,42,0.3)); overflow: visible;">
+      <!-- Chubby Teardrop Pin -->
+      <path d="M24 2C13.4 2 4.5 10.9 4.5 21.5C4.5 36 21 51.5 22.3 52.8C22.8 53.3 25.2 53.3 25.7 52.8C27 51.5 43.5 36 43.5 21.5C43.5 10.9 34.6 2 24 2Z"
+        fill="#1F3F74" />
+
+      <!-- White Circle Background for Profile Image -->
+      <circle cx="24" cy="21" r="12" fill="#FFFFFF" />
+
+      <!-- Profile Image Clipped to Circle -->
+      <defs>
+        <clipPath id="profileClip">
+          <circle cx="24" cy="21" r="10" />
+        </clipPath>
+      </defs>
+      <image href="${profileImageUrl}" x="14" y="11" width="20" height="20" clip-path="url(#profileClip)" preserveAspectRatio="xMidYMid slice" />
     </svg>
   `;
 }
@@ -90,6 +75,7 @@ function createTeardropPinSvg(color: string, isSelected: boolean): string {
 interface MapViewProps {
   beaches: BeachRecord[];
   userLocation?: { lat: number; lng: number } | null;
+  userProfileImage?: string | null;
   onUpdateUserLocation?: (loc: { lat: number; lng: number }) => void;
   onSelectBeach?: (beach: BeachRecord) => void;
   selectedBeachId?: string | null;
@@ -106,6 +92,7 @@ const DEFAULT_BINONGKALAN_CENTER: [number, number] = [10.6348, 124.0275];
 export function MapView({
   beaches,
   userLocation,
+  userProfileImage,
   onUpdateUserLocation,
   onSelectBeach,
   selectedBeachId,
@@ -183,16 +170,47 @@ export function MapView({
     });
   }, [beaches, routeActive, selectedBeachId]);
 
-  // Memoize User GPS marker icon
+  // Memoize User GPS marker icon - Profile picture pin
   const userLocationIcon = useMemo(() => {
     if (!L) return null;
+    if (userProfileImage) {
+      return L.divIcon({
+        className: 'user-loc-marker',
+        html: `
+          <svg width="48" height="60" viewBox="0 0 48 60" fill="none" xmlns="http://www.w3.org/2000/svg" style="filter: drop-shadow(0px 4px 8px rgba(15,23,42,0.3)); overflow: visible;">
+            <!-- Pin silhouette -->
+            <path d="M24 2C13.4 2 4.5 10.9 4.5 21.5C4.5 36 21 51.5 22.3 52.8C22.8 53.3 25.2 53.3 25.7 52.8C27 51.5 43.5 36 43.5 21.5C43.5 10.9 34.6 2 24 2Z" fill="#1F3F74"/>
+            <!-- White circle background -->
+            <circle cx="24" cy="21" r="14" fill="#FFFFFF" />
+            <!-- Profile image clipped to circle - larger and centered -->
+            <defs>
+              <clipPath id="userProfileClip">
+                <circle cx="24" cy="21" r="12" />
+              </clipPath>
+            </defs>
+            <image href="${userProfileImage}" x="12" y="9" width="24" height="24" clip-path="url(#userProfileClip)" preserveAspectRatio="xMidYMid slice" />
+          </svg>
+        `,
+        iconSize: [48, 60],
+        iconAnchor: [24, 60],
+      });
+    }
     return L.divIcon({
       className: 'user-loc-marker',
-      html: `<div style="background-color: #1F3F74; width: 20px; height: 20px; border: 3px solid #ffffff; border-radius: 50%; box-shadow: 0 0 14px rgba(31,63,116,0.9);"></div>`,
-      iconSize: [20, 20],
-      iconAnchor: [10, 10],
+      html: `
+        <svg width="32" height="44" viewBox="0 0 32 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <!-- Pin silhouette -->
+          <path d="M16 2C8.82 2 3 7.82 3 15C3 25 14.5 39.5 15.3 40.4C15.7 40.8 16.3 40.8 16.7 40.4C17.5 39.5 29 25 29 15C29 7.82 23.18 2 16 2Z" fill="#1F3F74"/>
+          <!-- White ring -->
+          <circle cx="16" cy="15" r="9" fill="none" stroke="#FFFFFF" stroke-width="3"/>
+          <!-- Center dot -->
+          <circle cx="16" cy="15" r="4" fill="#FFFFFF"/>
+        </svg>
+      `,
+      iconSize: [32, 44],
+      iconAnchor: [16, 44],
     });
-  }, [L]);
+  }, [L, userProfileImage]);
 
   // Memoize Moving Vehicle / Pedestrian Marker icon
   const movingTravelerIcon = useMemo(() => {
@@ -237,12 +255,13 @@ export function MapView({
       const pinColor = getBeachPinColorByIndex(index);
       const coordinates = getValidBeachCoordinates(beach.latitude, beach.longitude);
       if (!coordinates) return null;
+      
       const iconHtml = createTeardropPinSvg(pinColor, isSelected);
       const customIcon = L.divIcon({
         className: 'beach-pin-marker',
         html: iconHtml,
-        iconSize: isSelected ? [42, 56] : [36, 48],
-        iconAnchor: isSelected ? [21, 56] : [18, 48],
+        iconSize: isSelected ? [46, 56] : [40, 48],
+        iconAnchor: isSelected ? [23, 56] : [20, 48],
       });
       const labelDirection: 'right' | 'left' = index % 2 === 0 ? 'right' : 'left';
       return {
@@ -332,20 +351,7 @@ export function MapView({
           </>
         )}
 
-        {/* Real-time Moving Vehicle / Traveler Marker traveling along the road */}
-        {routeActive &&
-          routeCoordinates &&
-          routeCoordinates.length > 0 &&
-          movingTravelerIcon &&
-          travelIndex < routeCoordinates.length && (
-            <Marker
-              position={routeCoordinates[travelIndex]}
-              icon={movingTravelerIcon}
-              zIndexOffset={1000}
-            />
-          )}
-
-        {/* User GPS location marker */}
+        {/* User GPS location marker with profile picture */}
         {userLocation && userLocationIcon && (
           <Marker
             position={[userLocation.lat, userLocation.lng]}
@@ -383,9 +389,10 @@ export function MapView({
               className="beach-map-label"
             >
               <span
+                className="font-display"
                 style={{
-                  color: markerData.pinColor,
-                  fontWeight: 800,
+                  color: '#000000',
+                  fontWeight: 500,
                   fontSize: '12px',
                   letterSpacing: '-0.01em',
                 }}
@@ -399,3 +406,4 @@ export function MapView({
     </div>
   );
 }
+

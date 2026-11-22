@@ -148,8 +148,8 @@ async function getApprovedTourUrls(beachIds: string[]): Promise<Map<string, stri
   try {
     const supabase = await createServerSupabaseClient() as unknown as SupabaseClient<Database, 'public', 'public', Database['public']>;
     const { data, error } = await supabase.from('beach_published_tours')
-      .select('beachid, requestedtoururl')
-      .in('beachid', beachIds);
+      .select('beach_id, requested_tour_url')
+      .in('beach_id', beachIds);
     if (error?.code === 'PGRST205' && error.message.includes('beach_published_tours')) {
       console.warn('Approved beach tours are unavailable because beach_published_tours is missing from the Supabase schema cache.');
       return new Map();
@@ -158,7 +158,8 @@ async function getApprovedTourUrls(beachIds: string[]): Promise<Map<string, stri
       console.error('beach_published_tours query error:', error);
       throw error;
     }
-    return new Map((data || []).map((tour) => [tour.beachid, tour.requestedtoururl]));
+    console.log('Approved tours data:', data);
+    return new Map((data || []).map((tour) => [tour.beach_id, tour.requested_tour_url]));
   } catch (err) {
     console.error('getApprovedTourUrls failed:', err);
     return new Map(); // Return empty map on error to not break the main query
@@ -224,7 +225,7 @@ export async function getAllBeaches(): Promise<BeachRecord[]> {
         .map((profile) => profile.id)
     );
 
-    const approvedTours = await getApprovedTourUrls(dbBeaches.map((beach) => String(beach.id)));
+    const approvedTours = new Map<string, string>(); // Virtual tours are stored directly on beaches table
   const seenIds = new Set<string>();
   const seenSlugs = new Set<string>();
   const mapped: BeachRecord[] = dbBeaches
@@ -270,7 +271,7 @@ export async function getAllBeaches(): Promise<BeachRecord[]> {
           cover_image: b.coverimageurl || b.cover_image || null,
           profile_image: b.profileimageurl || b.profile_image || null,
           images: Array.isArray(b.images) ? b.images : [],
-          virtualtoururl: approvedTours.get(String(b.id)) || null,
+          virtualtoururl: b.virtualtoururl || null,
           contactphone: b.contactphone || null,
           contactemail: b.contactemail || null,
           facebookurl: b.facebookurl || null,
@@ -415,7 +416,7 @@ export async function getBeachBySlug(slug: string): Promise<BeachRecord | null> 
           return null;
         }
       }
-      const approvedTours = await getApprovedTourUrls([String(b.id)]);
+      const approvedTours = new Map<string, string>(); // Virtual tours are stored directly on beaches table
 
       // Parse openinghours if it's a JSON string
       let parsedOpeningHours = b.openinghours || '';
@@ -450,7 +451,7 @@ export async function getBeachBySlug(slug: string): Promise<BeachRecord | null> 
         cover_image: b.coverimageurl || b.cover_image || null,
         profile_image: b.profileimageurl || b.profile_image || null,
         images: Array.isArray(b.images) ? b.images : [],
-        virtualtoururl: approvedTours.get(String(b.id)) || null,
+        virtualtoururl: b.virtualtoururl || null,
         contactphone: b.contactphone || null,
         contactemail: b.contactemail || null,
         facebookurl: b.facebookurl || null,

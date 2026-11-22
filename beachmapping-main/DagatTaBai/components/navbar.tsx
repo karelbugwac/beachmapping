@@ -90,12 +90,29 @@ export function Navbar() {
     { id: 'contact', label: 'Contact Us', shortLabel: 'Contact', href: '/contact' },
   ];
 
+  // Map page has its own nav links
+  const isMapPage = pathname === '/map';
+  const isWeatherPage = pathname === '/weather';
+  const isApplyStatusPage = pathname === '/apply/status';
+  const isBeachProfilePage = pathname?.startsWith('/beaches/');
+  const isSimplifiedNav = isMapPage || isWeatherPage || isApplyStatusPage || isBeachProfilePage;
+
+  const mapLinks = [
+    { id: 'map-weather', label: 'Weather Forecast', shortLabel: 'Weather', href: '/weather' },
+    { id: 'map-interactive', label: 'Interactive Map', shortLabel: 'Map', href: '/map' },
+  ];
+
+  // Only /home hides info links — landing page and other pages show them
+  // Simplified nav pages show: Home, Apply, My application, Weather, Map
+  const isHomeNav = pathname === '/home';
+  const visibleInfoLinks = isHomeNav ? [] : isSimplifiedNav ? mapLinks : infoLinks;
+
   // Desktop navigation links with strictly unique IDs
   const desktopLinks = [
     { id: 'desk-home', label: 'Home', href: user ? '/home' : '/' },
     { id: 'desk-apply', label: 'Apply', href: '/apply' },
     ...(user ? [{ id: 'desk-status', label: 'My application', href: '/apply/status' }] : []),
-    ...infoLinks.map((link) => ({ id: `desk-${link.id}`, label: link.shortLabel, href: link.href })),
+    ...visibleInfoLinks.map((link) => ({ id: `desk-${link.id}`, label: link.shortLabel, href: link.href })),
   ];
 
   // Mobile drawer links — same categories as desktop
@@ -103,7 +120,7 @@ export function Navbar() {
     { id: 'mob-home', label: 'Home', href: user ? '/home' : '/' },
     { id: 'mob-apply', label: 'Apply as Beach Owner', href: '/apply' },
     ...(user ? [{ id: 'mob-status', label: 'My application', href: '/apply/status' }] : []),
-    ...infoLinks.map((link) => ({ id: `mob-${link.id}`, label: link.label, href: link.href })),
+    ...visibleInfoLinks.map((link) => ({ id: `mob-${link.id}`, label: link.label, href: link.href })),
   ];
 
   // Fetch session user once on mount

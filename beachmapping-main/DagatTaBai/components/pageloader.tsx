@@ -2,12 +2,13 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { usePathname, useSearchParams } from 'next/navigation';
+import Image from 'next/image';
 
 export function PageLoader() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const [loading, setLoading] = useState(false);
-  const [progress, setProgress] = useState(0);
+  const [visible, setVisible] = useState(false);
   const timers = useRef<number[]>([]);
   const routeKey = `${pathname}?${searchParams.toString()}`;
   const previousRoute = useRef(routeKey);
@@ -23,18 +24,11 @@ export function PageLoader() {
     if (!loading) return;
 
     clearTimers();
-    let timer: number | undefined;
-    const frame = window.requestAnimationFrame(() => {
-      setProgress(100);
-      timer = window.setTimeout(() => {
-        setLoading(false);
-        setProgress(0);
-      }, 350);
-    });
-    return () => {
-      window.cancelAnimationFrame(frame);
-      if (timer !== undefined) window.clearTimeout(timer);
-    };
+    const timer = window.setTimeout(() => {
+      setVisible(false);
+      setLoading(false);
+    }, 400);
+    return () => window.clearTimeout(timer);
   }, [routeKey, loading]);
 
   useEffect(() => {
@@ -55,10 +49,9 @@ export function PageLoader() {
       ) {
         clearTimers();
         setLoading(true);
-        setProgress(25);
+        setVisible(true);
         timers.current = [
-          window.setTimeout(() => setProgress(60), 180),
-          window.setTimeout(() => setProgress(85), 600),
+          window.setTimeout(() => setVisible(true), 50),
         ];
       }
     };
@@ -70,19 +63,26 @@ export function PageLoader() {
     };
   }, [pathname]);
 
-  if (!loading && progress === 0) return null;
+  if (!loading && !visible) return null;
 
   return (
     <div
-      className="fixed top-0 left-0 right-0 z-[9999] pointer-events-none h-1 bg-transparent"
+      className={`fixed inset-0 z-[9999] flex items-center justify-center bg-white/80 dark:bg-black/80 backdrop-blur-sm transition-opacity duration-300 ${
+        visible ? 'opacity-100' : 'opacity-0'
+      }`}
       aria-hidden="true"
     >
-      <div
-        className="h-full bg-brand-navy-500 transition-all duration-300 ease-out"
-        style={{
-          width: `${progress}%`,
-        }}
-      />
+      <div className="flex flex-col items-center gap-4">
+        <div className="relative w-16 h-16">
+          <Image
+            src="/logo.png"
+            alt="Loading"
+            fill
+            className="object-contain animate-spin"
+          />
+        </div>
+        <div className="w-8 h-8 border-2 border-brand-navy-500 border-t-transparent rounded-full animate-spin" />
+      </div>
     </div>
   );
 }

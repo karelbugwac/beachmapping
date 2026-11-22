@@ -14,3 +14,9 @@ REVOKE ALL ON public.gmail_sender_connections FROM anon, authenticated;
 GRANT ALL ON public.gmail_sender_connections TO service_role;
 
 COMMIT;
+    ALTER TABLE public.beaches
+        ALTER COLUMN latitude DROP NOT NULL,
+        ALTER COLUMN longitude DROP NOT NULL;
+UPDATE storage.buckets
+SET file_size_limit = 20971520
+WHERE id = 'beach-media';

@@ -5,7 +5,7 @@
 DROP VIEW IF EXISTS public.beach_published_tours;
 CREATE VIEW public.beach_published_tours
 WITH (security_invoker = true) AS
-SELECT beachid, requestedtoururl, approvedat, statusupdatedat
+SELECT beachid AS beach_id, requestedtoururl, approvedat, statusupdatedat
 FROM (
   SELECT DISTINCT ON (beachid)
     beachid, requestedtoururl, approvedat, statusupdatedat, status

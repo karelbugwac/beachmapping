@@ -14,14 +14,13 @@ import {
   Images,
   Home,
   Info,
-  ShieldCheck,
   Compass,
   Navigation,
-  AlertTriangle,
   MessageSquare,
   Ticket,
   Calendar,
   Route,
+  Sun,
 } from 'lucide-react';
 import type { BeachRecord } from '@/lib/db/beaches';
 import { VirtualTourModal } from '@/components/vtmodal';
@@ -29,11 +28,9 @@ import { PhotoViewerModal, type PhotoViewerItem } from '@/components/cottages/co
 import { CottageCard } from '@/components/cottages/cottagecard';
 import { FacilityCard } from '@/components/facilitycard';
 import { getFacilityCategoryLabel } from '@/lib/utils/facility-categories';
-import { OpeningStatusPill } from '@/components/status';
 import { formatOpeningHoursGroups } from '@/lib/utils/opening-status';
 import { getFacilityFeeItems } from '@/lib/utils/facility-pricing';
 import { maskReviewerName } from '@/lib/utils/mask-reviewer-name';
-import { BeachTripPlanner } from '@/components/tripplanner';
 import { showToast } from '@/components/ui/feedback-toasts';
 import { useRealtimeSync, notifyRealtimeSync } from '@/lib/realtime-sync';
 
@@ -105,9 +102,10 @@ export default function BeachProfilePage({
   const [reviewCount, setReviewCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [activeTab, setActiveTab] = useState<'general' | 'planner' | 'posts' | 'cottages' | 'facilities' | 'dos' | 'reviews'>('general');
+  const [activeTab, setActiveTab] = useState<'general' | 'posts' | 'cottages' | 'facilities' | 'dos' | 'reviews'>('general');
   const [showTourModal, setShowTourModal] = useState(false);
   const [selectedDetail, setSelectedDetail] = useState<PhotoViewerItem | null>(null);
+  const [showFullDescription, setShowFullDescription] = useState(false);
 
   // Review System State (Matches Feedback Page Architecture)
   const [beachReviews, setBeachReviews] = useState<any[]>([]);
@@ -224,15 +222,14 @@ export default function BeachProfilePage({
         <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/35 to-black/30" />
 
         {/* Top Floating Control on Edge-to-Edge Hero */}
-        <div className="absolute top-5 left-4 right-4 sm:left-8 sm:right-8 flex items-center justify-between z-20">
+        <div className="absolute top-5 left-2 right-4 sm:left-4 sm:right-8 flex items-center justify-between z-20">
           <Link
             href="/map"
-            className="inline-flex items-center gap-1.5 px-4 py-2 bg-black/50 hover:bg-black/70 backdrop-blur-md text-white text-xs font-bold rounded-full border border-white/20 transition-all shadow-md group"
+            className="inline-flex items-center gap-1.5 px-3 py-2 text-white text-xs font-bold transition-all group"
           >
             <ChevronLeft className="w-4 h-4 transition-transform group-hover:-translate-x-0.5" />
             <span>Back to Map</span>
           </Link>
-
         </div>
 
         {/* Clean Hero Bottom: Title & Rating ONLY (No overlay buttons or badges) */}
@@ -241,14 +238,14 @@ export default function BeachProfilePage({
             <h1 className="font-display text-xl font-semibold tracking-tight text-white drop-shadow-md sm:text-2xl">
               {beach.name}
             </h1>
-            <p className="text-xs sm:text-sm text-brand-teal-200 flex items-center gap-1 font-medium">
+            <p className="font-display text-[11px] sm:text-xs text-brand-teal-200 flex items-center gap-1 font-medium">
               <MapPin className="w-3.5 h-3.5 text-brand-teal-300 flex-shrink-0" />
               <span>{beach.location || 'Location not provided'}</span>
             </p>
           </div>
 
           {Number(beach.averagerating) > 0 && (
-            <div className="bg-black/60 backdrop-blur-md text-white px-3.5 py-1.5 rounded-full text-xs font-extrabold flex items-center gap-1.5 border border-white/20 shadow-md">
+            <div className="bg-black/60 backdrop-blur-md text-white px-3.5 py-1.5 rounded-full text-[11px] sm:text-xs font-extrabold flex items-center gap-1.5 border border-white/20 shadow-md">
               <Star className="w-4 h-4 fill-brand-sun-400 text-brand-sun-700" />
               <span>{Number(beach.averagerating).toFixed(1)}</span>
             </div>
@@ -256,143 +253,217 @@ export default function BeachProfilePage({
         </div>
       </div>
 
-      {/* ── 2. ABOUT & CONTACT (BEFORE CATEGORIES) ── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 pb-2">
-        <div className="space-y-4">
-          {/* About / Description of Resort */}
-          <p className="max-w-4xl text-justify text-[11px] leading-relaxed text-slate-700 dark:text-neutral-300 sm:text-xs">
-            {beach.description || 'No beach description provided yet.'}
-          </p>
-
-          {/* Quick Contact & Facebook Link Row */}
-          <div className="flex items-center gap-4 sm:gap-6 flex-wrap text-xs text-slate-600 dark:text-neutral-400 pt-1">
-            <div className="flex items-center gap-1.5">
-              <MapPin className="w-4 h-4 text-brand-navy-500 dark:text-brand-teal-300 flex-shrink-0" />
-              <span>{beach.location || 'Location not provided'}</span>
-            </div>
-
-            {beach.contactphone && (
-              <a
-                href={`tel:${beach.contactphone}`}
-                className="flex items-center gap-1.5 text-slate-700 dark:text-neutral-300 hover:text-brand-navy-500 dark:hover:text-white transition-colors font-medium"
-              >
-                <Phone className="w-3.5 h-3.5 text-brand-navy-500 dark:text-brand-teal-300 flex-shrink-0" />
-                <span>{beach.contactphone}</span>
-              </a>
-            )}
-
-            {beach.contactemail && (
-              <a
-                href={`mailto:${beach.contactemail}`}
-                className="flex items-center gap-1.5 text-slate-700 dark:text-neutral-300 hover:text-brand-navy-500 dark:hover:text-white transition-colors font-medium"
-              >
-                <Mail className="w-3.5 h-3.5 text-brand-navy-500 dark:text-brand-teal-300 flex-shrink-0" />
-                <span>{beach.contactemail}</span>
-              </a>
-            )}
-
-            {beach.facebookurl && (
-              <a
-                href={beach.facebookurl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-brand-navy-500 font-bold hover:underline"
-              >
-                <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
-                  <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
-                </svg>
-                <span>Facebook Page</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            )}
-
-            {beach.instagramurl && (
-              <a
-                href={beach.instagramurl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-pink-600 font-bold hover:underline"
-              >
-                <span>Instagram</span>
-                <ExternalLink className="w-3 h-3" />
-              </a>
-            )}
-          </div>
-
-          {/* Action Row: Calculate Route & Google Maps Directions & Trip Planner */}
-          <div className="flex items-center gap-2.5 sm:gap-3 flex-wrap pt-2">
-            <Link
-              href={`/map?beach=${encodeURIComponent(beach.slug)}&route=true`}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-[#1F3F74] hover:bg-[#285091] dark:bg-[#1F3F74] dark:hover:bg-[#285091] text-white text-xs font-bold transition shadow-sm hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
-            >
-              <Route className="w-4 h-4" />
-              <span>Calculate Route</span>
-            </Link>
-
-            <a
-              href={`https://www.google.com/maps/dir/?api=1&destination=${beach.latitude},${beach.longitude}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-white dark:bg-neutral-900 border border-slate-300 dark:border-neutral-700 hover:bg-white dark:hover:bg-neutral-800 text-slate-800 dark:text-neutral-100 text-xs font-bold transition shadow-2xs hover:-translate-y-0.5 active:translate-y-0"
-            >
-              <MapPin className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-              <span>Get Directions</span>
-              <ExternalLink className="w-3 h-3 text-slate-400" />
-            </a>
-
-            <button
-              type="button"
-              onClick={() => setActiveTab('planner')}
-              className="inline-flex items-center gap-2 px-4 py-2.5 rounded-full bg-sky-50 dark:bg-sky-950/40 border border-sky-200 dark:border-sky-800/60 hover:bg-sky-100 dark:hover:bg-sky-900/40 text-[#1F3F74] dark:text-sky-300 text-xs font-bold transition shadow-2xs hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
-            >
-              <Calendar className="w-3.5 h-3.5" />
-              <span>Trip Planner (4-Day Weather)</span>
-            </button>
-          </div>
-        </div>
-      </div>
-
-      {/* ── 3. CATEGORY TABS (Pill Style, Signature Dive Blue) ── */}
+      {/* ── 2. CATEGORY TABS (Pill Style, Signature Dive Blue) ── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
-        <div className="flex items-center gap-2 overflow-x-auto pb-2 border-b border-slate-200 dark:border-neutral-800 no-scrollbar">
+        <div className="flex items-center gap-4 overflow-x-auto pb-2 no-scrollbar">
           {[
-            { id: 'general', label: 'General Info', icon: Info },
-            { id: 'planner', label: 'Trip Planner & Forecast', icon: Calendar },
-            { id: 'posts', label: 'Posts', icon: Images },
-            { id: 'cottages', label: 'Cottage & Tables', icon: Home },
-            { id: 'facilities', label: 'Facilities', icon: ShieldCheck },
-            { id: 'dos', label: "Do's & Don'ts", icon: AlertTriangle },
-            { id: 'reviews', label: `Reviews (${reviewCount})`, icon: MessageSquare },
+            { id: 'general', label: 'General Info' },
+            { id: 'posts', label: 'Posts' },
+            { id: 'cottages', label: 'Cottage & Tables' },
+            { id: 'facilities', label: 'Facilities' },
+            { id: 'dos', label: "Do's & Don'ts" },
+            { id: 'reviews', label: `Reviews (${reviewCount})` },
           ].map((tab) => {
-            const Icon = tab.icon;
             const isActive = activeTab === tab.id;
             return (
               <button
                 key={tab.id}
                 type="button"
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`inline-flex items-center gap-2 px-5 py-2.5 rounded-full text-xs font-bold whitespace-nowrap transition-all cursor-pointer ${
+                className={`flex-1 inline-flex items-center justify-center gap-2 px-4 py-3 font-display text-[11px] sm:text-xs font-medium whitespace-nowrap transition-all cursor-pointer relative ${
                   isActive
-                    ? 'bg-brand-navy-500 text-white shadow-md shadow-brand-navy-500/20'
-                    : 'bg-white dark:bg-neutral-900 text-slate-700 dark:text-neutral-300 hover:bg-white dark:hover:bg-neutral-800'
+                    ? 'text-brand-navy-500 dark:text-brand-teal-300'
+                    : 'text-slate-600 dark:text-neutral-400 hover:text-brand-navy-500 dark:hover:text-brand-teal-300'
                 }`}
               >
-                <Icon className="w-3.5 h-3.5" />
                 <span>{tab.label}</span>
+                {isActive && (
+                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-brand-navy-500 dark:bg-brand-teal-300" />
+                )}
               </button>
             );
           })}
         </div>
       </div>
 
-      {/* ── 4. MAIN CONTENT (Full-Width Clean Layout; Sidebar Card Removed as Requested) ── */}
+      {/* ── 3. MAIN CONTENT (Two-Column Layout: Left Content + Right Sidebar) ── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="w-full space-y-8">
+        <div className={`grid grid-cols-1 w-full ${activeTab === 'general' ? 'lg:grid-cols-3 gap-8' : 'lg:grid-cols-1'}`}>
+          
+          {/* RIGHT COLUMN: Sidebar - First on Mobile, Only on General Info Tab */}
+          {activeTab === 'general' && (
+          <div className="space-y-6 order-1 lg:order-2">
+            {/* Operating Schedule */}
+            <div className="space-y-3">
+              <h3 className="font-display text-base font-semibold text-brand-navy-500 dark:text-brand-teal-300">Operating Hours</h3>
+              <div className="space-y-2">
+                {formatOpeningHoursGroups(beach.openinghours).map((group) => (
+                  <div key={`${group.days}-${group.hours}`} className="flex justify-between items-center">
+                    <span className="font-display text-[11px] sm:text-xs font-medium text-slate-600 dark:text-neutral-300">{group.days}</span>
+                    <span className="font-display text-[11px] sm:text-xs font-bold text-brand-navy-500 dark:text-brand-teal-300">{group.hours}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Entrance Fees */}
+            <div className="space-y-3">
+              <h3 className="font-display text-base font-semibold text-brand-navy-500 dark:text-brand-teal-300">Entrance Fees</h3>
+              <div className="space-y-2">
+                {Object.entries(getEntranceFeeValues(beach)).map(([label, amount]) => (
+                  <div key={label} className="flex justify-between items-center">
+                    <span className="font-display text-[11px] sm:text-xs font-medium text-slate-600 dark:text-neutral-300">
+                      {label === 'adults' ? 'Adult' : 'Children / Senior'}
+                    </span>
+                    <span className="font-display text-[11px] sm:text-xs font-bold text-brand-navy-500 dark:text-brand-teal-300">{amount}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Contact & Social */}
+            <div className="space-y-4">
+              <h3 className="font-display text-base font-semibold text-brand-navy-500 dark:text-brand-teal-300">Contact & Social</h3>
+              
+              {beach.contactphone && (
+                <div className="flex items-center gap-2">
+                  <Phone className="w-4 h-4 text-brand-navy-500 dark:text-brand-teal-300" />
+                  <a
+                    href={`tel:${beach.contactphone}`}
+                    className="font-display text-[11px] sm:text-xs text-brand-navy-500 dark:text-brand-teal-300 hover:underline font-medium"
+                  >
+                    {beach.contactphone}
+                  </a>
+                </div>
+              )}
+
+              {beach.contactemail && (
+                <div className="flex items-center gap-2">
+                  <Mail className="w-4 h-4 text-brand-navy-500 dark:text-brand-teal-300" />
+                  <a
+                    href={`mailto:${beach.contactemail}`}
+                    className="font-display text-[11px] sm:text-xs text-brand-navy-500 dark:text-brand-teal-300 hover:underline font-medium"
+                  >
+                    {beach.contactemail}
+                  </a>
+                </div>
+              )}
+
+              {beach.facebookurl && (
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4 fill-brand-navy-500 dark:fill-brand-teal-300" viewBox="0 0 24 24">
+                    <path d="M24 12.073c0-6.627-5.373-12-12-12s-12 5.373-12 12c0 5.99 4.388 10.954 10.125 11.854v-8.385H7.078v-3.47h3.047V9.43c0-3.007 1.792-4.669 4.533-4.669 1.312 0 2.686.235 2.686.235v2.953H15.83c-1.491 0-1.956.925-1.956 1.874v2.25h3.328l-.532 3.47h-2.796v8.385C19.612 23.027 24 18.062 24 12.073z" />
+                  </svg>
+                  <a
+                    href={beach.facebookurl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-display text-[11px] sm:text-xs text-brand-navy-500 dark:text-brand-teal-300 hover:underline font-medium inline-flex items-center gap-1"
+                  >
+                    Visit Facebook Page
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              )}
+
+              {beach.instagramurl && (
+                <div className="flex items-center gap-2">
+                  <svg className="w-4 h-4 fill-pink-600" viewBox="0 0 24 24">
+                    <path d="M12 2.163c3.204 0 3.584.012 4.85.07 3.252.148 4.771 1.691 4.919 4.919.058 1.265.069 1.645.069 4.849 0 3.205-.012 3.584-.069 4.849-.149 3.225-1.664 4.771-4.919 4.919-1.266.058-1.644.07-4.85.07-3.204 0-3.584-.012-4.849-.07-3.26-.149-4.771-1.699-4.919-4.92-.058-1.265-.07-1.644-.07-4.849 0-3.204.013-3.583.07-4.849.149-3.227 1.664-4.771 4.919-4.919 1.266-.057 1.645-.069 4.849-.069zm0-2.163c-3.259 0-3.667.014-4.947.072-4.358.2-6.78 2.618-6.98 6.98-.059 1.281-.073 1.689-.073 4.948 0 3.259.014 3.668.072 4.948.2 4.358 2.618 6.78 6.98 6.98 1.281.058 1.689.072 4.948.072 3.259 0 3.668-.014 4.948-.072 4.354-.2 6.782-2.618 6.979-6.98.059-1.28.073-1.689.073-4.948 0-3.259-.014-3.667-.072-4.947-.196-4.354-2.617-6.78-6.979-6.98-1.281-.059-1.69-.073-4.949-.073zm0 5.838c-3.403 0-6.162 2.759-6.162 6.162s2.759 6.163 6.162 6.163 6.162-2.759 6.162-6.163c0-3.403-2.759-6.162-6.162-6.162zm0 10.162c-2.209 0-4-1.79-4-4 0-2.209 1.791-4 4-4s4 1.791 4 4c0 2.21-1.791 4-4 4zm6.406-11.845c-.796 0-1.441.645-1.441 1.44s.645 1.44 1.441 1.44c.795 0 1.439-.645 1.439-1.44s-.644-1.44-1.439-1.44z" />
+                  </svg>
+                  <a
+                    href={beach.instagramurl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="font-display text-[11px] sm:text-xs text-pink-600 hover:underline font-medium inline-flex items-center gap-1"
+                  >
+                    Visit Instagram
+                    <ExternalLink className="w-3 h-3" />
+                  </a>
+                </div>
+              )}
+            </div>
+
+            {/* Plan Your Visit - Desktop Only */}
+            <div className="hidden lg:block space-y-3">
+              <h3 className="font-display text-[11px] sm:text-xs font-bold text-slate-900 dark:text-white">Plan Your Visit</h3>
+              <div className="space-y-3">
+                <Link
+                  href={`/map?beach=${encodeURIComponent(beach.slug)}&route=true`}
+                  className="inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-full bg-[#F4BF3E] hover:bg-[#e0a835] text-white text-[11px] sm:text-xs font-bold transition shadow-sm font-display"
+                >
+                  <Route className="w-4 h-4" />
+                  <span>Get Directions</span>
+                </Link>
+
+                <Link
+                  href="/weather"
+                  className="inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-full bg-white dark:bg-neutral-900 border-2 border-[#F4BF3E] hover:bg-[#F4BF3E]/10 text-[#F4BF3E] text-[11px] sm:text-xs font-bold transition font-display"
+                >
+                  <Sun className="w-4 h-4" />
+                  <span>View Weather</span>
+                </Link>
+              </div>
+            </div>
+
+            {/* Weather & Tide Preview - REMOVED */}
+          </div>
+          )}
+
+          {/* LEFT COLUMN: Main Content */}
+          <div className={`w-full min-w-0 space-y-8 order-2 ${activeTab === 'general' ? 'lg:col-span-2' : 'lg:col-span-1'}`}>
           
           {/* ── TAB 1: GENERAL INFO (Includes 360 Virtual Tour & Highlights) ── */}
           {activeTab === 'general' && (
             <div className="space-y-8">
+              {/* About Section */}
               <div className="space-y-3">
+                <h2 className="font-display text-base font-semibold text-brand-navy-500 dark:text-brand-teal-300">
+                  About {beach.name}
+                </h2>
+                <div className="font-display text-[11px] sm:text-xs leading-relaxed text-slate-700 dark:text-neutral-300 text-justify">
+                  {(() => {
+                    const description = beach.description || 'No beach description provided yet.';
+                    if (description.length <= 150) {
+                      return <p>{description}</p>;
+                    }
+                    if (showFullDescription) {
+                      return (
+                        <>
+                          <p>{description}</p>
+                          <button
+                            onClick={() => setShowFullDescription(false)}
+                            className="text-brand-navy-500 dark:text-brand-teal-300 font-bold hover:underline"
+                          >
+                            See less
+                          </button>
+                        </>
+                      );
+                    }
+                    const sentences = description
+                      .split(/(?<=[.!?])\s+/)
+                      .filter(s => s.trim().length > 0);
+                    const preview = sentences.slice(0, 2).join(' ');
+                    return (
+                      <>
+                        <p>{preview}. </p>
+                        <button
+                          onClick={() => setShowFullDescription(true)}
+                          className="text-brand-navy-500 dark:text-brand-teal-300 font-bold hover:underline"
+                        >
+                          See more
+                        </button>
+                      </>
+                    );
+                  })()}
+                </div>
+              </div>
+
+              {/* 360 Virtual Tour */}
+              <div className="space-y-3">
+                <h2 className="font-display text-base font-semibold text-brand-navy-500 dark:text-brand-teal-300">
+                  360° Virtual Tour
+                </h2>
                 {beach.virtualtoururl ? (
                   <div className="relative w-full h-80 sm:h-96 md:h-[460px] overflow-hidden bg-black border border-slate-200 dark:border-neutral-800 shadow-md">
                     <iframe
@@ -404,7 +475,7 @@ export default function BeachProfilePage({
                     />
                   </div>
                 ) : (
-                  <div className="p-8 text-center border border-dashed border-slate-200 dark:border-neutral-800 bg-white/50 dark:bg-neutral-900/30 space-y-2">
+                  <div className="p-8 text-center bg-white/50 dark:bg-neutral-900/30 space-y-2">
                     <Compass className="w-8 h-8 mx-auto text-brand-navy-500 dark:text-brand-teal-300 opacity-70" />
                     <p className="text-xs font-bold text-slate-700 dark:text-neutral-300">
                       No virtual tour available yet
@@ -416,107 +487,58 @@ export default function BeachProfilePage({
                 )}
               </div>
 
-              {/* Admission & Schedule Highlights */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="space-y-3 rounded-2xl border border-slate-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950 sm:p-5">
-                  <div className="flex items-center gap-2.5">
-                    <span className="flex h-9 w-9 items-center justify-center rounded-lg bg-brand-navy-100 text-brand-navy-500 dark:bg-brand-navy-900/50 dark:text-brand-teal-300">
-                      <Ticket className="h-5 w-5" aria-hidden="true" />
-                    </span>
-                    <span className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-neutral-200">Entrance Admission</span>
+              {/* Quick Facts */}
+              <div className="space-y-3">
+                <h2 className="font-display text-base font-semibold text-brand-navy-500 dark:text-brand-teal-300">
+                  Quick Facts
+                </h2>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+                  <div className="p-4 rounded-xl bg-white dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800">
+                    <p className="font-display text-[10px] font-bold text-slate-400 uppercase">Shoreline</p>
+                    <p className="font-display text-[11px] sm:text-xs font-bold text-brand-navy-500 dark:text-brand-teal-300">Sandy & Pebble</p>
                   </div>
-                  <div className="grid grid-cols-2 gap-2">
-                    {Object.entries(getEntranceFeeValues(beach)).map(([label, amount]) => (
-                      <div key={label} className="flex min-w-0 flex-col items-center justify-center rounded-xl bg-white px-2 py-3 text-center dark:bg-neutral-900/60">
-                        <span className="text-[11px] leading-tight text-slate-700 dark:text-neutral-300 sm:text-xs">
-                          {label === 'adults' ? 'Adult' : 'Children / Senior'}
-                        </span>
-                        <span className="mt-1 break-words text-xl font-extrabold leading-tight text-brand-navy-500 dark:text-brand-teal-300 sm:text-2xl">
-                          {amount}
-                        </span>
-                      </div>
-                    ))}
+                  <div className="p-4 rounded-xl bg-white dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800">
+                    <p className="font-display text-[10px] font-bold text-slate-400 uppercase">Best For</p>
+                    <p className="font-display text-[11px] sm:text-xs font-bold text-brand-navy-500 dark:text-brand-teal-300">Swim & Sunset</p>
                   </div>
-                </div>
-
-                <div className="rounded-2xl border border-slate-200 bg-white p-4 dark:border-neutral-800 dark:bg-neutral-950">
-                  <div className="mb-3 flex items-center gap-2.5">
-                    <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white text-brand-navy-500 dark:bg-neutral-900 dark:text-brand-teal-300">
-                      <Clock className="h-4 w-4" aria-hidden="true" />
-                    </span>
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Operating Schedule</span>
+                  <div className="p-4 rounded-xl bg-white dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800">
+                    <p className="font-display text-[10px] font-bold text-slate-400 uppercase">Parking</p>
+                    <p className="font-display text-[11px] sm:text-xs font-bold text-brand-navy-500 dark:text-brand-teal-300">On-site Area</p>
                   </div>
-                  <div className="space-y-1.5">
-                    {formatOpeningHoursGroups(beach.openinghours).map((group) => (
-                      <div key={`${group.days}-${group.hours}`} className="flex flex-col gap-3 rounded-xl bg-white p-3 dark:bg-neutral-900/60 sm:flex-row sm:items-center sm:justify-between">
-                        <div className="min-w-0">
-                          <span className="block text-[11px] font-medium text-slate-500 dark:text-neutral-400">{group.days}</span>
-                          <span className="block text-base font-extrabold text-brand-navy-500 dark:text-brand-teal-300">{group.hours}</span>
-                        </div>
-                        <OpeningStatusPill hours={beach.openinghours} />
-                      </div>
-                    ))}
+                  <div className="p-4 rounded-xl bg-white dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800">
+                    <p className="font-display text-[10px] font-bold text-slate-400 uppercase">Vibe</p>
+                    <p className="font-display text-[11px] sm:text-xs font-bold text-brand-navy-500 dark:text-brand-teal-300">Family Friendly</p>
                   </div>
                 </div>
               </div>
 
-              {(beach.peakdays || beach.peakhours || beach.bestvisitingtime) && (
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {beach.peakdays && (
-                    <div className="p-4 rounded-2xl bg-white dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 space-y-1">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Peak Visiting Days</span>
-                      <p className="text-sm font-bold text-brand-navy-500 dark:text-brand-teal-300">{beach.peakdays}</p>
-                    </div>
-                  )}
-                  {beach.peakhours && (
-                    <div className="p-4 rounded-2xl bg-white dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 space-y-1">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Peak Visiting Hours</span>
-                      <p className="text-sm font-bold text-brand-navy-500 dark:text-brand-teal-300">{beach.peakhours}</p>
-                    </div>
-                  )}
-                  {beach.bestvisitingtime && (
-                    <div className="p-4 rounded-2xl bg-white dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 space-y-1">
-                      <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Best Time to Visit</span>
-                      <p className="text-sm font-bold text-brand-navy-500 dark:text-brand-teal-300">{beach.bestvisitingtime}</p>
-                    </div>
-                  )}
-                </div>
-              )}
+              {/* Plan Your Visit - Mobile Only */}
+              <div className="lg:hidden space-y-3 pt-4 border-t border-slate-200 dark:border-neutral-800">
+                <h3 className="font-display text-[11px] sm:text-xs font-bold text-slate-900 dark:text-white">Plan Your Visit</h3>
+                <div className="space-y-3">
+                  <Link
+                    href={`/map?beach=${encodeURIComponent(beach.slug)}&route=true`}
+                    className="inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-full bg-[#F4BF3E] hover:bg-[#e0a835] text-white text-[11px] sm:text-xs font-bold transition shadow-sm font-display"
+                  >
+                    <Route className="w-4 h-4" />
+                    <span>Get Directions</span>
+                  </Link>
 
-              {/* Integrated Beach Trip Planner in General Info */}
-              <div className="pt-2">
-                <BeachTripPlanner
-                  beachName={beach.name}
-                  latitude={beach.latitude}
-                  longitude={beach.longitude}
-                />
+                  <Link
+                    href="/weather"
+                    className="inline-flex items-center justify-center gap-2 w-full px-4 py-3 rounded-full bg-white dark:bg-neutral-900 border-2 border-[#F4BF3E] hover:bg-[#F4BF3E]/10 text-[#F4BF3E] text-[11px] sm:text-xs font-bold transition font-display"
+                  >
+                    <Sun className="w-4 h-4" />
+                    <span>View Weather</span>
+                  </Link>
+                </div>
               </div>
             </div>
           )}
 
-          {/* ── TAB: TRIP PLANNER & 4-DAY FORECAST ── */}
-          {activeTab === 'planner' && (
-            <div className="space-y-6">
-              <BeachTripPlanner
-                beachName={beach.name}
-                latitude={beach.latitude}
-                longitude={beach.longitude}
-              />
-            </div>
-          )}
-
-            {/* ── TAB 2: POSTS (Photos & Resort Updates) ── */}
+          {/* ── TAB 2: POSTS (Photos & Resort Updates) ── */}
             {activeTab === 'posts' && (
               <div className="space-y-6">
-                <div>
-                  <h2 className="text-lg font-extrabold text-brand-navy-500 dark:text-brand-teal-300">
-                    Resort Posts & Visual Feed
-                  </h2>
-                  <p className="text-xs text-slate-500 dark:text-neutral-400">
-                    Latest announcements, seaside photos, and shoreline updates directly from {beach.name}.
-                  </p>
-                </div>
-
                 {/* Facebook-Style Feed Cards */}
                 <div className="space-y-5">
                   {resortPosts.length > 0 ? resortPosts.map((post, index) => (
@@ -551,56 +573,32 @@ export default function BeachProfilePage({
                       )}
                     </div>
                   )) : (
-                    <p className="rounded-xl border border-dashed border-slate-200 dark:border-neutral-800 p-6 text-center text-xs text-slate-500 dark:text-neutral-400">
+                    <p className="text-center text-xs text-slate-500 dark:text-neutral-400 py-8 w-full">
                       No resort updates have been posted yet.
                     </p>
                   )}
                 </div>
 
-                {/* Photo Gallery Strip */}
-                {galleryImages.length > 0 && (
-                  <div className="pt-4 space-y-3">
-                    <h3 className="text-sm font-bold text-slate-800 dark:text-neutral-200">
-                      Scenic Photo Gallery
-                    </h3>
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                      {galleryImages.map((img, i) => (
-                        <div key={i} className="relative aspect-video rounded-xl overflow-hidden bg-slate-900 shadow-xs">
-                          <Image src={img} alt="Resort photo" fill className="object-cover" sizes="250px" />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </div>
             )}
 
             {/* ── TAB 3: COTTAGE ── */}
             {activeTab === 'cottages' && (
               <div className="space-y-6">
-                <div>
-                  <h2 className="text-lg font-extrabold text-brand-navy-500 dark:text-brand-teal-300">
-                    Cottage &amp; Tables
-                  </h2>
-                  <p className="text-xs text-justify text-slate-500 dark:text-neutral-400">
-                    Day-use shoreline shade and cottage options available at {beach.name}.
-                  </p>
-                </div>
-
                 {beach.cottagefee && (
                   <div className="p-5 rounded-2xl bg-white dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 flex items-center justify-between shadow-2xs">
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Base Cottage Daily Rate</span>
                       <div className="text-lg font-extrabold text-brand-navy-500 dark:text-brand-teal-300">
-                        ₱{beach.cottagefee}
+                        {beach.cottagefee.startsWith('₱') ? beach.cottagefee : `₱${beach.cottagefee}`}
                       </div>
                     </div>
-                    <span className="text-xs text-slate-500 dark:text-neutral-400">Day access per cottage unit</span>
+                    <Ticket className="w-10 h-10 text-brand-navy-500 dark:text-brand-teal-300 opacity-60" />
                   </div>
                 )}
 
                 {beach.cottages && beach.cottages.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 w-full">
                     {beach.cottages.map((cottage) => (
                       <CottageCard
                         key={cottage.id}
@@ -608,39 +606,16 @@ export default function BeachProfilePage({
                         imageUrl={cottage.imageurl}
                         photoCount={cottage.photos?.length || 0}
                         price={cottage.price}
+                        priceSuffix="/day"
                         capacity={cottage.capacity}
                         description={cottage.description}
-                        onView={() => {
-                          setSelectedDetail({
-                            name: cottage.name,
-                            photos: cottage.photos?.length
-                              ? cottage.photos
-                              : cottage.imageurl
-                                ? [{ imageurl: cottage.imageurl }]
-                                : [],
-                            description: cottage.description,
-                            capacity: cottage.capacity,
-                            price: cottage.price,
-                            priceUnit: 'day',
-                          });
-                        }}
                       />
                     ))}
                   </div>
                 ) : (
-                  <div className="py-14 text-center rounded-2xl border border-dashed border-slate-200 dark:border-neutral-800 bg-white/50 dark:bg-neutral-900/30 p-6 space-y-3">
-                    <div className="w-12 h-12 rounded-full bg-brand-navy-100 dark:bg-neutral-800 text-brand-navy-500 dark:text-brand-teal-300 flex items-center justify-center mx-auto">
-                      <Home className="w-6 h-6" />
-                    </div>
-                    <div className="space-y-1">
-                      <h3 className="text-sm font-bold text-slate-800 dark:text-neutral-200">
-                        No individual cottages listed yet
-                      </h3>
-                      <p className="text-xs text-slate-500 dark:text-neutral-400 max-w-sm mx-auto">
-                        Specific cottage models, capacities, and rates will appear here once registered by {beach.name}.
-                      </p>
-                    </div>
-                  </div>
+                  <p className="text-center text-xs text-slate-500 dark:text-neutral-400 py-8">
+                    No cottage details available yet.
+                  </p>
                 )}
               </div>
             )}
@@ -648,17 +623,8 @@ export default function BeachProfilePage({
             {/* ── TAB 4: FACILITIES ── */}
             {activeTab === 'facilities' && (
               <div className="space-y-6">
-                <div>
-                  <h2 className="text-lg font-extrabold text-brand-navy-500 dark:text-brand-teal-300">
-                    Facilities
-                  </h2>
-                  <p className="text-xs text-justify text-slate-500 dark:text-neutral-400">
-                    Verified guest accommodations, on-site parking, and resort amenities.
-                  </p>
-                </div>
-
                 {beach.facility_items && beach.facility_items.length > 0 ? (
-                  <div className="grid grid-cols-1 gap-4 md:grid-cols-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 lg:gap-8 w-full">
                     {beach.facility_items.map((facility) => (
                       <FacilityCard
                         key={facility.id}
@@ -668,40 +634,20 @@ export default function BeachProfilePage({
                         description={facility.description}
                         basePrice={facility.price}
                         rates={facility.rates}
-                        editable={false}
-                        onView={() => {
-                          setSelectedDetail({
-                            name: facility.name,
-                            photos: facility.photos?.length
-                              ? facility.photos
-                              : facility.imageurl
-                                ? [{ imageurl: facility.imageurl }]
-                                : [],
-                            description: facility.description,
-                            infoLabel: getFacilityCategoryLabel(facility.category),
-                            price: null,
-                            priceLabel: 'Fee',
-                            priceUnit: facility.category.toLowerCase() === 'room' ? 'night' : '',
-                            feeItems: getFacilityFeeItems(facility.rates?.length ? facility.rates : facility.price),
-                          });
-                        }}
+                        onView={() => setSelectedDetail({
+                          name: facility.name,
+                          photos: facility.photos?.map((p) => ({
+                            imageurl: p.imageurl,
+                            sortorder: p.sortorder,
+                          })) || [],
+                        })}
                       />
                     ))}
                   </div>
                 ) : (
-                  <div className="py-14 text-center rounded-2xl border border-dashed border-slate-200 dark:border-neutral-800 bg-white/50 dark:bg-neutral-900/30 p-6 space-y-3">
-                    <div className="w-12 h-12 rounded-full bg-brand-navy-100 dark:bg-neutral-800 text-brand-navy-500 dark:text-brand-teal-300 flex items-center justify-center mx-auto">
-                      <ShieldCheck className="w-6 h-6" />
-                    </div>
-                    <div className="space-y-1">
-                      <h3 className="text-sm font-bold text-slate-800 dark:text-neutral-200">
-                        No facilities listed yet
-                      </h3>
-                      <p className="text-xs text-slate-500 dark:text-neutral-400 max-w-sm mx-auto">
-                        Guest room accommodations, visitor parking areas, and shoreline amenities will be published here once added.
-                      </p>
-                    </div>
-                  </div>
+                  <p className="text-center text-xs text-slate-500 dark:text-neutral-400 py-8">
+                    No facility details available yet.
+                  </p>
                 )}
               </div>
             )}
@@ -709,302 +655,228 @@ export default function BeachProfilePage({
             {/* ── TAB 5: DO'S & DON'TS ── */}
             {activeTab === 'dos' && (
               <div className="space-y-6">
-                <div>
-                  <h2 className="text-lg font-extrabold text-brand-navy-500 dark:text-brand-teal-300">
-                    Do&apos;s &amp; Don&apos;ts (Resort Guidelines)
-                  </h2>
-                  <p className="text-xs text-justify text-slate-500 dark:text-neutral-400">
-                    Guidelines provided by {beach.name}.
+                {resortRules.length > 0 ? (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-8 pl-4">
+                    <div className="space-y-3">
+                      <h3 className="font-display text-base font-semibold text-emerald-600 dark:text-emerald-400">
+                        Do&apos;s
+                      </h3>
+                      {resortRules.filter((rule) => rule.type === 'do').map((rule, index) => (
+                        <div key={rule.id} className="space-y-1">
+                          <h4 className="font-display text-base font-semibold text-emerald-900 dark:text-emerald-300">
+                            <span className="mr-2">{index + 1}.</span>{rule.title}
+                          </h4>
+                          <p className="font-display text-[11px] sm:text-xs text-emerald-800 dark:text-emerald-400">{rule.description}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    <div className="space-y-3">
+                      <h3 className="font-display text-base font-semibold text-red-600 dark:text-red-400">
+                        Don&apos;ts
+                      </h3>
+                      {resortRules.filter((rule) => rule.type === 'dont').map((rule, index) => (
+                        <div key={rule.id} className="space-y-1">
+                          <h4 className="font-display text-base font-semibold text-red-900 dark:text-red-300">
+                            <span className="mr-2">{index + 1}.</span>{rule.title}
+                          </h4>
+                          <p className="font-display text-[11px] sm:text-xs text-red-800 dark:text-red-400">{rule.description}</p>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <p className="text-center text-xs text-slate-500 dark:text-neutral-400 py-8">
+                    No guidelines available yet.
                   </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-4">
-                    <div className="font-bold text-sm text-brand-teal-700 dark:text-brand-teal-300">
-                      <span>Do&apos;s (Recommended Etiquette)</span>
-                    </div>
-
-                    <ul className="space-y-3 text-justify text-xs text-slate-700 dark:text-neutral-300">
-                      {resortRules.filter((rule) => rule.type === 'do').map((rule) => (
-                        <li key={rule.id} className="flex items-start gap-2.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-brand-teal-600 mt-1.5 flex-shrink-0" />
-                          <span className="block text-justify">
-                            <strong>{rule.title}</strong>
-                            {rule.description && `: ${rule.description}`}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                    {resortRules.every((rule) => rule.type !== 'do') && (
-                      <p className="text-xs text-slate-500 dark:text-neutral-400">No guidelines provided.</p>
-                    )}
-                  </div>
-
-                  <div className="space-y-4">
-                    <div className="font-bold text-sm text-rose-700 dark:text-rose-400">
-                      <span>Don&apos;ts (Strictly Prohibited)</span>
-                    </div>
-
-                    <ul className="space-y-3 text-justify text-xs text-slate-700 dark:text-neutral-300">
-                      {resortRules.filter((rule) => rule.type === 'dont').map((rule) => (
-                        <li key={rule.id} className="flex items-start gap-2.5">
-                          <span className="w-1.5 h-1.5 rounded-full bg-rose-500 mt-1.5 flex-shrink-0" />
-                          <span className="block text-justify">
-                            <strong>{rule.title}</strong>
-                            {rule.description && `: ${rule.description}`}
-                          </span>
-                        </li>
-                      ))}
-                    </ul>
-                    {resortRules.every((rule) => rule.type !== 'dont') && (
-                      <p className="text-xs text-slate-500 dark:text-neutral-400">No restrictions provided.</p>
-                    )}
-                  </div>
-                </div>
+                )}
               </div>
             )}
 
             {/* ── TAB 6: REVIEWS (Feedback Page Architecture with Review Form & 6 Rating Categories) ── */}
             {activeTab === 'reviews' && (
-              <div className="space-y-8">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-lg font-extrabold text-brand-navy-500 dark:text-brand-teal-300">
-                      Guest Community Reviews
-                    </h2>
-                    <p className="text-xs text-slate-500 dark:text-neutral-400">
-                      Share your experience and browse authentic visitor feedback for {beach.name}.
-                    </p>
-                  </div>
-                  {Number(beach.averagerating) > 0 && (
-                    <div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-brand-sun-50 dark:bg-brand-navy-900/30 border border-brand-sun-200 dark:border-brand-navy-800 text-brand-navy-700 dark:text-brand-sun-400 text-xs font-extrabold">
-                      <Star className="w-4 h-4 fill-brand-sun-400 text-brand-sun-700" />
-                      <span>{Number(beach.averagerating).toFixed(1)}</span>
-                    </div>
-                  )}
-                </div>
-
+              <div className="w-full space-y-6">
                 {/* Interactive Review Drop Form (Same as Feedback Page) */}
-                {signedIn ? (
-                  <form
-                    onSubmit={async (e) => {
+                <div className="w-full space-y-4">
+                  <h3 className="font-display text-base font-semibold text-brand-navy-500 dark:text-brand-teal-300">Leave a Review</h3>
+                  {!signedIn ? (
+                    <div className="text-center py-4">
+                      <p className="font-display text-[11px] sm:text-xs text-slate-600 dark:text-neutral-400 mb-3">
+                        Sign in to share your experience
+                      </p>
+                      <Link
+                        href={`/login?redirect=/beaches/${encodeURIComponent(beach.slug)}`}
+                        className="inline-flex items-center gap-2 px-4 py-2 bg-brand-navy-500 hover:bg-brand-navy-600 text-white text-[11px] sm:text-xs font-bold rounded-full transition font-display"
+                      >
+                        Sign In
+                      </Link>
+                    </div>
+                  ) : (
+                    <form onSubmit={async (e) => {
                       e.preventDefault();
-                      if (!reviewComment.trim()) {
-                        showToast('Please enter your review text.', 'error');
+                      if (!signedIn) {
+                        showToast('Please sign in to submit a review', 'error');
                         return;
                       }
                       setSubmittingReview(true);
                       try {
-                        const res = await fetch(`/api/beaches/${encodeURIComponent(slug)}/reviews`, {
+                        const res = await fetch(`/api/beaches/${encodeURIComponent(beach.slug)}/reviews`, {
                           method: 'POST',
                           headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ rating: userRating, comment: reviewComment }),
+                          body: JSON.stringify({
+                            rating: userRating,
+                            comment: reviewComment,
+                          }),
                         });
-                        const data = await res.json();
-                        if (!res.ok) throw new Error(data.error || 'Failed to submit review.');
-                        setBeachReviews((prev) => [data, ...prev]);
-                        setReviewCount((prev) => prev + 1);
-                        setReviewComment('');
-                        notifyRealtimeSync('reviews');
-                        refreshBeachAndReviews(false);
-                        showToast('Thank you! Your review has been posted.', 'success');
-                      } catch (err: unknown) {
-                        showToast(err instanceof Error ? err.message : 'Could not submit review.', 'error');
+                        if (res.ok) {
+                          showToast('Review submitted successfully', 'success');
+                          setReviewComment('');
+                          setUserRating(5);
+                          refreshBeachAndReviews(false);
+                        } else {
+                          showToast('Failed to submit review', 'error');
+                        }
+                      } catch {
+                        showToast('Failed to submit review', 'error');
                       } finally {
                         setSubmittingReview(false);
                       }
-                    }}
-                    className="space-y-4 border-y border-slate-200 dark:border-neutral-800 py-6"
-                  >
-                    <div>
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                          Your rating
-                        </span>
-                        <span className="text-xs font-bold text-brand-navy-700 dark:text-brand-sun-400">
-                          {hoverRating !== null ? hoverRating : userRating} {(hoverRating !== null ? hoverRating : userRating) === 1 ? 'Star' : 'Stars'} &bull; {RATING_LABELS[hoverRating !== null ? hoverRating : userRating]}
-                        </span>
-                      </div>
-
-                      {/* Interactive Stars with toggle & hover */}
-                      <div
-                        className="flex items-center gap-1.5"
-                        role="radiogroup"
-                        aria-label="Beach rating"
-                        onMouseLeave={() => setHoverRating(null)}
-                      >
-                        {[1, 2, 3, 4, 5].map((value) => {
-                          const currentVal = hoverRating !== null ? hoverRating : userRating;
-                          const isLit = value <= currentVal;
-                          return (
+                    }} className="w-full space-y-4">
+                      <div>
+                        <label className="block font-display text-[11px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Overall Rating</label>
+                        <div className="flex gap-1">
+                          {[1, 2, 3, 4, 5].map((value) => (
                             <button
                               key={value}
                               type="button"
-                              role="radio"
-                              aria-checked={userRating === value}
-                              aria-label={`${value} stars`}
-                              onClick={() => {
-                                if (userRating === value) {
-                                  setUserRating(Math.max(1, value - 1));
-                                } else {
-                                  setUserRating(value);
-                                }
-                              }}
+                              onClick={() => setUserRating(value)}
                               onMouseEnter={() => setHoverRating(value)}
-                              className="p-1 -m-1 text-slate-300 transition-transform hover:scale-110 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400"
-                              title={`Rate ${value} star${value > 1 ? 's' : ''}`}
+                              onMouseLeave={() => setHoverRating(null)}
+                              className="text-2xl transition-transform hover:scale-110"
                             >
                               <Star
-                                className={`h-7 w-7 transition-colors duration-150 ${
-                                  isLit ? 'fill-brand-sun-400 text-brand-navy-700' : 'text-slate-300 dark:text-neutral-700'
+                                className={`w-6 h-6 ${
+                                  (hoverRating !== null ? hoverRating : userRating) >= value
+                                    ? 'fill-brand-sun-400 text-brand-sun-700'
+                                    : 'text-slate-300'
                                 }`}
                               />
                             </button>
-                          );
-                        })}
+                          ))}
+                        </div>
                       </div>
-                    </div>
 
-                    <div>
-                      <label htmlFor="beach-review-comment" className="block text-xs sm:text-sm font-bold text-slate-900 dark:text-white mb-1.5">
-                        Your review
-                      </label>
-                      <textarea
-                        id="beach-review-comment"
-                        rows={3}
-                        required
-                        minLength={5}
-                        maxLength={1000}
-                        value={reviewComment}
-                        onChange={(e) => setReviewComment(e.target.value)}
-                        placeholder={`Share your experience with cottages, beach swimming, and facilities at ${beach.name}...`}
-                        className="w-full rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 px-4 py-2.5 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:text-slate-400 focus:border-brand-navy-500 dark:focus:border-brand-teal-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:ring-1 focus:ring-brand-teal-400 dark:focus:ring-brand-teal-400 transition"
-                      />
-                    </div>
+                      <div>
+                        <label className="block font-display text-[11px] sm:text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Your Experience</label>
+                        <textarea
+                          value={reviewComment}
+                          onChange={(e) => setReviewComment(e.target.value)}
+                          placeholder="Share what you loved about this beach..."
+                          className="w-full p-3 rounded-xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900 text-slate-900 dark:text-white font-display text-[11px] sm:text-xs resize-none focus:outline-none focus:ring-2 focus:ring-brand-navy-500"
+                          rows={3}
+                          required
+                        />
+                      </div>
 
-                    <button
-                      type="submit"
-                      disabled={submittingReview}
-                      className="px-6 py-2.5 bg-brand-navy-500 hover:bg-brand-navy-600 dark:bg-brand-navy-500 dark:hover:bg-brand-navy-600 disabled:opacity-50 text-white text-xs sm:text-sm font-bold rounded-xl transition-colors shadow-sm cursor-pointer"
-                    >
-                      {submittingReview ? 'Submitting review...' : 'Submit review'}
-                    </button>
-                  </form>
-                ) : (
-                  <div className="py-5 px-6 rounded-2xl bg-white dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                    <div>
-                      <h3 className="text-sm font-bold text-slate-900 dark:text-white">Have you visited {beach.name}?</h3>
-                      <p className="text-xs text-slate-500 dark:text-neutral-400 mt-0.5">Sign in to drop your verified rating and review.</p>
-                    </div>
-                    <Link
-                      href={`/login?redirect=/beaches/${encodeURIComponent(beach.slug)}`}
-                      className="inline-flex items-center justify-center px-5 py-2 bg-[#1F3F74] hover:bg-[#285091] text-white text-xs font-bold rounded-full transition shadow-xs shrink-0"
-                    >
-                      Sign In to Review
-                    </Link>
-                  </div>
-                )}
-
-                {/* Rating Filter Categories: Equal Width across 6 columns (Matches Feedback Page) */}
-                <div className="flex w-full gap-2 overflow-x-auto pt-2 pb-2 snap-x snap-mandatory [scrollbar-width:none] [-ms-overflow-style:none] [&::-webkit-scrollbar]:hidden">
-                  {(
-                    [
-                      { id: 'all', label: 'All' },
-                      { id: 5, label: '5 Stars' },
-                      { id: 4, label: '4 Stars' },
-                      { id: 3, label: '3 Stars' },
-                      { id: 2, label: '2 Stars' },
-                      { id: 1, label: '1 Star' },
-                    ] as const
-                  ).map((category) => {
-                    const count =
-                      category.id === 'all'
-                        ? beachReviews.length
-                        : beachReviews.filter((r) => Math.round(Number(r.rating)) === category.id).length;
-                    const isActive = reviewCategory === category.id;
-
-                    return (
                       <button
-                        key={category.id}
-                        type="button"
-                        onClick={() => setReviewCategory(category.id)}
-                        className={`shrink-0 snap-start py-2 px-3 text-xs font-bold whitespace-nowrap rounded-full flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
-                          isActive
-                            ? 'bg-brand-navy-500 text-white shadow-xs'
-                            : 'bg-white hover:bg-white dark:bg-neutral-900 dark:hover:bg-neutral-800 text-slate-700 dark:text-slate-300'
-                        }`}
+                        type="submit"
+                        disabled={submittingReview}
+                        className="w-full px-4 py-3 bg-[#F4BF3E] hover:bg-[#e0a835] disabled:bg-slate-300 dark:disabled:bg-neutral-700 text-black text-[11px] sm:text-xs font-bold rounded-full transition shadow-md font-display"
                       >
-                        <span>{category.label}</span>
-                        <span
-                          className={`text-[11px] px-1.5 py-0.2 rounded-full ${
-                            isActive
-                              ? 'bg-white/20 text-white'
-                              : 'bg-white dark:bg-neutral-800 text-slate-600 dark:text-slate-400'
-                          }`}
-                        >
-                          {count}
-                        </span>
+                        {submittingReview ? 'Submitting...' : 'Submit Review'}
                       </button>
-                    );
-                  })}
+                    </form>
+                  )}
                 </div>
 
-                {/* Reviews List or Clean Frameless Empty State (NO CARD CONTAINER) */}
-                {(() => {
-                  const filtered =
-                    reviewCategory === 'all'
-                      ? beachReviews
-                      : beachReviews.filter((r) => Math.round(Number(r.rating)) === reviewCategory);
+                {/* Rating Filter Categories: Equal Width across 6 columns (Matches Feedback Page) */}
+                <div className="flex items-center gap-2 overflow-x-auto pb-2 w-full">
+                  <button
+                    onClick={() => setReviewCategory('all')}
+                    className={`px-4 py-2 rounded-full font-display text-[11px] sm:text-xs font-bold whitespace-nowrap transition ${
+                      reviewCategory === 'all'
+                        ? 'bg-brand-navy-500 text-white'
+                        : 'bg-white dark:bg-neutral-900 text-slate-700 dark:text-neutral-300 border border-slate-200 dark:border-neutral-800'
+                    }`}
+                  >
+                    All ({beachReviews.length})
+                  </button>
+                  {[5, 4, 3, 2, 1].map((rating) => (
+                    <button
+                      key={rating}
+                      onClick={() => setReviewCategory(rating as any)}
+                      className={`px-4 py-2 rounded-full font-display text-[11px] sm:text-xs font-bold whitespace-nowrap transition ${
+                        reviewCategory === rating
+                          ? 'bg-brand-navy-500 text-white'
+                          : 'bg-white dark:bg-neutral-900 text-slate-700 dark:text-neutral-300 border border-slate-200 dark:border-neutral-800'
+                      }`}
+                    >
+                      {rating}★ ({beachReviews.filter((r) => r.rating === rating).length})
+                    </button>
+                  ))}
+                </div>
 
-                  if (filtered.length === 0) {
-                    return (
-                      <div className="flex flex-col items-center justify-center py-14 text-center">
-                        <div className="flex h-12 w-12 items-center justify-center rounded-full bg-white text-slate-400 dark:bg-neutral-800 dark:text-neutral-500 mb-2">
-                          <Star className="h-6 w-6 stroke-[1.5]" />
-                        </div>
-                        <p className="text-sm font-semibold text-slate-700 dark:text-neutral-300">
-                          No ratings yet
-                        </p>
-                      </div>
-                    );
-                  }
-
-                  return (
-                    <div className="divide-y divide-slate-200 dark:divide-neutral-800">
-                      {filtered.map((rev) => (
-                        <article key={rev.id} className="py-5 space-y-2">
-                          <div className="flex items-center justify-between gap-4">
-                            <span className="text-xs sm:text-sm font-bold text-slate-900 dark:text-white">
-                              {maskReviewerName(rev.user_name || rev.userName)}
-                            </span>
-                            <div className="flex items-center gap-1" aria-label={`${rev.rating} out of 5 stars`}>
-                              {Array.from({ length: 5 }, (_, index) => (
-                                <Star
-                                  key={index}
-                                  className={`h-3.5 w-3.5 ${
-                                    index < Number(rev.rating)
-                                      ? 'fill-brand-sun-400 text-brand-navy-700'
-                                      : 'text-slate-300 dark:text-neutral-700'
-                                  }`}
-                                />
-                              ))}
+                {/* Reviews List */}
+                {reviewsLoading ? (
+                  <div className="flex items-center justify-center py-8">
+                    <div className="animate-spin rounded-full h-8 w-8 border-2 border-brand-navy-500 border-t-transparent" />
+                  </div>
+                ) : (
+                  <div className="w-full space-y-4">
+                    {(() => {
+                      const filtered = reviewCategory === 'all'
+                        ? beachReviews
+                        : beachReviews.filter((r) => r.rating === reviewCategory);
+                      return filtered.length > 0 ? (
+                        filtered.map((rev) => (
+                          <div key={rev.id} className="w-full p-4 rounded-2xl bg-white dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800">
+                            <div className="flex items-start justify-between mb-2">
+                              <div className="flex items-center gap-2">
+                                <div className="w-8 h-8 rounded-full bg-brand-navy-500 text-white flex items-center justify-center font-display font-bold text-[11px] sm:text-xs">
+                                  {maskReviewerName(rev.reviewer_name || 'A').charAt(0)}
+                                </div>
+                                <div>
+                                  <h4 className="font-display text-[11px] sm:text-xs font-bold text-slate-900 dark:text-white">
+                                    {maskReviewerName(rev.reviewer_name || 'Anonymous')}
+                                  </h4>
+                                  <div className="flex items-center gap-1">
+                                    {[1, 2, 3, 4, 5].map((star) => (
+                                      <Star
+                                        key={star}
+                                        className={`w-3 h-3 ${
+                                          star <= rev.rating
+                                            ? 'fill-brand-sun-400 text-brand-sun-700'
+                                            : 'text-slate-300'
+                                        }`}
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                              {rev.createdat && (
+                                <span className="font-display text-[10px] text-slate-400">
+                                  {new Date(rev.createdat).toLocaleDateString()}
+                                </span>
+                              )}
                             </div>
+                            {rev.comment && (
+                              <p className="font-display text-[11px] sm:text-xs text-slate-700 dark:text-neutral-300 leading-relaxed">
+                                {rev.comment}
+                              </p>
+                            )}
                           </div>
-                          <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
-                            {rev.comment}
-                          </p>
-                          {rev.createdat && (
-                            <time className="block text-[11px] text-slate-400">
-                              {new Date(rev.createdat).toLocaleDateString()}
-                            </time>
-                          )}
-                        </article>
-                      ))}
-                    </div>
-                  );
-                })()}
+                        ))
+                      ) : (
+                        <p className="font-display text-center text-[11px] sm:text-xs text-slate-500 dark:text-neutral-400 py-8">
+                          No reviews yet for this category.
+                        </p>
+                      );
+                    })()}
+                  </div>
+                )}
               </div>
             )}
+          </div>
         </div>
       </div>
 
