@@ -1,13 +1,13 @@
 import React from 'react';
 import Image from 'next/image';
 import { User, Calendar, Trash2 } from 'lucide-react';
-import { StarRating } from './star-rating';
+import { StarRating } from './rating';
 
 interface ReviewCardItem {
   id: string;
   rating: number;
   comment: string;
-  created_at?: string;
+  createdat?: string;
   user_name?: string;
   photos?: string[];
   review_type?: string;
@@ -20,8 +20,8 @@ interface ReviewCardProps {
 }
 
 export function ReviewCard({ review, canDelete = false, onDelete }: ReviewCardProps) {
-  const formattedDate = review.created_at
-    ? new Date(review.created_at).toLocaleDateString('en-US', {
+  const formattedDate = review.createdat
+    ? new Date(review.createdat).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'short',
         day: 'numeric',

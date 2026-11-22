@@ -16,10 +16,10 @@ export async function GET(request: NextRequest) {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.from('application_status_history') as any)
-      .select('id, from_status, to_status, note, created_at')
-      .eq('application_id', applicationId)
-      .order('created_at', { ascending: true });
+    const { data, error } = await (supabase.from('appstatushistory') as any)
+      .select('id, fromstatus, tostatus, note, createdat')
+      .eq('applicationid', applicationId)
+      .order('createdat', { ascending: true });
     if (error) throw error;
     return NextResponse.json({ history: data || [] }, { headers: noStore });
   } catch (error) {

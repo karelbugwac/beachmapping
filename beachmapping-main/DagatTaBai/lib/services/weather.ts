@@ -1,4 +1,4 @@
-import { calculateHeatIndex, type HeatIndexResult } from './heatIndex';
+import { calculateHeatIndex, type HeatIndexResult } from './heatindex';
 
 export interface DailyForecast {
   date: string;

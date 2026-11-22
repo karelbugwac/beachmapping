@@ -13,12 +13,12 @@ async function getAuthorizedBeach(
     return { response: NextResponse.json({ error: auth.message }, { status: auth.status, headers: noStoreHeaders }) };
   }
 
-  let query = (auth.adminClient.from('beaches') as any).select('id, name, owner_id');
+  let query = (auth.adminClient.from('beaches') as any).select('id, name, ownerid');
   if (beachId) query = query.eq('id', beachId);
-  else if (auth.role !== 'admin') query = query.eq('owner_id', auth.user.id);
+  else if (auth.role !== 'admin') query = query.eq('ownerid', auth.user.id);
   const { data: beach, error } = await query.order('name').limit(1).maybeSingle();
   if (error) throw error;
-  if (!beach || (auth.role !== 'admin' && beach.owner_id !== auth.user.id)) {
+  if (!beach || (auth.role !== 'admin' && beach.ownerid !== auth.user.id)) {
     return { response: NextResponse.json({ error: 'Beach not found or unauthorized.' }, { status: 404, headers: noStoreHeaders }) };
   }
   return { beach, auth };
@@ -27,11 +27,11 @@ async function getAuthorizedBeach(
 function toCaretaker(row: Record<string, any>) {
   return {
     id: row.id,
-    name: row.full_name,
+    name: row.fullname,
     contact: row.email,
-    role: row.role_title,
+    role: row.roletitle,
     permissions: Array.isArray(row.permissions) ? row.permissions : [],
-    added_at: row.created_at,
+    added_at: row.createdat,
     status: row.status,
   };
 }
@@ -40,14 +40,14 @@ export async function GET(request: Request) {
   try {
     const auth = await authorizeRoles(['beach_owner', 'beach_manager', 'admin']);
     const url = new URL(request.url);
-    const beachResult = await getAuthorizedBeach(auth, url.searchParams.get('beach_id'));
+    const beachResult = await getAuthorizedBeach(auth, url.searchParams.get('beachid'));
     if ('response' in beachResult) return beachResult.response;
 
-    const { data, error } = await (beachResult.auth.adminClient.from('beach_caretaker_invitations') as any)
-      .select('id, full_name, email, role_title, permissions, created_at, status')
-      .eq('beach_id', beachResult.beach.id)
+    const { data, error } = await (beachResult.auth.adminClient.from('caretakerinvitations') as any)
+      .select('id, fullname, email, roletitle, permissions, createdat, status')
+      .eq('beachid', beachResult.beach.id)
       .neq('status', 'revoked')
-      .order('created_at', { ascending: false });
+      .order('createdat', { ascending: false });
     if (error) throw error;
 
     return NextResponse.json({ items: (data || []).map(toCaretaker) }, { headers: noStoreHeaders });
@@ -84,18 +84,18 @@ export async function POST(request: Request) {
     }
 
     const auth = await authorizeRoles(['beach_owner', 'beach_manager', 'admin']);
-    const beachResult = await getAuthorizedBeach(auth, typeof body.beach_id === 'string' ? body.beach_id : null);
+    const beachResult = await getAuthorizedBeach(auth, typeof body.beachid === 'string' ? body.beachid : null);
     if ('response' in beachResult) return beachResult.response;
-    const { data, error } = await (beachResult.auth.adminClient.from('beach_caretaker_invitations') as any)
+    const { data, error } = await (beachResult.auth.adminClient.from('caretakerinvitations') as any)
       .insert({
-        beach_id: beachResult.beach.id,
-        invited_by: beachResult.auth.user.id,
-        full_name: name,
+        beachid: beachResult.beach.id,
+        invitedby: beachResult.auth.user.id,
+        fullname: name,
         email,
-        role_title: role,
+        roletitle: role,
         permissions,
       })
-      .select('id, full_name, email, role_title, permissions, created_at, status')
+      .select('id, fullname, email, roletitle, permissions, createdat, status')
       .single();
     if (error) throw error;
 
@@ -145,13 +145,13 @@ export async function DELETE(request: Request) {
     if (!id) {
       return NextResponse.json({ error: 'Invitation ID is required.' }, { status: 400, headers: noStoreHeaders });
     }
-    const beachResult = await getAuthorizedBeach(auth, url.searchParams.get('beach_id'));
+    const beachResult = await getAuthorizedBeach(auth, url.searchParams.get('beachid'));
     if ('response' in beachResult) return beachResult.response;
 
-    const { data, error } = await (beachResult.auth.adminClient.from('beach_caretaker_invitations') as any)
-      .update({ status: 'revoked', updated_at: new Date().toISOString() })
+    const { data, error } = await (beachResult.auth.adminClient.from('caretakerinvitations') as any)
+      .update({ status: 'revoked', updatedat: new Date().toISOString() })
       .eq('id', id)
-      .eq('beach_id', beachResult.beach.id)
+      .eq('beachid', beachResult.beach.id)
       .neq('status', 'revoked')
       .select('id');
     if (error) throw error;

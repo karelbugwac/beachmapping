@@ -6,7 +6,7 @@ import { ChevronDown, ChevronUp, GripVertical, Star, Upload, X } from 'lucide-re
 
 export interface PhotoUploadItem {
   id?: string;
-  image_url: string;
+  imageurl: string;
   localId: string;
   previewUrl?: string;
   progress: number;
@@ -86,7 +86,7 @@ export function PhotoUploadGrid<T extends PhotoUploadItem>({
         <div className="mt-3 grid grid-cols-2 gap-3 sm:[grid-template-columns:repeat(auto-fill,minmax(150px,1fr))]">
           {photos.map((photo, index) => {
             const isCover = index === 0;
-            const source = photo.previewUrl || photo.image_url;
+            const source = photo.previewUrl || photo.imageurl;
 
             return (
               <div

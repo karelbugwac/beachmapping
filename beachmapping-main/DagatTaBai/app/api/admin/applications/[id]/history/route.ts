@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { authorizeRoles } from '@/lib/supabase/authorization';
-import { noStoreHeaders } from '@/lib/server/admin-request';
+import { noStoreHeaders } from '@/lib/server/adminrequest';
 
 const isUuid = (value: string) =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
@@ -19,40 +19,40 @@ export async function GET(
       return NextResponse.json({ error: 'Application not found.' }, { status: 404, headers: noStoreHeaders() });
     }
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (auth.adminClient.from('application_status_history') as any)
-      .select('id, from_status, to_status, note, changed_by, created_at')
-      .eq('application_id', id)
-      .order('created_at', { ascending: true });
+    const { data, error } = await (auth.adminClient.from('appstatushistory') as any)
+      .select('id, fromstatus, tostatus, note, changedby, createdat')
+      .eq('applicationid', id)
+      .order('createdat', { ascending: true });
     if (error) throw error;
     const changedByIds = [...new Set((data || [])
-      .map((item: { changed_by: string | null }) => item.changed_by)
+      .map((item: { changedby: string | null }) => item.changedby)
       .filter((id: string | null): id is string => id !== null))];
     let profileNames = new Map<string, string>();
     if (changedByIds.length) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data: profiles, error: profilesError } = await (auth.adminClient.from('profiles') as any)
-        .select('id, full_name')
+        .select('id, fullname')
         .in('id', changedByIds);
       if (profilesError) throw profilesError;
-      profileNames = new Map((profiles || []).map((profile: { id: string; full_name: string | null }) => [
+      profileNames = new Map((profiles || []).map((profile: { id: string; fullname: string | null }) => [
         profile.id,
-        profile.full_name || 'Account holder',
+        profile.fullname || 'Account holder',
       ]));
     }
     const history = (data || []).map((item: {
       id: string;
-      from_status: string | null;
-      to_status: string;
+      fromstatus: string | null;
+      tostatus: string;
       note: string | null;
-      changed_by: string | null;
-      created_at: string;
+      changedby: string | null;
+      createdat: string;
     }) => ({
       id: item.id,
-      from_status: item.from_status,
-      to_status: item.to_status,
+      fromstatus: item.fromstatus,
+      tostatus: item.tostatus,
       note: item.note,
-      changed_by_name: item.changed_by ? profileNames.get(item.changed_by) || 'Account holder' : 'System',
-      created_at: item.created_at,
+      changed_by_name: item.changedby ? profileNames.get(item.changedby) || 'Account holder' : 'System',
+      createdat: item.createdat,
     }));
     return NextResponse.json({ history }, { headers: noStoreHeaders() });
   } catch (error) {

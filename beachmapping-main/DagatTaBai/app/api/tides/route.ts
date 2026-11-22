@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { fetchOpenWatersTides } from '@/lib/services/tides';
-import { calculateCurrentTide, type TideExtreme } from '@/lib/services/tide-interpolation';
+import { calculateCurrentTide, type TideExtreme } from '@/lib/services/tideinterpolation';
 import { checkRateLimit, rateLimitExceededResponse } from '@/lib/utils/rate-limit';
 
 export async function GET(req: NextRequest) {

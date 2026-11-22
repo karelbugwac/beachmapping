@@ -8,15 +8,15 @@ export async function GET() {
 
     const { data: beach, error: beachError } = await (auth.adminClient.from('beaches') as any)
       .select('id')
-      .eq('owner_id', auth.user.id)
+      .eq('ownerid', auth.user.id)
       .maybeSingle();
     if (beachError) throw beachError;
     if (!beach) return NextResponse.json([], { headers: { 'Cache-Control': 'no-store, max-age=0' } });
 
-    const { data, error } = await (auth.adminClient.from('beach_external_links') as any)
+    const { data, error } = await (auth.adminClient.from('externallinks') as any)
       .select('id, label, url')
-      .eq('beach_id', beach.id)
-      .order('created_at', { ascending: true });
+      .eq('beachid', beach.id)
+      .order('createdat', { ascending: true });
     if (error) throw error;
 
     return NextResponse.json(data || [], { headers: { 'Cache-Control': 'no-store, max-age=0' } });
@@ -48,13 +48,13 @@ export async function POST(request: Request) {
 
     const { data: beach, error: beachError } = await (auth.adminClient.from('beaches') as any)
       .select('id')
-      .eq('owner_id', auth.user.id)
+      .eq('ownerid', auth.user.id)
       .maybeSingle();
     if (beachError) throw beachError;
     if (!beach) return NextResponse.json({ error: 'Create your beach listing before adding links.' }, { status: 409 });
 
-    const { data, error } = await (auth.adminClient.from('beach_external_links') as any)
-      .insert({ beach_id: beach.id, label, url: parsedUrl.toString() })
+    const { data, error } = await (auth.adminClient.from('externallinks') as any)
+      .insert({ beachid: beach.id, label, url: parsedUrl.toString() })
       .select('id, label, url')
       .single();
     if (error) throw error;
@@ -74,15 +74,15 @@ export async function DELETE(request: NextRequest) {
 
     const { data: beach, error: beachError } = await (auth.adminClient.from('beaches') as any)
       .select('id')
-      .eq('owner_id', auth.user.id)
+      .eq('ownerid', auth.user.id)
       .maybeSingle();
     if (beachError) throw beachError;
     if (!beach) return NextResponse.json({ error: 'Owner beach not found.' }, { status: 404 });
 
-    const { data, error } = await (auth.adminClient.from('beach_external_links') as any)
+    const { data, error } = await (auth.adminClient.from('externallinks') as any)
       .delete()
       .eq('id', id)
-      .eq('beach_id', beach.id)
+      .eq('beachid', beach.id)
       .select('id');
     if (error) throw error;
     if (!data?.length) return NextResponse.json({ error: 'Link not found.' }, { status: 404 });

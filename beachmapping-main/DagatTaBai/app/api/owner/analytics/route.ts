@@ -13,7 +13,7 @@ export async function GET() {
 
     const { data: beach, error: beachError } = await (auth.adminClient.from('beaches') as any)
       .select('id')
-      .eq('owner_id', auth.user.id)
+      .eq('ownerid', auth.user.id)
       .maybeSingle();
     if (beachError) throw beachError;
 
@@ -22,11 +22,11 @@ export async function GET() {
       return NextResponse.json({ beachVisitors: 0, points: series.points }, { headers: noStore });
     }
 
-    const { data: events, error } = await (auth.adminClient.from('visitor_events') as any)
-      .select('visit_date')
-      .eq('event_type', 'beach_profile_view')
-      .eq('beach_id', beach.id)
-      .gte('visit_date', series.startDate);
+    const { data: events, error } = await (auth.adminClient.from('visitorevents') as any)
+      .select('visitdate')
+      .eq('eventtype', 'beach_profile_view')
+      .eq('beachid', beach.id)
+      .gte('visitdate', series.startDate);
     if (error) throw error;
 
     const points = countVisitorsByDate(series.points, events);

@@ -28,10 +28,10 @@ export async function POST(request: Request) {
   const { ipHash, userAgentHash } = requestHashes(request);
   const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { count, error: countError } = await (adminClient.from('owner_liveness_sessions') as any)
+  const { count, error: countError } = await (adminClient.from('livenesssessions') as any)
     .select('id', { count: 'exact', head: true })
-    .eq('ip_hash', ipHash)
-    .gte('created_at', since);
+    .eq('iphash', ipHash)
+    .gte('createdat', since);
 
   if (countError) {
     console.error('Unable to check owner verification rate limit:', countError);
@@ -48,13 +48,13 @@ export async function POST(request: Request) {
   const challenges = createChallengeOrder(() => randomInt(0, 1_000_000) / 1_000_000);
   const expiresAt = new Date(Date.now() + SESSION_LIFETIME_MS).toISOString();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (adminClient.from('owner_liveness_sessions') as any).insert({
-    nonce_hash: createHash('sha256').update(nonce).digest('hex'),
-    ip_hash: ipHash,
-    user_agent_hash: userAgentHash,
-    user_id: user?.id || null,
+  const { error } = await (adminClient.from('livenesssessions') as any).insert({
+    noncehash: createHash('sha256').update(nonce).digest('hex'),
+    iphash: ipHash,
+    useragenthash: userAgentHash,
+    userid: user?.id || null,
     challenges,
-    expires_at: expiresAt,
+    expiresat: expiresAt,
     attempts: (count || 0) + 1,
   });
 

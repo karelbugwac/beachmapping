@@ -226,7 +226,7 @@ export default function LiveVerification({ onVerified }: LiveVerificationProps) 
     formData.set('nonce', nonce);
     formData.set('challenge_results', JSON.stringify([]));
     formData.set('failure', 'true');
-    formData.set('flagged_reasons', JSON.stringify(flaggedReasonsRef.current));
+    formData.set('flaggedreasons', JSON.stringify(flaggedReasonsRef.current));
     const video = videoRef.current;
     const canvas = canvasRef.current;
     if (video?.videoWidth && video.videoHeight && canvas) {
@@ -607,7 +607,7 @@ export default function LiveVerification({ onVerified }: LiveVerificationProps) 
     const body = new FormData();
     body.set('nonce', activeSession.nonce);
     body.set('challenge_results', JSON.stringify(challengeResultsRef.current));
-    body.set('flagged_reasons', JSON.stringify(flaggedReasonsRef.current));
+    body.set('flaggedreasons', JSON.stringify(flaggedReasonsRef.current));
     body.set('snapshot', blob, 'verification.jpg');
     try {
       const response = await fetch('/api/applications/live-result', { method: 'POST', body });
@@ -675,25 +675,24 @@ export default function LiveVerification({ onVerified }: LiveVerificationProps) 
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-2">
           <Camera className="w-4 h-4 text-brand-navy-500 dark:text-brand-teal-300" />
-          <h3 className="text-xs sm:text-sm font-bold text-brand-navy-500 dark:text-brand-teal-300">
+          <h3 className="font-display text-xs sm:text-sm font-bold text-brand-navy-500 dark:text-brand-teal-300">
             Live Verification <span className="text-red-500">*</span>
           </h3>
         </div>
-        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold ${
-          verified ? 'bg-emerald-600 text-white' : 'bg-red-600 text-white'
-        }`}>
-          {verified && <Check className="w-3.5 h-3.5" />}
-          {verified ? 'Verified' : 'Not Verified'}
-        </span>
+        {verified && (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-emerald-600 text-white">
+            <Check className="w-3.5 h-3.5" />
+            Verified
+          </span>
+        )}
       </div>
 
       {!consented ? (
-        <div className="rounded-2xl border border-slate-200 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-900/50 p-5 space-y-3">
-          <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-300">{LIVE_VERIFICATION_MESSAGES.consent}</p>
-          <p className="text-xs font-semibold text-slate-700 dark:text-neutral-200">
+        <div className="rounded-2xl border border-[#1F3F74]/40 dark:border-[#4987BA]/40 bg-white dark:bg-black p-5 space-y-3">
+          <p className="font-display text-center text-xs text-slate-700 dark:text-neutral-200">
             A live selfie is required before you can submit your application.
           </p>
-          <button type="button" onClick={continueWithConsent} className="inline-flex min-h-11 items-center gap-2 px-6 py-3 rounded-full bg-brand-navy-500 hover:bg-brand-navy-600 text-white text-xs font-bold">
+          <button type="button" onClick={continueWithConsent} className="font-display flex mx-auto min-h-11 items-center gap-2 px-6 py-3 rounded-full bg-[#F4BF3E] hover:bg-[#e0a92e] text-black text-xs font-medium">
             <Camera className="w-4 h-4" /> I agree and continue
           </button>
         </div>
@@ -725,12 +724,12 @@ export default function LiveVerification({ onVerified }: LiveVerificationProps) 
               )}
             </div>
           )}
-          <p aria-live="polite" className="min-h-6 text-center text-sm font-semibold text-slate-700 dark:text-slate-200">
+          <p aria-live="polite" className="font-display min-h-6 text-center text-sm font-semibold text-slate-700 dark:text-slate-200">
             {cameraActive && !cameraError && status === 'Starting camera...' ? <Loader2 className="inline h-4 w-4 animate-spin" /> : null}
             {cameraError || status}
           </p>
           {cameraError && (
-            <div className="flex flex-col items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-center text-xs text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
+            <div className="font-display flex flex-col items-center gap-2 rounded-xl border border-red-200 bg-red-50 p-3 text-center text-xs text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300">
               <span className="inline-flex items-center gap-1.5">
                 <AlertCircle className="h-4 w-4" />
                 {cameraError === LIVE_VERIFICATION_MESSAGES.permissionDenied
@@ -746,11 +745,11 @@ export default function LiveVerification({ onVerified }: LiveVerificationProps) 
               )}
             </div>
           )}
-          {verified && <p className="text-center text-xs font-semibold text-emerald-700 dark:text-emerald-300">Your live check is complete.</p>}
+          {verified && <p className="font-display text-center text-xs font-semibold text-emerald-700 dark:text-emerald-300">Your live check is complete.</p>}
           <canvas ref={canvasRef} className="hidden" />
         </>
       )}
-      {attemptCount > 0 && <p className="text-center text-[11px] text-slate-500">Attempts: {attemptCount}</p>}
+      {attemptCount > 0 && <p className="font-display text-center text-[11px] text-slate-500">Attempts: {attemptCount}</p>}
     </section>
   );
 }

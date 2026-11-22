@@ -11,9 +11,9 @@ import {
   AlertTriangle,
 } from 'lucide-react';
 import type { WeatherData } from '@/lib/services/weather';
-import type { CurrentTideState, TideExtreme } from '@/lib/services/tide-interpolation';
-import { calculateCurrentTide } from '@/lib/services/tide-interpolation';
-import TideCard from '@/components/TideCard';
+import type { CurrentTideState, TideExtreme } from '@/lib/services/tideinterpolation';
+import { calculateCurrentTide } from '@/lib/services/tideinterpolation';
+import TideCard from '@/components/tidecard';
 
 const BINONGKALAN_LATITUDE = 10.6865;
 const BINONGKALAN_LONGITUDE = 124.0152;
@@ -613,10 +613,10 @@ export default function WeatherPage() {
         
         <div className="flex flex-col items-center gap-2 text-center">
           <div className="w-full min-w-0 text-center">
-            <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight leading-tight text-white [text-shadow:0_1px_4px_rgba(0,0,0,0.75)]">
+            <h1 className="font-display text-xl sm:text-2xl font-semibold tracking-tight leading-tight text-white [text-shadow:0_1px_4px_rgba(0,0,0,0.75)]">
               Weather Forecast
             </h1>
-            <p className="mt-1 flex flex-col items-center justify-center gap-0.5 text-sm font-medium leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.75)] sm:flex-row sm:gap-1.5">
+            <p className="font-display mt-1 flex flex-col items-center justify-center gap-0.5 text-sm font-medium leading-tight text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.75)] sm:flex-row sm:gap-1.5">
               <span>Barangay Binongkalan, Catmon, Cebu</span>
               <span className="hidden text-white/80 sm:inline">•</span>
               <span className="font-mono text-xs text-white/90">
@@ -625,7 +625,7 @@ export default function WeatherPage() {
             </p>
           </div>
 
-          <div className="flex items-center justify-center text-sm font-medium text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.75)]">
+          <div className="font-display flex items-center justify-center text-sm font-medium text-white [text-shadow:0_1px_3px_rgba(0,0,0,0.75)]">
             <span className="text-center">
               {formatDate(now)} · <time dateTime={now.toISOString()}>{formatTime(now)}</time>
             </span>
@@ -748,9 +748,9 @@ export default function WeatherPage() {
           <section className="glass-card space-y-3 rounded-3xl p-4 shadow-lg shadow-slate-200/40 dark:shadow-black/10 sm:p-5">
             <div>
               <div className="mb-1 flex items-center gap-2">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-brand-navy-500 dark:text-white">4-day forecast</h2>
+                <h2 className="font-display text-sm font-bold uppercase tracking-wider text-brand-navy-500 dark:text-white">4-day forecast</h2>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">Daily conditions for Barangay Binongkalan</p>
+              <p className="font-display text-xs text-slate-500 dark:text-slate-400">Daily conditions for Barangay Binongkalan</p>
             </div>
 
             <div className="mt-3 space-y-2.5">
@@ -759,17 +759,17 @@ export default function WeatherPage() {
                 return (
                   <div key={day.date} className="grid grid-cols-[3rem_2.5rem_minmax(0,1fr)_auto] items-center gap-2 rounded-2xl border border-white/20 bg-gradient-to-r from-brand-navy-500/90 to-brand-teal-600/85 px-2 py-3 text-white shadow-sm backdrop-blur-md sm:grid-cols-[4rem_3rem_minmax(0,1fr)_auto] sm:gap-3 sm:px-3">
                     <div className="shrink-0 text-center">
-                      <div className="text-xs font-bold uppercase text-white">
+                      <div className="font-display text-xs font-bold uppercase text-white">
                         {date.toLocaleDateString('en-US', { timeZone: 'Asia/Manila', weekday: 'short' }).toUpperCase()}
                       </div>
-                      <div className="mt-0.5 text-[10px] text-white/75">
+                      <div className="font-display mt-0.5 text-[10px] text-white/75">
                         {date.toLocaleDateString('en-US', { timeZone: 'Asia/Manila', month: 'short', day: 'numeric' })}
                       </div>
                     </div>
                     <WeatherIcon code={day.weatherCode} className="h-8 w-8 justify-self-center drop-shadow-sm sm:h-9 sm:w-9" />
                     <div className="min-w-0">
-                      <div className="truncate text-xs font-semibold text-white">{day.conditionLabel}</div>
-                      <div className="mt-1 flex flex-wrap gap-x-2.5 text-[10px] text-white/80">
+                      <div className="font-display truncate text-xs font-semibold text-white">{day.conditionLabel}</div>
+                      <div className="font-display mt-1 flex flex-wrap gap-x-2.5 text-[10px] text-white/80">
                         <span className="inline-flex items-center gap-1">
                           <Droplets className="h-3 w-3 text-brand-teal-100" />
                           {day.precipitationProbability == null ? 'Rain —' : `Rain ${day.precipitationProbability}%`}
@@ -778,8 +778,8 @@ export default function WeatherPage() {
                       </div>
                     </div>
                     <div className="shrink-0 text-right">
-                      <span className="text-lg font-bold text-white">{day.high.toFixed(0)}°</span>
-                      <span className="ml-1.5 text-xs text-white/75">{day.low.toFixed(0)}°</span>
+                      <span className="font-display text-lg font-bold text-white">{day.high.toFixed(0)}°</span>
+                      <span className="font-display ml-1.5 text-xs text-white/75">{day.low.toFixed(0)}°</span>
                     </div>
                   </div>
                 );
@@ -796,20 +796,20 @@ export default function WeatherPage() {
 
         <div className="grid gap-3 md:grid-cols-2">
           <section className="glass-card rounded-3xl p-4 shadow-sm backdrop-blur-xl sm:p-5" aria-label="Sunrise and sunset">
-            <div className="flex items-center gap-2 text-sm font-bold text-brand-navy-500 dark:text-white">
+            <div className="font-display flex items-center gap-2 text-sm font-bold text-brand-navy-500 dark:text-white">
               <Sun className="h-4 w-4 text-brand-navy-700" />
               <h2>Sunrise &amp; sunset</h2>
             </div>
             <div className="mt-4 flex items-end justify-between">
               <div>
                 <Sunrise className="mb-1 h-5 w-5 text-brand-navy-700" />
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Sunrise</div>
-                <div className="text-base font-bold text-slate-800 dark:text-white">{formatWeatherTime(weather?.sunrise ?? null)}</div>
+                <div className="font-display text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Sunrise</div>
+                <div className="font-display text-base font-bold text-slate-800 dark:text-white">{formatWeatherTime(weather?.sunrise ?? null)}</div>
               </div>
               <div className="text-right">
                 <Sunset className="mb-1 ml-auto h-5 w-5 text-brand-navy-700" />
-                <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Sunset</div>
-                <div className="text-base font-bold text-slate-800 dark:text-white">{formatWeatherTime(weather?.sunset ?? null)}</div>
+                <div className="font-display text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Sunset</div>
+                <div className="font-display text-base font-bold text-slate-800 dark:text-white">{formatWeatherTime(weather?.sunset ?? null)}</div>
               </div>
             </div>
             <div className="relative mt-4 h-2 rounded-full bg-slate-200 dark:bg-slate-700" aria-label={daylightProgress === null ? 'Daylight progress unavailable' : `${Math.round(daylightProgress * 100)} percent through daylight`}>
@@ -828,16 +828,16 @@ export default function WeatherPage() {
           <section className="glass-card flex items-center gap-4 rounded-3xl p-4 shadow-sm backdrop-blur-xl sm:p-5" aria-label="Moon phase and moonrise and moonset">
             <MoonPhaseIcon phase={moonPhase} />
             <div className="min-w-0 flex-1">
-              <div className="text-sm font-bold text-brand-navy-500 dark:text-white">{moonPhase.name}</div>
-              <div className="mb-3 text-[10px] text-slate-500 dark:text-slate-400">{moonPhase.illumination}% illuminated</div>
+              <div className="font-display text-sm font-bold text-brand-navy-500 dark:text-white">{moonPhase.name}</div>
+              <div className="font-display mb-3 text-[10px] text-slate-500 dark:text-slate-400">{moonPhase.illumination}% illuminated</div>
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Moonrise</div>
-                  <div className="text-sm font-bold text-slate-800 dark:text-white">{formatWeatherTime(weather?.moonrise ?? null)}</div>
+                  <div className="font-display text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Moonrise</div>
+                  <div className="font-display text-sm font-bold text-slate-800 dark:text-white">{formatWeatherTime(weather?.moonrise ?? null)}</div>
                 </div>
                 <div>
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Moonset</div>
-                  <div className="text-sm font-bold text-slate-800 dark:text-white">{formatWeatherTime(weather?.moonset ?? null)}</div>
+                  <div className="font-display text-[10px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400">Moonset</div>
+                  <div className="font-display text-sm font-bold text-slate-800 dark:text-white">{formatWeatherTime(weather?.moonset ?? null)}</div>
                 </div>
               </div>
             </div>
@@ -848,25 +848,25 @@ export default function WeatherPage() {
           <section className="glass-card min-w-0 space-y-3 rounded-3xl p-4 sm:p-5">
             <div>
               <div className="mb-1 flex items-start gap-2">
-                <h2 className="text-sm font-bold uppercase tracking-wider text-brand-navy-500 dark:text-white">Beach Activity Feasibility</h2>
+                <h2 className="font-display text-sm font-bold uppercase tracking-wider text-brand-navy-500 dark:text-white">Beach Activity Feasibility</h2>
               </div>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <p className="font-display text-xs text-slate-500 dark:text-slate-400">
                 These are just safety announcements, kindly ask resort staff for the latest information.
               </p>
             </div>
 
             <div className="space-y-2">
               {activityAssessments.length === 0 ? (
-                <p className="rounded-xl bg-slate-50 p-4 text-xs leading-5 text-slate-500 dark:bg-neutral-900/60 dark:text-slate-400">
+                <p className="font-display rounded-xl bg-slate-50 p-4 text-xs leading-5 text-slate-500 dark:bg-neutral-900/60 dark:text-slate-400">
                   Activity guidance is unavailable until current weather data loads.
                 </p>
               ) : activityAssessments.map((item) => (
                 <div key={item.activity} className="flex flex-col gap-2 rounded-xl border border-white/50 bg-white/35 p-3 backdrop-blur-md dark:border-white/5 dark:bg-black/20 sm:flex-row sm:items-center sm:justify-between sm:gap-3 sm:p-3.5">
                   <div className="min-w-0 pr-2">
-                    <div className="text-xs font-bold text-slate-900 dark:text-white">{item.activity}</div>
-                    <div className="mt-0.5 break-words text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">{item.note}</div>
+                    <div className="font-display text-xs font-bold text-slate-900 dark:text-white">{item.activity}</div>
+                    <div className="font-display mt-0.5 break-words text-[11px] leading-relaxed text-slate-500 dark:text-slate-400">{item.note}</div>
                   </div>
-                  <span className={`w-fit shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${item.statusStyle}`}>
+                  <span className={`font-display w-fit shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold ${item.statusStyle}`}>
                     {item.status}
                   </span>
                 </div>
@@ -876,8 +876,8 @@ export default function WeatherPage() {
 
           <section className="glass-card space-y-3 rounded-3xl p-4 shadow-lg shadow-slate-200/40 dark:shadow-black/10 sm:p-5">
             <div>
-              <h2 className="mb-1 text-sm font-bold uppercase tracking-wider text-brand-navy-500 dark:text-white">Coastal Reminders</h2>
-              <p className="text-xs text-slate-500 dark:text-slate-400">
+              <h2 className="font-display mb-1 text-sm font-bold uppercase tracking-wider text-brand-navy-500 dark:text-white">Coastal Reminders</h2>
+              <p className="font-display text-xs text-slate-500 dark:text-slate-400">
                 Advisories are based on current weather and tidal readings.
               </p>
             </div>
@@ -894,11 +894,11 @@ export default function WeatherPage() {
                         : 'border-brand-teal-500 bg-white/45 text-slate-700 backdrop-blur-md dark:bg-black/25 dark:text-neutral-300'
                   }`}
                 >
-                  <p className="text-xs font-medium leading-relaxed">{reminder.text}</p>
+                  <p className="font-display text-xs font-medium leading-relaxed">{reminder.text}</p>
                 </div>
               ))}
               {!weather && (
-                <p className="rounded-xl bg-slate-50 p-4 text-xs text-slate-500 dark:bg-neutral-900/60 dark:text-slate-400">
+                <p className="font-display rounded-xl bg-slate-50 p-4 text-xs text-slate-500 dark:bg-neutral-900/60 dark:text-slate-400">
                   Coastal reminders are unavailable until live weather data loads.
                 </p>
               )}

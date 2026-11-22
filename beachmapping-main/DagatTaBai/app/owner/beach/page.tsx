@@ -16,14 +16,14 @@ import {
   X,
 } from 'lucide-react';
 import type { BeachRecord, BeachPhoto, FacilityRate } from '@/lib/db/beaches';
-import type { TourHistoryItem, TourRequestData } from '@/lib/services/tourRequests';
-import { LocationPickerModal } from '@/components/map/location-picker-modal';
-import { VirtualTourModal } from '@/components/virtual-tour-modal';
-import { PhotoViewerModal, type CottagePhoto } from '@/components/cottages/cottage-photos-modal';
-import { CottageCard } from '@/components/cottages/cottage-card';
-import { FacilityCard, type FacilityCardPhoto } from '@/components/FacilityCard';
-import { FacilityCategorySelect } from '@/components/owner/FacilityCategorySelect';
-import { PhotoUploadGrid } from '@/components/owner/PhotoUploadGrid';
+import type { TourHistoryItem, TourRequestData } from '@/lib/services/tourrequests';
+import { LocationPickerModal } from '@/components/map/locationpicker';
+import { VirtualTourModal } from '@/components/vtmodal';
+import { PhotoViewerModal, type CottagePhoto } from '@/components/cottages/cottagephotos';
+import { CottageCard } from '@/components/cottages/cottagecard';
+import { FacilityCard, type FacilityCardPhoto } from '@/components/facilitycard';
+import { FacilityCategorySelect } from '@/components/owner/facilities';
+import { PhotoUploadGrid } from '@/components/owner/photos';
 import { type FacilityCategory, getFacilityCategoryLabel } from '@/lib/utils/facility-categories';
 import { getFacilityFeeItems } from '@/lib/utils/facility-pricing';
 import { getValidBeachCoordinates } from '@/lib/utils/beach-coordinates';
@@ -45,7 +45,7 @@ interface CottageItem {
   price: string;
   capacity: string;
   description: string;
-  image_url: string;
+  imageurl: string;
   photos: CottagePhoto[];
 }
 
@@ -65,7 +65,7 @@ interface FacilityItem {
   category: FacilityCategory | string;
   price: string;
   description: string;
-  image_url: string;
+  imageurl: string;
   rates: FacilityRate[];
   photos: FacilityCardPhoto[];
 }
@@ -113,8 +113,8 @@ function formatFacilityRateInput(amount: number | null): string {
 interface ResortPost {
   id: string;
   caption: string;
-  image_url?: string;
-  created_at: string;
+  imageurl?: string;
+  createdat: string;
   likes: number;
 }
 
@@ -180,18 +180,18 @@ export default function ManageInformationPage() {
     longitude: '',
     cover_image: '',
     profile_image: '',
-    virtual_tour_url: '',
-    contact_phone: '', // 10 numeric digits after +63
-    contact_email: '',
-    facebook_url: '',
-    instagram_url: '',
-    peak_days: '',
-    peak_hours: '',
-    best_visiting_time: '',
+    virtualtoururl: '',
+    contactphone: '', // 10 numeric digits after +63
+    contactemail: '',
+    facebookurl: '',
+    instagramurl: '',
+    peakdays: '',
+    peakhours: '',
+    bestvisitingtime: '',
     entrance_fee_adults: '',
     entrance_fee_children: '',
     entrance_fee_senior: '',
-    cottage_fee: '',
+    cottagefee: '',
     images: [] as Array<BeachPhoto | string>,
   });
 
@@ -250,7 +250,7 @@ export default function ManageInformationPage() {
     price: '',
     capacity: '',
     description: '',
-    image_url: '',
+    imageurl: '',
   });
 
   const [showAddFacility, setShowAddFacility] = useState(false);
@@ -279,7 +279,7 @@ export default function ManageInformationPage() {
     category: 'parking',
     price: '',
     description: '',
-    image_url: '',
+    imageurl: '',
   });
 
   // Do's & Don'ts Rules State
@@ -345,7 +345,7 @@ export default function ManageInformationPage() {
           const b = data[0];
           setBeach(b);
           const catalogResponse = await fetch(
-            `/api/owner/beach/catalog?beach_id=${encodeURIComponent(b.id)}`,
+            `/api/owner/beach/catalog?beachid=${encodeURIComponent(b.id)}`,
             { cache: 'no-store' }
           );
           const catalogData = await catalogResponse.json();
@@ -369,8 +369,8 @@ export default function ManageInformationPage() {
           let feeAdults = '';
           let feeChildren = '';
           let feeSenior = '';
-          if (b.entrance_fee != null) {
-            const parts = String(b.entrance_fee).split('|');
+          if (b.entrancefee != null) {
+            const parts = String(b.entrancefee).split('|');
             feeAdults = (parts[0] || '').replace(/[^\d.]/g, '');
             feeChildren = (parts[1] || '').replace(/[^\d.]/g, '');
             feeSenior = (parts[2] || '').replace(/[^\d.]/g, '');
@@ -380,7 +380,7 @@ export default function ManageInformationPage() {
           if (b.entrance_fee_senior != null) feeSenior = String(b.entrance_fee_senior);
 
           // Strip +63 or non-digits for phone
-          let cleanPhone = b.contact_phone || '';
+          let cleanPhone = b.contactphone || '';
           cleanPhone = cleanPhone.replace(/^\+63\s*/, '').replace(/\D/g, '').slice(0, 10);
 
           setFormData({
@@ -390,20 +390,20 @@ export default function ManageInformationPage() {
             location: b.location || '',
             latitude: b.latitude != null ? String(b.latitude) : '',
             longitude: b.longitude != null ? String(b.longitude) : '',
-            cover_image: b.cover_image || b.cover_image_url || '',
-            profile_image: b.profile_image || b.profile_image_url || '',
-            virtual_tour_url: b.virtual_tour_url || '',
-            contact_phone: cleanPhone,
-            contact_email: b.contact_email || '',
-            facebook_url: b.facebook_url || '',
-            instagram_url: b.instagram_url || '',
-            peak_days: b.peak_days || '',
-            peak_hours: b.peak_hours || '',
-            best_visiting_time: b.best_visiting_time || '',
+            cover_image: b.cover_image || b.coverimageurl || '',
+            profile_image: b.profile_image || b.profileimageurl || '',
+            virtualtoururl: b.virtualtoururl || '',
+            contactphone: cleanPhone,
+            contactemail: b.contactemail || '',
+            facebookurl: b.facebookurl || '',
+            instagramurl: b.instagramurl || '',
+            peakdays: b.peakdays || '',
+            peakhours: b.peakhours || '',
+            bestvisitingtime: b.bestvisitingtime || '',
             entrance_fee_adults: feeAdults,
             entrance_fee_children: feeChildren,
             entrance_fee_senior: feeSenior,
-            cottage_fee: b.cottage_fee || '',
+            cottagefee: b.cottagefee || '',
             images: Array.isArray(b.images) ? b.images : [],
           });
 
@@ -420,11 +420,11 @@ export default function ManageInformationPage() {
           }
 
           // Parse opening hours into schedule
-          if (b.opening_hours) {
+          if (b.openinghours) {
             try {
-              const raw = typeof b.opening_hours === 'string' && b.opening_hours.startsWith('{')
-                ? JSON.parse(b.opening_hours)
-                : b.opening_hours;
+              const raw = typeof b.openinghours === 'string' && b.openinghours.startsWith('{')
+                ? JSON.parse(b.openinghours)
+                : b.openinghours;
 
               if (typeof raw === 'object' && raw !== null) {
                 const nextSched: Record<string, { isOpen: boolean; openTime: string; closeTime: string }> = {};
@@ -467,7 +467,7 @@ export default function ManageInformationPage() {
           setBeach(b);
           setFormData((current) => ({
             ...current,
-            virtual_tour_url: b.virtual_tour_url || current.virtual_tour_url,
+            virtualtoururl: b.virtualtoururl || current.virtualtoururl,
             latitude: b.latitude != null ? String(b.latitude) : current.latitude,
             longitude: b.longitude != null ? String(b.longitude) : current.longitude,
           }));
@@ -480,7 +480,7 @@ export default function ManageInformationPage() {
     const response = await fetch('/api/owner/beach/catalog', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ beach_id: formData.id, type, ...item }),
+      body: JSON.stringify({ beachid: formData.id, type, ...item }),
     });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Failed to save listing.');
@@ -489,7 +489,7 @@ export default function ManageInformationPage() {
   };
 
   const deleteCatalogItem = async (type: 'cottage' | 'facility' | 'post', id: string) => {
-    const params = new URLSearchParams({ type, id, beach_id: formData.id });
+    const params = new URLSearchParams({ type, id, beachid: formData.id });
     const response = await fetch(`/api/owner/beach/catalog?${params}`, { method: 'DELETE' });
     const data = await response.json();
     if (!response.ok) throw new Error(data.error || 'Failed to remove listing.');
@@ -501,8 +501,8 @@ export default function ManageInformationPage() {
     const errs: Record<string, string> = {};
     if (!formData.name.trim()) errs.name = 'Resort establishment name is required.';
     if (!formData.location.trim()) errs.location = 'Resort location address is required.';
-    if (formData.contact_email && !formData.contact_email.includes('@')) {
-      errs.contact_email = 'Valid email address must include "@".';
+    if (formData.contactemail && !formData.contactemail.includes('@')) {
+      errs.contactemail = 'Valid email address must include "@".';
     }
     setErrors(errs);
     return Object.keys(errs).length === 0;
@@ -529,8 +529,8 @@ export default function ManageInformationPage() {
     try {
       const payload = {
         ...formData,
-        contact_phone: formData.contact_phone ? `+63 ${formData.contact_phone}` : '',
-        opening_hours: formatSchedulePayload(),
+        contactphone: formData.contactphone ? `+63 ${formData.contactphone}` : '',
+        openinghours: formatSchedulePayload(),
         rules: JSON.stringify(rulesToSave),
       };
       const res = await fetch('/api/owner/beach', {
@@ -561,8 +561,8 @@ export default function ManageInformationPage() {
     try {
       const payload = {
         ...formData,
-        contact_phone: formData.contact_phone ? `+63 ${formData.contact_phone}` : '',
-        opening_hours: formatSchedulePayload(),
+        contactphone: formData.contactphone ? `+63 ${formData.contactphone}` : '',
+        openinghours: formatSchedulePayload(),
         rules: JSON.stringify(rulesToSave),
       };
 
@@ -660,9 +660,9 @@ export default function ManageInformationPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          beach_id: formData.id,
-          cottage_id: cottageId,
-          storage_path: uploaded.storagePath,
+          beachid: formData.id,
+          cottageid: cottageId,
+          storagepath: uploaded.storagePath,
         }),
       });
       const data = await response.json();
@@ -687,11 +687,11 @@ export default function ManageInformationPage() {
       setCottages((current) => current.map((item) => {
         if (item.id !== cottageId) return item;
         const photos = [...(item.photos || []), data.photo]
-          .sort((left, right) => (left.sort_order || 0) - (right.sort_order || 0));
-        return { ...item, image_url: photos[0]?.image_url || '', photos };
+          .sort((left, right) => (left.sortorder || 0) - (right.sortorder || 0));
+        return { ...item, imageurl: photos[0]?.imageurl || '', photos };
       }));
-      if (data.photo.sort_order === 0) {
-        setNewCottage((current) => ({ ...current, image_url: data.photo.image_url }));
+      if (data.photo.sortorder === 0) {
+        setNewCottage((current) => ({ ...current, imageurl: data.photo.imageurl }));
       }
       return true;
     } catch (error) {
@@ -762,10 +762,10 @@ export default function ManageInformationPage() {
       const previewUrl = URL.createObjectURL(file);
       return {
         localId: generateUUID(),
-        image_url: '',
+        imageurl: '',
         previewUrl,
         file,
-        storage_path: '',
+        storagepath: '',
         progress: 0,
         status: 'uploading',
       };
@@ -783,7 +783,7 @@ export default function ManageInformationPage() {
           price: newCottage.price || '',
           capacity: newCottage.capacity || '',
           description: newCottage.description || '',
-          image_url: '',
+          imageurl: '',
         });
         cottageId = newItem.id;
         cottageEditorIdRef.current = newItem.id;
@@ -836,17 +836,17 @@ export default function ManageInformationPage() {
     cottageStagedRemovalIdsRef.current.add(photo.id);
     const next = cottagePhotos.filter((item) => item.id !== photo.id);
     setCottagePhotos(next);
-    setNewCottage((current) => ({ ...current, image_url: next[0]?.image_url || '' }));
+    setNewCottage((current) => ({ ...current, imageurl: next[0]?.imageurl || '' }));
     setCottageModalStatus(null);
   };
 
   const reorderCottagePhotos = (photos: CottagePhotoDraft[]) => {
     cottageHasChangesRef.current = true;
-    const orderedPhotos = photos.map((photo, sort_order) => ({ ...photo, sort_order }));
+    const orderedPhotos = photos.map((photo, sortorder) => ({ ...photo, sortorder }));
     setCottagePhotos(orderedPhotos);
     setNewCottage((current) => ({
       ...current,
-      image_url: orderedPhotos[0]?.image_url || current.image_url,
+      imageurl: orderedPhotos[0]?.imageurl || current.imageurl,
     }));
   };
 
@@ -871,7 +871,7 @@ export default function ManageInformationPage() {
           price: newCottage.price || '',
           capacity: newCottage.capacity || '',
           description: newCottage.description || '',
-          image_url: '',
+          imageurl: '',
         });
         cottageId = newItem.id;
         cottageEditorIdRef.current = newItem.id;
@@ -918,7 +918,7 @@ export default function ManageInformationPage() {
     setCottageFieldErrors({});
     setCottagePhotos([]);
     setShowDiscardConfirmation(false);
-    setNewCottage({ name: '', price: '', capacity: '', description: '', image_url: '' });
+    setNewCottage({ name: '', price: '', capacity: '', description: '', imageurl: '' });
     cottageSessionPhotoIdsRef.current.clear();
     cottageAllSessionPhotoIdsRef.current.clear();
     cottageSessionStoragePathsRef.current.clear();
@@ -953,8 +953,8 @@ export default function ManageInformationPage() {
         cottageNeedsLegacyRestoreRef.current = Boolean(cottageOriginalSnapshotRef.current);
         for (const photoId of cottageSessionPhotoIdsRef.current) {
           const params = new URLSearchParams({
-            beach_id: formData.id,
-            cottage_id: cottageId,
+            beachid: formData.id,
+            cottageid: cottageId,
             photo_id: photoId,
           });
           const response = await fetch(`/api/owner/beach/cottage-photos?${params}`, { method: 'DELETE' });
@@ -971,7 +971,7 @@ export default function ManageInformationPage() {
           price: original.price,
           capacity: original.capacity,
           description: original.description,
-          image_url: original.image_url,
+          imageurl: original.imageurl,
         });
         cottageNeedsLegacyRestoreRef.current = false;
       }
@@ -980,8 +980,8 @@ export default function ManageInformationPage() {
           ? {
             ...cottage,
             photos: cottage.photos.filter((photo) => !photo.id || !sessionPhotoIds.has(photo.id)),
-            image_url: cottage.photos.find((photo) => !photo.id || !sessionPhotoIds.has(photo.id))?.image_url
-              || cottageOriginalSnapshotRef.current?.image_url
+            imageurl: cottage.photos.find((photo) => !photo.id || !sessionPhotoIds.has(photo.id))?.imageurl
+              || cottageOriginalSnapshotRef.current?.imageurl
               || '',
           }
           : cottage));
@@ -1037,7 +1037,7 @@ export default function ManageInformationPage() {
     setUploadingFacilityPhotos(false);
     setSavingFacility(false);
     setShowDiscardFacilityConfirmation(false);
-    setNewFacility({ title: '', category: 'parking', price: '', description: '', image_url: '' });
+    setNewFacility({ title: '', category: 'parking', price: '', description: '', imageurl: '' });
     facilitySessionPhotosRef.current.clear();
     facilityStagedRemovalIdsRef.current.clear();
     facilityOriginalSnapshotRef.current = null;
@@ -1069,8 +1069,8 @@ export default function ManageInformationPage() {
       .filter((rate) => rate.key === 'custom' && applicableRateOptions.length > 0)
       .map((rate) => ({ localId: generateUUID(), label: rate.label, amount: formatFacilityRateInput(rate.amount) })));
     setFacilityRateErrors({});
-    setFacilityPhotos((facility?.photos || (facility?.image_url
-      ? [{ image_url: facility.image_url, storage_path: '', sort_order: 0 }]
+    setFacilityPhotos((facility?.photos || (facility?.imageurl
+      ? [{ imageurl: facility.imageurl, storagepath: '', sortorder: 0 }]
       : []
     )).map((photo, index) => ({
       ...photo,
@@ -1084,9 +1084,9 @@ export default function ManageInformationPage() {
           category: facility.category,
           price: facility.price,
           description: facility.description,
-          image_url: facility.image_url,
+          imageurl: facility.imageurl,
         }
-      : { title: '', category: 'parking', price: '', description: '', image_url: '' });
+      : { title: '', category: 'parking', price: '', description: '', imageurl: '' });
     setShowAddFacility(true);
   };
 
@@ -1165,9 +1165,9 @@ export default function ManageInformationPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          beach_id: formData.id,
-          facility_id: facilityId,
-          storage_path: uploaded.storagePath,
+          beachid: formData.id,
+          facilityid: facilityId,
+          storagepath: uploaded.storagePath,
         }),
       });
       const data = await response.json();
@@ -1185,12 +1185,12 @@ export default function ManageInformationPage() {
             status: 'saved',
           }
         : item));
-      setNewFacility((current) => ({ ...current, image_url: facilityPhotos[0]?.image_url || data.photo.image_url }));
+      setNewFacility((current) => ({ ...current, imageurl: facilityPhotos[0]?.imageurl || data.photo.imageurl }));
       setFacilities((current) => current.map((facility) => facility.id === facilityId
         ? {
             ...facility,
-            image_url: facility.photos?.length ? facility.image_url : data.photo.image_url,
-            photos: [...(facility.photos || []), data.photo].sort((a, b) => (a.sort_order || 0) - (b.sort_order || 0)),
+            imageurl: facility.photos?.length ? facility.imageurl : data.photo.imageurl,
+            photos: [...(facility.photos || []), data.photo].sort((a, b) => (a.sortorder || 0) - (b.sortorder || 0)),
           }
         : facility));
       if (photo.previewUrl) URL.revokeObjectURL(photo.previewUrl);
@@ -1244,10 +1244,10 @@ export default function ManageInformationPage() {
     setUploadingFacilityPhotos(true);
     const drafts = files.map((file): FacilityPhotoDraft => ({
       localId: generateUUID(),
-      image_url: '',
+      imageurl: '',
       previewUrl: URL.createObjectURL(file),
       file,
-      storage_path: '',
+      storagepath: '',
       progress: 0,
       status: 'uploading',
     }));
@@ -1263,7 +1263,7 @@ export default function ManageInformationPage() {
           category: newFacility.category || 'amenity',
           price: newFacility.price || '',
           description: newFacility.description || '',
-          image_url: newFacility.image_url || '',
+          imageurl: newFacility.imageurl || '',
         });
         facilityId = item.id;
         facilityCreatedIdRef.current = item.id;
@@ -1311,7 +1311,7 @@ export default function ManageInformationPage() {
           category: newFacility.category || 'amenity',
           price: newFacility.price || '',
           description: newFacility.description || '',
-          image_url: newFacility.image_url || '',
+          imageurl: newFacility.imageurl || '',
         });
       const facilityId = editingFacilityId || createdFacility?.id;
       if (!facilityId) throw new Error('Facility listing could not be prepared for photo upload.');
@@ -1347,8 +1347,8 @@ export default function ManageInformationPage() {
     if (uploadedThisSession && editingFacilityId) {
       try {
         const params = new URLSearchParams({
-          beach_id: formData.id,
-          facility_id: editingFacilityId,
+          beachid: formData.id,
+          facilityid: editingFacilityId,
           photo_id: photo.id,
         });
         const response = await fetch(`/api/owner/beach/facility-photos?${params}`, { method: 'DELETE' });
@@ -1368,16 +1368,16 @@ export default function ManageInformationPage() {
       facilityStagedRemovalIdsRef.current.add(photo.id);
     }
     setFacilityPhotos((current) => current.filter((item) => item.localId !== photo.localId));
-    setNewFacility((current) => ({ ...current, image_url: facilityPhotos.filter((item) => item.localId !== photo.localId)[0]?.image_url || '' }));
+    setNewFacility((current) => ({ ...current, imageurl: facilityPhotos.filter((item) => item.localId !== photo.localId)[0]?.imageurl || '' }));
   };
 
   const reorderFacilityPhotos = (photos: FacilityPhotoDraft[]) => {
     facilityHasChangesRef.current = true;
-    const orderedPhotos = photos.map((photo, sort_order) => ({ ...photo, sort_order }));
+    const orderedPhotos = photos.map((photo, sortorder) => ({ ...photo, sortorder }));
     setFacilityPhotos(orderedPhotos);
     setNewFacility((current) => ({
       ...current,
-      image_url: orderedPhotos[0]?.image_url || current.image_url,
+      imageurl: orderedPhotos[0]?.imageurl || current.imageurl,
     }));
   };
 
@@ -1397,8 +1397,8 @@ export default function ManageInformationPage() {
         for (const [path, photoId] of facilitySessionPhotosRef.current) {
           if (photoId) {
             const params = new URLSearchParams({
-              beach_id: formData.id,
-              facility_id: editingFacilityId,
+              beachid: formData.id,
+              facilityid: editingFacilityId,
               photo_id: photoId,
             });
             const response = await fetch(`/api/owner/beach/facility-photos?${params}`, { method: 'DELETE' });
@@ -1491,14 +1491,14 @@ export default function ManageInformationPage() {
                 category: img.category || 'gallery',
                 caption: img.caption || '',
                 photo_url: img.photo_url || (img as any).url || '',
-                created_at: img.created_at,
+                createdat: img.createdat,
               }
         ),
         {
           category: 'gallery',
           caption: galleryFile.name.replace(/\.[^/.]+$/, ''),
           photo_url: newImageUrl,
-          created_at: new Date().toISOString(),
+          createdat: new Date().toISOString(),
         },
       ];
 
@@ -1566,7 +1566,7 @@ export default function ManageInformationPage() {
     try {
       const post = await saveCatalogItem<ResortPost>('post', {
         caption: newPostCaption.trim(),
-        image_url: newPostImage || '',
+        imageurl: newPostImage || '',
       });
       setResortPosts((current) => [post, ...current]);
       setNewPostCaption('');
@@ -1590,13 +1590,13 @@ export default function ManageInformationPage() {
     const cached = tourCacheRef.current.get(beachId);
     if (!force && cached && Date.now() - cached.fetchedAt < 60_000) {
       setTourRequest(cached.request);
-      setTourUrl(cached.request?.requested_tour_url || '');
-      setTourNote(cached.request?.requester_note || '');
+      setTourUrl(cached.request?.requestedtoururl || '');
+      setTourNote(cached.request?.requesternote || '');
       return;
     }
 
     try {
-      const response = await fetch(`/api/owner/beach/tour-request?beach_id=${encodeURIComponent(beachId)}`, {
+      const response = await fetch(`/api/owner/beach/tour-request?beachid=${encodeURIComponent(beachId)}`, {
         cache: 'no-store',
       });
       const result = await response.json();
@@ -1604,8 +1604,8 @@ export default function ManageInformationPage() {
       const record = (result.request || null) as TourRequestData | null;
       tourCacheRef.current.set(beachId, { request: record, fetchedAt: Date.now() });
       setTourRequest(record);
-      setTourUrl(record?.requested_tour_url || '');
-      setTourNote(record?.requester_note || '');
+      setTourUrl(record?.requestedtoururl || '');
+      setTourNote(record?.requesternote || '');
     } catch (error) {
       setToast({ type: 'error', message: error instanceof Error ? error.message : 'Could not load tour status.' });
     }
@@ -1632,9 +1632,9 @@ export default function ManageInformationPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action,
-          beach_id: formData.id,
-          requested_tour_url: tourUrl,
-          requester_note: tourNote,
+          beachid: formData.id,
+          requestedtoururl: tourUrl,
+          requesternote: tourNote,
         }),
       });
       const result = await response.json();
@@ -1645,8 +1645,8 @@ export default function ManageInformationPage() {
       tourHistoryCacheRef.current.delete(record.id);
       setTourHistory([]);
       setTourRequest(record);
-      setTourUrl(record.requested_tour_url);
-      setTourNote(record.requester_note || '');
+      setTourUrl(record.requestedtoururl);
+      setTourNote(record.requesternote || '');
       setToast({
         type: 'success',
         message: action === 'submit_for_review' ? 'Your tour was submitted for review.' : 'Tour details saved.',
@@ -1668,7 +1668,7 @@ export default function ManageInformationPage() {
     setTourHistoryLoading(true);
     try {
       const response = await fetch(
-        `/api/owner/beach/tour-request/history?beach_id=${encodeURIComponent(formData.id)}`,
+        `/api/owner/beach/tour-request/history?beachid=${encodeURIComponent(formData.id)}`,
         { cache: 'no-store' }
       );
       const result = await response.json();
@@ -1704,7 +1704,7 @@ export default function ManageInformationPage() {
     review: 'An admin is reviewing your tour.',
     approved: 'Your tour is live.',
   };
-  const tourUpdatedAt = tourRequest?.updated_at || tourRequest?.status_updated_at;
+  const tourUpdatedAt = tourRequest?.updatedat || tourRequest?.statusupdatedat;
 
   return (
     <div className="space-y-5 max-w-5xl mx-auto pb-20">
@@ -1832,12 +1832,12 @@ export default function ManageInformationPage() {
                   inputMode="numeric"
                   pattern="[0-9]*"
                   maxLength={10}
-                  value={formData.contact_phone}
+                  value={formData.contactphone}
                   onChange={(e) => {
                     let cleaned = e.target.value.replace(/\D/g, '');
                     if (cleaned.startsWith('0')) cleaned = cleaned.substring(1);
                     cleaned = cleaned.slice(0, 10);
-                    setFormData({ ...formData, contact_phone: cleaned });
+                    setFormData({ ...formData, contactphone: cleaned });
                   }}
                   placeholder="917 123 4567"
                   className="w-full min-w-0 px-4 py-2.5 text-xs sm:text-sm bg-transparent placeholder:italic placeholder:text-slate-400 font-normal text-slate-900 dark:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400"
@@ -1853,17 +1853,17 @@ export default function ManageInformationPage() {
               </label>
               <input
                 type="email"
-                value={formData.contact_email}
-                onChange={(e) => setFormData({ ...formData, contact_email: e.target.value })}
+                value={formData.contactemail}
+                onChange={(e) => setFormData({ ...formData, contactemail: e.target.value })}
                 placeholder="e.g. info@catmonbeach.ph"
                 className={`w-full rounded-full border bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 transition-all ${
-                  errors.contact_email
+                  errors.contactemail
                     ? 'border-red-500 ring-1 ring-red-500/20'
                     : 'border-slate-300 dark:border-neutral-700 focus:border-brand-navy-500 focus:ring-2 focus:ring-brand-teal-400/20'
                 }`}
               />
-              {errors.contact_email && (
-                <p className="text-[11px] text-red-500 font-medium pl-3">{errors.contact_email}</p>
+              {errors.contactemail && (
+                <p className="text-[11px] text-red-500 font-medium pl-3">{errors.contactemail}</p>
               )}
             </div>
 
@@ -1875,8 +1875,8 @@ export default function ManageInformationPage() {
               </label>
               <input
                 type="url"
-                value={formData.facebook_url}
-                onChange={(e) => setFormData({ ...formData, facebook_url: e.target.value })}
+                value={formData.facebookurl}
+                onChange={(e) => setFormData({ ...formData, facebookurl: e.target.value })}
                 placeholder="https://facebook.com/your-resort-page"
                 className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-navy-500 focus:ring-2 focus:ring-brand-teal-400/20 transition-all"
               />
@@ -1890,8 +1890,8 @@ export default function ManageInformationPage() {
               </label>
               <input
                 type="url"
-                value={formData.instagram_url}
-                onChange={(e) => setFormData({ ...formData, instagram_url: e.target.value })}
+                value={formData.instagramurl}
+                onChange={(e) => setFormData({ ...formData, instagramurl: e.target.value })}
                 placeholder="https://instagram.com/your-resort"
                 className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-navy-500 focus:ring-2 focus:ring-brand-teal-400/20 transition-all"
               />
@@ -2060,7 +2060,7 @@ export default function ManageInformationPage() {
                   setCottageModalStatus(null);
                   setCottageFieldErrors({});
                   setCottagePhotos([]);
-                  setNewCottage({ name: '', price: '', capacity: '', description: '', image_url: '' });
+                  setNewCottage({ name: '', price: '', capacity: '', description: '', imageurl: '' });
                   setShowAddCottage(true);
                 }}
                 className="inline-flex items-center justify-center w-9 h-9 rounded-full bg-brand-navy-500 hover:bg-brand-navy-600 text-white shadow-xs cursor-pointer transition-all"
@@ -2077,7 +2077,7 @@ export default function ManageInformationPage() {
                 <CottageCard
                   key={item.id}
                   name={item.name}
-                  imageUrl={item.image_url}
+                  imageUrl={item.imageurl}
                   photoCount={item.photos?.length || 0}
                   price={item.price}
                   priceSuffix="/ day"
@@ -2100,8 +2100,8 @@ export default function ManageInformationPage() {
                     setCottageFieldErrors({});
                     setCottagePhotos((item.photos?.length
                       ? item.photos
-                      : item.image_url
-                        ? [{ image_url: item.image_url, storage_path: '', sort_order: 0 }]
+                      : item.imageurl
+                        ? [{ imageurl: item.imageurl, storagepath: '', sortorder: 0 }]
                         : []
                     ).map((photo, index) => ({
                       ...photo,
@@ -2114,7 +2114,7 @@ export default function ManageInformationPage() {
                       price: item.price,
                       capacity: item.capacity,
                       description: item.description,
-                      image_url: item.image_url || '',
+                      imageurl: item.imageurl || '',
                     });
                     setShowAddCottage(true);
                   }}
@@ -2161,7 +2161,7 @@ export default function ManageInformationPage() {
                 key={fac.id}
                 name={fac.title}
                 category={fac.category}
-                imageUrl={fac.photos?.[0]?.image_url || fac.image_url}
+                imageUrl={fac.photos?.[0]?.imageurl || fac.imageurl}
                 description={fac.description}
                 basePrice={fac.price}
                 rates={fac.rates}
@@ -2211,8 +2211,8 @@ export default function ManageInformationPage() {
                 </label>
                 <input
                   type="text"
-                  value={formData.peak_days}
-                  onChange={(e) => setFormData({ ...formData, peak_days: e.target.value })}
+                  value={formData.peakdays}
+                  onChange={(e) => setFormData({ ...formData, peakdays: e.target.value })}
                   placeholder="e.g. Saturdays, Sundays & Holidays"
                   className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-navy-500"
                 />
@@ -2224,8 +2224,8 @@ export default function ManageInformationPage() {
                 </label>
                 <input
                   type="text"
-                  value={formData.peak_hours}
-                  onChange={(e) => setFormData({ ...formData, peak_hours: e.target.value })}
+                  value={formData.peakhours}
+                  onChange={(e) => setFormData({ ...formData, peakhours: e.target.value })}
                   placeholder="e.g. 10:00 AM – 3:00 PM"
                   className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-navy-500"
                 />
@@ -2237,8 +2237,8 @@ export default function ManageInformationPage() {
                 </label>
                 <input
                   type="text"
-                  value={formData.best_visiting_time}
-                  onChange={(e) => setFormData({ ...formData, best_visiting_time: e.target.value })}
+                  value={formData.bestvisitingtime}
+                  onChange={(e) => setFormData({ ...formData, bestvisitingtime: e.target.value })}
                   placeholder="e.g. Morning low tide"
                   className="w-full rounded-full border border-slate-300 dark:border-neutral-700 bg-white dark:bg-neutral-950 py-2.5 px-4 text-xs sm:text-sm text-slate-900 dark:text-white placeholder:italic focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-navy-500"
                 />
@@ -2503,7 +2503,7 @@ export default function ManageInformationPage() {
                             {formData.name || 'Resort Admin'}
                           </span>
                           <span className="text-[10px] text-slate-400 font-medium">
-                            {post.created_at} &bull; Public Post
+                            {post.createdat} &bull; Public Post
                           </span>
                         </div>
                       </div>
@@ -2531,9 +2531,9 @@ export default function ManageInformationPage() {
                       {post.caption}
                     </p>
 
-                    {post.image_url && (
+                    {post.imageurl && (
                       <div className="relative w-full h-64 rounded-xl overflow-hidden border border-slate-200 dark:border-neutral-800">
-                        <Image src={post.image_url} alt="Post image" fill className="object-cover" />
+                        <Image src={post.imageurl} alt="Post image" fill className="object-cover" />
                       </div>
                     )}
                   </div>
@@ -2826,12 +2826,12 @@ export default function ManageInformationPage() {
               </div>
             )}
 
-            {currentTourStatus === 'in_progress' && tourRequest?.status_note && (
+            {currentTourStatus === 'in_progress' && tourRequest?.statusnote && (
               <div className="rounded-xl border border-brand-sun-300 bg-brand-sun-50 p-4 dark:border-brand-sun-700 dark:bg-brand-sun-900/20">
                 <p className="text-xs font-bold text-brand-navy-700 dark:text-brand-sun-300">Changes requested</p>
-                <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700 dark:text-neutral-200">{tourRequest.status_note}</p>
+                <p className="mt-1 whitespace-pre-wrap text-sm text-slate-700 dark:text-neutral-200">{tourRequest.statusnote}</p>
                 <p className="mt-2 text-[11px] text-slate-500 dark:text-neutral-400">
-                  {new Date(tourRequest.status_updated_at).toLocaleString()}
+                  {new Date(tourRequest.statusupdatedat).toLocaleString()}
                 </p>
               </div>
             )}
@@ -2906,10 +2906,10 @@ export default function ManageInformationPage() {
               )}
             </div>
 
-            {formData.virtual_tour_url && (
+            {formData.virtualtoururl && (
               <div className="relative aspect-16/9 overflow-hidden rounded-2xl border border-slate-200 dark:border-neutral-800 bg-black">
                 <iframe
-                  src={formData.virtual_tour_url}
+                  src={formData.virtualtoururl}
                   title="360 Tour"
                   className="w-full h-full border-0"
                   allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; magnetometer; picture-in-picture; web-share; vr; xr-spatial-tracking"
@@ -2941,10 +2941,10 @@ export default function ManageInformationPage() {
                         {tourHistory.map((item) => (
                           <li key={item.id} className="border-l-2 border-brand-teal-400 pl-3">
                             <p className="text-xs font-semibold text-slate-800 dark:text-neutral-100">
-                              {item.from_status ? `${item.from_status.replace('_', ' ')} → ` : ''}{item.to_status.replace('_', ' ')}
+                              {item.fromstatus ? `${item.fromstatus.replace('_', ' ')} → ` : ''}{item.tostatus.replace('_', ' ')}
                               {' · '}{item.changed_by_name || (item.changed_by_role === 'admin' ? 'Admin' : 'Owner')}
                             </p>
-                            <p className="text-[11px] text-slate-500 dark:text-neutral-400">{new Date(item.created_at).toLocaleString()}</p>
+                            <p className="text-[11px] text-slate-500 dark:text-neutral-400">{new Date(item.createdat).toLocaleString()}</p>
                             {item.note && <p className="mt-1 whitespace-pre-wrap text-xs text-slate-600 dark:text-neutral-300">{item.note}</p>}
                           </li>
                         ))}
@@ -2979,8 +2979,8 @@ export default function ManageInformationPage() {
             description: viewingCottagePhotos.description,
             photos: viewingCottagePhotos.photos?.length
               ? viewingCottagePhotos.photos
-              : viewingCottagePhotos.image_url
-                ? [{ image_url: viewingCottagePhotos.image_url }]
+              : viewingCottagePhotos.imageurl
+                ? [{ imageurl: viewingCottagePhotos.imageurl }]
                 : [],
           }}
           onClose={() => setViewingCottagePhotos(null)}
@@ -2991,9 +2991,9 @@ export default function ManageInformationPage() {
           item={{
             name: viewingFacility.title,
             photos: viewingFacility.photos?.length
-              ? [...viewingFacility.photos].sort((left, right) => (left.sort_order || 0) - (right.sort_order || 0))
-              : viewingFacility.image_url
-                ? [{ image_url: viewingFacility.image_url }]
+              ? [...viewingFacility.photos].sort((left, right) => (left.sortorder || 0) - (right.sortorder || 0))
+              : viewingFacility.imageurl
+                ? [{ imageurl: viewingFacility.imageurl }]
                 : [],
             description: viewingFacility.description,
             infoLabel: getFacilityCategoryLabel(viewingFacility.category),
@@ -3059,12 +3059,12 @@ export default function ManageInformationPage() {
                     price: newCottage.price,
                     capacity: newCottage.capacity || '',
                     description: newCottage.description || '',
-                    image_url: newCottage.image_url || '',
+                    imageurl: newCottage.imageurl || '',
                   });
                   for (const photoId of cottageStagedRemovalIdsRef.current) {
                     const params = new URLSearchParams({
-                      beach_id: formData.id,
-                      cottage_id: item.id,
+                      beachid: formData.id,
+                      cottageid: item.id,
                       photo_id: photoId,
                     });
                     const response = await fetch(`/api/owner/beach/cottage-photos?${params}`, { method: 'DELETE' });
@@ -3077,8 +3077,8 @@ export default function ManageInformationPage() {
                       method: 'PATCH',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({
-                        beach_id: formData.id,
-                        cottage_id: item.id,
+                        beachid: formData.id,
+                        cottageid: item.id,
                         photo_ids: orderedPhotoIds,
                       }),
                     });
@@ -3089,16 +3089,16 @@ export default function ManageInformationPage() {
                     ? current.map((cottage) => cottage.id === item.id
                       ? {
                         ...item,
-                        image_url: cottagePhotos.length
-                          ? cottagePhotos.find((photo) => photo.id)?.image_url || item.image_url
+                        imageurl: cottagePhotos.length
+                          ? cottagePhotos.find((photo) => photo.id)?.imageurl || item.imageurl
                           : '',
                         photos: cottagePhotos.filter((photo) => photo.id),
                       }
                       : cottage)
                     : [...current, {
                       ...item,
-                      image_url: cottagePhotos.length
-                        ? cottagePhotos.find((photo) => photo.id)?.image_url || item.image_url
+                      imageurl: cottagePhotos.length
+                        ? cottagePhotos.find((photo) => photo.id)?.imageurl || item.imageurl
                         : '',
                       photos: cottagePhotos.filter((photo) => photo.id),
                     }]);
@@ -3336,7 +3336,7 @@ export default function ManageInformationPage() {
                     category: newFacility.category || 'amenity',
                     price: newFacility.price || '',
                     description: newFacility.description || '',
-                    image_url: facilityPhotos[0]?.image_url || '',
+                    imageurl: facilityPhotos[0]?.imageurl || '',
                     rates,
                   });
                   if (!editingFacilityId) {
@@ -3346,8 +3346,8 @@ export default function ManageInformationPage() {
                   }
                   for (const photoId of facilityStagedRemovalIdsRef.current) {
                     const params = new URLSearchParams({
-                      beach_id: formData.id,
-                      facility_id: item.id,
+                      beachid: formData.id,
+                      facilityid: item.id,
                       photo_id: photoId,
                     });
                     const response = await fetch(`/api/owner/beach/facility-photos?${params}`, { method: 'DELETE' });
@@ -3360,8 +3360,8 @@ export default function ManageInformationPage() {
                       method: 'PATCH',
                       headers: { 'Content-Type': 'application/json' },
                       body: JSON.stringify({
-                        beach_id: formData.id,
-                        facility_id: item.id,
+                        beachid: formData.id,
+                        facilityid: item.id,
                         photo_ids: orderedPhotoIds,
                       }),
                     });
@@ -3370,7 +3370,7 @@ export default function ManageInformationPage() {
                   }
                   item = {
                     ...item,
-                    image_url: facilityPhotos[0]?.image_url || '',
+                    imageurl: facilityPhotos[0]?.imageurl || '',
                     rates,
                     photos: facilityPhotos.filter((photo) => photo.id),
                   };
@@ -3845,7 +3845,7 @@ export default function ManageInformationPage() {
         <VirtualTourModal
           isOpen={showTourPreview}
           onClose={() => setShowTourPreview(false)}
-          tourUrl={tourRequest?.requested_tour_url || formData.virtual_tour_url}
+          tourUrl={tourRequest?.requestedtoururl || formData.virtualtoururl}
           beachName={formData.name || 'Resort 360° Virtual Tour'}
         />
       )}
@@ -3865,11 +3865,11 @@ export default function ManageInformationPage() {
               method: 'POST',
               headers: { 'Content-Type': 'application/json' },
               body: JSON.stringify({
-                beach_id: formData.id,
-                requested_latitude: Number(coordinates.latitude),
-                requested_longitude: Number(coordinates.longitude),
-                requested_location: coordinates.location,
-                requester_note: coordinates.note,
+                beachid: formData.id,
+                requestedlatitude: Number(coordinates.latitude),
+                requestedlongitude: Number(coordinates.longitude),
+                requestedlocation: coordinates.location,
+                requesternote: coordinates.note,
               }),
             });
             const data = await response.json();

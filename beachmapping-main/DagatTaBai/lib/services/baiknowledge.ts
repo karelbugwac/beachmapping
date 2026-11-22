@@ -177,7 +177,7 @@ export interface QuickPromptQuestion {
 
 export const BAI_SUGGESTED_QUESTIONS: QuickPromptQuestion[] = [
   { label: 'Nearest beach?', question: 'Which beach is the nearest?' },
-  { label: 'Entrance & cottage fees?', question: 'What are the entrance and cottage fees?' },
+  { label: 'Fees & cottages?', question: 'What are the entrance and cottage fees?' },
   { label: 'Safest beach?', question: 'Which beach is the safest?' },
   { label: 'Rocky or sandy?', question: 'Are the beaches rocky or sandy?' },
 ];

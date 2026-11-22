@@ -8,9 +8,9 @@ export async function GET() {
     if (!auth.authorized) return NextResponse.json({ error: auth.message }, { status: auth.status });
 
     const { data: admins, error } = await (auth.adminClient.from('profiles') as any)
-      .select('id, full_name, email, role, created_at, updated_at')
+      .select('id, fullname, email, role, createdat, updatedat')
       .in('role', ['admin', 'beach_manager'])
-      .order('created_at', { ascending: true });
+      .order('createdat', { ascending: true });
 
     if (error) throw error;
     return NextResponse.json({ success: true, admins: admins || [] });

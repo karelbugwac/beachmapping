@@ -6,17 +6,14 @@ import { useRouter } from 'next/navigation';
 import {
   Upload,
   CheckCircle2,
-  FileText,
   X,
-  ShieldCheck,
-  MapPin,
   ChevronRight,
   ChevronLeft,
   Check,
-  User,
   AlertCircle,
 } from 'lucide-react';
-import LiveVerification from '@/components/applications/live-verification';
+import LiveVerification from '@/components/applications/verification';
+import IdCapture, { type IdCaptureHandle } from '@/components/applications/idcapture';
 import { prepareImageForUpload } from '@/lib/utils/image-compression';
 import { formatImageSize } from '@/lib/utils/image-upload-config';
 import { detectImageMime, validateImageFile } from '@/lib/utils/image-validation';
@@ -26,7 +23,7 @@ import {
   FULL_NAME_MESSAGES,
   validateFullName,
 } from '@/lib/validation/fullName';
-import { useAuthSession } from '@/lib/client/auth-session-store';
+import { useAuthSession } from '@/lib/client/session';
 import {
   getAccountApplicationName,
   getApplicationNamePrefill,
@@ -67,19 +64,19 @@ export default function BeachOwnerApplicationPage() {
 
   // Form State
   const [formData, setFormData] = useState({
-    applicant_full_name: '',
-    applicant_email: '',
-    business_name: '',
-    beach_name: '',
-    beach_location: DEFAULT_BEACH_ADDRESS,
+    applicantfullname: '',
+    applicantemail: '',
+    businessname: '',
+    beachname: '',
+    beachlocation: DEFAULT_BEACH_ADDRESS,
     contact_info: '',
     agreeToTerms: false,
   });
   const hasSavedDraft = Boolean(
-    formData.applicant_full_name ||
-    formData.applicant_email ||
-    formData.business_name ||
-    formData.beach_name ||
+    formData.applicantfullname ||
+    formData.applicantemail ||
+    formData.businessname ||
+    formData.beachname ||
     formData.contact_info
   );
 
@@ -106,12 +103,14 @@ export default function BeachOwnerApplicationPage() {
   // Files and Live Previews
   const [permitPreview, setPermitPreview] = useState<FilePreviewState | null>(null);
   const [ownershipPreview, setOwnershipPreview] = useState<FilePreviewState | null>(null);
+  const [idPreview, setIdPreview] = useState<FilePreviewState | null>(null);
 
   const [livenessNonce, setLivenessNonce] = useState<string | null>(null);
 
   // Input refs for file replacement
   const permitInputRef = useRef<HTMLInputElement>(null);
   const ownershipInputRef = useRef<HTMLInputElement>(null);
+  const idCaptureRef = useRef<IdCaptureHandle>(null);
   const addressInputRef = useRef<HTMLInputElement>(null);
   const addressDefaultFocusHandledRef = useRef(false);
 
@@ -135,16 +134,16 @@ export default function BeachOwnerApplicationPage() {
           const application = data.application;
           setFormData((current) => ({
             ...current,
-            applicant_full_name: application.applicant_full_name || '',
-            applicant_email: application.applicant_email || '',
-            business_name: application.business_name || '',
-            beach_name: application.beach_name || '',
-            beach_location: application.beach_location || DEFAULT_BEACH_ADDRESS,
-            contact_info: String(application.contact_phone || '').replace(/^\+?63\s*/, '').replace(/\D/g, '').slice(-10),
+            applicantfullname: application.applicantfullname || '',
+            applicantemail: application.applicantemail || '',
+            businessname: application.businessname || '',
+            beachname: application.beachname || '',
+            beachlocation: application.beachlocation || DEFAULT_BEACH_ADDRESS,
+            contact_info: String(application.contactphone || '').replace(/^\+?63\s*/, '').replace(/\D/g, '').slice(-10),
             agreeToTerms: false,
           }));
           setRevisionId(application.id);
-          setRevisionVersion(application.status_updated_at);
+          setRevisionVersion(application.statusupdatedat);
           setCurrentStep(2);
           nameWasEditedRef.current = true;
           setDraftReadyFor(draftKey);
@@ -193,7 +192,7 @@ export default function BeachOwnerApplicationPage() {
       if (prefilledName) {
         void Promise.resolve().then(() => {
           if (!active) return;
-          setFormData((current) => ({ ...current, applicant_full_name: prefilledName }));
+          setFormData((current) => ({ ...current, applicantfullname: prefilledName }));
           setDraftReadyFor(draftKey);
         });
         return () => { active = false; };
@@ -246,10 +245,10 @@ export default function BeachOwnerApplicationPage() {
 
   // ── STEP VALIDATION HELPERS ──────────────────────────────────
   const isStep2Valid = () => {
-    const nameValid = validateFullName(formData.applicant_full_name).ok && !fullNameInputError;
-    const emailVal = formData.applicant_email.trim();
+    const nameValid = validateFullName(formData.applicantfullname).ok && !fullNameInputError;
+    const emailVal = formData.applicantemail.trim();
     const mobileVal = formData.contact_info.trim();
-    const addressValid = validateBeachAddress(formData.beach_location).ok;
+    const addressValid = validateBeachAddress(formData.beachlocation).ok;
 
     if (!nameValid) return false;
     if (!emailVal || !emailVal.includes('@')) return false;
@@ -262,8 +261,8 @@ export default function BeachOwnerApplicationPage() {
   };
 
   const isStep3Valid = () => {
-    const businessVal = formData.business_name.trim();
-    const beachVal = formData.beach_name.trim();
+    const businessVal = formData.businessname.trim();
+    const beachVal = formData.beachname.trim();
     return Boolean(businessVal && beachVal);
   };
 
@@ -271,14 +270,14 @@ export default function BeachOwnerApplicationPage() {
   const getFullNameError = () => {
     return fullNameInputError || (
       attemptedStep2 || fullNameTouched
-        ? validateFullName(formData.applicant_full_name).error
+        ? validateFullName(formData.applicantfullname).error
         : null
     );
   };
 
   const getEmailError = () => {
     if (pendingEmailError) return pendingEmailError;
-    const val = formData.applicant_email.trim();
+    const val = formData.applicantemail.trim();
     if (attemptedStep2 && !val) {
       return 'Please enter your email address.';
     }
@@ -307,21 +306,21 @@ export default function BeachOwnerApplicationPage() {
 
   const getAddressError = () => {
     if (!attemptedStep2 && !addressTouched) return null;
-    return validateBeachAddress(formData.beach_location).error;
+    return validateBeachAddress(formData.beachlocation).error;
   };
 
-  const addressValidation = validateBeachAddress(formData.beach_location);
+  const addressValidation = validateBeachAddress(formData.beachlocation);
   const addressWarning = addressValidation.ok ? addressValidation.warning : null;
 
   const getBusinessNameError = () => {
-    if (attemptedStep3 && !formData.business_name.trim()) {
+    if (attemptedStep3 && !formData.businessname.trim()) {
       return 'Please enter your registered business name.';
     }
     return null;
   };
 
   const getBeachNameError = () => {
-    if (attemptedStep3 && !formData.beach_name.trim()) {
+    if (attemptedStep3 && !formData.beachname.trim()) {
       return 'Please enter your beach / resort name.';
     }
     return null;
@@ -332,12 +331,13 @@ export default function BeachOwnerApplicationPage() {
     return () => {
       if (permitPreview?.url) URL.revokeObjectURL(permitPreview.url);
       if (ownershipPreview?.url) URL.revokeObjectURL(ownershipPreview.url);
+      if (idPreview?.url) URL.revokeObjectURL(idPreview.url);
       if (errorTimeoutRef.current) clearTimeout(errorTimeoutRef.current);
     };
-  }, [permitPreview, ownershipPreview]);
+  }, [permitPreview, ownershipPreview, idPreview]);
 
   // Handle File Uploads with live preview
-  const handleFileSelection = async (file: File | null, type: 'permit' | 'ownership') => {
+  const handleFileSelection = async (file: File | null, type: 'permit' | 'ownership' | 'id') => {
     if (!file) return;
 
     if (file.size < 1 || file.size > 10 * 1024 * 1024) {
@@ -377,28 +377,33 @@ export default function BeachOwnerApplicationPage() {
     if (type === 'permit') {
       if (permitPreview?.url) URL.revokeObjectURL(permitPreview.url);
       setPermitPreview(previewData);
-    } else {
+    } else if (type === 'ownership') {
       if (ownershipPreview?.url) URL.revokeObjectURL(ownershipPreview.url);
       setOwnershipPreview(previewData);
+    } else {
+      if (idPreview?.url) URL.revokeObjectURL(idPreview.url);
+      setIdPreview(previewData);
     }
   };
 
-  const removeFile = (type: 'permit' | 'ownership') => {
+  const removeFile = (type: 'permit' | 'ownership' | 'id') => {
     if (type === 'permit') {
       if (permitPreview?.url) URL.revokeObjectURL(permitPreview.url);
       setPermitPreview(null);
       if (permitInputRef.current) permitInputRef.current.value = '';
-    } else {
+    } else if (type === 'ownership') {
       if (ownershipPreview?.url) URL.revokeObjectURL(ownershipPreview.url);
       setOwnershipPreview(null);
       if (ownershipInputRef.current) ownershipInputRef.current.value = '';
+    } else {
+      if (idPreview?.url) URL.revokeObjectURL(idPreview.url);
+      setIdPreview(null);
     }
   };
 
   // Navigation handlers with standard 5-second red floating toast on missing fields
   const handleNextStep = () => {
     if (currentStep === 1) {
-      setFullNameTouched(true);
       setCurrentStep(2);
       window.scrollTo({ top: 120, behavior: 'smooth' });
       return;
@@ -448,14 +453,14 @@ export default function BeachOwnerApplicationPage() {
     setAttemptedStep4(true);
     setAttemptedStep2(true);
 
-    const nameValidation = validateFullName(formData.applicant_full_name);
+    const nameValidation = validateFullName(formData.applicantfullname);
     if (!fullNameInputError) setFullNameInputError(nameValidation.error);
     if (!nameValidation.ok || fullNameInputError) {
       triggerError(fullNameInputError || nameValidation.error || FULL_NAME_MESSAGES.required);
       return;
     }
 
-    const addressValidation = validateBeachAddress(formData.beach_location);
+    const addressValidation = validateBeachAddress(formData.beachlocation);
     if (!addressValidation.ok) {
       setAddressTouched(true);
       setCurrentStep(2);
@@ -463,7 +468,7 @@ export default function BeachOwnerApplicationPage() {
       return;
     }
 
-    if (!permitPreview?.file || !ownershipPreview?.file || !livenessNonce || !formData.agreeToTerms) {
+    if (!permitPreview?.file || !ownershipPreview?.file || !idPreview?.file || !livenessNonce || !formData.agreeToTerms) {
       triggerError('Please fill out the necessary fields before proceeding.');
       return;
     }
@@ -472,16 +477,16 @@ export default function BeachOwnerApplicationPage() {
 
     try {
       const applicationData = new FormData();
-      applicationData.set('applicant_full_name', nameValidation.value);
-      applicationData.set('applicant_email', formData.applicant_email.trim().toLowerCase());
-      applicationData.set('business_name', formData.business_name);
-      applicationData.set('beach_name', formData.beach_name);
-      applicationData.set('beach_location', addressValidation.value);
-      applicationData.set('contact_phone', `+63 ${formData.contact_info}`);
+      applicationData.set('applicantfullname', nameValidation.value);
+      applicationData.set('applicantemail', formData.applicantemail.trim().toLowerCase());
+      applicationData.set('businessname', formData.businessname);
+      applicationData.set('beachname', formData.beachname);
+      applicationData.set('beachlocation', addressValidation.value);
+      applicationData.set('contactphone', `+63 ${formData.contact_info}`);
       applicationData.set('agreeToTerms', String(formData.agreeToTerms));
       applicationData.set('liveness_nonce', livenessNonce);
       if (revisionId && revisionVersion) {
-        applicationData.set('application_id', revisionId);
+        applicationData.set('applicationid', revisionId);
         applicationData.set('expected_status_updated_at', revisionVersion);
       }
       const prepareDocument = async (
@@ -497,12 +502,14 @@ export default function BeachOwnerApplicationPage() {
         } : null);
         return prepared.file;
       };
-      const [permitFile, ownershipFile] = await Promise.all([
+      const [permitFile, ownershipFile, idFile] = await Promise.all([
         prepareDocument(permitPreview, setPermitPreview),
         prepareDocument(ownershipPreview, setOwnershipPreview),
+        prepareDocument(idPreview, setIdPreview),
       ]);
       applicationData.set('business_permit', permitFile);
       applicationData.set('proof_of_ownership', ownershipFile);
+      applicationData.set('valid_id', idFile);
 
       const res = await fetch('/api/applications', {
         method: 'POST',
@@ -549,7 +556,7 @@ export default function BeachOwnerApplicationPage() {
 
   return (
     <div
-      className="min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-zinc-100 transition-colors duration-200"
+      className="min-h-screen bg-white dark:bg-black text-slate-900 dark:text-zinc-100 transition-colors duration-200"
       onChangeCapture={() => { formWasEditedRef.current = true; }}
     >
       
@@ -557,7 +564,7 @@ export default function BeachOwnerApplicationPage() {
       {floatingError && (
         <div className="fixed top-6 left-1/2 -translate-x-1/2 z-50 flex items-center justify-center gap-2.5 px-6 py-3 bg-red-600 text-white rounded-full shadow-xl shadow-red-950/25 max-w-[90vw] animate-in fade-in slide-in-from-top-4 duration-300 pointer-events-none">
           <AlertCircle className="w-4 h-4 text-white flex-shrink-0" />
-          <span className="text-xs sm:text-sm font-semibold tracking-wide text-center">
+          <span className="font-display text-[11px] sm:text-xs font-semibold tracking-wide text-center">
             {floatingError}
           </span>
         </div>
@@ -566,7 +573,7 @@ export default function BeachOwnerApplicationPage() {
       {/* ── Page Header (Hidden when submitted, with generous spacing to the stepper) ── */}
       {!submitted && (
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 sm:pt-14 pb-8 sm:pb-12 text-center">
-          <h1 className="text-2xl sm:text-3xl font-sans font-bold text-brand-navy-500 dark:text-brand-teal-300 tracking-tight leading-tight">
+          <h1 className="font-display text-xl sm:text-2xl font-semibold text-brand-navy-500 dark:text-brand-teal-300 tracking-tight leading-tight">
             Apply as a Beach Owner
           </h1>
         </div>
@@ -574,22 +581,17 @@ export default function BeachOwnerApplicationPage() {
 
       <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
         {applicationLoadError && (
-          <div className="mb-6 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300" role="alert">
+          <div className="font-display mb-6 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm text-red-700 dark:border-red-900 dark:bg-red-950/30 dark:text-red-300" role="alert">
             {applicationLoadError}
           </div>
         )}
         {pendingApplication && (
-          <div className="mb-6 rounded-2xl border border-brand-teal-200 bg-brand-teal-50 px-5 py-4 text-sm text-brand-teal-900 dark:border-brand-teal-800 dark:bg-brand-teal-950/30 dark:text-brand-teal-100" role="status">
+          <div className="font-display mb-6 rounded-2xl border border-brand-teal-200 bg-brand-teal-50 px-5 py-4 text-sm text-brand-teal-900 dark:border-brand-teal-800 dark:bg-brand-teal-950/30 dark:text-brand-teal-100" role="status">
             <p>{PENDING_APPLICATION_MESSAGE}</p>
-            <Link href="/apply/status" className="mt-2 inline-flex font-semibold underline underline-offset-2">
+            <Link href="/apply/status" className="font-display mt-2 inline-flex font-semibold underline underline-offset-2">
               View your application status
             </Link>
           </div>
-        )}
-        {!submitted && hasSavedDraft && (
-          <p className="mb-4 text-center text-xs text-slate-500 dark:text-neutral-400">
-            Your text entries are saved in this browser. Uploaded documents and live verification are not saved.
-          </p>
         )}
         {submitted ? (
           /* ── Post-Submission Confirmation Screen (Frameless, Bold Circle & Checkmark, Stops at 'review updates') ── */
@@ -600,12 +602,12 @@ export default function BeachOwnerApplicationPage() {
             </div>
 
             <div className="space-y-3">
-              <h2 className="text-2xl sm:text-3xl font-extrabold text-brand-navy-500 dark:text-brand-teal-300 tracking-tight">
+              <h2 className="font-display text-xl sm:text-2xl font-extrabold text-brand-navy-500 dark:text-brand-teal-300 tracking-tight">
                 Application Submitted Successfully!
               </h2>
-              <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
+              <p className="font-display text-[11px] sm:text-xs text-slate-600 dark:text-slate-400 max-w-md mx-auto leading-relaxed">
                 Your beach owner application is successfully filed under the status{' '}
-                <span className="px-2.5 py-0.5 rounded-full bg-brand-sun-100 dark:bg-brand-navy-900/60 text-brand-navy-700 dark:text-brand-sun-300 text-xs font-bold uppercase tracking-wide">
+                <span className="font-display px-2.5 py-0.5 rounded-full bg-brand-sun-100 dark:bg-brand-navy-900/60 text-brand-navy-700 dark:text-brand-sun-300 font-display text-xs font-bold uppercase tracking-wide">
                   Pending Review
                 </span>
                 . Please check your email within 1 to 3 business days for review updates.
@@ -615,7 +617,7 @@ export default function BeachOwnerApplicationPage() {
             <div className="pt-3 flex justify-center">
               <Link
                 href="/"
-                className="inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-brand-navy-500 hover:bg-brand-navy-600 text-white text-xs sm:text-sm font-bold shadow-md transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+                className="font-display inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-brand-navy-500 hover:bg-brand-navy-600 text-white text-[11px] sm:text-xs font-bold shadow-md transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
               >
                 Return to Homepage
               </Link>
@@ -630,7 +632,7 @@ export default function BeachOwnerApplicationPage() {
                 {/* Connecting Horizontal Line passing through EXACT vertical center of circles (y = 24px) */}
                 <div className="absolute left-[12.5%] right-[12.5%] top-6 -translate-y-1/2 h-1.5 bg-slate-200 dark:bg-neutral-800 rounded-full z-0">
                   <div
-                    className="h-full bg-brand-navy-500 rounded-full transition-all duration-300"
+                    className="h-full bg-[#F4BF3E] rounded-full transition-all duration-300"
                     style={{ width: `${((currentStep - 1) / (steps.length - 1)) * 100}%` }}
                   />
                 </div>
@@ -667,26 +669,26 @@ export default function BeachOwnerApplicationPage() {
                         {/* Circle wrapper (48px high, vertical center at 24px matches top-6) */}
                         <div className="h-12 flex items-center justify-center">
                           <div
-                            className={`transition-all duration-300 flex items-center justify-center font-bold text-xs sm:text-sm rounded-full ${
+                            className={`transition-all duration-300 flex items-center justify-center font-bold text-[11px] sm:text-xs rounded-full font-display ${
                               isActive
-                                ? 'w-11 h-11 sm:w-12 sm:h-12 bg-brand-navy-500 text-white ring-4 ring-brand-teal-400 dark:ring-brand-teal-400 shadow-md scale-105'
+                                ? 'w-11 h-11 sm:w-12 sm:h-12 bg-[#F4BF3E] text-black ring-4 ring-[#F4BF3E]/40 dark:ring-[#F4BF3E]/30 shadow-md scale-105'
                                 : isCompleted
-                                ? 'w-9 h-9 sm:w-10 sm:h-10 bg-brand-navy-500 text-white shadow-xs'
+                                ? 'w-9 h-9 sm:w-10 sm:h-10 bg-[#F4BF3E] text-black shadow-xs'
                                 : 'w-9 h-9 sm:w-10 sm:h-10 bg-slate-100 dark:bg-neutral-800 text-slate-400 border border-slate-200 dark:border-neutral-700'
                             }`}
                           >
                             {isCompleted ? (
-                              <Check className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5]" />
+                              <Check className="w-4 h-4 sm:w-5 sm:h-5 stroke-[2.5] text-black" />
                             ) : (
-                              <span>{s.num}</span>
+                              <span className="text-black">{s.num}</span>
                             )}
                           </div>
                         </div>
 
                         {/* Step Labels - dive blue #124168 for completed/active, never black! */}
-                        <div className="text-center mt-2 w-full px-1">
+                        <div className="font-display text-center mt-2 w-full px-1">
                           <span
-                            className={`block text-[11px] sm:text-xs font-bold leading-tight ${
+                            className={`block font-display text-[11px] sm:text-xs font-bold leading-tight ${
                               isActive || isCompleted
                                 ? 'text-brand-navy-500 dark:text-brand-teal-300'
                                 : 'text-slate-400 dark:text-neutral-500'
@@ -708,11 +710,11 @@ export default function BeachOwnerApplicationPage() {
               {/* ── STEP 1: REQUIREMENTS (Simple, clear, easy instructions without PIN jargon) ── */}
               {currentStep === 1 && (
                 <div className="space-y-6 animate-in fade-in duration-200">
-                  <div className="border-b border-slate-200 dark:border-neutral-800 pb-3 mb-6 sm:mb-8">
-                    <h2 className="text-xl sm:text-2xl font-bold text-brand-navy-500 dark:text-brand-teal-300">
+                  <div className="border-b border-[#1F3F74]/25 dark:border-[#4987BA]/40 pb-3 mb-6 sm:mb-8">
+                    <h2 className="font-display font-display text-lg sm:text-xl font-bold text-brand-navy-500 dark:text-brand-teal-300">
                       Application Requirements
                     </h2>
-                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                    <p className="font-display font-display text-[11px] sm:text-xs text-slate-500 dark:text-white mt-1">
                       Please make sure you have the following information and documents ready:
                     </p>
                   </div>
@@ -722,40 +724,41 @@ export default function BeachOwnerApplicationPage() {
                       {
                         num: '1',
                         title: 'Mayor’s / Business Permit',
-                        desc: 'A valid business permit issued by LGU Catmon for Binongkalan, Catmon in PDF, PNG, or JPG format (up to 10MB).',
-                        icon: FileText,
+                        desc: 'A valid business permit issued by LGU Catmon for Binongkalan, Catmon in PNG or JPG format (up to 2MB).',
                       },
                       {
                         num: '2',
                         title: 'Proof of Ownership or Lease',
                         desc: 'Land Title, Deed of Sale, or notarized lease contract authorizing beach resort operations.',
-                        icon: ShieldCheck,
                       },
                       {
                         num: '3',
-                        title: 'Contact Person Information',
-                        desc: 'Full legal name, active mobile number, and email address for application status updates.',
-                        icon: User,
+                        title: 'Valid ID Verification',
+                        desc: 'A government-issued ID (passport, driver’s license, UMID, or PhilSys) matching the applicant’s legal name to verify ownership.',
                       },
                       {
                         num: '4',
+                        title: 'Contact Person Information',
+                        desc: 'Full legal name, active mobile number, and email address for application status updates.',
+                      },
+                      {
+                        num: '5',
                         title: 'Resort & Business Details',
                         desc: 'Registered business name and official resort name in Barangay Binongkalan.',
-                        icon: MapPin,
                       },
                     ].map((req, i) => (
                       <div
                         key={i}
                         className="flex items-start gap-3.5 p-4 rounded-2xl bg-white dark:bg-neutral-900/80 border border-slate-200/80 dark:border-neutral-800 shadow-2xs"
                       >
-                        <div className="w-8 h-8 rounded-xl bg-brand-navy-50 dark:bg-brand-navy-900/70 text-brand-navy-500 dark:text-brand-teal-300 font-bold text-xs flex items-center justify-center flex-shrink-0 shadow-2xs">
+                        <span className="font-display text-base font-bold text-brand-navy-500 dark:text-brand-teal-300 leading-none pt-0.5 flex-shrink-0">
                           {req.num}
-                        </div>
+                        </span>
                         <div className="space-y-0.5 min-w-0">
-                          <h3 className="text-xs sm:text-sm font-bold text-brand-navy-500 dark:text-brand-teal-300">
+                          <h3 className="font-display text-[11px] sm:text-xs font-bold text-brand-navy-500 dark:text-brand-teal-300">
                             {req.title}
                           </h3>
-                          <p className="text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
+                          <p className="font-display text-[11px] sm:text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
                             {req.desc}
                           </p>
                         </div>
@@ -768,9 +771,9 @@ export default function BeachOwnerApplicationPage() {
                     <button
                       type="button"
                       onClick={handleNextStep}
-                      className="inline-flex items-center justify-center px-12 py-3.5 rounded-full bg-brand-navy-500 hover:bg-brand-navy-600 text-white font-bold text-xs sm:text-sm shadow-md transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+                      className="font-display inline-flex items-center justify-center px-12 py-3.5 rounded-full bg-[#F4BF3E] hover:bg-[#e0a92e] text-black font-medium text-[11px] sm:text-xs shadow-md transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
                     >
-                      <span>Proceed</span>
+                      <span className="font-display">Proceed</span>
                     </button>
                   </div>
                 </div>
@@ -779,11 +782,11 @@ export default function BeachOwnerApplicationPage() {
               {/* ── STEP 2: PERSONAL INFORMATION (Single Column / Stacked with Inline Red Error Text) ── */}
               {currentStep === 2 && (
                 <div className="space-y-6 animate-in fade-in duration-200">
-                  <div className="border-b border-slate-200 dark:border-neutral-800 pb-3 mb-6 sm:mb-8">
-                    <h2 className="text-xl sm:text-2xl font-bold text-brand-navy-500 dark:text-brand-teal-300">
+                  <div className="border-b border-[#1F3F74]/25 dark:border-[#4987BA]/40 pb-3 mb-6 sm:mb-8">
+                    <h2 className="font-display font-display text-lg sm:text-xl font-bold text-brand-navy-500 dark:text-brand-teal-300">
                       Personal Information
                     </h2>
-                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                    <p className="font-display font-display text-[11px] sm:text-xs text-slate-500 dark:text-white mt-1">
                       Fill in the required details to continue with your registration.
                     </p>
                   </div>
@@ -792,7 +795,7 @@ export default function BeachOwnerApplicationPage() {
                   <div className="space-y-4 max-w-xl mx-auto">
                     {/* Full Name */}
                     <div>
-                      <label htmlFor="application-full-name" className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                      <label htmlFor="application-full-name" className="font-display block font-display text-xs font-bold text-brand-navy-500 dark:text-brand-teal-300 mb-1.5">
                         Full Legal Name <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -802,64 +805,64 @@ export default function BeachOwnerApplicationPage() {
                         maxLength={80}
                         autoComplete="name"
                         inputMode="text"
-                        value={formData.applicant_full_name}
+                        value={formData.applicantfullname}
                         onChange={(e) => {
                           const rawValue = e.target.value;
                           nameWasEditedRef.current = true;
                           const validation = validateFullName(rawValue);
                           setFormData({
                             ...formData,
-                            applicant_full_name: rawValue,
+                            applicantfullname: rawValue,
                           });
                           setFullNameInputError(validation.error);
                           setFullNameTouched(true);
                         }}
                         onBlur={() => {
                           setFullNameTouched(true);
-                          const validation = validateFullName(formData.applicant_full_name);
+                          const validation = validateFullName(formData.applicantfullname);
                           if (!fullNameInputError) setFullNameInputError(validation.error);
                           if (validation.ok && !fullNameInputError) {
                             setFormData((current) => ({
                               ...current,
-                              applicant_full_name: validation.value,
+                              applicantfullname: validation.value,
                             }));
                           }
                         }}
                         aria-invalid={Boolean(getFullNameError())}
                         aria-describedby={getFullNameError() ? 'application-full-name-error' : undefined}
-                        placeholder="Patrick James D. Leswe"
-                        className={`w-full px-5 py-3 text-xs sm:text-sm bg-white dark:bg-neutral-900 border rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:ring-2 focus:ring-brand-teal-400/20 focus:border-brand-navy-500 text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 font-normal shadow-2xs transition-all ${
+                        placeholder="Ana B. Juan"
+                        className={`font-display w-full px-5 py-3 text-[11px] sm:text-xs bg-white dark:bg-neutral-900 border rounded-full caret-brand-navy-500 dark:caret-brand-teal-600 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#1F3F74]/30 focus:ring-1 text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 font-normal shadow-2xs transition-all ${
                           getFullNameError()
                             ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
-                            : 'border-slate-200 dark:border-neutral-800'
+                            : 'border-[#1F3F74]/40 dark:border-[#4987BA]/40 focus:border-[#1F3F74] dark:focus:border-[#4987BA] focus:ring-[#1F3F74]/30 dark:focus:ring-[#4987BA]/30'
                         }`}
                       />
                       {getFullNameError() && (
                         <p
                           id="application-full-name-error"
                           role="alert"
-                          className="mt-1.5 ml-4 text-[11px] font-medium text-red-600 dark:text-red-400 flex items-center gap-1.5 animate-in fade-in duration-200"
+                          className="font-display mt-1.5 ml-4 text-[11px] font-medium text-red-600 dark:text-red-400 flex items-center gap-1.5 animate-in fade-in duration-200"
                         >
                           <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
                           <span>{getFullNameError()}</span>
                         </p>
                       )}
-                      {accountName && formData.applicant_full_name === accountName && (
-                        <p className="mt-1.5 ml-4 text-[11px] text-slate-500 dark:text-neutral-400">
+                      {accountName && formData.applicantfullname === accountName && (
+                        <p className="font-display mt-1.5 ml-4 text-[11px] text-slate-500 dark:text-neutral-400">
                           We filled this in from your account. Please use your full legal name exactly as it appears on your valid ID. You can edit it.
                         </p>
                       )}
-                      {accountName && formData.applicant_full_name !== accountName && (
+                      {accountName && formData.applicantfullname !== accountName && (
                         <button
                           type="button"
                           onClick={() => {
                             nameWasEditedRef.current = true;
-                            setFormData((current) => ({ ...current, applicant_full_name: accountName }));
+                            setFormData((current) => ({ ...current, applicantfullname: accountName }));
                             const validation = validateFullName(accountName);
                             setFullNameInputError(validation.error);
                             setFullNameTouched(true);
                           }}
-                          className="mt-1.5 ml-4 text-sm font-semibold text-brand-navy-500 underline decoration-transparent underline-offset-2 hover:decoration-current dark:text-brand-teal-300"
+                          className="font-display mt-1.5 ml-4 text-sm font-semibold text-brand-navy-500 underline decoration-transparent underline-offset-2 hover:decoration-current dark:text-brand-teal-300"
                         >
                           Use my account name
                         </button>
@@ -868,27 +871,27 @@ export default function BeachOwnerApplicationPage() {
 
                     {/* Email with real-time inline red error text */}
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                      <label className="font-display block font-display text-xs font-bold text-brand-navy-500 dark:text-brand-teal-300 mb-1.5">
                         Email Address <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="email"
                         required
-                        value={formData.applicant_email}
+                        value={formData.applicantemail}
                         onChange={(e) => {
-                          setFormData({ ...formData, applicant_email: e.target.value });
+                          setFormData({ ...formData, applicantemail: e.target.value });
                           setPendingEmailError(null);
                         }}
                         aria-invalid={Boolean(getEmailError())}
                         placeholder="owner@gmail.com"
-                        className={`w-full px-5 py-3 text-xs sm:text-sm bg-white dark:bg-neutral-900 border rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:ring-2 focus:ring-brand-teal-400/20 focus:border-brand-navy-500 text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 font-normal shadow-2xs transition-all ${
+                        className={`font-display w-full px-5 py-3 text-[11px] sm:text-xs bg-white dark:bg-neutral-900 border rounded-full caret-brand-navy-500 dark:caret-brand-teal-600 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#1F3F74]/30 focus:ring-1 text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 font-normal shadow-2xs transition-all ${
                           getEmailError()
                             ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
-                            : 'border-slate-200 dark:border-neutral-800'
+                            : 'border-[#1F3F74]/40 dark:border-[#4987BA]/40 focus:border-[#1F3F74] dark:focus:border-[#4987BA] focus:ring-[#1F3F74]/30 dark:focus:ring-[#4987BA]/30'
                         }`}
                       />
                       {getEmailError() && (
-                        <p className="mt-1.5 ml-4 text-[11px] font-medium text-red-600 dark:text-red-400 flex items-center gap-1.5 animate-in fade-in duration-200">
+                        <p className="font-display mt-1.5 ml-4 text-[11px] font-medium text-red-600 dark:text-red-400 flex items-center gap-1.5 animate-in fade-in duration-200">
                           <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
                           <span>{getEmailError()}</span>
                         </p>
@@ -897,17 +900,17 @@ export default function BeachOwnerApplicationPage() {
 
                     {/* Contact Mobile with Built-in +63 Prefix & inline red error text */}
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                      <label className="font-display block font-display text-xs font-bold text-brand-navy-500 dark:text-brand-teal-300 mb-1.5">
                         Mobile Phone Number <span className="text-red-500">*</span>
                       </label>
                       <div
-                        className={`flex items-center w-full bg-white dark:bg-neutral-900 border rounded-full overflow-hidden focus-within:ring-2 focus-within:ring-brand-teal-400/20 focus-within:border-brand-navy-500 shadow-2xs transition-all ${
+                        className={`flex items-center w-full bg-white dark:bg-neutral-900 border rounded-full overflow-hidden focus-within:ring-1 focus-within:ring-[#1F3F74]/30 focus-within:border-[#1F3F74] dark:focus-within:border-[#4987BA] shadow-2xs transition-all ${
                           getMobileError()
                             ? 'border-red-500 focus-within:border-red-500 focus-within:ring-red-500/20'
-                            : 'border-slate-200 dark:border-neutral-800'
+                            : 'border-[#1F3F74]/40 dark:border-[#4987BA]/40'
                         }`}
                       >
-                        <span className="px-4 py-3 bg-slate-100 dark:bg-neutral-800 text-slate-700 dark:text-slate-300 font-bold text-xs sm:text-sm border-r border-slate-200 dark:border-neutral-700 select-none">
+                        <span className="font-display px-4 py-3 bg-brand-navy-50 dark:bg-brand-navy-900/70 text-brand-navy-500 dark:text-brand-teal-300 font-bold text-[11px] sm:text-xs border-r border-brand-navy-200 dark:border-brand-navy-700 select-none">
                           +63
                         </span>
                         <input
@@ -922,11 +925,11 @@ export default function BeachOwnerApplicationPage() {
                             setFormData({ ...formData, contact_info: val.slice(0, 10) });
                           }}
                           placeholder="917 123 4567"
-                          className="w-full px-4 py-3 text-xs sm:text-sm bg-transparent placeholder:italic placeholder:text-slate-400 font-normal text-slate-900 dark:text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400"
+                          className="font-display w-full px-4 py-3 text-[11px] sm:text-xs bg-transparent placeholder:italic placeholder:text-slate-400 font-normal text-slate-900 dark:text-white caret-brand-navy-500 dark:caret-brand-teal-600 focus-visible:outline-none"
                         />
                       </div>
                       {getMobileError() && (
-                        <p className="mt-1.5 ml-4 text-[11px] font-medium text-red-600 dark:text-red-400 flex items-center gap-1.5 animate-in fade-in duration-200">
+                        <p className="font-display mt-1.5 ml-4 text-[11px] font-medium text-red-600 dark:text-red-400 flex items-center gap-1.5 animate-in fade-in duration-200">
                           <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
                           <span>{getMobileError()}</span>
                         </p>
@@ -935,7 +938,7 @@ export default function BeachOwnerApplicationPage() {
 
                     {/* Beach Resort Address */}
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                      <label className="font-display block font-display text-xs font-bold text-brand-navy-500 dark:text-brand-teal-300 mb-1.5">
                         Beach Resort Address <span className="text-red-500">*</span>
                       </label>
                       <input
@@ -945,44 +948,44 @@ export default function BeachOwnerApplicationPage() {
                         required
                         autoComplete="street-address"
                         maxLength={150}
-                        value={formData.beach_location}
+                        value={formData.beachlocation}
                         onFocus={() => {
                           if (addressDefaultFocusHandledRef.current) return;
                           addressDefaultFocusHandledRef.current = true;
-                          if (formData.beach_location === DEFAULT_BEACH_ADDRESS) {
+                          if (formData.beachlocation === DEFAULT_BEACH_ADDRESS) {
                             addressInputRef.current?.setSelectionRange(0, 0);
                           }
                         }}
                         onBlur={() => setAddressTouched(true)}
-                        onChange={(e) => setFormData((current) => ({ ...current, beach_location: e.target.value }))}
+                        onChange={(e) => setFormData((current) => ({ ...current, beachlocation: e.target.value }))}
                         placeholder={BEACH_ADDRESS_MESSAGES.placeholder}
                         aria-invalid={Boolean(getAddressError())}
                         aria-describedby={`beach-address-help${getAddressError() ? ' beach-address-error' : addressWarning ? ' beach-address-warning' : ''}`}
-                        className={`w-full px-5 py-3 text-xs sm:text-sm bg-white dark:bg-neutral-900 border rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:ring-2 focus:ring-brand-teal-400/20 focus:border-brand-navy-500 text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 font-normal shadow-2xs transition-all ${
+                        className={`font-display w-full px-5 py-3 text-[11px] sm:text-xs bg-white dark:bg-neutral-900 border rounded-full caret-brand-navy-500 dark:caret-brand-teal-600 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#1F3F74]/30 focus:ring-1 text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 font-normal shadow-2xs transition-all ${
                           getAddressError()
                             ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
-                            : 'border-slate-200 dark:border-neutral-800'
+                            : 'border-[#1F3F74]/40 dark:border-[#4987BA]/40 focus:border-[#1F3F74] dark:focus:border-[#4987BA] focus:ring-[#1F3F74]/30 dark:focus:ring-[#4987BA]/30'
                         }`}
                       />
                       {getAddressError() && (
-                        <p id="beach-address-error" role="alert" className="mt-1.5 ml-4 text-[11px] font-medium text-red-600 dark:text-red-400 flex items-center gap-1.5 animate-in fade-in duration-200">
+                        <p id="beach-address-error" role="alert" className="font-display mt-1.5 ml-4 text-[11px] font-medium text-red-600 dark:text-red-400 flex items-center gap-1.5 animate-in fade-in duration-200">
                           <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
                           <span>{getAddressError()}</span>
                         </p>
                       )}
-                      <p id="beach-address-help" className="mt-1.5 ml-4 text-xs text-slate-500 dark:text-slate-400">
+                      <p id="beach-address-help" className="font-display mt-1.5 ml-4 text-xs text-slate-500 dark:text-slate-400">
                         {BEACH_ADDRESS_MESSAGES.helper}
                       </p>
                       {addressWarning && (
-                        <p id="beach-address-warning" className="mt-1.5 ml-4 text-xs text-amber-700 dark:text-amber-300">
+                        <p id="beach-address-warning" className="font-display mt-1.5 ml-4 text-xs text-amber-700 dark:text-amber-300">
                           {addressWarning}
                         </p>
                       )}
-                      {formData.beach_location !== DEFAULT_BEACH_ADDRESS && (
+                      {formData.beachlocation !== DEFAULT_BEACH_ADDRESS && (
                         <button
                           type="button"
-                          onClick={() => setFormData((current) => ({ ...current, beach_location: DEFAULT_BEACH_ADDRESS }))}
-                          className="mt-1.5 ml-4 text-sm text-brand-navy-500 hover:underline dark:text-brand-teal-300"
+                          onClick={() => setFormData((current) => ({ ...current, beachlocation: DEFAULT_BEACH_ADDRESS }))}
+                          className="font-display mt-1.5 ml-4 text-sm text-brand-navy-500 hover:underline dark:text-brand-teal-300"
                         >
                           Reset to default
                         </button>
@@ -1005,10 +1008,10 @@ export default function BeachOwnerApplicationPage() {
                       type="button"
                       onClick={handleNextStep}
                       disabled={
-                        !validateFullName(formData.applicant_full_name).ok ||
+                        !validateFullName(formData.applicantfullname).ok ||
                         Boolean(fullNameInputError)
                       }
-                      className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-brand-navy-500 hover:bg-brand-navy-600 text-white shadow-md transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+                      className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#F4BF3E] hover:bg-[#e0a92e] text-black shadow-md transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
                       title="Next"
                     >
                       <ChevronRight className="w-5 h-5 stroke-[2.5]" />
@@ -1020,11 +1023,11 @@ export default function BeachOwnerApplicationPage() {
               {/* ── STEP 3: ESTABLISHMENT DETAILS (Stacked Vertically with Inline Red Error Text) ── */}
               {currentStep === 3 && (
                 <div className="space-y-6 animate-in fade-in duration-200">
-                  <div className="border-b border-slate-200 dark:border-neutral-800 pb-3 mb-6 sm:mb-8">
-                    <h2 className="text-xl sm:text-2xl font-bold text-brand-navy-500 dark:text-brand-teal-300">
+                  <div className="border-b border-[#1F3F74]/25 dark:border-[#4987BA]/40 pb-3 mb-6 sm:mb-8">
+                    <h2 className="font-display text-lg sm:text-xl font-bold text-brand-navy-500 dark:text-brand-teal-300">
                       Establishment Details
                     </h2>
-                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                    <p className="font-display text-[11px] sm:text-xs text-slate-500 dark:text-white mt-1">
                       Enter your registered business name and public resort name.
                     </p>
                   </div>
@@ -1033,23 +1036,23 @@ export default function BeachOwnerApplicationPage() {
                   <div className="space-y-4 max-w-xl mx-auto">
                     {/* Registered Business Name */}
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                      <label className="font-display block font-display text-xs font-bold text-brand-navy-500 dark:text-brand-teal-300 mb-1.5">
                         Registered Business Name <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
                         required
-                        value={formData.business_name}
-                        onChange={(e) => setFormData({ ...formData, business_name: e.target.value })}
+                        value={formData.businessname}
+                        onChange={(e) => setFormData({ ...formData, businessname: e.target.value })}
                         placeholder="Rañola Beach Resort Inc."
-                        className={`w-full px-5 py-3 text-xs sm:text-sm bg-white dark:bg-neutral-900 border rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:ring-2 focus:ring-brand-teal-400/20 focus:border-brand-navy-500 text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 font-normal shadow-2xs transition-all ${
+                        className={`font-display w-full px-5 py-3 text-[11px] sm:text-xs bg-white dark:bg-neutral-900 border rounded-full caret-brand-navy-500 dark:caret-brand-teal-600 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#1F3F74]/30 focus:ring-1 text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 font-normal shadow-2xs transition-all ${
                           getBusinessNameError()
                             ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
-                            : 'border-slate-200 dark:border-neutral-800'
+                            : 'border-[#1F3F74]/40 dark:border-[#4987BA]/40 focus:border-[#1F3F74] dark:focus:border-[#4987BA] focus:ring-[#1F3F74]/30 dark:focus:ring-[#4987BA]/30'
                         }`}
                       />
                       {getBusinessNameError() && (
-                        <p className="mt-1.5 ml-4 text-[11px] font-medium text-red-600 dark:text-red-400 flex items-center gap-1.5 animate-in fade-in duration-200">
+                        <p className="font-display mt-1.5 ml-4 text-[11px] font-medium text-red-600 dark:text-red-400 flex items-center gap-1.5 animate-in fade-in duration-200">
                           <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
                           <span>{getBusinessNameError()}</span>
                         </p>
@@ -1058,23 +1061,23 @@ export default function BeachOwnerApplicationPage() {
 
                     {/* Beach / Resort Name (Stacked at bottom) */}
                     <div>
-                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300 mb-1.5">
+                      <label className="font-display block font-display text-xs font-bold text-brand-navy-500 dark:text-brand-teal-300 mb-1.5">
                         Beach / Resort Name <span className="text-red-500">*</span>
                       </label>
                       <input
                         type="text"
                         required
-                        value={formData.beach_name}
-                        onChange={(e) => setFormData({ ...formData, beach_name: e.target.value })}
+                        value={formData.beachname}
+                        onChange={(e) => setFormData({ ...formData, beachname: e.target.value })}
                         placeholder="Rañola Beach"
-                        className={`w-full px-5 py-3 text-xs sm:text-sm bg-white dark:bg-neutral-900 border rounded-full focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:ring-2 focus:ring-brand-teal-400/20 focus:border-brand-navy-500 text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 font-normal shadow-2xs transition-all ${
+                        className={`font-display w-full px-5 py-3 text-[11px] sm:text-xs bg-white dark:bg-neutral-900 border rounded-full caret-brand-navy-500 dark:caret-brand-teal-600 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-[#1F3F74]/30 focus:ring-1 text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 font-normal shadow-2xs transition-all ${
                           getBeachNameError()
                             ? 'border-red-500 focus:border-red-500 focus:ring-red-500/20'
-                            : 'border-slate-200 dark:border-neutral-800'
+                            : 'border-[#1F3F74]/40 dark:border-[#4987BA]/40 focus:border-[#1F3F74] dark:focus:border-[#4987BA] focus:ring-[#1F3F74]/30 dark:focus:ring-[#4987BA]/30'
                         }`}
                       />
                       {getBeachNameError() && (
-                        <p className="mt-1.5 ml-4 text-[11px] font-medium text-red-600 dark:text-red-400 flex items-center gap-1.5 animate-in fade-in duration-200">
+                        <p className="font-display mt-1.5 ml-4 text-[11px] font-medium text-red-600 dark:text-red-400 flex items-center gap-1.5 animate-in fade-in duration-200">
                           <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
                           <span>{getBeachNameError()}</span>
                         </p>
@@ -1096,7 +1099,7 @@ export default function BeachOwnerApplicationPage() {
                     <button
                       type="button"
                       onClick={handleNextStep}
-                      className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-brand-navy-500 hover:bg-brand-navy-600 text-white shadow-md transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+                      className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-[#F4BF3E] hover:bg-[#e0a92e] text-black shadow-md transition-all hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
                       title="Next"
                     >
                       <ChevronRight className="w-5 h-5 stroke-[2.5]" />
@@ -1108,21 +1111,21 @@ export default function BeachOwnerApplicationPage() {
               {/* ── STEP 4: PERMITS & VERIFICATION ──────────── */}
               {currentStep === 4 && (
                 <form onSubmit={handleSubmit} className="space-y-8 animate-in fade-in duration-200">
-                  <div className="border-b border-slate-200 dark:border-neutral-800 pb-3 mb-6 sm:mb-8">
-                    <h2 className="text-xl sm:text-2xl font-bold text-brand-navy-500 dark:text-brand-teal-300">
+                  <div className="border-b border-[#1F3F74]/25 dark:border-[#4987BA]/40 pb-3 mb-6 sm:mb-8">
+                    <h2 className="font-display text-lg sm:text-xl font-bold text-brand-navy-500 dark:text-brand-teal-300">
                       Permits &amp; Verification
                     </h2>
-                    <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400 mt-1">
+                    <p className="font-display text-[11px] sm:text-xs text-slate-500 dark:text-white mt-1">
                       Upload your required permits and complete your live selfie verification.
                     </p>
                   </div>
 
-                  {/* Two Upload Dropzones Side-by-Side (Enhanced Standard UI) */}
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  {/* Upload Dropzones Side-by-Side (Enhanced Standard UI) */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                     
                     {/* Document 1: Mayor's / Business Permit */}
                     <div className="space-y-1.5">
-                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                      <label className="font-display block font-display text-xs font-bold text-brand-navy-500 dark:text-brand-teal-300">
                         Mayor&apos;s / Business Permit <span className="text-red-500">*</span>
                       </label>
 
@@ -1139,7 +1142,7 @@ export default function BeachOwnerApplicationPage() {
                           </button>
 
                           {permitPreview.isImage ? (
-                            <div className="w-full h-32 rounded-xl overflow-hidden bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 flex items-center justify-center">
+                            <div className="w-full h-32 rounded-xl overflow-hidden bg-white dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 flex items-center justify-center">
                               <img
                                 src={permitPreview.url}
                                 alt="Permit Preview"
@@ -1147,32 +1150,32 @@ export default function BeachOwnerApplicationPage() {
                               />
                             </div>
                           ) : (
-                            <div className="w-full h-32 rounded-xl bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 flex flex-col items-center justify-center p-3 text-center space-y-1">
-                              <div className="w-10 h-10 rounded-lg bg-brand-navy-100 text-brand-navy-500 flex items-center justify-center font-bold text-xs">
+                            <div className="w-full h-32 rounded-xl bg-white dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 flex flex-col items-center justify-center p-3 text-center space-y-1">
+                              <div className="font-display w-10 h-10 rounded-lg bg-brand-navy-100 text-brand-navy-500 flex items-center justify-center font-bold text-xs">
                                 PDF
                               </div>
-                              <span className="text-xs font-bold text-slate-800 dark:text-white truncate max-w-[180px]">
+                              <span className="font-display text-xs font-bold text-slate-800 dark:text-white truncate max-w-[180px]">
                                 {permitPreview.name}
                               </span>
-                              <span className="text-[10px] text-slate-400">PDF Document</span>
+                              <span className="font-display text-[10px] text-slate-400">PDF Document</span>
                             </div>
                           )}
 
-                          <div className="flex items-center justify-between text-xs pt-1">
+                          <div className="font-display flex items-center justify-between text-xs pt-1">
                             <div className="min-w-0 pr-2">
-                              <div className="font-bold text-slate-900 dark:text-white truncate text-[11px]">
+                              <div className="font-display font-bold text-slate-900 dark:text-white truncate text-[11px]">
                                 {permitPreview.name}
                               </div>
-                              <div className="text-[10px] text-brand-navy-500 dark:text-brand-teal-300 font-semibold flex items-center gap-1">
+                              <div className="font-display text-[10px] text-brand-navy-500 dark:text-brand-teal-300 font-semibold flex items-center gap-1">
                                 <CheckCircle2 className="w-3 h-3 text-brand-navy-500 dark:text-brand-teal-300" />
-                                <span>Attached ({permitPreview.compressionSummary || permitPreview.size})</span>
+                                <span className="font-display">Attached ({permitPreview.compressionSummary || permitPreview.size})</span>
                               </div>
                             </div>
 
                             <button
                               type="button"
                               onClick={() => permitInputRef.current?.click()}
-                              className="text-[11px] font-bold text-brand-navy-500 dark:text-brand-teal-300 hover:underline flex-shrink-0 cursor-pointer"
+                              className="font-display text-[11px] font-bold text-brand-navy-500 dark:text-brand-teal-300 hover:underline flex-shrink-0 cursor-pointer"
                             >
                               Replace
                             </button>
@@ -1185,25 +1188,25 @@ export default function BeachOwnerApplicationPage() {
                           className={`rounded-2xl border-2 border-dashed p-6 text-center cursor-pointer transition-all space-y-2.5 group ${
                             attemptedStep4 && !permitPreview
                               ? 'border-red-500 bg-red-50/20 dark:bg-red-950/20'
-                              : 'border-slate-300 dark:border-neutral-700 hover:border-brand-navy-500 dark:hover:border-brand-teal-600 bg-slate-50/50 dark:bg-neutral-900/40 hover:bg-brand-navy-50/20'
+                              : 'border-[#1F3F74]/40 dark:border-[#4987BA]/40 hover:border-[#1F3F74] dark:hover:border-[#4987BA] bg-white/50 dark:bg-neutral-900/40 hover:bg-brand-navy-50/20'
                           }`}
                         >
-                          <div className="w-11 h-11 rounded-full bg-brand-navy-50 dark:bg-brand-navy-900/70 text-brand-navy-500 dark:text-brand-teal-300 flex items-center justify-center mx-auto group-hover:scale-105 transition-transform">
+                          <div className="font-display w-11 h-11 rounded-full bg-brand-navy-50 dark:bg-brand-navy-900/70 text-brand-navy-500 dark:text-brand-teal-300 flex items-center justify-center mx-auto group-hover:scale-105 transition-transform">
                             <Upload className="w-5 h-5 stroke-[2]" />
                           </div>
                           <div className="space-y-0.5">
-                            <span className="block text-xs sm:text-sm font-semibold text-slate-800 dark:text-white">
+                            <span className="font-display block text-[11px] sm:text-xs font-semibold text-slate-800 dark:text-white">
                               Click to upload or drag &amp; drop
                             </span>
-                            <span className="block text-[11px] text-slate-400">PDF, PNG, or JPG (max. 10MB)</span>
+                            <span className="font-display block text-[11px] text-slate-400">PNG or JPG (max. 2MB)</span>
                           </div>
                         </div>
                       )}
 
                       {attemptedStep4 && !permitPreview && (
-                        <p className="mt-1 ml-2 text-[11px] font-medium text-red-600 dark:text-red-400 flex items-center gap-1">
+                        <p className="font-display mt-1 ml-2 text-[11px] font-medium text-red-600 dark:text-red-400 flex items-center gap-1">
                           <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                          <span>Please upload your Mayor’s / Business Permit.</span>
+                          <span className="font-display">Please upload your Mayor’s / Business Permit.</span>
                         </p>
                       )}
 
@@ -1219,7 +1222,7 @@ export default function BeachOwnerApplicationPage() {
 
                     {/* Document 2: Proof of Ownership / Lease */}
                     <div className="space-y-1.5">
-                      <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                      <label className="font-display block font-display text-xs font-bold text-brand-navy-500 dark:text-brand-teal-300">
                         Proof of Ownership / Lease <span className="text-red-500">*</span>
                       </label>
 
@@ -1236,7 +1239,7 @@ export default function BeachOwnerApplicationPage() {
                           </button>
 
                           {ownershipPreview.isImage ? (
-                            <div className="w-full h-32 rounded-xl overflow-hidden bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 flex items-center justify-center">
+                            <div className="w-full h-32 rounded-xl overflow-hidden bg-white dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 flex items-center justify-center">
                               <img
                                 src={ownershipPreview.url}
                                 alt="Ownership Proof Preview"
@@ -1244,32 +1247,32 @@ export default function BeachOwnerApplicationPage() {
                               />
                             </div>
                           ) : (
-                            <div className="w-full h-32 rounded-xl bg-slate-50 dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 flex flex-col items-center justify-center p-3 text-center space-y-1">
-                              <div className="w-10 h-10 rounded-lg bg-brand-navy-100 text-brand-navy-500 flex items-center justify-center font-bold text-xs">
+                            <div className="w-full h-32 rounded-xl bg-white dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 flex flex-col items-center justify-center p-3 text-center space-y-1">
+                              <div className="font-display w-10 h-10 rounded-lg bg-brand-navy-100 text-brand-navy-500 flex items-center justify-center font-bold text-xs">
                                 PDF
                               </div>
-                              <span className="text-xs font-bold text-slate-800 dark:text-white truncate max-w-[180px]">
+                              <span className="font-display text-xs font-bold text-slate-800 dark:text-white truncate max-w-[180px]">
                                 {ownershipPreview.name}
                               </span>
-                              <span className="text-[10px] text-slate-400">PDF Document</span>
+                              <span className="font-display text-[10px] text-slate-400">PDF Document</span>
                             </div>
                           )}
 
-                          <div className="flex items-center justify-between text-xs pt-1">
+                          <div className="font-display flex items-center justify-between text-xs pt-1">
                             <div className="min-w-0 pr-2">
-                              <div className="font-bold text-slate-900 dark:text-white truncate text-[11px]">
+                              <div className="font-display font-bold text-slate-900 dark:text-white truncate text-[11px]">
                                 {ownershipPreview.name}
                               </div>
-                              <div className="text-[10px] text-brand-navy-500 dark:text-brand-teal-300 font-semibold flex items-center gap-1">
+                              <div className="font-display text-[10px] text-brand-navy-500 dark:text-brand-teal-300 font-semibold flex items-center gap-1">
                                 <CheckCircle2 className="w-3 h-3 text-brand-navy-500 dark:text-brand-teal-300" />
-                                <span>Attached ({ownershipPreview.compressionSummary || ownershipPreview.size})</span>
+                                <span className="font-display">Attached ({ownershipPreview.compressionSummary || ownershipPreview.size})</span>
                               </div>
                             </div>
 
                             <button
                               type="button"
                               onClick={() => ownershipInputRef.current?.click()}
-                              className="text-[11px] font-bold text-brand-navy-500 dark:text-brand-teal-300 hover:underline flex-shrink-0 cursor-pointer"
+                              className="font-display text-[11px] font-bold text-brand-navy-500 dark:text-brand-teal-300 hover:underline flex-shrink-0 cursor-pointer"
                             >
                               Replace
                             </button>
@@ -1282,25 +1285,25 @@ export default function BeachOwnerApplicationPage() {
                           className={`rounded-2xl border-2 border-dashed p-6 text-center cursor-pointer transition-all space-y-2.5 group ${
                             attemptedStep4 && !ownershipPreview
                               ? 'border-red-500 bg-red-50/20 dark:bg-red-950/20'
-                              : 'border-slate-300 dark:border-neutral-700 hover:border-brand-navy-500 dark:hover:border-brand-teal-600 bg-slate-50/50 dark:bg-neutral-900/40 hover:bg-brand-navy-50/20'
+                              : 'border-[#1F3F74]/40 dark:border-[#4987BA]/40 hover:border-[#1F3F74] dark:hover:border-[#4987BA] bg-white/50 dark:bg-neutral-900/40 hover:bg-brand-navy-50/20'
                           }`}
                         >
-                          <div className="w-11 h-11 rounded-full bg-brand-navy-50 dark:bg-brand-navy-900/70 text-brand-navy-500 dark:text-brand-teal-300 flex items-center justify-center mx-auto group-hover:scale-105 transition-transform">
+                          <div className="font-display w-11 h-11 rounded-full bg-brand-navy-50 dark:bg-brand-navy-900/70 text-brand-navy-500 dark:text-brand-teal-300 flex items-center justify-center mx-auto group-hover:scale-105 transition-transform">
                             <Upload className="w-5 h-5 stroke-[2]" />
                           </div>
                           <div className="space-y-0.5">
-                            <span className="block text-xs sm:text-sm font-semibold text-slate-800 dark:text-white">
+                            <span className="font-display block text-[11px] sm:text-xs font-semibold text-slate-800 dark:text-white">
                               Click to upload or drag &amp; drop
                             </span>
-                            <span className="block text-[11px] text-slate-400">PDF, PNG, or JPG (max. 10MB)</span>
+                            <span className="font-display block text-[11px] text-slate-400">PNG or JPG (max. 2MB)</span>
                           </div>
                         </div>
                       )}
 
                       {attemptedStep4 && !ownershipPreview && (
-                        <p className="mt-1 ml-2 text-[11px] font-medium text-red-600 dark:text-red-400 flex items-center gap-1">
+                        <p className="font-display mt-1 ml-2 text-[11px] font-medium text-red-600 dark:text-red-400 flex items-center gap-1">
                           <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                          <span>Please upload your Proof of Ownership or Lease.</span>
+                          <span className="font-display">Please upload your Proof of Ownership or Lease.</span>
                         </p>
                       )}
 
@@ -1313,6 +1316,84 @@ export default function BeachOwnerApplicationPage() {
                         onChange={(e) => handleFileSelection(e.target.files?.[0] || null, 'ownership')}
                       />
                     </div>
+
+                    {/* Document 3: Valid ID */}
+                    <div className="space-y-1.5">
+                      <label className="font-display block font-display text-xs font-bold text-brand-navy-500 dark:text-brand-teal-300">
+                        Valid ID <span className="text-red-500">*</span>
+                      </label>
+
+                      {idPreview ? (
+                        /* Blue Outline Preview Card */
+                        <div className="relative rounded-2xl border-2 border-brand-navy-500 dark:border-brand-teal-600 bg-white dark:bg-neutral-900 p-3.5 flex flex-col justify-between space-y-2.5 shadow-2xs transition-all">
+                          <button
+                            type="button"
+                            onClick={() => removeFile('id')}
+                            className="absolute top-2.5 right-2.5 w-6 h-6 rounded-full bg-slate-100 dark:bg-neutral-800 text-slate-500 hover:text-red-500 border border-slate-200 dark:border-neutral-700 flex items-center justify-center shadow-xs transition-colors cursor-pointer"
+                            title="Remove document"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+
+                          {idPreview.isImage ? (
+                            <div className="w-full h-32 rounded-xl overflow-hidden bg-white dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 flex items-center justify-center">
+                              <img
+                                src={idPreview.url}
+                                alt="ID Preview"
+                                className="w-full h-full object-contain"
+                              />
+                            </div>
+                          ) : (
+                            <div className="w-full h-32 rounded-xl bg-white dark:bg-neutral-950 border border-slate-200 dark:border-neutral-800 flex flex-col items-center justify-center p-3 text-center space-y-1">
+                              <div className="font-display w-10 h-10 rounded-lg bg-brand-navy-100 text-brand-navy-500 flex items-center justify-center font-bold text-xs">
+                                PDF
+                              </div>
+                              <span className="font-display text-xs font-bold text-slate-800 dark:text-white truncate max-w-[180px]">
+                                {idPreview.name}
+                              </span>
+                              <span className="font-display text-[10px] text-slate-400">PDF Document</span>
+                            </div>
+                          )}
+
+                          <div className="font-display flex items-center justify-between text-xs pt-1">
+                            <div className="min-w-0 pr-2">
+                              <div className="font-display font-bold text-slate-900 dark:text-white truncate text-[11px]">
+                                {idPreview.name}
+                              </div>
+                              <div className="font-display text-[10px] text-brand-navy-500 dark:text-brand-teal-300 font-semibold flex items-center gap-1">
+                                <CheckCircle2 className="w-3 h-3 text-brand-navy-500 dark:text-brand-teal-300" />
+                                <span className="font-display">Attached ({idPreview.compressionSummary || idPreview.size})</span>
+                              </div>
+                            </div>
+
+                            <button
+                              type="button"
+                              onClick={() => idCaptureRef.current?.open()}
+                              className="font-display text-[11px] font-bold text-brand-navy-500 dark:text-brand-teal-300 hover:underline flex-shrink-0 cursor-pointer"
+                            >
+                              Replace
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
+
+                      <IdCapture
+                        ref={idCaptureRef}
+                        hasPreview={Boolean(idPreview)}
+                        disabled={loading}
+                        invalid={Boolean(attemptedStep4 && !idPreview)}
+                        onCapture={(file) => {
+                          void handleFileSelection(file, 'id');
+                        }}
+                      />
+
+                      {attemptedStep4 && !idPreview && (
+                        <p className="font-display mt-1 ml-2 text-[11px] font-medium text-red-600 dark:text-red-400 flex items-center gap-1">
+                          <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
+                          <span className="font-display">Please capture your Valid ID.</span>
+                        </p>
+                      )}
+                    </div>
                   </div>
 
                   <LiveVerification onVerified={setLivenessNonce} />
@@ -1324,15 +1405,15 @@ export default function BeachOwnerApplicationPage() {
                         required
                         checked={formData.agreeToTerms}
                         onChange={(e) => setFormData({ ...formData, agreeToTerms: e.target.checked })}
-                        className="mt-0.5 w-4 h-4 rounded text-brand-navy-500 border-slate-300 focus:ring-brand-teal-400 cursor-pointer"
+                        className="mt-0.5 w-4 h-4 rounded accent-[#1F3F74] dark:accent-[#4987BA] border-[#1F3F74]/40 dark:border-[#4987BA]/40 focus:ring-[#1F3F74]/30 dark:[color-scheme:dark] cursor-pointer"
                       />
-                      <span className="text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
+                      <span className="font-display text-xs text-slate-700 dark:text-white leading-relaxed">
                         I certify under penalty of law that all submitted information and uploaded permits are authentic,
                         and I have read and accept the{' '}
                         <Link
                           href="/privacy"
                           target="_blank"
-                          className="text-brand-navy-500 dark:text-brand-teal-300 font-bold underline hover:opacity-80"
+                          className="font-display text-brand-navy-500 dark:text-brand-teal-300 font-bold underline hover:opacity-80"
                         >
                           Privacy Policy (RA 10173)
                         </Link>{' '}
@@ -1340,7 +1421,7 @@ export default function BeachOwnerApplicationPage() {
                         <Link
                           href="/terms"
                           target="_blank"
-                          className="text-brand-navy-500 dark:text-brand-teal-300 font-bold underline hover:opacity-80"
+                          className="font-display text-brand-navy-500 dark:text-brand-teal-300 font-bold underline hover:opacity-80"
                         >
                           Terms of Service
                         </Link>
@@ -1349,9 +1430,9 @@ export default function BeachOwnerApplicationPage() {
                     </label>
 
                     {attemptedStep4 && !formData.agreeToTerms && (
-                      <p className="mt-1.5 ml-7 text-[11px] font-medium text-red-600 dark:text-red-400 flex items-center gap-1">
+                      <p className="font-display mt-1.5 ml-7 text-[11px] font-medium text-red-600 dark:text-red-400 flex items-center gap-1">
                         <AlertCircle className="w-3.5 h-3.5 flex-shrink-0" />
-                        <span>You must certify your documents and accept the terms of service.</span>
+                        <span className="font-display">You must certify your documents and accept the terms of service.</span>
                       </p>
                     )}
                   </div>
@@ -1374,18 +1455,18 @@ export default function BeachOwnerApplicationPage() {
                         pendingApplication ||
                         pendingApplicationCheck === 'checking' ||
                         !livenessNonce ||
-                        !validateFullName(formData.applicant_full_name).ok ||
+                        !validateFullName(formData.applicantfullname).ok ||
                         Boolean(fullNameInputError)
                       }
-                      className="inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-brand-navy-500 hover:bg-brand-navy-600 text-white font-bold text-xs sm:text-sm shadow-md transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+                      className="font-display inline-flex items-center justify-center px-8 py-3.5 rounded-full bg-[#F4BF3E] hover:bg-[#e0a92e] text-black font-medium text-[11px] sm:text-xs shadow-md transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
                     >
                       {loading ? (
                         <div className="flex items-center gap-2">
                           <span className="w-4 h-4 rounded-full border-2 border-white/30 border-t-white animate-spin" />
-                          <span>Submitting Application...</span>
+                          <span className="font-display">Submitting Application...</span>
                         </div>
                       ) : (
-                        <span>Submit Owner Application</span>
+                        <span className="font-display">Submit Owner Application</span>
                       )}
                     </button>
                   </div>

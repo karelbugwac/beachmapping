@@ -4,16 +4,16 @@ import 'leaflet/dist/leaflet.css';
 import './globals.css';
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
-import { AiChatWidget } from '@/components/ai-chat-widget';
-import { ThemeProvider } from '@/components/theme-provider';
-import { CookieConsent } from '@/components/cookie-consent';
+import { AiChatWidget } from '@/components/chatbot';
+import { ThemeProvider } from '@/components/themeprovider';
+import { CookieConsent } from '@/components/cookies';
 import { FeedbackToasts } from '@/components/ui/feedback-toasts';
 import { ConfirmDialog } from '@/components/ui/confirm-dialog';
-import { VisitorTracker } from '@/components/visitor-tracker';
-import { PageLoader } from '@/components/page-loader';
-import { LoginDeviceTracker } from '@/components/login-device-tracker';
-import { AccountSuspensionGate } from '@/components/account-suspension-gate';
-import { PageRestorationGuard } from '@/components/auth/page-restoration-guard';
+import { VisitorTracker } from '@/components/visitors';
+import { PageLoader } from '@/components/pageloader';
+import { LoginDeviceTracker } from '@/components/trackdevices';
+import { AccountSuspensionGate } from '@/components/suspension';
+import { PageRestorationGuard } from '@/components/auth/pageguard';
 import { Suspense } from 'react';
 
 const inter = Inter({
@@ -64,6 +64,11 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="flex flex-col min-h-screen bg-slate-50 dark:bg-black text-slate-900 dark:text-zinc-100 transition-colors duration-200">
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var t=localStorage.getItem('dtb_theme');if(t!=='dark'&&t!=='light'){t=window.matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light'}var d=t==='dark';document.documentElement.classList.toggle('dark',d);document.documentElement.setAttribute('data-theme',t);}catch(e){}})();`,
+          }}
+        />
         <ThemeProvider>
           <Suspense fallback={null}>
             <PageLoader />

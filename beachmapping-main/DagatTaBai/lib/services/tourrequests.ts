@@ -3,23 +3,23 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
 import { invalidateBeachesCache } from '@/lib/db/beaches';
 import { extractTourEmbedUrl } from '@/lib/utils/tourEmbed';
-import { canTransitionTour, TourWorkflowError, type TourActor, type TourStatus } from './tourTransitions';
+import { canTransitionTour, TourWorkflowError, type TourActor, type TourStatus } from './tourtransitions';
 
 export interface TourRequestData {
   id: string;
-  beach_id: string;
-  owner_id: string | null;
-  requested_tour_url: string;
-  requester_note: string | null;
+  beachid: string;
+  ownerid: string | null;
+  requestedtoururl: string;
+  requesternote: string | null;
   status: TourStatus;
-  rejection_reason?: string | null;
-  status_note: string | null;
-  status_updated_at: string;
-  reviewed_by: string | null;
-  reviewed_at: string | null;
-  approved_at: string | null;
-  created_at: string;
-  updated_at: string;
+  rejectionreason?: string | null;
+  statusnote: string | null;
+  statusupdatedat: string;
+  reviewedby: string | null;
+  reviewedat: string | null;
+  approvedat: string | null;
+  createdat: string;
+  updatedat: string;
 }
 
 export interface TourRequestWithBeach extends TourRequestData {
@@ -28,27 +28,27 @@ export interface TourRequestWithBeach extends TourRequestData {
     name: string;
     slug: string;
     location: string;
-    virtual_tour_url: string | null;
-    owner_id: string | null;
+    virtualtoururl: string | null;
+    ownerid: string | null;
     cover_image?: string | null;
   } | null;
   owner?: {
     id: string;
-    full_name: string;
+    fullname: string;
     email: string | null;
   } | null;
 }
 
 export interface TourHistoryItem {
   id: string;
-  tour_id: string;
-  from_status: TourStatus | null;
-  to_status: TourStatus;
+  tourid: string;
+  fromstatus: TourStatus | null;
+  tostatus: TourStatus;
   note: string | null;
-  changed_by: string | null;
+  changedby: string | null;
   changed_by_name?: string | null;
   changed_by_role?: string | null;
-  created_at: string;
+  createdat: string;
 }
 
 function getAdminSupabase() {
@@ -57,18 +57,18 @@ function getAdminSupabase() {
 
 export async function getTourBeachOwnerId(beachId: string): Promise<string | null> {
   const { data, error } = await getAdminSupabase().from('beaches')
-    .select('owner_id')
+    .select('ownerid')
     .eq('id', beachId)
     .maybeSingle();
   if (error) throw error;
-  return data?.owner_id ?? null;
+  return data?.ownerid ?? null;
 }
 
 export async function getTourRequestForBeach(beachId: string): Promise<TourRequestData | null> {
-  const { data, error } = await getAdminSupabase().from('beach_tour_requests')
+  const { data, error } = await getAdminSupabase().from('tourrequests')
     .select('*')
-    .eq('beach_id', beachId)
-    .order('created_at', { ascending: false })
+    .eq('beachid', beachId)
+    .order('createdat', { ascending: false })
     .limit(1)
     .maybeSingle();
 
@@ -78,39 +78,39 @@ export async function getTourRequestForBeach(beachId: string): Promise<TourReque
 
 export async function getTourHistory(tourId: string): Promise<TourHistoryItem[]> {
   const admin = getAdminSupabase();
-  const { data, error } = await admin.from('beach_tour_status_history')
+  const { data, error } = await admin.from('tourstatushistory')
     .select('*')
-    .eq('tour_id', tourId)
-    .order('created_at', { ascending: false });
+    .eq('tourid', tourId)
+    .order('createdat', { ascending: false });
 
   if (error) throw error;
   const history = (data || []) as TourHistoryItem[];
   const userIds = Array.from(new Set(
-    history.map((item) => item.changed_by).filter((id): id is string => Boolean(id))
+    history.map((item) => item.changedby).filter((id): id is string => Boolean(id))
   ));
   if (userIds.length === 0) return history;
   const { data: profiles, error: profileError } = await admin.from('profiles')
-    .select('id, full_name, role')
+    .select('id, fullname, role')
     .in('id', userIds);
   if (profileError) throw profileError;
   const profileMap = new Map(
-    (profiles || []).map((profile) => [profile.id, { full_name: profile.full_name, role: profile.role }] as const)
+    (profiles || []).map((profile) => [profile.id, { fullname: profile.fullname, role: profile.role }] as const)
   );
   return history.map((item) => ({
     ...item,
-    changed_by_name: item.changed_by ? profileMap.get(item.changed_by)?.full_name || null : null,
-    changed_by_role: item.changed_by ? profileMap.get(item.changed_by)?.role || null : null,
+    changed_by_name: item.changedby ? profileMap.get(item.changedby)?.fullname || null : null,
+    changed_by_role: item.changedby ? profileMap.get(item.changedby)?.role || null : null,
   }));
 }
 
 export async function getAllTourRequests(): Promise<TourRequestWithBeach[]> {
   const admin = getAdminSupabase();
   const [requestsResult, beachesResult] = await Promise.all([
-    admin.from('beach_tour_requests')
+    admin.from('tourrequests')
       .select('*')
-      .order('status_updated_at', { ascending: false }),
+      .order('statusupdatedat', { ascending: false }),
     admin.from('beaches')
-      .select('id, name, slug, location, virtual_tour_url, owner_id, cover_image')
+      .select('id, name, slug, location, virtualtoururl, ownerid, coverimageurl')
       .order('name', { ascending: true }),
   ]);
   if (requestsResult.error) throw requestsResult.error;
@@ -120,19 +120,19 @@ export async function getAllTourRequests(): Promise<TourRequestWithBeach[]> {
     (beachesResult.data || []).map((beach) => [beach.id, beach] as const)
   );
   const ownerIds = Array.from(new Set(
-    (beachesResult.data || []).map((beach) => beach.owner_id).filter((id): id is string => Boolean(id))
+    (beachesResult.data || []).map((beach) => beach.ownerid).filter((id): id is string => Boolean(id))
   ));
-  const ownerMap = new Map<string, { id: string; full_name: string; email: string | null }>();
+  const ownerMap = new Map<string, { id: string; fullname: string; email: string | null }>();
   if (ownerIds.length) {
     const { data: profiles, error } = await admin.from('profiles')
-      .select('id, full_name, email')
+      .select('id, fullname, email')
       .in('id', ownerIds);
     if (error) throw error;
     (profiles || []).forEach((profile) => ownerMap.set(profile.id, profile));
   }
 
   return ((requestsResult.data || []) as TourRequestData[]).map((request) => {
-    const beach = beaches.get(request.beach_id) || null;
+    const beach = beaches.get(request.beachid) || null;
     return {
       ...request,
       beach: beach ? {
@@ -140,11 +140,11 @@ export async function getAllTourRequests(): Promise<TourRequestWithBeach[]> {
         name: beach.name,
         slug: beach.slug,
         location: beach.location,
-        virtual_tour_url: beach.virtual_tour_url,
-        owner_id: beach.owner_id,
-        cover_image: beach.cover_image,
+        virtualtoururl: beach.virtualtoururl,
+        ownerid: beach.ownerid,
+        cover_image: beach.coverimageurl,
       } : null,
-      owner: beach?.owner_id ? ownerMap.get(beach.owner_id) || null : null,
+      owner: beach?.ownerid ? ownerMap.get(beach.ownerid) || null : null,
     };
   });
 }
@@ -181,8 +181,8 @@ export async function saveTourDraft(params: {
   const requesterNote = params.requesterNote?.trim() || null;
 
   if (current) {
-    const { data, error } = await admin.from('beach_tour_requests')
-      .update({ requested_tour_url: requestedUrl, requester_note: requesterNote, updated_at: now })
+    const { data, error } = await admin.from('tourrequests')
+      .update({ requestedtoururl: requestedUrl, requesternote: requesterNote, updatedat: now })
       .eq('id', current.id)
       .eq('status', 'in_progress')
       .select('*')
@@ -192,14 +192,14 @@ export async function saveTourDraft(params: {
     return data as TourRequestData;
   }
 
-  const { data, error } = await admin.from('beach_tour_requests')
+  const { data, error } = await admin.from('tourrequests')
     .insert({
-      beach_id: params.beachId,
-      owner_id: params.ownerId,
-      requested_tour_url: requestedUrl,
-      requester_note: requesterNote,
+      beachid: params.beachId,
+      ownerid: params.ownerId,
+      requestedtoururl: requestedUrl,
+      requesternote: requesterNote,
       status: 'in_progress',
-      status_updated_at: now,
+      statusupdatedat: now,
     })
     .select('*')
     .single();
@@ -216,14 +216,14 @@ async function createStatusNotifications(
 ) {
   const admin = getAdminSupabase();
   const { data: beach, error: beachError } = await admin.from('beaches')
-    .select('name, owner_id')
-    .eq('id', tour.beach_id)
+    .select('name, ownerid')
+    .eq('id', tour.beachid)
     .single();
   if (beachError) throw beachError;
 
   const recipients = new Map<string, { title: string; message: string; actionUrl: string }>();
-  if (beach.owner_id) {
-    recipients.set(beach.owner_id, {
+  if (beach.ownerid) {
+    recipients.set(beach.ownerid, {
       title: toStatus === 'approved'
         ? 'Your 360° tour is approved'
         : toStatus === 'review'
@@ -253,14 +253,14 @@ async function createStatusNotifications(
   }
 
   if (recipients.size === 0) return;
-  const { error } = await admin.from('user_notifications').insert(
-    Array.from(recipients, ([user_id, notification]) => ({
-      user_id,
-      login_device_id: null,
+  const { error } = await admin.from('usernotifications').insert(
+    Array.from(recipients, ([userid, notification]) => ({
+      userid,
+      logindeviceid: null,
       type: 'tour_status',
       title: notification.title,
       message: notification.message,
-      action_url: notification.actionUrl,
+      actionurl: notification.actionUrl,
     }))
   );
   if (error) throw error;
@@ -274,14 +274,14 @@ export async function transitionTourRequest(params: {
   note?: string | null;
 }): Promise<TourRequestData> {
   const admin = getAdminSupabase();
-  const { data: current, error: currentError } = await admin.from('beach_tour_requests')
+  const { data: current, error: currentError } = await admin.from('tourrequests')
     .select('*')
     .eq('id', params.requestId)
     .maybeSingle();
   if (currentError) throw currentError;
   if (!current) throw new Error('Tour request not found.');
 
-  const latest = await getTourRequestForBeach(current.beach_id);
+  const latest = await getTourRequestForBeach(current.beachid);
   if (!latest || !canTransitionTour({
     actor: params.actor,
     fromStatus: current.status,
@@ -297,14 +297,14 @@ export async function transitionTourRequest(params: {
   const note = params.toStatus === 'in_progress' ? params.note!.trim() : null;
   const update = {
     status: params.toStatus,
-    status_updated_at: now,
-    status_note: note,
-    reviewed_by: params.actor === 'admin' ? params.actorId : null,
-    reviewed_at: params.actor === 'admin' ? now : null,
-    approved_at: params.toStatus === 'approved' ? now : null,
-    updated_at: now,
+    statusupdatedat: now,
+    statusnote: note,
+    reviewedby: params.actor === 'admin' ? params.actorId : null,
+    reviewedat: params.actor === 'admin' ? now : null,
+    approvedat: params.toStatus === 'approved' ? now : null,
+    updatedat: now,
   };
-  const { data, error } = await admin.from('beach_tour_requests')
+  const { data, error } = await admin.from('tourrequests')
     .update(update)
     .eq('id', params.requestId)
     .eq('status', current.status)
@@ -316,8 +316,8 @@ export async function transitionTourRequest(params: {
   const tour = data as TourRequestData;
   if (params.toStatus === 'approved') {
     const { error: beachError } = await admin.from('beaches')
-      .update({ virtual_tour_url: tour.requested_tour_url, updated_at: now })
-      .eq('id', tour.beach_id);
+      .update({ virtualtoururl: tour.requestedtoururl, updatedat: now })
+      .eq('id', tour.beachid);
     if (beachError) throw beachError;
   }
   invalidateBeachesCache();
@@ -327,7 +327,7 @@ export async function transitionTourRequest(params: {
 
 export async function getTourRequestForAdmin(requestId: string): Promise<TourRequestWithBeach | null> {
   const admin = getAdminSupabase();
-  const { data: request, error } = await admin.from('beach_tour_requests')
+  const { data: request, error } = await admin.from('tourrequests')
     .select('*')
     .eq('id', requestId)
     .maybeSingle();
@@ -335,15 +335,15 @@ export async function getTourRequestForAdmin(requestId: string): Promise<TourReq
   if (!request) return null;
 
   const { data: beach, error: beachError } = await admin.from('beaches')
-    .select('id, name, slug, location, virtual_tour_url, owner_id, cover_image')
-    .eq('id', request.beach_id)
+    .select('id, name, slug, location, virtualtoururl, ownerid, coverimageurl')
+    .eq('id', request.beachid)
     .maybeSingle();
   if (beachError) throw beachError;
   let owner: TourRequestWithBeach['owner'] = null;
-  if (request.owner_id) {
+  if (request.ownerid) {
     const { data, error: ownerError } = await admin.from('profiles')
-      .select('id, full_name, email')
-      .eq('id', request.owner_id)
+      .select('id, fullname, email')
+      .eq('id', request.ownerid)
       .maybeSingle();
     if (ownerError) throw ownerError;
     owner = data;
@@ -355,16 +355,16 @@ export async function getTourRequestForAdmin(requestId: string): Promise<TourReq
       name: beach.name,
       slug: beach.slug,
       location: beach.location,
-      virtual_tour_url: beach.virtual_tour_url,
-      owner_id: beach.owner_id,
-      cover_image: beach.cover_image,
+      virtualtoururl: beach.virtualtoururl,
+      ownerid: beach.ownerid,
+      cover_image: beach.coverimageurl,
     } : null,
     owner,
   } as TourRequestWithBeach;
 }
 
 /**
- * Approves a pending tour request: sets beaches.virtual_tour_url and updates request status.
+ * Approves a pending tour request: sets beaches.virtualtoururl and updates request status.
  */
 export async function approveTourRequest(params: {
   beachId: string;
@@ -376,21 +376,21 @@ export async function approveTourRequest(params: {
   const now = new Date().toISOString();
 
   const currentReq = await getTourRequestForBeach(beachId);
-  if (!currentReq || !currentReq.requested_tour_url) {
+  if (!currentReq || !currentReq.requestedtoururl) {
     throw new Error('No pending 360 tour request found for this beach.');
   }
 
   const candidateUrl =
     typeof overrideTourUrl === 'string' && overrideTourUrl.trim()
       ? extractTourEmbedUrl(overrideTourUrl.trim()) || overrideTourUrl.trim()
-      : currentReq.requested_tour_url;
+      : currentReq.requestedtoururl;
   const isRecapturePlaceholder = candidateUrl === 'Recapture Request';
 
   if (!isRecapturePlaceholder) {
     const { error: beachError } = await (admin.from('beaches') as any)
       .update({
-        virtual_tour_url: candidateUrl,
-        updated_at: now,
+        virtualtoururl: candidateUrl,
+        updatedat: now,
       })
       .eq('id', beachId);
 
@@ -401,15 +401,15 @@ export async function approveTourRequest(params: {
     invalidateBeachesCache();
   }
 
-  await (admin.from('beach_tour_requests') as any)
+  await (admin.from('tourrequests') as any)
     .update({
       status: 'approved',
-      reviewed_by: reviewerId || null,
-      reviewed_at: now,
-      approved_at: now,
-      updated_at: now,
+      reviewedby: reviewerId || null,
+      reviewedat: now,
+      approvedat: now,
+      updatedat: now,
     })
-    .eq('beach_id', beachId)
+    .eq('beachid', beachId)
     .eq('status', currentReq.status);
 
   return { success: true, tourUrl: candidateUrl };
@@ -424,24 +424,24 @@ export async function rejectTourRequest(params: {
   const admin = getAdminSupabase();
   const now = new Date().toISOString();
 
-  await (admin.from('beach_tour_requests') as any)
+  await (admin.from('tourrequests') as any)
     .update({
       status: 'in_progress',
-      status_note: rejectionReason,
-      reviewed_by: reviewerId || null,
-      reviewed_at: now,
-      updated_at: now,
+      statusnote: rejectionReason,
+      reviewedby: reviewerId || null,
+      reviewedat: now,
+      updatedat: now,
     })
-    .eq('beach_id', beachId);
+    .eq('beachid', beachId);
 
   return true;
 }
 
 export async function cancelTourRequest(params: { beachId: string }): Promise<boolean> {
   const admin = getAdminSupabase();
-  await (admin.from('beach_tour_requests') as any)
+  await (admin.from('tourrequests') as any)
     .delete()
-    .eq('beach_id', params.beachId)
+    .eq('beachid', params.beachId)
     .eq('status', 'in_progress');
   return true;
 }

@@ -25,21 +25,21 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
 
   const now = new Date().toISOString();
   const update = action === 'read' || action === 'logout_device'
-    ? { read_at: now }
-    : { read_at: now, response: action, responded_at: now };
+    ? { readat: now }
+    : { readat: now, response: action, respondedat: now };
 
   // 1. Try updating database table first
   let dbNotification: any = null;
   try {
     const supabase = await createServerSupabaseClient();
-    let query = (supabase.from('user_notifications') as any)
+    let query = (supabase.from('usernotifications') as any)
       .update(update)
       .eq('id', id)
-      .eq('user_id', user.id);
+      .eq('userid', user.id);
     if (action !== 'read') query = query.is('response', null).neq('type', 'tour_status');
 
     const { data } = await query
-      .select('id, type, title, message, action_url, created_at, read_at, response, device:login_devices!user_notifications_login_device_id_fkey(browser, platform)')
+      .select('id, type, title, message, actionurl, createdat, readat, response, device:logindevices!user_notifications_login_device_id_fkey(browser, platform)')
       .maybeSingle();
 
     if (data) {
@@ -48,9 +48,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         type: data.type,
         title: data.title,
         message: data.message,
-        action_url: data.action_url,
-        created_at: data.created_at,
-        read_at: data.read_at,
+        actionurl: data.actionurl,
+        createdat: data.createdat,
+        readat: data.readat,
         response: data.response,
         browser: data.device?.browser || 'Browser',
         platform: data.device?.platform || 'Unknown device',
@@ -80,7 +80,7 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
         // Find and remove the device that matches this notification
         const filteredDevices = loginDevices.filter((device: any) => {
           // Match by checking if device login matches notification timestamp
-          return !(device.login_at === dbNotification.created_at);
+          return !(device.login_at === dbNotification.createdat);
         });
         
         await admin.auth.admin.updateUserById(user.id, {
@@ -110,9 +110,9 @@ export async function PATCH(request: NextRequest, context: RouteContext) {
       const existing = locationNotifications[targetIdx];
       const updatedItem = {
         ...existing,
-        read_at: now,
+        readat: now,
         response: action === 'read' ? existing.response : action,
-        responded_at: action === 'read' ? existing.responded_at : now,
+        respondedat: action === 'read' ? (existing.respondedat ?? existing.responded_at ?? null) : now,
       };
 
       locationNotifications[targetIdx] = updatedItem;

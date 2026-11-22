@@ -92,8 +92,8 @@ export async function POST(request: NextRequest) {
             error: error || 'Your account is suspended.',
             code: 'ACCOUNT_SUSPENDED',
             reason: suspendedAccount.reason,
-            reason_type: suspendedAccount.reasonType,
-            suspended_until: suspendedAccount.suspendedUntil,
+            reasontype: suspendedAccount.reasonType,
+            suspendeduntil: suspendedAccount.suspendedUntil,
           },
           {
             status: 403,

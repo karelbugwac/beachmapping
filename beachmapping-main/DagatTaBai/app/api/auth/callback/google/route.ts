@@ -62,6 +62,7 @@ export async function GET(request: NextRequest) {
     let oauthRedirect: string | null = null;
     try {
       const cookieStore = await cookies();
+      // Try to get redirect from cookies first (for server-initiated flows)
       oauthRedirect = cookieStore.get('dtb_oauth_redirect')?.value ?? null;
       const allCookies = cookieStore.getAll();
       for (const c of allCookies) {
@@ -73,11 +74,15 @@ export async function GET(request: NextRequest) {
       // Best-effort cookie cleanup
     }
 
-    const isPlatformAdmin = data.user.email?.toLowerCase() === 'official.dagattabai@gmail.com';
+    // If no cookie redirect, check sessionStorage via a small client-side script
+    // For now, we'll use a fallback - the client will handle the final redirect
+    if (!oauthRedirect) {
+      oauthRedirect = '/home'; // Default fallback
+    }
 
     // Check if user exists in profiles table (should be auto-created by trigger)
     const { data: profile, error: profileError } = await (supabase.from('profiles') as any)
-      .select('*')
+      .select('id, accountstatus, status, suspendeduntil, suspensionendsat, profileimageurl')
       .eq('id', data.user.id)
       .maybeSingle();
 
@@ -86,23 +91,23 @@ export async function GET(request: NextRequest) {
       try {
         const { error: upsertError } = await (supabase.from('profiles') as any).upsert({
           id: data.user.id,
-          full_name: data.user.user_metadata?.name || data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'User',
+          fullname: data.user.user_metadata?.name || data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'User',
           email: data.user.email,
-          profile_image_url: data.user.user_metadata?.avatar_url || data.user.user_metadata?.picture || null,
-          role: isPlatformAdmin ? 'admin' : 'user',
-          updated_at: new Date().toISOString(),
+          profileimageurl: data.user.user_metadata?.avatar_url || data.user.user_metadata?.picture || null,
+          role: 'user',
+          updatedat: new Date().toISOString(),
         });
 
         if (upsertError) {
           console.error('Profile upsert error:', upsertError);
-          // If profile_image_url column doesn't exist yet, try without it
-          console.warn('Retrying without profile_image_url');
+          // If profileimageurl column doesn't exist yet, try without it
+          console.warn('Retrying without profileimageurl');
           const { error: retryError } = await (supabase.from('profiles') as any).upsert({
             id: data.user.id,
-            full_name: data.user.user_metadata?.name || data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'User',
+            fullname: data.user.user_metadata?.name || data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'User',
             email: data.user.email,
-            role: isPlatformAdmin ? 'admin' : 'user',
-            updated_at: new Date().toISOString(),
+            role: 'user',
+            updatedat: new Date().toISOString(),
           });
 
           if (retryError) {
@@ -113,17 +118,22 @@ export async function GET(request: NextRequest) {
         console.error('Profile creation exception:', err);
       }
     } else {
-      if (isPlatformAdmin && profile.role !== 'admin') {
-        await (createAdminClient().from('profiles') as any)
-          .update({ role: 'admin', updated_at: new Date().toISOString() })
-          .eq('id', data.user.id);
+      // Check if account is suspended
+      const accountStatus = profile.accountstatus || profile.status || 'active';
+      const suspendedUntil = profile.suspendeduntil || profile.suspensionendsat || null;
+      const isSuspensionActive = accountStatus === 'suspended' && (!suspendedUntil || new Date(suspendedUntil) > new Date());
+      
+      if (isSuspensionActive) {
+        await supabase.auth.signOut().catch(() => {});
+        return NextResponse.redirect(`${siteUrl}/login?error=account_suspended`);
       }
+
       // Update profile if metadata has changed
-      if (data.user.user_metadata?.avatar_url && (!profile.profile_image_url)) {
+      if (data.user.user_metadata?.avatar_url && (!profile.profileimageurl)) {
         try {
           await (supabase.from('profiles') as any).update({
-            profile_image_url: data.user.user_metadata.avatar_url,
-            updated_at: new Date().toISOString(),
+            profileimageurl: data.user.user_metadata.avatar_url,
+            updatedat: new Date().toISOString(),
           }).eq('id', data.user.id);
         } catch (err) {
           console.warn('Profile image update failed:', err);
@@ -131,10 +141,9 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    const target = getSafeInternalRedirect(
-      oauthRedirect,
-      isPlatformAdmin ? '/admin/dashboard' : '/home'
-    );
+    // Determine redirect - always go to /home for regular users
+    // Admin/owner/staff have their own separate login flows
+    const target = getSafeInternalRedirect(oauthRedirect, '/home');
     return NextResponse.redirect(`${siteUrl}${target}`);
   } catch (error) {
     console.error('Google OAuth callback error:', error);

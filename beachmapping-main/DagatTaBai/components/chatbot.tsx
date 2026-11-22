@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
   X,
-  Send,
+  ArrowUp,
   Trash2,
 } from 'lucide-react';
 import { showToast } from '@/components/ui/feedback-toasts';
@@ -15,7 +15,7 @@ import {
   getContextualBranchQuestions,
   matchBaiInstantAnswer,
   getBaiApologyFallback,
-} from '@/lib/services/baiKnowledgeBase';
+} from '@/lib/services/baiknowledge';
 
 interface ChatMessage {
   id: string;
@@ -217,11 +217,11 @@ export function AiChatWidget() {
         if (!response.ok) throw new Error(data.error || 'Could not load chat history.');
         setSignedIn(Boolean(data.signedIn));
         if (Array.isArray(data.messages) && data.messages.length) {
-          setMessages(data.messages.map((message: { id: string; role: 'user' | 'assistant'; content: string; created_at: string }) => ({
+          setMessages(data.messages.map((message: { id: string; role: 'user' | 'assistant'; content: string; createdat: string }) => ({
             id: message.id,
             sender: message.role,
             text: message.content,
-            timestamp: new Date(message.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+            timestamp: new Date(message.createdat).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
           })));
         }
       })
@@ -509,17 +509,17 @@ export function AiChatWidget() {
                   className="w-24 h-24 object-contain"
                 />
                 <div className="space-y-3">
-                  <p className="text-sm font-bold text-slate-900 dark:text-white">
-                    Sign in to talk with Bai
+                  <p className="text-sm font-medium text-slate-900 dark:text-white">
+                    Sign up to talk with Bai
                   </p>
                   <p className="text-[11px] text-slate-600 dark:text-slate-400 leading-relaxed max-w-[220px]">
                     Get answers about beaches, directions, and local tips
                   </p>
                   <Link
-                    href="/login"
-                    className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-[#F4BF3E] hover:bg-[#e2af35] text-black text-xs font-bold shadow-md transition-all hover:scale-105 cursor-pointer"
+                    href="/register"
+                    className="inline-flex items-center justify-center px-6 py-2.5 rounded-full bg-[#F4BF3E] hover:bg-[#e2af35] text-black text-xs font-medium shadow-md transition-all hover:scale-105 cursor-pointer"
                   >
-                    Sign In
+                    Sign Up
                   </Link>
                 </div>
               </div>
@@ -561,19 +561,38 @@ export function AiChatWidget() {
             )}
 
             {signedIn && !hasUserMessages && !loading && (
-              <div className="ml-7 space-y-1.5 pt-0.5">
-                <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400">Try asking</p>
-                <div className="flex flex-wrap gap-1.5">
-                  {BAI_SUGGESTED_QUESTIONS.map((item) => (
-                    <button
-                      key={item.label}
-                      type="button"
-                      onClick={() => void submitQuestion(item.question)}
-                      className="border border-slate-200 bg-white px-2.5 py-1 text-[10px] font-medium text-brand-navy-500 transition-colors hover:border-brand-navy-500/40 hover:bg-brand-navy-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 dark:border-slate-700 dark:bg-brand-navy-800 dark:text-brand-navy-200 dark:hover:bg-brand-navy-800 dark:focus-visible:ring-brand-teal-400"
-                    >
-                      {item.label}
-                    </button>
-                  ))}
+              <div className="ml-7 space-y-4 pt-4">
+                {/* Welcome Message */}
+                <div className="flex items-end gap-1.5">
+                  <Image
+                    src="/images/bai.png"
+                    alt="Bai"
+                    width={24}
+                    height={24}
+                    className="mb-4 w-6 h-6 shrink-0 object-contain"
+                  />
+                  <div className="max-w-[85%] border border-slate-200 bg-white text-slate-800 dark:border-slate-800 dark:bg-brand-navy-800 dark:text-slate-100 px-3 py-2 shadow-2xs">
+                    <p className="text-[11px] sm:text-xs leading-relaxed">
+                      <span className="font-bold">Kumusta!</span> I'm Bai, your Catmon Coast guide. Ask me anything about beaches, directions, or local tips.
+                    </p>
+                  </div>
+                </div>
+
+                {/* Quick Questions */}
+                <div>
+                  <p className="text-[10px] font-semibold text-slate-500 dark:text-slate-400 mb-2">Quick questions</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    {BAI_SUGGESTED_QUESTIONS.map((item) => (
+                      <button
+                        key={item.label}
+                        type="button"
+                        onClick={() => void submitQuestion(item.question)}
+                        className="border border-slate-200 bg-white px-3 py-2 text-[10px] sm:text-xs font-medium text-brand-navy-500 rounded-full transition-colors hover:border-brand-navy-500/40 hover:bg-brand-navy-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 dark:border-slate-700 dark:bg-brand-navy-800 dark:text-brand-navy-200 dark:hover:bg-brand-navy-800 dark:focus-visible:ring-brand-teal-400"
+                      >
+                        {item.label}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
@@ -636,23 +655,25 @@ export function AiChatWidget() {
               onSubmit={handleSend}
               className="flex shrink-0 items-center gap-2 border-t border-slate-200 bg-white p-2.5 dark:border-neutral-800 dark:bg-[#0c1424] sm:p-3"
             >
-              <input
-                type="text"
-                value={input}
-                onChange={(e) => setInput(e.target.value)}
-                disabled={loading}
-                placeholder={loading ? 'Generating answer, please wait...' : 'Ask Bai anything...'}
-                aria-label="Message Bai"
-                className="min-w-0 flex-1 border border-slate-200 bg-white px-3.5 py-2 text-xs text-slate-900 transition focus:border-[#1F3F74] focus:outline-none focus:ring-2 focus:ring-[#1F3F74]/15 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-[#132035] dark:text-slate-100 dark:focus:border-[#4987BA] dark:focus:ring-[#4987BA]/20"
-              />
-              <button
-                type="submit"
-                disabled={loading || !input.trim()}
-                className="flex h-8 w-8 shrink-0 items-center justify-center bg-[#1F3F74] text-white shadow-xs transition hover:bg-[#16305a] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1F3F74] focus-visible:ring-offset-2 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 dark:focus-visible:ring-offset-[#0c1424]"
-                aria-label="Send message"
-              >
-                <Send size={14} />
-              </button>
+              <div className="relative flex-1">
+                <input
+                  type="text"
+                  value={input}
+                  onChange={(e) => setInput(e.target.value)}
+                  disabled={loading}
+                  placeholder={loading ? 'Generating answer, please wait...' : 'Ask Bai anything...'}
+                  aria-label="Message Bai"
+                  className="w-full border border-slate-200 bg-white rounded-full px-4 py-2.5 pr-12 text-xs text-slate-900 transition focus:border-[#1F3F74] focus:outline-none focus:ring-2 focus:ring-[#1F3F74]/15 disabled:cursor-not-allowed disabled:opacity-60 dark:border-slate-800 dark:bg-[#132035] dark:text-slate-100 dark:focus:border-[#4987BA] dark:focus:ring-[#4987BA]/20"
+                />
+                <button
+                  type="submit"
+                  disabled={loading || !input.trim()}
+                  className="absolute right-1.5 top-1/2 -translate-y-1/2 flex h-6 w-6 items-center justify-center bg-[#F4BF3E] text-black rounded-full shadow-md transition hover:bg-[#e2af35] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#F4BF3E] focus-visible:ring-offset-2 active:scale-95 disabled:cursor-not-allowed disabled:opacity-40 dark:focus-visible:ring-offset-[#0c1424]"
+                  aria-label="Send message"
+                >
+                  <ArrowUp size={12} />
+                </button>
+              </div>
             </form>
           )}
 

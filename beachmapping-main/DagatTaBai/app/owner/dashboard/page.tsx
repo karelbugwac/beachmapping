@@ -26,7 +26,7 @@ interface ReviewAnalytics {
     rating: number;
     comment: string;
     user_name: string;
-    created_at: string;
+    createdat: string;
   }>;
 }
 
@@ -109,9 +109,9 @@ export default function OwnerDashboardPage() {
   }
 
   const beachName = beach?.name || 'Your Beach';
-  const rating = reviews?.averageRating || beach?.average_rating || 0;
+  const rating = reviews?.averageRating || beach?.averagerating || 0;
   const reviewCount = reviews?.totalReviews || 0;
-  const hasTour = Boolean(beach?.virtual_tour_url);
+  const hasTour = Boolean(beach?.virtualtoururl);
   const hasMapPin = Boolean(getValidBeachCoordinates(beach?.latitude, beach?.longitude));
 
   // Total visits calculation
@@ -291,7 +291,7 @@ export default function OwnerDashboardPage() {
                     </div>
                   </div>
                   <span className="text-[11px] text-slate-400 dark:text-neutral-500 font-medium">
-                    {new Date(r.created_at).toLocaleDateString()}
+                    {new Date(r.createdat).toLocaleDateString()}
                   </span>
                 </div>
                 <p className="text-xs text-slate-600 dark:text-neutral-300 leading-relaxed">

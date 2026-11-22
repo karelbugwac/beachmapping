@@ -189,19 +189,19 @@ export function isValidChallengeResult(
 
 export function validateNonceSession(
   session: {
-    nonce_hash: string;
-    expires_at: string;
-    consumed_at: string | null;
-    completed_at: string | null;
+    noncehash: string;
+    expiresat: string;
+    consumedat: string | null;
+    completedat: string | null;
     status: string;
   } | null,
   nonceHash: string,
   now: number
 ) {
-  if (!session || !nonceHash || session.nonce_hash !== nonceHash) return 'missing';
-  if (session.consumed_at) return 'reused';
-  if (session.completed_at) return 'reused';
-  if (new Date(session.expires_at).getTime() <= now) return 'expired';
+  if (!session || !nonceHash || session.noncehash !== nonceHash) return 'missing';
+  if (session.consumedat) return 'reused';
+  if (session.completedat) return 'reused';
+  if (new Date(session.expiresat).getTime() <= now) return 'expired';
   if (session.status !== 'pending') return 'tampered';
   return 'valid';
 }

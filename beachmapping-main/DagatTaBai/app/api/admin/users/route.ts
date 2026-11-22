@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authorizeRoles } from '@/lib/supabase/authorization';
 import { isAccountSuspended } from '@/lib/utils/account-suspension';
-import { validateAdminMutationRequest } from '@/lib/server/admin-request';
+import { validateAdminMutationRequest } from '@/lib/server/adminrequest';
 
 export async function GET(request: NextRequest) {
   try {
@@ -36,13 +36,13 @@ export async function GET(request: NextRequest) {
     ] = await Promise.all([
       adminClient.auth.admin.listUsers({ page: 1, perPage: 1000 }),
       (adminClient.from('profiles') as any)
-        .select('id, full_name, email, role, location, pin, profile_image_url, status, suspension_reason, suspended_at, suspension_ends_at, account_status, status_reason, status_reason_type, suspended_until, status_changed_at, created_at, updated_at'),
+        .select('id, fullname, email, role, location, pin, profileimageurl, status, suspensionreason, suspendedat, suspensionendsat, accountstatus, statusreason, statusreasontype, suspendeduntil, statuschangedat, createdat, updatedat'),
       (adminClient.from('beaches') as any)
-        .select('id, name, owner_id'),
-      (adminClient.from('beach_reviews') as any)
-        .select('id, beach_id, user_id, rating, comment, created_at'),
-      (adminClient.from('platform_reviews') as any)
-        .select('id, user_id, rating, comment, created_at'),
+        .select('id, name, ownerid'),
+      (adminClient.from('beachreviews') as any)
+        .select('id, beachid, userid, rating, comment, createdat'),
+      (adminClient.from('platformreviews') as any)
+        .select('id, userid, rating, comment, createdat'),
     ]);
 
     if (authUsersError) throw authUsersError;
@@ -60,43 +60,43 @@ export async function GET(request: NextRequest) {
 
     const beachesByOwner = new Map<string, Array<{ id: string; name: string }>>();
     (beachesData || []).forEach((b: any) => {
-      if (b.owner_id) {
-        const list = beachesByOwner.get(b.owner_id) || [];
+      if (b.ownerid) {
+        const list = beachesByOwner.get(b.ownerid) || [];
         list.push({ id: b.id, name: b.name });
-        beachesByOwner.set(b.owner_id, list);
+        beachesByOwner.set(b.ownerid, list);
       }
     });
 
     const reviewsByUser = new Map<string, any[]>();
     (beachReviewsData || []).forEach((r: any) => {
-      if (r.user_id) {
-        const list = reviewsByUser.get(r.user_id) || [];
+      if (r.userid) {
+        const list = reviewsByUser.get(r.userid) || [];
         list.push({
           id: r.id,
-          beach_id: r.beach_id,
-          beach_name: beachNameMap.get(r.beach_id) || 'Beach',
+          beachid: r.beachid,
+          beachname: beachNameMap.get(r.beachid) || 'Beach',
           rating: Number(r.rating),
           comment: r.comment,
-          created_at: r.created_at,
+          createdat: r.createdat,
           review_type: 'beach',
         });
-        reviewsByUser.set(r.user_id, list);
+        reviewsByUser.set(r.userid, list);
       }
     });
 
     (platformReviewsData || []).forEach((r: any) => {
-      if (r.user_id) {
-        const list = reviewsByUser.get(r.user_id) || [];
+      if (r.userid) {
+        const list = reviewsByUser.get(r.userid) || [];
         list.push({
           id: r.id,
-          beach_id: null,
-          beach_name: 'Platform feedback',
+          beachid: null,
+          beachname: 'Platform feedback',
           rating: Number(r.rating),
           comment: r.comment,
-          created_at: r.created_at,
+          createdat: r.createdat,
           review_type: 'platform',
         });
-        reviewsByUser.set(r.user_id, list);
+        reviewsByUser.set(r.userid, list);
       }
     });
 
@@ -105,10 +105,10 @@ export async function GET(request: NextRequest) {
       const metadata = u.user_metadata || {};
       const userReviews = reviewsByUser.get(u.id) || [];
       const currentSuspension = isAccountSuspended({
-        status: profile?.account_status === 'suspended' || profile?.status === 'suspended' || metadata.status === 'suspended'
+        status: profile?.accountstatus === 'suspended' || profile?.status === 'suspended' || metadata.status === 'suspended'
           ? 'suspended'
           : 'active',
-        suspension_ends_at: profile?.suspended_until || profile?.suspension_ends_at || metadata.suspension_ends_at || null,
+        suspensionendsat: profile?.suspendeduntil || profile?.suspensionendsat || metadata.suspension_ends_at || null,
       });
 
       // Determine precise account status: active, deactivated, suspended
@@ -123,20 +123,20 @@ export async function GET(request: NextRequest) {
 
       return {
         id: u.id,
-        name: profile?.full_name || metadata.name || metadata.full_name || u.email?.split('@')[0] || 'User',
+        name: profile?.fullname || metadata.name || metadata.full_name || u.email?.split('@')[0] || 'User',
         email: profile?.email || u.email || 'No email',
         role: profile?.role || metadata.role || 'user',
         status,
-        account_status: currentSuspension ? 'suspended' : profile?.account_status === 'under_review' ? 'under_review' : 'active',
-        status_reason: profile?.status_reason || profile?.suspension_reason || metadata.status_reason || null,
-        status_reason_type: profile?.status_reason_type || null,
-        status_updated_at: profile?.status_changed_at || profile?.suspended_at || metadata.status_updated_at || null,
-        status_changed_at: profile?.status_changed_at || null,
-        suspended_until: profile?.suspended_until || null,
-        suspension_ends_at: profile?.suspended_until || profile?.suspension_ends_at || metadata.suspension_ends_at || null,
+        accountstatus: currentSuspension ? 'suspended' : profile?.accountstatus === 'under_review' ? 'under_review' : 'active',
+        statusreason: profile?.statusreason || profile?.suspensionreason || metadata.status_reason || null,
+        statusreasontype: profile?.statusreasontype || null,
+        statusupdatedat: profile?.statuschangedat || profile?.suspendedat || metadata.status_updated_at || null,
+        statuschangedat: profile?.statuschangedat || null,
+        suspendeduntil: profile?.suspendeduntil || null,
+        suspensionendsat: profile?.suspendeduntil || profile?.suspensionendsat || metadata.suspension_ends_at || null,
         location: profile?.location || null,
-        profile_image_url: profile?.profile_image_url || null,
-        joined: profile?.created_at || u.created_at,
+        profileimageurl: profile?.profileimageurl || null,
+        joined: profile?.createdat || u.created_at,
         last_sign_in_at: u.last_sign_in_at || null,
         has_pin: Boolean(profile?.pin),
         beaches: beachesByOwner.get(u.id) || [],

@@ -23,9 +23,9 @@ import {
   Phone,
   Mail,
 } from 'lucide-react';
-import { MapView } from '@/components/map/map-view';
+import { MapView } from '@/components/map/map';
 import type { BeachRecord } from '@/lib/db/beaches';
-import type { RouteResult } from '@/lib/db/routing';
+import type { RouteResult } from '@/lib/db/route';
 import { SeaRoute } from '@/components/ui/coastal-icons';
 import { getValidBeachCoordinates } from '@/lib/utils/beach-coordinates';
 import { matchesBeachSearch } from '@/lib/utils/beach-search';
@@ -549,7 +549,7 @@ export default function MapPageClient() {
           {/* Sidebar Top Header: Title, Location & Close Action (No card background, no border-b) */}
           <div className="px-4 pt-3 pb-2 sm:px-5 sm:pt-4 sm:pb-2.5 flex items-start justify-between gap-3 flex-shrink-0">
             <div className="min-w-0 flex-1">
-              <h3 className="font-extrabold text-lg sm:text-xl text-brand-navy-500 dark:text-brand-teal-400 font-sans truncate tracking-tight">
+              <h3 className="font-extrabold text-lg sm:text-xl text-brand-navy-500 dark:text-brand-teal-400 font-display truncate tracking-tight">
                 {selectedBeach.name}
               </h3>
               <p className="text-xs text-slate-500 dark:text-neutral-400 flex items-center gap-1 mt-0.5 truncate">
@@ -571,10 +571,10 @@ export default function MapPageClient() {
           <div className="flex-1 overflow-y-auto p-4 sm:p-5 space-y-4 no-scrollbar">
             {/* 360 Virtual Tour / Cover Image Preview Banner (Flat corners / rounded-none as requested) */}
             <div className="relative w-full h-48 sm:h-52 rounded-none overflow-hidden bg-slate-950 shadow-md border border-slate-200/80 dark:border-neutral-800 flex-shrink-0">
-              {selectedBeach.virtual_tour_url ? (
+              {selectedBeach.virtualtoururl ? (
                 <div className="relative w-full h-full">
                   <iframe
-                    src={selectedBeach.virtual_tour_url}
+                    src={selectedBeach.virtualtoururl}
                     title={`${selectedBeach.name} 360 Virtual Tour`}
                     className="w-full h-full border-0 pointer-events-auto"
                     allow="accelerometer; gyroscope; magnetometer; fullscreen"
@@ -603,10 +603,10 @@ export default function MapPageClient() {
               )}
 
               {/* Floating Rating Pill Top-Right */}
-              {selectedBeach.average_rating > 0 && (
+              {selectedBeach.averagerating > 0 && (
                 <div className="absolute top-3 right-3 bg-black/75 backdrop-blur-md text-white px-2.5 py-1 rounded-full text-xs font-bold flex items-center gap-1 border border-white/10 shadow-sm z-10 pointer-events-none">
                   <Star className="w-3.5 h-3.5 fill-brand-sun-400 text-brand-sun-700" />
-                  <span>{selectedBeach.average_rating.toFixed(1)}</span>
+                  <span>{selectedBeach.averagerating.toFixed(1)}</span>
                 </div>
               )}
             </div>
@@ -633,21 +633,21 @@ export default function MapPageClient() {
             )}
 
             {/* 2. Official Contact Information */}
-            {(selectedBeach.contact_phone || selectedBeach.contact_email) && (
+            {(selectedBeach.contactphone || selectedBeach.contactemail) && (
               <div className="space-y-1.5 pt-0.5 text-xs">
                 <span className="block text-[11px] font-bold text-slate-500 dark:text-neutral-400 uppercase tracking-wider mb-1">
                   Contact Information
                 </span>
-                {selectedBeach.contact_phone && (
+                {selectedBeach.contactphone && (
                   <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     <Phone className="w-3.5 h-3.5 text-brand-navy-500 dark:text-brand-teal-400 shrink-0" />
-                    <span>{formatContactPhone(selectedBeach.contact_phone)}</span>
+                    <span>{formatContactPhone(selectedBeach.contactphone)}</span>
                   </div>
                 )}
-                {selectedBeach.contact_email && (
+                {selectedBeach.contactemail && (
                   <div className="flex items-center gap-2 text-slate-700 dark:text-slate-300">
                     <Mail className="w-3.5 h-3.5 text-brand-navy-500 dark:text-brand-teal-400 shrink-0" />
-                    <span className="truncate">{selectedBeach.contact_email}</span>
+                    <span className="truncate">{selectedBeach.contactemail}</span>
                   </div>
                 )}
               </div>
@@ -660,18 +660,18 @@ export default function MapPageClient() {
                 <span>Operating Hours</span>
               </span>
               <span className="text-slate-600 dark:text-slate-400 font-medium">
-                {parseOpeningHoursSummary(selectedBeach.opening_hours)}
+                {parseOpeningHoursSummary(selectedBeach.openinghours)}
               </span>
             </div>
 
             {/* 4. Entrance Fee */}
-            {selectedBeach.entrance_fee && (
+            {selectedBeach.entrancefee && (
               <div className="flex items-center justify-between py-1 text-xs">
                 <span className="font-semibold text-slate-700 dark:text-slate-300">
                   Entrance Fee
                 </span>
                 <span className="font-extrabold text-brand-navy-500 dark:text-brand-teal-400">
-                  {parseEntranceFee(selectedBeach.entrance_fee, selectedBeach.entrance_fee_adults, selectedBeach.entrance_fee_children, selectedBeach.entrance_fee_senior)}
+                  {parseEntranceFee(selectedBeach.entrancefee, selectedBeach.entrance_fee_adults, selectedBeach.entrance_fee_children, selectedBeach.entrance_fee_senior)}
                 </span>
               </div>
             )}

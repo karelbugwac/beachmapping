@@ -1,5 +1,5 @@
 export interface VisitorEventDate {
-  visit_date: string;
+  visitdate: string;
 }
 
 export function buildVisitorSeries(days = 7) {
@@ -21,7 +21,7 @@ export function countVisitorsByDate(
 ) {
   const totals = new Map(dates.map((point) => [point.date, 0]));
   for (const event of events || []) {
-    const date = event.visit_date.slice(0, 10);
+    const date = event.visitdate.slice(0, 10);
     if (totals.has(date)) totals.set(date, (totals.get(date) || 0) + 1);
   }
   return dates.map((point) => ({ ...point, visitors: totals.get(point.date) || 0 }));

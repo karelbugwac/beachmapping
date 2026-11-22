@@ -2,8 +2,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authorizeRoles } from '@/lib/supabase/authorization';
 import { createAdminClient } from '@/lib/supabase/server';
-import { isAdministratorAccount, validateAdminMutationRequest, noStoreHeaders } from '@/lib/server/admin-request';
-import { isAllowedAdminResetTarget } from '@/lib/server/admin-reset-policy';
+import { isAdministratorAccount, validateAdminMutationRequest, noStoreHeaders } from '@/lib/server/adminrequest';
+import { isAllowedAdminResetTarget } from '@/lib/server/resetpolicy';
 
 async function checkRateLimit(
   adminClient: ReturnType<typeof createAdminClient>,
@@ -47,7 +47,7 @@ export async function POST(
     }
 
     const { data: target, error: targetError } = await (auth.adminClient.from('profiles') as any)
-      .select('id, email, full_name, role, pin_reset_required')
+      .select('id, email, fullname, role, pinresetrequired')
       .eq('id', id)
       .maybeSingle();
     if (targetError) throw targetError;
@@ -82,26 +82,26 @@ export async function POST(
       const { error: resetError } = await (auth.adminClient.from('profiles') as any)
         .update({
           pin: null,
-          pin_reset_required: true,
-          updated_at: new Date().toISOString(),
+          pinresetrequired: true,
+          updatedat: new Date().toISOString(),
         })
         .eq('id', id);
       if (resetError) throw resetError;
 
-      const { error: notificationError } = await (auth.adminClient.from('user_notifications') as any).insert({
-        user_id: id,
-        login_device_id: null,
+      const { error: notificationError } = await (auth.adminClient.from('usernotifications') as any).insert({
+        userid: id,
+        logindeviceid: null,
         type: 'pin_reset',
         title: 'Create a new owner PIN',
         message: 'Your PIN was reset by an administrator. Create a new PIN the next time you sign in.',
-        action_url: '/owner/reset-pin',
+        actionurl: '/owner/reset-pin',
       });
       if (notificationError) throw notificationError;
     }
 
-    const { error: auditError } = await (auth.adminClient.from('admin_audit_log') as any).insert({
-      admin_id: auth.user.id,
-      target_user_id: id,
+    const { error: auditError } = await (auth.adminClient.from('adminlog') as any).insert({
+      adminid: auth.user.id,
+      targetuserid: id,
       action,
       reason: null,
     });

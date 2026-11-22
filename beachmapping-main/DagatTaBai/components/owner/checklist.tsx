@@ -13,7 +13,7 @@ interface SetupChecklistProps {
 export function SetupChecklist({ beach, reviewCount = 0 }: SetupChecklistProps) {
   const hasCover = Boolean(beach?.cover_image);
   const hasDescription = Boolean(beach?.description && beach.description.length > 20);
-  const hasHoursAndRates = Boolean(beach?.opening_hours && (beach?.entrance_fee || beach?.cottage_fee));
+  const hasHoursAndRates = Boolean(beach?.openinghours && (beach?.entrancefee || beach?.cottagefee));
   const photoCount = Array.isArray(beach?.images) ? beach.images.length : 0;
   const hasFivePhotos = photoCount >= 5;
   const hasReview = reviewCount > 0;

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { calculateRoadRoute } from '@/lib/db/routing';
+import { calculateRoadRoute } from '@/lib/db/route';
 import { checkRateLimit, rateLimitExceededResponse } from '@/lib/utils/rate-limit';
 
 export async function POST(request: NextRequest) {

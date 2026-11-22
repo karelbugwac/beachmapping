@@ -17,35 +17,38 @@ import {
   ZoomOut,
   RotateCcw,
   Palmtree,
+  IdCard,
 } from 'lucide-react';
 
 interface ApplicationData {
   id: string;
-  applicant_full_name?: string;
+  applicantfullname?: string;
   applicant_name?: string;
-  applicant_email: string;
-  business_name: string;
-  beach_name: string;
-  contact_phone?: string;
+  applicantemail: string;
+  businessname: string;
+  beachname: string;
+  contactphone?: string;
   contact_info?: string;
-  business_permit_path?: string;
+  businesspermitpath?: string;
   business_permit_url?: string | null;
-  proof_of_ownership_path?: string;
+  proofofownershippath?: string;
   proof_of_ownership_url?: string | null;
   ownership_proof_path?: string;
-  live_selfie_path?: string;
+  valididpath?: string | null;
+  valid_id_url?: string | null;
+  liveselfiepath?: string;
   live_selfie_url?: string | null;
-  liveness_status?: 'passed' | 'failed' | 'flagged' | 'pending';
-  liveness_checked_at?: string | null;
-  liveness_attempts?: number;
-  liveness_snapshot_path?: string | null;
+  livenessstatus?: 'passed' | 'failed' | 'flagged' | 'pending';
+  livenesscheckedat?: string | null;
+  livenessattempts?: number;
+  livenesssnapshotpath?: string | null;
   liveness_snapshot_url?: string | null;
-  liveness_flagged_reasons?: string[];
+  livenessflaggedreasons?: string[];
   status: 'pending' | 'approved' | 'rejected';
-  rejection_reason?: string;
-  account_status?: 'active' | 'under_review' | 'suspended' | null;
+  rejectionreason?: string;
+  accountstatus?: 'active' | 'under_review' | 'suspended' | null;
   account_status_reason?: string | null;
-  created_at: string;
+  createdat: string;
 }
 
 export default function AdminApplicationDetailPage({
@@ -128,7 +131,7 @@ export default function AdminApplicationDetailPage({
   }, [previewDocument]);
 
   const notesDisplay = application
-    ? getApplicationNotesDisplay(status, application.rejection_reason)
+    ? getApplicationNotesDisplay(status, application.rejectionreason)
     : null;
 
   const fetchDetail = async (silent = false) => {
@@ -141,7 +144,7 @@ export default function AdminApplicationDetailPage({
         setStatus(data.application.status || 'pending');
         if (!silent) {
           setAdminNotes(
-            data.application.status === 'pending' ? '' : data.application.rejection_reason || ''
+            data.application.status === 'pending' ? '' : data.application.rejectionreason || ''
           );
         }
       }
@@ -178,7 +181,7 @@ export default function AdminApplicationDetailPage({
 
       setStatus('approved');
       notifyRealtimeSync('all');
-      showToast(`Approved! 6-digit PIN emailed to ${application.applicant_email}.`, 'success');
+      showToast(`Approved! 6-digit PIN emailed to ${application.applicantemail}.`, 'success');
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Approval failed', 'error');
     } finally {
@@ -206,7 +209,7 @@ export default function AdminApplicationDetailPage({
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'reject',
-          rejection_reason: validation.value,
+          rejectionreason: validation.value,
           note: validation.value,
         }),
       });
@@ -216,7 +219,7 @@ export default function AdminApplicationDetailPage({
 
       setStatus('rejected');
       setApplication((current) =>
-        current ? { ...current, rejection_reason: reason } : current
+        current ? { ...current, rejectionreason: reason } : current
       );
       notifyRealtimeSync('applications');
       showToast('Application rejected.', 'error');
@@ -271,7 +274,7 @@ export default function AdminApplicationDetailPage({
             <div className="min-w-0">
               <div className="flex items-center gap-2 flex-wrap">
                 <h1 className="text-xl font-extrabold text-brand-navy-500 dark:text-white truncate">
-                  {application.beach_name}
+                  {application.beachname}
                 </h1>
                 <span
                   className={`inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full text-[11px] font-bold capitalize ${
@@ -295,7 +298,7 @@ export default function AdminApplicationDetailPage({
                 </span>
               </div>
               <p className="text-xs text-slate-500 dark:text-neutral-400 truncate mt-0.5">
-                {application.business_name}
+                {application.businessname}
               </p>
             </div>
           </div>
@@ -309,7 +312,7 @@ export default function AdminApplicationDetailPage({
                 Applicant
               </span>
               <span className="font-bold text-slate-800 dark:text-neutral-200 mt-1 block">
-                {application.applicant_full_name || application.applicant_name || 'Not provided'}
+                {application.applicantfullname || application.applicant_name || 'Not provided'}
               </span>
             </div>
 
@@ -318,7 +321,7 @@ export default function AdminApplicationDetailPage({
                 Email
               </span>
               <span className="font-bold text-slate-800 dark:text-neutral-200 mt-1 block truncate">
-                {application.applicant_email}
+                {application.applicantemail}
               </span>
             </div>
 
@@ -327,14 +330,14 @@ export default function AdminApplicationDetailPage({
                 Account status
               </span>
               <span className="font-bold text-slate-800 dark:text-neutral-200 mt-1 block capitalize">
-                {application.account_status?.replaceAll('_', ' ') || 'No linked account'}
+                {application.accountstatus?.replaceAll('_', ' ') || 'No linked account'}
               </span>
-              {application.account_status === 'under_review' && application.account_status_reason && (
+              {application.accountstatus === 'under_review' && application.account_status_reason && (
                 <span className="mt-1 block text-slate-500 dark:text-neutral-400">
                   Internal note: {application.account_status_reason}
                 </span>
               )}
-              {application.account_status === 'suspended' && application.account_status_reason && (
+              {application.accountstatus === 'suspended' && application.account_status_reason && (
                 <span className="mt-1 block text-rose-600 dark:text-rose-300">
                   Reason: {application.account_status_reason}
                 </span>
@@ -346,7 +349,7 @@ export default function AdminApplicationDetailPage({
                 Phone
               </span>
               <span className="font-bold text-slate-800 dark:text-neutral-200 mt-1 block">
-                {application.contact_phone || application.contact_info || 'Not provided'}
+                {application.contactphone || application.contact_info || 'Not provided'}
               </span>
             </div>
 
@@ -355,7 +358,7 @@ export default function AdminApplicationDetailPage({
                 Submitted
               </span>
               <span className="font-bold text-slate-800 dark:text-neutral-200 mt-1 block">
-                {new Date(application.created_at).toLocaleDateString(undefined, {
+                {new Date(application.createdat).toLocaleDateString(undefined, {
                   year: 'numeric',
                   month: 'short',
                   day: 'numeric',
@@ -381,7 +384,7 @@ export default function AdminApplicationDetailPage({
                 type="button"
                 onClick={() =>
                   openDocument(
-                    application.business_permit_url || application.business_permit_path,
+                    application.business_permit_url || application.businesspermitpath,
                     "Mayor's Business Permit"
                   )
                 }
@@ -403,7 +406,7 @@ export default function AdminApplicationDetailPage({
                 onClick={() =>
                   openDocument(
                     application.proof_of_ownership_url ||
-                      application.proof_of_ownership_path ||
+                      application.proofofownershippath ||
                       application.ownership_proof_path,
                     'Proof of Ownership'
                   )
@@ -425,7 +428,7 @@ export default function AdminApplicationDetailPage({
                 type="button"
                 onClick={() =>
                   openDocument(
-                    application.liveness_snapshot_url || application.live_selfie_url || application.live_selfie_path || '/logo.png',
+                    application.liveness_snapshot_url || application.live_selfie_url || application.liveselfiepath || '/logo.png',
                     'Live verification snapshot'
                   )
                 }
@@ -441,38 +444,59 @@ export default function AdminApplicationDetailPage({
                 </div>
                 <Eye className="w-4 h-4 text-slate-400 text-brand-navy-700 flex-shrink-0" />
               </button>
+
+              <button
+                type="button"
+                onClick={() =>
+                  openDocument(
+                    application.valid_id_url || application.valididpath,
+                    'Valid ID'
+                  )
+                }
+                className="p-3.5 rounded-2xl border border-slate-200 dark:border-neutral-800 hover:border-brand-navy-500 bg-white dark:bg-neutral-900 flex items-center justify-between gap-2 text-left transition-all cursor-pointer group"
+              >
+                <div className="flex items-center gap-2.5 min-w-0">
+                  <div className="w-8 h-8 rounded-xl bg-brand-navy-50 dark:bg-brand-navy-900/60 text-brand-navy-600 dark:text-brand-teal-300 flex items-center justify-center flex-shrink-0">
+                    <IdCard className="w-4 h-4" />
+                  </div>
+                  <span className="text-xs font-bold text-slate-800 dark:text-white truncate">
+                    Valid ID
+                  </span>
+                </div>
+                <Eye className="w-4 h-4 text-slate-400 group-hover:text-brand-navy-600 flex-shrink-0" />
+              </button>
             </div>
             <div className="rounded-2xl border border-slate-200 dark:border-neutral-800 bg-slate-50 dark:bg-neutral-800/40 p-3.5 text-xs space-y-2">
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-bold text-slate-500 uppercase tracking-wider text-[10px]">Liveness</span>
                 <span className={`rounded-full px-2.5 py-1 text-[10px] font-bold uppercase ${
-                  application.liveness_status === 'passed'
+                  application.livenessstatus === 'passed'
                     ? 'bg-emerald-100 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-300'
-                    : application.liveness_status === 'flagged'
+                    : application.livenessstatus === 'flagged'
                       ? 'bg-amber-100 text-amber-800 dark:bg-amber-950 dark:text-amber-300'
                       : 'bg-rose-100 text-rose-800 dark:bg-rose-950 dark:text-rose-300'
                 }`}>
-                  {application.liveness_status || 'pending'}
+                  {application.livenessstatus || 'pending'}
                 </span>
                 <span className="text-slate-500 dark:text-slate-400">
-                  Attempts: {application.liveness_attempts || 0}
+                  Attempts: {application.livenessattempts || 0}
                 </span>
               </div>
-                {status === 'pending' && application.liveness_status !== 'passed' && (
+                {status === 'pending' && application.livenessstatus !== 'passed' && (
                   <p className="text-rose-700 dark:text-rose-300">
                     Live verification must pass before this application can be approved.
                   </p>
                 )}
-              {application.liveness_flagged_reasons?.length ? (
+              {application.livenessflaggedreasons?.length ? (
                 <p className="text-amber-800 dark:text-amber-300">
-                  Flags: {application.liveness_flagged_reasons.join(', ')}
+                  Flags: {application.livenessflaggedreasons.join(', ')}
                 </p>
               ) : (
                 <p className="text-slate-500 dark:text-slate-400">No review flags.</p>
               )}
-              {application.liveness_checked_at && (
+              {application.livenesscheckedat && (
                 <p className="text-slate-500 dark:text-slate-400">
-                  Checked {new Date(application.liveness_checked_at).toLocaleString()}
+                  Checked {new Date(application.livenesscheckedat).toLocaleString()}
                 </p>
               )}
             </div>
@@ -533,8 +557,8 @@ export default function AdminApplicationDetailPage({
 
             <button
               type="button"
-              disabled={submitting || (status === 'pending' && application.liveness_status !== 'passed')}
-              title={status === 'pending' && application.liveness_status !== 'passed'
+              disabled={submitting || (status === 'pending' && application.livenessstatus !== 'passed')}
+              title={status === 'pending' && application.livenessstatus !== 'passed'
                 ? 'Live verification must pass before approval.'
                 : undefined}
               onClick={handleApprove}

@@ -9,10 +9,10 @@ import {
   detectLanguage,
   detectBeachesInText,
   type BeachKey,
-} from '@/lib/services/baiKnowledgeBase';
+} from '@/lib/services/baiknowledge';
 
 export interface ScannedCottage {
-  beach_id: string;
+  beachid: string;
   name: string;
   description: string;
   price: string | null;
@@ -20,7 +20,7 @@ export interface ScannedCottage {
 }
 
 export interface ScannedFacility {
-  beach_id: string;
+  beachid: string;
   name: string;
   category: string;
   description: string;
@@ -29,16 +29,16 @@ export interface ScannedFacility {
 }
 
 export interface ScannedPost {
-  beach_id: string;
+  beachid: string;
   caption: string;
-  created_at: string;
+  createdat: string;
 }
 
 export interface ScannedReview {
-  beach_id: string;
+  beachid: string;
   rating: number;
   comment: string;
-  created_at: string;
+  createdat: string;
 }
 
 export interface EnrichedSystemBeach {
@@ -107,7 +107,7 @@ function formatTideTimeManila(isoTime: string): string {
 /**
  * Gathers live data from:
  * 1) The System (opening status calculator, platform features, system weather & tide services)
- * 2) The Database (beaches, beach_cottages, beach_facilities, beach_posts, beach_reviews, platform_reviews, beach_weather_snapshots)
+ * 2) The Database (beaches, cottages, facilities, beachposts, beachreviews, platformreviews, weathersnapshots)
  */
 export async function scanLiveSystemSnapshot(): Promise<SystemScanSnapshot> {
   const now = Date.now();
@@ -140,27 +140,27 @@ export async function scanLiveSystemSnapshot(): Promise<SystemScanSnapshot> {
   try {
     const admin = createAdminClient();
     const [cRes, fRes, pRes, rRes, prRes, snapRes] = await Promise.allSettled([
-      (admin.from('beach_cottages') as any)
-        .select('beach_id, name, description, price, capacity_label, capacity, is_available')
-        .eq('is_available', true),
-      (admin.from('beach_facilities') as any)
-        .select('beach_id, name, category, description, price, price_label, rates, is_available')
-        .eq('is_available', true),
-      (admin.from('beach_posts') as any)
-        .select('beach_id, caption, created_at, status')
+      (admin.from('cottages') as any)
+        .select('beachid, name, description, price, capacitylabel, capacity, isavailable')
+        .eq('isavailable', true),
+      (admin.from('facilities') as any)
+        .select('beachid, name, category, description, price, pricelabel, rates, isavailable')
+        .eq('isavailable', true),
+      (admin.from('beachposts') as any)
+        .select('beachid, caption, createdat, status')
         .eq('status', 'published')
-        .order('created_at', { ascending: false })
+        .order('createdat', { ascending: false })
         .limit(20),
-      (admin.from('beach_reviews') as any)
-        .select('beach_id, rating, comment, created_at')
-        .order('created_at', { ascending: false })
+      (admin.from('beachreviews') as any)
+        .select('beachid, rating, comment, createdat')
+        .order('createdat', { ascending: false })
         .limit(40),
-      (admin.from('platform_reviews') as any)
+      (admin.from('platformreviews') as any)
         .select('id', { count: 'exact', head: true }),
       !tides
-        ? (admin.from('beach_weather_snapshots') as any)
-            .select('tide_extremes, synced_at')
-            .order('synced_at', { ascending: false })
+        ? (admin.from('weathersnapshots') as any)
+            .select('tideextremes, syncedat')
+            .order('syncedat', { ascending: false })
             .limit(1)
             .maybeSingle()
         : Promise.resolve({ data: null }),
@@ -173,9 +173,9 @@ export async function scanLiveSystemSnapshot(): Promise<SystemScanSnapshot> {
     if (prRes.status === 'fulfilled' && typeof prRes.value.count === 'number') {
       platformReviewsCount = prRes.value.count;
     }
-    if (!tides && snapRes.status === 'fulfilled' && Array.isArray(snapRes.value?.data?.tide_extremes)) {
+    if (!tides && snapRes.status === 'fulfilled' && Array.isArray(snapRes.value?.data?.tideextremes)) {
       tides = {
-        extremes: snapRes.value.data.tide_extremes,
+        extremes: snapRes.value.data.tideextremes,
         copyright: 'Database Tide Snapshot',
       };
     }
@@ -185,47 +185,47 @@ export async function scanLiveSystemSnapshot(): Promise<SystemScanSnapshot> {
 
   const nowDate = new Date();
   const enrichedBeaches: EnrichedSystemBeach[] = beaches.map((beach) => {
-    const openStatusNow = getOpeningStatus(beach.opening_hours, nowDate);
-    const groups = formatOpeningHoursGroups(beach.opening_hours);
+    const openStatusNow = getOpeningStatus(beach.openinghours, nowDate);
+    const groups = formatOpeningHoursGroups(beach.openinghours);
     const formattedHours = groups.map((g) => `${g.days}: ${g.hours}`).join(' | ');
 
     const cottages: ScannedCottage[] = cottagesRows
-      .filter((c) => c.beach_id === beach.id)
+      .filter((c) => c.beachid === beach.id)
       .map((c) => ({
-        beach_id: c.beach_id,
+        beachid: c.beachid,
         name: String(c.name || ''),
         description: String(c.description || ''),
         price: c.price != null ? `₱${c.price}` : null,
-        capacity: c.capacity_label || (c.capacity ? `${c.capacity} persons` : null),
+        capacity: c.capacitylabel || (c.capacity ? `${c.capacity} persons` : null),
       }));
 
     const facilities: ScannedFacility[] = facilitiesRows
-      .filter((f) => f.beach_id === beach.id)
+      .filter((f) => f.beachid === beach.id)
       .map((f) => ({
-        beach_id: f.beach_id,
+        beachid: f.beachid,
         name: String(f.name || ''),
         category: String(f.category || 'amenity'),
         description: String(f.description || ''),
-        price: f.price_label || (f.price != null ? `₱${f.price}` : null),
+        price: f.pricelabel || (f.price != null ? `₱${f.price}` : null),
         ratesText: formatRatesArray(f.rates),
       }));
 
     const posts: ScannedPost[] = postsRows
-      .filter((p) => p.beach_id === beach.id && p.caption)
+      .filter((p) => p.beachid === beach.id && p.caption)
       .slice(0, 5)
       .map((p) => ({
-        beach_id: p.beach_id,
+        beachid: p.beachid,
         caption: String(p.caption || ''),
-        created_at: String(p.created_at || ''),
+        createdat: String(p.createdat || ''),
       }));
 
     const beachReviews: ScannedReview[] = reviewsRows
-      .filter((r) => r.beach_id === beach.id)
+      .filter((r) => r.beachid === beach.id)
       .map((r) => ({
-        beach_id: r.beach_id,
+        beachid: r.beachid,
         rating: Number(r.rating || 0),
         comment: String(r.comment || ''),
-        created_at: String(r.created_at || ''),
+        createdat: String(r.createdat || ''),
       }));
 
     return {
@@ -305,23 +305,23 @@ export function formatSystemScanForAiPrompt(
     lines.push(`  - Real-Time Status Right Now: ${statusText}`);
     lines.push(`  - Operating Hours: ${item.formattedHours}`);
     if (b.description) lines.push(`  - Description: ${b.description}`);
-    if (b.entrance_fee) lines.push(`  - Entrance Fee (DB): ${b.entrance_fee}`);
-    if (b.cottage_fee) lines.push(`  - Cottage Fee Summary (DB): ${b.cottage_fee}`);
-    if (b.average_rating > 0 || item.reviewCount > 0) {
-      lines.push(`  - Rating & Reviews: ${b.average_rating.toFixed(1)} / 5.0 stars (${item.reviewCount} reviews)`);
+    if (b.entrancefee) lines.push(`  - Entrance Fee (DB): ${b.entrancefee}`);
+    if (b.cottagefee) lines.push(`  - Cottage Fee Summary (DB): ${b.cottagefee}`);
+    if (b.averagerating > 0 || item.reviewCount > 0) {
+      lines.push(`  - Rating & Reviews: ${b.averagerating.toFixed(1)} / 5.0 stars (${item.reviewCount} reviews)`);
     }
-    if (b.peak_days || b.peak_hours || b.best_visiting_time) {
+    if (b.peakdays || b.peakhours || b.bestvisitingtime) {
       lines.push(
-        `  - Crowd / Visiting Info: Peak Days=${b.peak_days || 'N/A'}, Peak Hours=${b.peak_hours || 'N/A'}, Best Time=${b.best_visiting_time || 'N/A'}`
+        `  - Crowd / Visiting Info: Peak Days=${b.peakdays || 'N/A'}, Peak Hours=${b.peakhours || 'N/A'}, Best Time=${b.bestvisitingtime || 'N/A'}`
       );
     }
     if (b.rules) lines.push(`  - Beach Rules: ${b.rules}`);
-    if (b.contact_phone || b.contact_email || b.facebook_url || b.instagram_url) {
+    if (b.contactphone || b.contactemail || b.facebookurl || b.instagramurl) {
       lines.push(
-        `  - Contacts & Socials: Phone=${b.contact_phone || 'N/A'}, Email=${b.contact_email || 'N/A'}, FB=${b.facebook_url || 'N/A'}, IG=${b.instagram_url || 'N/A'}`
+        `  - Contacts & Socials: Phone=${b.contactphone || 'N/A'}, Email=${b.contactemail || 'N/A'}, FB=${b.facebookurl || 'N/A'}, IG=${b.instagramurl || 'N/A'}`
       );
     }
-    lines.push(`  - 360 Virtual Tour Available: ${b.virtual_tour_url ? 'Yes (available on beach page)' : 'No'}`);
+    lines.push(`  - 360 Virtual Tour Available: ${b.virtualtoururl ? 'Yes (available on beach page)' : 'No'}`);
     if (b.activities.length > 0) lines.push(`  - Activities: ${b.activities.join(', ')}`);
     if (b.amenities.length > 0) lines.push(`  - Amenities: ${b.amenities.join(', ')}`);
     if (item.cottages.length > 0) {
@@ -453,11 +453,11 @@ export function scanSystemForDirectAnswer(
     )
   ) {
     if (snapshot.beaches.length > 0) {
-      const sorted = [...targetBeaches].sort((a, b) => b.record.average_rating - a.record.average_rating);
+      const sorted = [...targetBeaches].sort((a, b) => b.record.averagerating - a.record.averagerating);
       const lines = sorted.map((b) => {
         const ratingStr =
-          b.record.average_rating > 0
-            ? `**${b.record.average_rating.toFixed(1)} / 5.0 ★** (${b.reviewCount} ${b.reviewCount === 1 ? 'review' : 'reviews'})`
+          b.record.averagerating > 0
+            ? `**${b.record.averagerating.toFixed(1)} / 5.0 ★** (${b.reviewCount} ${b.reviewCount === 1 ? 'review' : 'reviews'})`
             : isCeb
             ? 'Wala pay rating'
             : 'No ratings yet';
@@ -475,7 +475,7 @@ export function scanSystemForDirectAnswer(
 
   // 4. 360° VIRTUAL TOUR
   if (/\b(virtual\s+tour|360|360\s*view|360\s*degree|panorama|street\s*view)\b/i.test(lower)) {
-    const withTour = snapshot.beaches.filter((b) => Boolean(b.record.virtual_tour_url));
+    const withTour = snapshot.beaches.filter((b) => Boolean(b.record.virtualtoururl));
     if (withTour.length > 0) {
       const names = withTour.map((b) => `**${b.record.name}**`).join(', ');
       return isCeb
@@ -493,9 +493,9 @@ export function scanSystemForDirectAnswer(
     const lines = targetBeaches
       .map((b) => {
         const parts: string[] = [];
-        if (b.record.peak_days) parts.push(`Peak Days: **${b.record.peak_days}**`);
-        if (b.record.peak_hours) parts.push(`Peak Hours: **${b.record.peak_hours}**`);
-        if (b.record.best_visiting_time) parts.push(`Best Time to Visit: **${b.record.best_visiting_time}**`);
+        if (b.record.peakdays) parts.push(`Peak Days: **${b.record.peakdays}**`);
+        if (b.record.peakhours) parts.push(`Peak Hours: **${b.record.peakhours}**`);
+        if (b.record.bestvisitingtime) parts.push(`Best Time to Visit: **${b.record.bestvisitingtime}**`);
         if (parts.length === 0) return null;
         return `• **${b.record.name}:** ${parts.join(' · ')}`;
       })

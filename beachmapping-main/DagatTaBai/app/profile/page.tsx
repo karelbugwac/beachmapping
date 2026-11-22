@@ -23,7 +23,7 @@ import {
   X,
   AlertCircle,
 } from 'lucide-react';
-import { useTheme } from '@/components/theme-provider';
+import { useTheme } from '@/components/themeprovider';
 import { showToast } from '@/components/ui/feedback-toasts';
 import { signOutAndClearClientState } from '@/lib/client/logout';
 import { confirmAction } from '@/components/ui/confirm-dialog';
@@ -41,18 +41,18 @@ interface ProfileData {
   role: 'user' | 'beach_owner' | 'beach_manager' | 'admin';
   picture?: string | null;
   location?: string | null;
-  created_at?: string;
+  createdat?: string;
 }
 
 interface UserReview {
   id: string;
-  beach_id: string;
-  beach_name?: string;
+  beachid: string;
+  beachname?: string;
   beach_slug?: string;
   review_type?: 'beach' | 'platform';
   rating: number;
   comment: string;
-  created_at: string;
+  createdat: string;
 }
 
 const AVATAR_PREVIEW_SIZE = 192;
@@ -129,12 +129,12 @@ export default function ProfilePage() {
         if (res.ok && data.user && isMounted) {
           const profileUser: ProfileData = {
             id: data.user.id,
-            name: data.user.full_name || data.user.email?.split('@')[0] || 'User',
+            name: data.user.fullname || data.user.email?.split('@')[0] || 'User',
             email: data.user.email || '',
             role: data.user.role || 'user',
-            picture: data.user.profile_image_url || null,
+            picture: data.user.profileimageurl || null,
             location: data.user.location || '',
-            created_at: data.user.created_at,
+            createdat: data.user.createdat,
           };
           savedProfileRef.current = { name: profileUser.name, location: profileUser.location || '' };
           setUser(profileUser);
@@ -166,7 +166,7 @@ export default function ProfilePage() {
               sbUser.user_metadata?.picture ||
               null,
             location: typeof sbUser.user_metadata?.location === 'string' ? sbUser.user_metadata.location : '',
-            created_at: sbUser.created_at,
+            createdat: sbUser.created_at,
           };
           savedProfileRef.current = { name: fallbackUser.name, location: fallbackUser.location || '' };
           setUser(fallbackUser);
@@ -193,7 +193,7 @@ export default function ProfilePage() {
               sbData.user.user_metadata?.picture ||
               null,
             location: typeof sbData.user.user_metadata?.location === 'string' ? sbData.user.user_metadata.location : '',
-            created_at: sbData.user.created_at,
+            createdat: sbData.user.created_at,
           };
           savedProfileRef.current = { name: fallbackUser.name, location: fallbackUser.location || '' };
           setUser(fallbackUser);
@@ -290,7 +290,7 @@ export default function ProfilePage() {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            full_name: pendingProfile.name,
+            fullname: pendingProfile.name,
             location: pendingProfile.location,
           }),
         });
@@ -302,12 +302,12 @@ export default function ProfilePage() {
         savedProfileRef.current = pendingProfile;
         setUser((previous) =>
           previous
-            ? { ...previous, name: data.user.full_name, location: data.user.location || '' }
+            ? { ...previous, name: data.user.fullname, location: data.user.location || '' }
             : null
         );
         window.dispatchEvent(
           new CustomEvent('dtb_user_updated', {
-            detail: { full_name: data.user.full_name },
+            detail: { fullname: data.user.fullname },
           })
         );
         notifyRealtimeSync('users');
@@ -434,7 +434,7 @@ export default function ProfilePage() {
       const res = await fetch('/api/auth/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profile_image_url: profileImageUrl }),
+        body: JSON.stringify({ profileimageurl: profileImageUrl }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
@@ -448,7 +448,7 @@ export default function ProfilePage() {
       }
       if (!data?.user) throw new Error('The server did not confirm the photo update.');
 
-      setUser((prev) => (prev ? { ...prev, picture: data.user.profile_image_url } : null));
+      setUser((prev) => (prev ? { ...prev, picture: data.user.profileimageurl } : null));
       const oldAvatarPaths = ['webp', 'jpg']
         .map((suffix) => `${user.id}/avatar.${suffix}`)
         .filter((path) => path !== storagePath);
@@ -464,7 +464,7 @@ export default function ProfilePage() {
       }
       window.dispatchEvent(
         new CustomEvent('dtb_user_updated', {
-          detail: { profile_image_url: data.user.profile_image_url },
+          detail: { profileimageurl: data.user.profileimageurl },
         })
       );
       setAvatarEditorOpen(false);
@@ -484,7 +484,7 @@ export default function ProfilePage() {
       const res = await fetch('/api/auth/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ profile_image_url: null }),
+        body: JSON.stringify({ profileimageurl: null }),
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) {
@@ -502,7 +502,7 @@ export default function ProfilePage() {
       }
       window.dispatchEvent(
         new CustomEvent('dtb_user_updated', {
-          detail: { profile_image_url: null },
+          detail: { profileimageurl: null },
         })
       );
       setAvatarEditorOpen(false);
@@ -977,7 +977,7 @@ export default function ProfilePage() {
                     <div className="space-y-1.5 min-w-0">
                       <div className="flex items-center gap-2 flex-wrap">
                         <h4 className="text-sm font-extrabold text-brand-navy-500 dark:text-white">
-                          {review.beach_name || 'Beach Resort'}
+                          {review.beachname || 'Beach Resort'}
                         </h4>
                         {review.review_type === 'platform' && (
                           <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider bg-brand-teal-100 text-brand-navy-500 dark:bg-brand-teal-700/70 dark:text-brand-teal-300">
@@ -996,8 +996,8 @@ export default function ProfilePage() {
                             }`}
                           />
                         ))}
-                        <time className="ml-2 text-xs text-slate-500" dateTime={review.created_at}>
-                          {new Date(review.created_at).toLocaleDateString()}
+                        <time className="ml-2 text-xs text-slate-500" dateTime={review.createdat}>
+                          {new Date(review.createdat).toLocaleDateString()}
                         </time>
                       </div>
                       <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed pt-1">
@@ -1007,7 +1007,7 @@ export default function ProfilePage() {
                     <button
                       type="button"
                       onClick={() => void handleDeleteReview(review.id)}
-                      aria-label={`Delete review for ${review.beach_name || 'beach'}`}
+                      aria-label={`Delete review for ${review.beachname || 'beach'}`}
                       className="rounded-full p-2 text-slate-400 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/40 dark:hover:text-rose-400 transition-colors shrink-0 cursor-pointer"
                     >
                       <Trash className="h-4 w-4" />

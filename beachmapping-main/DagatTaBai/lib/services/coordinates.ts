@@ -3,18 +3,18 @@ import { invalidateBeachesCache } from '@/lib/db/beaches';
 
 export interface CoordinateRequestData {
   id?: string;
-  beach_id: string;
-  owner_id?: string | null;
-  requested_latitude: number;
-  requested_longitude: number;
-  requested_location: string;
-  requester_note?: string | null;
+  beachid: string;
+  ownerid?: string | null;
+  requestedlatitude: number;
+  requestedlongitude: number;
+  requestedlocation: string;
+  requesternote?: string | null;
   status: 'pending' | 'approved' | 'rejected';
-  rejection_reason?: string | null;
-  reviewed_by?: string | null;
-  reviewed_at?: string | null;
-  created_at: string;
-  updated_at: string;
+  rejectionreason?: string | null;
+  reviewedby?: string | null;
+  reviewedat?: string | null;
+  createdat: string;
+  updatedat: string;
 }
 
 export interface CoordinateRequestWithBeach extends CoordinateRequestData {
@@ -25,12 +25,12 @@ export interface CoordinateRequestWithBeach extends CoordinateRequestData {
     location: string;
     latitude: number;
     longitude: number;
-    owner_id: string | null;
+    ownerid: string | null;
     cover_image?: string | null;
   } | null;
   owner?: {
     id: string;
-    full_name: string;
+    fullname: string;
     email: string;
   } | null;
 }
@@ -46,14 +46,14 @@ interface GeneralInfoJson {
 let dedicatedTableExists: boolean | null = null;
 
 /**
- * Checks if optional dedicated table `beach_coordinate_requests` exists (cached in memory).
+ * Checks if optional dedicated table `coordinaterequests` exists (cached in memory).
  */
 async function hasDedicatedTable(adminSupabase: any): Promise<boolean> {
   if (dedicatedTableExists !== null) {
     return dedicatedTableExists;
   }
   try {
-    const { error } = await adminSupabase.from('beach_coordinate_requests').select('id').limit(1);
+    const { error } = await adminSupabase.from('coordinaterequests').select('id').limit(1);
     dedicatedTableExists = !error;
     return dedicatedTableExists;
   } catch {
@@ -83,10 +83,10 @@ export async function getCoordinateRequestForBeach(beachId: string): Promise<Coo
 
   // Try dedicated table first
   if (await hasDedicatedTable(adminSupabase)) {
-    const { data, error } = await (adminSupabase.from('beach_coordinate_requests') as any)
+    const { data, error } = await (adminSupabase.from('coordinaterequests') as any)
       .select('*')
-      .eq('beach_id', beachId)
-      .order('created_at', { ascending: false })
+      .eq('beachid', beachId)
+      .order('createdat', { ascending: false })
       .limit(1)
       .maybeSingle();
 
@@ -95,15 +95,15 @@ export async function getCoordinateRequestForBeach(beachId: string): Promise<Coo
     }
   }
 
-  // Fallback to beach_general_information
-  const { data, error } = await (adminSupabase.from('beach_general_information') as any)
-    .select('general_information, updated_at')
-    .eq('beach_id', beachId)
+  // Fallback to beachinfo
+  const { data, error } = await (adminSupabase.from('beachinfo') as any)
+    .select('generalinformation, updatedat')
+    .eq('beachid', beachId)
     .maybeSingle();
 
   if (error || !data) return null;
 
-  const parsed = parseGeneralInfo(data.general_information);
+  const parsed = parseGeneralInfo(data.generalinformation);
   return (parsed.coordinate_request as CoordinateRequestData) || null;
 }
 
@@ -115,15 +115,15 @@ export async function getAllCoordinateRequests(): Promise<CoordinateRequestWithB
 
   const fetchRequestsSource = async () => {
     if (await hasDedicatedTable(adminSupabase)) {
-      const { data, error } = await (adminSupabase.from('beach_coordinate_requests') as any)
+      const { data, error } = await (adminSupabase.from('coordinaterequests') as any)
         .select('*')
-        .order('created_at', { ascending: false });
+        .order('createdat', { ascending: false });
       if (!error && Array.isArray(data)) {
         return { source: 'dedicated' as const, rows: data };
       }
     }
-    const { data: generalInfos, error: infoError } = await (adminSupabase.from('beach_general_information') as any)
-      .select('beach_id, general_information, updated_at');
+    const { data: generalInfos, error: infoError } = await (adminSupabase.from('beachinfo') as any)
+      .select('beachid, generalinformation, updatedat');
     return {
       source: 'fallback' as const,
       rows: !infoError && Array.isArray(generalInfos) ? generalInfos : [],
@@ -133,7 +133,7 @@ export async function getAllCoordinateRequests(): Promise<CoordinateRequestWithB
   // Run beaches query and coordinate requests query in parallel
   const [beachesResult, requestsResult] = await Promise.all([
     (adminSupabase.from('beaches') as any)
-      .select('id, name, slug, location, latitude, longitude, owner_id, cover_image_url')
+      .select('id, name, slug, location, latitude, longitude, ownerid, coverimageurl')
       .order('name', { ascending: true }),
     fetchRequestsSource(),
   ]);
@@ -148,15 +148,15 @@ export async function getAllCoordinateRequests(): Promise<CoordinateRequestWithB
   const hasRequests =
     requestsResult.source === 'dedicated'
       ? requestsResult.rows.length > 0
-      : requestsResult.rows.some((info: any) => Boolean(parseGeneralInfo(info.general_information).coordinate_request));
+      : requestsResult.rows.some((info: any) => Boolean(parseGeneralInfo(info.generalinformation).coordinate_request));
 
   const ownerIds = hasRequests
-    ? Array.from(new Set(beachesData.map((b: any) => b.owner_id).filter(Boolean)))
+    ? Array.from(new Set(beachesData.map((b: any) => b.ownerid).filter(Boolean)))
     : [];
   const ownerMap = new Map<string, any>();
   if (ownerIds.length > 0) {
     const { data: profiles } = await (adminSupabase.from('profiles') as any)
-      .select('id, full_name, email')
+      .select('id, fullname, email')
       .in('id', ownerIds);
     if (Array.isArray(profiles)) {
       profiles.forEach((p: any) => ownerMap.set(p.id, p));
@@ -165,8 +165,8 @@ export async function getAllCoordinateRequests(): Promise<CoordinateRequestWithB
 
   if (requestsResult.source === 'dedicated') {
     return requestsResult.rows.map((req: any) => {
-      const beach = beachMap.get(req.beach_id) || null;
-      const owner = req.owner_id ? ownerMap.get(req.owner_id) : (beach?.owner_id ? ownerMap.get(beach.owner_id) : null);
+      const beach = beachMap.get(req.beachid) || null;
+      const owner = req.ownerid ? ownerMap.get(req.ownerid) : (beach?.ownerid ? ownerMap.get(beach.ownerid) : null);
       return {
         ...req,
         beach: beach ? {
@@ -176,8 +176,8 @@ export async function getAllCoordinateRequests(): Promise<CoordinateRequestWithB
           location: beach.location,
           latitude: Number(beach.latitude),
           longitude: Number(beach.longitude),
-          owner_id: beach.owner_id,
-          cover_image: beach.cover_image_url,
+          ownerid: beach.ownerid,
+          cover_image: beach.coverimageurl,
         } : null,
         owner: owner || null,
       };
@@ -186,14 +186,14 @@ export async function getAllCoordinateRequests(): Promise<CoordinateRequestWithB
 
   const results: CoordinateRequestWithBeach[] = [];
   for (const info of requestsResult.rows) {
-    const parsed = parseGeneralInfo(info.general_information);
+    const parsed = parseGeneralInfo(info.generalinformation);
     if (parsed.coordinate_request) {
       const req = parsed.coordinate_request as CoordinateRequestData;
-      const beach = beachMap.get(info.beach_id) || null;
-      const owner = beach?.owner_id ? ownerMap.get(beach.owner_id) : null;
+      const beach = beachMap.get(info.beachid) || null;
+      const owner = beach?.ownerid ? ownerMap.get(beach.ownerid) : null;
       results.push({
         ...req,
-        beach_id: info.beach_id,
+        beachid: info.beachid,
         beach: beach ? {
           id: beach.id,
           name: beach.name,
@@ -201,19 +201,19 @@ export async function getAllCoordinateRequests(): Promise<CoordinateRequestWithB
           location: beach.location,
           latitude: Number(beach.latitude),
           longitude: Number(beach.longitude),
-          owner_id: beach.owner_id,
-          cover_image: beach.cover_image_url,
+          ownerid: beach.ownerid,
+          cover_image: beach.coverimageurl,
         } : null,
         owner: owner || null,
       });
     }
   }
 
-  // Sort: pending first, then by updated_at descending
+  // Sort: pending first, then by updatedat descending
   results.sort((a, b) => {
     if (a.status === 'pending' && b.status !== 'pending') return -1;
     if (a.status !== 'pending' && b.status === 'pending') return 1;
-    return new Date(b.updated_at || b.created_at).getTime() - new Date(a.updated_at || a.created_at).getTime();
+    return new Date(b.updatedat || b.createdat).getTime() - new Date(a.updatedat || a.createdat).getTime();
   });
 
   return results;
@@ -242,31 +242,31 @@ export async function submitCoordinateRequest(params: {
   const now = new Date().toISOString();
   const requestData: CoordinateRequestData = {
     id: `coord-req-${Date.now()}`,
-    beach_id: beachId,
-    owner_id: ownerId || null,
-    requested_latitude: lat,
-    requested_longitude: lng,
-    requested_location: requestedLocation ? requestedLocation.trim() : 'Barangay Binongkalan, Catmon, Cebu',
-    requester_note: requesterNote ? requesterNote.trim() : null,
+    beachid: beachId,
+    ownerid: ownerId || null,
+    requestedlatitude: lat,
+    requestedlongitude: lng,
+    requestedlocation: requestedLocation ? requestedLocation.trim() : 'Barangay Binongkalan, Catmon, Cebu',
+    requesternote: requesterNote ? requesterNote.trim() : null,
     status: 'pending',
-    rejection_reason: null,
-    reviewed_by: null,
-    reviewed_at: null,
-    created_at: now,
-    updated_at: now,
+    rejectionreason: null,
+    reviewedby: null,
+    reviewedat: null,
+    createdat: now,
+    updatedat: now,
   };
 
   const adminSupabase = createAdminClient();
 
   if (await hasDedicatedTable(adminSupabase)) {
-    const { data, error } = await (adminSupabase.from('beach_coordinate_requests') as any)
+    const { data, error } = await (adminSupabase.from('coordinaterequests') as any)
       .insert({
-        beach_id: beachId,
-        owner_id: ownerId,
-        requested_latitude: lat,
-        requested_longitude: lng,
-        requested_location: requestData.requested_location,
-        requester_note: requestData.requester_note,
+        beachid: beachId,
+        ownerid: ownerId,
+        requestedlatitude: lat,
+        requestedlongitude: lng,
+        requestedlocation: requestData.requestedlocation,
+        requesternote: requestData.requesternote,
         status: 'pending',
       })
       .select('*')
@@ -277,13 +277,13 @@ export async function submitCoordinateRequest(params: {
     }
   }
 
-  // Fallback to beach_general_information
-  const { data: existing } = await (adminSupabase.from('beach_general_information') as any)
-    .select('general_information')
-    .eq('beach_id', beachId)
+  // Fallback to beachinfo
+  const { data: existing } = await (adminSupabase.from('beachinfo') as any)
+    .select('generalinformation')
+    .eq('beachid', beachId)
     .maybeSingle();
 
-  const currentParsed = parseGeneralInfo(existing?.general_information);
+  const currentParsed = parseGeneralInfo(existing?.generalinformation);
   const history = Array.isArray(currentParsed.coordinate_history) ? currentParsed.coordinate_history : [];
   if (currentParsed.coordinate_request) {
     history.unshift(currentParsed.coordinate_request);
@@ -295,14 +295,14 @@ export async function submitCoordinateRequest(params: {
     coordinate_history: history.slice(0, 10),
   };
 
-  const { error: upsertError } = await (adminSupabase.from('beach_general_information') as any)
+  const { error: upsertError } = await (adminSupabase.from('beachinfo') as any)
     .upsert(
       {
-        beach_id: beachId,
-        general_information: JSON.stringify(updatedJson),
-        updated_at: now,
+        beachid: beachId,
+        generalinformation: JSON.stringify(updatedJson),
+        updatedat: now,
       },
-      { onConflict: 'beach_id' }
+      { onConflict: 'beachid' }
     );
 
   if (upsertError) {
@@ -323,21 +323,21 @@ export async function cancelCoordinateRequest(params: {
   const adminSupabase = createAdminClient();
 
   if (await hasDedicatedTable(adminSupabase)) {
-    await (adminSupabase.from('beach_coordinate_requests') as any)
+    await (adminSupabase.from('coordinaterequests') as any)
       .delete()
-      .eq('beach_id', beachId)
+      .eq('beachid', beachId)
       .eq('status', 'pending');
     return true;
   }
 
-  const { data: existing } = await (adminSupabase.from('beach_general_information') as any)
-    .select('general_information')
-    .eq('beach_id', beachId)
+  const { data: existing } = await (adminSupabase.from('beachinfo') as any)
+    .select('generalinformation')
+    .eq('beachid', beachId)
     .maybeSingle();
 
   if (!existing) return true;
 
-  const currentParsed = parseGeneralInfo(existing.general_information);
+  const currentParsed = parseGeneralInfo(existing.generalinformation);
   if (!currentParsed.coordinate_request) return true;
 
   const updatedJson: GeneralInfoJson = {
@@ -345,12 +345,12 @@ export async function cancelCoordinateRequest(params: {
     coordinate_request: null,
   };
 
-  await (adminSupabase.from('beach_general_information') as any)
+  await (adminSupabase.from('beachinfo') as any)
     .update({
-      general_information: JSON.stringify(updatedJson),
-      updated_at: new Date().toISOString(),
+      generalinformation: JSON.stringify(updatedJson),
+      updatedat: new Date().toISOString(),
     })
-    .eq('beach_id', beachId);
+    .eq('beachid', beachId);
 
   return true;
 }
@@ -372,15 +372,15 @@ export async function approveCoordinateRequest(params: {
     throw new Error('No pending coordinates request found for this beach.');
   }
 
-  const { requested_latitude, requested_longitude, requested_location } = currentReq;
+  const { requestedlatitude, requestedlongitude, requestedlocation } = currentReq;
 
   // 2. Update beaches table
   const { error: beachError } = await (adminSupabase.from('beaches') as any)
     .update({
-      latitude: requested_latitude,
-      longitude: requested_longitude,
-      location: requested_location,
-      updated_at: now,
+      latitude: requestedlatitude,
+      longitude: requestedlongitude,
+      location: requestedlocation,
+      updatedat: now,
     })
     .eq('id', beachId);
 
@@ -390,30 +390,30 @@ export async function approveCoordinateRequest(params: {
 
   invalidateBeachesCache();
 
-  // 3. Update status in dedicated table or beach_general_information
+  // 3. Update status in dedicated table or beachinfo
   if (await hasDedicatedTable(adminSupabase)) {
-    await (adminSupabase.from('beach_coordinate_requests') as any)
+    await (adminSupabase.from('coordinaterequests') as any)
       .update({
         status: 'approved',
-        reviewed_by: reviewerId || null,
-        reviewed_at: now,
-        updated_at: now,
+        reviewedby: reviewerId || null,
+        reviewedat: now,
+        updatedat: now,
       })
-      .eq('beach_id', beachId)
+      .eq('beachid', beachId)
       .eq('status', 'pending');
   } else {
-    const { data: existing } = await (adminSupabase.from('beach_general_information') as any)
-      .select('general_information')
-      .eq('beach_id', beachId)
+    const { data: existing } = await (adminSupabase.from('beachinfo') as any)
+      .select('generalinformation')
+      .eq('beachid', beachId)
       .maybeSingle();
 
-    const currentParsed = parseGeneralInfo(existing?.general_information);
+    const currentParsed = parseGeneralInfo(existing?.generalinformation);
     const updatedRequest: CoordinateRequestData = {
       ...currentReq,
       status: 'approved',
-      reviewed_by: reviewerId || null,
-      reviewed_at: now,
-      updated_at: now,
+      reviewedby: reviewerId || null,
+      reviewedat: now,
+      updatedat: now,
     };
 
     const history = Array.isArray(currentParsed.coordinate_history) ? currentParsed.coordinate_history : [];
@@ -425,22 +425,22 @@ export async function approveCoordinateRequest(params: {
       coordinate_history: history.slice(0, 10),
     };
 
-    await (adminSupabase.from('beach_general_information') as any)
+    await (adminSupabase.from('beachinfo') as any)
       .upsert(
         {
-          beach_id: beachId,
-          general_information: JSON.stringify(updatedJson),
-          updated_at: now,
+          beachid: beachId,
+          generalinformation: JSON.stringify(updatedJson),
+          updatedat: now,
         },
-        { onConflict: 'beach_id' }
+        { onConflict: 'beachid' }
       );
   }
 
   return {
     success: true,
-    latitude: requested_latitude,
-    longitude: requested_longitude,
-    location: requested_location,
+    latitude: requestedlatitude,
+    longitude: requestedlongitude,
+    location: requestedlocation,
   };
 }
 
@@ -462,30 +462,30 @@ export async function rejectCoordinateRequest(params: {
   }
 
   if (await hasDedicatedTable(adminSupabase)) {
-    await (adminSupabase.from('beach_coordinate_requests') as any)
+    await (adminSupabase.from('coordinaterequests') as any)
       .update({
         status: 'rejected',
-        rejection_reason: rejectionReason || 'Coordinates could not be verified by Admin.',
-        reviewed_by: reviewerId || null,
-        reviewed_at: now,
-        updated_at: now,
+        rejectionreason: rejectionReason || 'Coordinates could not be verified by Admin.',
+        reviewedby: reviewerId || null,
+        reviewedat: now,
+        updatedat: now,
       })
-      .eq('beach_id', beachId)
+      .eq('beachid', beachId)
       .eq('status', 'pending');
   } else {
-    const { data: existing } = await (adminSupabase.from('beach_general_information') as any)
-      .select('general_information')
-      .eq('beach_id', beachId)
+    const { data: existing } = await (adminSupabase.from('beachinfo') as any)
+      .select('generalinformation')
+      .eq('beachid', beachId)
       .maybeSingle();
 
-    const currentParsed = parseGeneralInfo(existing?.general_information);
+    const currentParsed = parseGeneralInfo(existing?.generalinformation);
     const updatedRequest: CoordinateRequestData = {
       ...currentReq,
       status: 'rejected',
-      rejection_reason: rejectionReason || 'Coordinates could not be verified by Admin.',
-      reviewed_by: reviewerId || null,
-      reviewed_at: now,
-      updated_at: now,
+      rejectionreason: rejectionReason || 'Coordinates could not be verified by Admin.',
+      reviewedby: reviewerId || null,
+      reviewedat: now,
+      updatedat: now,
     };
 
     const history = Array.isArray(currentParsed.coordinate_history) ? currentParsed.coordinate_history : [];
@@ -497,14 +497,14 @@ export async function rejectCoordinateRequest(params: {
       coordinate_history: history.slice(0, 10),
     };
 
-    await (adminSupabase.from('beach_general_information') as any)
+    await (adminSupabase.from('beachinfo') as any)
       .upsert(
         {
-          beach_id: beachId,
-          general_information: JSON.stringify(updatedJson),
-          updated_at: now,
+          beachid: beachId,
+          generalinformation: JSON.stringify(updatedJson),
+          updatedat: now,
         },
-        { onConflict: 'beach_id' }
+        { onConflict: 'beachid' }
       );
   }
 
@@ -535,7 +535,7 @@ export async function adminSetBeachCoordinates(params: {
   const payload: Record<string, any> = {
     latitude: lat,
     longitude: lng,
-    updated_at: now,
+    updatedat: now,
   };
   if (typeof location === 'string' && location.trim()) {
     payload.location = location.trim();

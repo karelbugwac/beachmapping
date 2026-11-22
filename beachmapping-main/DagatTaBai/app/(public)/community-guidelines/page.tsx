@@ -45,15 +45,15 @@ export default function CommunityGuidelinesPage() {
   ];
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black text-slate-900 dark:text-zinc-100 transition-colors duration-200">
+    <div className="min-h-screen bg-white font-display dark:bg-black text-slate-900 dark:text-zinc-100 transition-colors duration-200">
       
       {/* ── Page Header (Placed Higher Up, Frameless) ── */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-6 sm:pt-8 pb-6 text-center space-y-1.5">
-        <h1 className="text-2xl sm:text-3xl lg:text-4xl font-display font-medium text-[#1F3F74] dark:text-white tracking-tight leading-tight">
+        <h1 className="font-display text-xl sm:text-2xl font-semibold text-[#1F3F74] dark:text-brand-teal-300 tracking-tight leading-tight">
           Community Guidelines
         </h1>
         <p className="text-xs sm:text-sm text-slate-500 dark:text-slate-400">
-          Last Updated: November 3, 2026
+          Updated on November 22, 2026
         </p>
       </div>
 
@@ -69,7 +69,7 @@ export default function CommunityGuidelinesPage() {
             key={item.num}
             className="border-t border-slate-200 dark:border-neutral-800 pt-5 space-y-1.5"
           >
-            <h2 className="text-base sm:text-lg font-display font-medium text-[#1F3F74] dark:text-white">
+            <h2 className="font-display text-base font-medium text-[#1F3F74] dark:text-brand-teal-300 sm:text-lg">
               {item.num}. {item.title}
             </h2>
             <p className="text-slate-600 dark:text-slate-400" style={{ textAlign: 'justify' }}>

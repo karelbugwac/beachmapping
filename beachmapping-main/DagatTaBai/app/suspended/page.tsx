@@ -11,25 +11,25 @@ export default async function SuspendedPage() {
   if (!authData.user) redirect('/login');
 
   const { data, error } = await supabase.from('profiles')
-    .select('account_status, status_reason, status_reason_type, suspended_until')
+    .select('accountstatus, statusreason, statusreasontype, suspendeduntil')
     .eq('id', authData.user.id)
     .maybeSingle();
   if (error) throw error;
-  const account = data as { account_status: string; status_reason: string | null; status_reason_type: string | null; suspended_until: string | null } | null;
-  if (!account || !isAccountStatus(account.account_status) || !isSuspensionActive(account.account_status, account.suspended_until)) redirect('/');
+  const account = data as { accountstatus: string; statusreason: string | null; statusreasontype: string | null; suspendeduntil: string | null } | null;
+  if (!account || !isAccountStatus(account.accountstatus) || !isSuspensionActive(account.accountstatus, account.suspendeduntil)) redirect('/');
 
-  const endDate = account.suspended_until
-    ? `until ${new Date(account.suspended_until).toLocaleDateString()}`
+  const endDate = account.suspendeduntil
+    ? `until ${new Date(account.suspendeduntil).toLocaleDateString()}`
     : 'until further notice';
 
   return (
     <main className="flex min-h-screen items-center justify-center bg-slate-50 px-4 py-12 dark:bg-neutral-950">
       <section className="w-full max-w-lg rounded-2xl border border-slate-200 bg-white p-8 text-center shadow-sm dark:border-neutral-800 dark:bg-neutral-900">
         <h1 className="text-2xl font-semibold text-brand-navy-900 dark:text-white">Your account is suspended.</h1>
-        {account.status_reason_type && <p className="mt-3 text-sm font-semibold text-slate-700 dark:text-neutral-200">{account.status_reason_type}</p>}
-        {account.status_reason && (
+        {account.statusreasontype && <p className="mt-3 text-sm font-semibold text-slate-700 dark:text-neutral-200">{account.statusreasontype}</p>}
+        {account.statusreason && (
           <p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-slate-600 dark:text-neutral-300">
-            {account.status_reason}
+            {account.statusreason}
           </p>
         )}
         <p className="mt-3 text-sm text-slate-500 dark:text-neutral-400">

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getCurrentSession } from '@/lib/db/auth';
 import { createServerSupabaseClient, createAdminClient } from '@/lib/supabase/server';
+import { createClient } from '@supabase/supabase-js';
 
 function describeBrowser(userAgent: string): { browser: string; platform: string } {
   let browser = 'Browser';
@@ -45,9 +46,31 @@ export async function POST(request: NextRequest) {
   const { browser, platform } = describeBrowser(request.headers.get('user-agent') || '');
   const supabase = await createServerSupabaseClient();
 
+  // Get the user's access token to ensure auth.uid() works in the RPC function
+  const { data: { session } } = await supabase.auth.getSession();
+  
+  let rpcClient = supabase;
+  if (session?.access_token) {
+    // Create a client with the user's JWT token explicitly
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-project.supabase.co';
+    const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY || 'placeholder-anon-key';
+    rpcClient = createClient(supabaseUrl, supabaseAnonKey, {
+      global: {
+        headers: {
+          Authorization: `Bearer ${session.access_token}`,
+        },
+      },
+      auth: {
+        persistSession: false,
+        autoRefreshToken: false,
+        detectSessionInUrl: false,
+      },
+    }) as unknown as typeof supabase;
+  }
+
   // The installed Supabase client types do not expose the project's SQL RPC signature.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (supabase.rpc as any)('register_login_device', {
+  const { error } = await (rpcClient.rpc as any)('register_login_device', {
     p_device_id: deviceId,
     p_browser: browser,
     p_platform: platform,
@@ -117,8 +140,8 @@ export async function POST(request: NextRequest) {
             previous_location: previousLocationStr,
             browser,
             platform,
-            created_at: new Date().toISOString(),
-            read_at: null,
+            createdat: new Date().toISOString(),
+            readat: null,
             response: null,
           };
 

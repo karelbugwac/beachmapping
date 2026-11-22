@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authorizeRoles } from '@/lib/supabase/authorization';
-import { validateAdminMutationRequest, noStoreHeaders } from '@/lib/server/admin-request';
+import { validateAdminMutationRequest, noStoreHeaders } from '@/lib/server/adminrequest';
 import { ADMIN_MESSAGES } from '@/lib/validation/admin-messages';
 import { syncBeachAverageRating } from '@/lib/db/reviews';
 
@@ -21,17 +21,17 @@ export async function GET() {
       profilesRes,
       beachesRes,
     ] = await Promise.all([
-      (adminClient.from('beach_reviews') as any)
-        .select('id, beach_id, user_id, rating, comment, created_at, updated_at')
-        .order('created_at', { ascending: false }),
-      (adminClient.from('platform_reviews') as any)
-        .select('id, user_id, rating, comment, created_at, updated_at')
-        .order('created_at', { ascending: false }),
-      (adminClient.from('beach_review_reports') as any)
-        .select('id, review_id, beach_id, reporter_user_id, reason, status, created_at')
+      (adminClient.from('beachreviews') as any)
+        .select('id, beachid, userid, rating, comment, createdat, updatedat')
+        .order('createdat', { ascending: false }),
+      (adminClient.from('platformreviews') as any)
+        .select('id, userid, rating, comment, createdat, updatedat')
+        .order('createdat', { ascending: false }),
+      (adminClient.from('reviewreports') as any)
+        .select('id, reviewid, beachid, reporteruserid, reason, status, createdat')
         .eq('status', 'pending')
-        .order('created_at', { ascending: false }),
-      (adminClient.from('profiles') as any).select('id, full_name'),
+        .order('createdat', { ascending: false }),
+      (adminClient.from('profiles') as any).select('id, fullname'),
       (adminClient.from('beaches') as any).select('id, name'),
     ]);
 
@@ -43,7 +43,7 @@ export async function GET() {
 
     const profileMap = new Map<string, string>();
     profiles.forEach((p: any) => {
-      if (p.id && p.full_name) profileMap.set(p.id, p.full_name);
+      if (p.id && p.fullname) profileMap.set(p.id, p.fullname);
     });
 
     const beachMap = new Map<string, string>();
@@ -53,33 +53,33 @@ export async function GET() {
 
     const reviews = beachReviews.map((review: any) => ({
       id: review.id,
-      beach_id: review.beach_id,
-      user_id: review.user_id,
-      user_name: profileMap.get(review.user_id) || 'Verified Visitor',
-      beach_name: beachMap.get(review.beach_id) || 'Beach',
+      beachid: review.beachid,
+      userid: review.userid,
+      user_name: profileMap.get(review.userid) || 'Verified Visitor',
+      beachname: beachMap.get(review.beachid) || 'Beach',
       review_type: 'beach',
       rating: Number(review.rating) || 5,
       comment: review.comment || '',
-      created_at: review.created_at || new Date().toISOString(),
-      updated_at: review.updated_at || review.created_at,
+      createdat: review.createdat || new Date().toISOString(),
+      updatedat: review.updatedat || review.createdat,
     }));
 
     platformReviews.forEach((review: any) => {
       reviews.push({
         id: review.id,
-        beach_id: null,
-        user_id: review.user_id,
-        user_name: profileMap.get(review.user_id) || 'Dagat Ta Bai user',
-        beach_name: 'Platform feedback',
+        beachid: null,
+        userid: review.userid,
+        user_name: profileMap.get(review.userid) || 'Dagat Ta Bai user',
+        beachname: 'Platform feedback',
         review_type: 'platform',
         rating: Number(review.rating) || 5,
         comment: review.comment || '',
-        created_at: review.created_at || new Date().toISOString(),
-        updated_at: review.updated_at || review.created_at,
+        createdat: review.createdat || new Date().toISOString(),
+        updatedat: review.updatedat || review.createdat,
       });
     });
 
-    reviews.sort((left: any, right: any) => Date.parse(right.created_at) - Date.parse(left.created_at));
+    reviews.sort((left: any, right: any) => Date.parse(right.createdat) - Date.parse(left.createdat));
 
     const reviewById = new Map<string, any>();
     reviews.forEach((r: any) => {
@@ -87,22 +87,22 @@ export async function GET() {
     });
 
     const formattedReports = reports.map((report: any) => {
-      const matchedReview = reviewById.get(report.review_id);
+      const matchedReview = reviewById.get(report.reviewid);
       return {
         id: report.id,
-        review_id: report.review_id,
-        beach_id: report.beach_id,
+        reviewid: report.reviewid,
+        beachid: report.beachid,
         reason: report.reason,
         status: report.status,
-        created_at: report.created_at,
-        reporter: profileMap.get(report.reporter_user_id) || 'Beach owner',
-        beach: beachMap.get(report.beach_id) || 'Beach',
+        createdat: report.createdat,
+        reporter: profileMap.get(report.reporteruserid) || 'Beach owner',
+        beach: beachMap.get(report.beachid) || 'Beach',
         review: matchedReview
           ? {
               id: matchedReview.id,
               rating: matchedReview.rating,
               comment: matchedReview.comment,
-              created_at: matchedReview.created_at,
+              createdat: matchedReview.createdat,
               reviewer: matchedReview.user_name,
             }
           : null,
@@ -139,20 +139,20 @@ export async function DELETE(request: NextRequest) {
     }
 
     const reviewType = (reviewTypeValue || (request.nextUrl.searchParams.get('type') === 'platform' ? 'platform' : 'beach')) === 'platform'
-      ? 'platform_reviews'
-      : 'beach_reviews';
-    if (reviewType === 'beach_reviews') {
-      await (auth.adminClient.from('beach_review_reports') as any).delete().eq('review_id', reviewId);
+      ? 'platformreviews'
+      : 'beachreviews';
+    if (reviewType === 'beachreviews') {
+      await (auth.adminClient.from('reviewreports') as any).delete().eq('reviewid', reviewId);
     }
     const { data, error } = await (auth.adminClient.from(reviewType) as any)
       .delete()
       .eq('id', reviewId)
-      .select(reviewType === 'beach_reviews' ? 'id, beach_id' : 'id');
+      .select(reviewType === 'beachreviews' ? 'id, beachid' : 'id');
     if (error) throw error;
     if (!data?.length) return NextResponse.json({ error: 'Review not found.' }, { status: 404, headers: noStoreHeaders() });
 
-    if (reviewType === 'beach_reviews' && data[0]?.beach_id) {
-      await syncBeachAverageRating(data[0].beach_id);
+    if (reviewType === 'beachreviews' && data[0]?.beachid) {
+      await syncBeachAverageRating(data[0].beachid);
     }
 
     return NextResponse.json({ success: true }, { headers: noStoreHeaders() });

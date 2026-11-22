@@ -30,7 +30,7 @@ export default function DataSubjectRequestPage() {
   };
 
   return (
-    <div className="py-12 px-4 sm:px-6 lg:px-8 max-w-2xl mx-auto space-y-6">
+    <div className="mx-auto max-w-2xl space-y-6 px-4 py-12 font-display sm:px-6 lg:px-8">
       <Link
         href="/privacy"
         className="inline-flex items-center gap-1 text-xs font-semibold text-slate-500 hover:text-slate-800 transition-colors"
@@ -44,7 +44,7 @@ export default function DataSubjectRequestPage() {
           <ShieldCheck className="w-3.5 h-3.5" />
           <span>NPC Compliance Channel</span>
         </div>
-        <h1 className="text-2xl font-black text-slate-900">Data Subject Request Form</h1>
+        <h1 className="font-display text-xl font-semibold tracking-tight text-slate-900 dark:text-white sm:text-2xl">Data Subject Request Form</h1>
         <p className="text-xs text-slate-600">
           Exercise your statutory rights under the Philippine Data Privacy Act of 2012 (RA 10173).
         </p>

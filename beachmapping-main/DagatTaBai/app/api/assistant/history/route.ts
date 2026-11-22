@@ -18,10 +18,10 @@ export async function GET(req: NextRequest) {
 
   try {
     const adminClient = createAdminClient();
-    const { data, error } = await (adminClient.from('ai_chat_messages') as any)
-      .select('id, role, content, created_at')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
+    const { data, error } = await (adminClient.from('chatmessages') as any)
+      .select('id, role, content, createdat')
+      .eq('userid', user.id)
+      .order('createdat', { ascending: false })
       .limit(200);
     if (error) {
       console.warn('[AssistantHistory] Query notice:', error);
@@ -41,9 +41,9 @@ export async function DELETE() {
 
   try {
     const adminClient = createAdminClient();
-    const { error } = await (adminClient.from('ai_chat_messages') as any)
+    const { error } = await (adminClient.from('chatmessages') as any)
       .delete()
-      .eq('user_id', user.id);
+      .eq('userid', user.id);
     if (error) throw error;
     return NextResponse.json({ success: true });
   } catch (error: unknown) {

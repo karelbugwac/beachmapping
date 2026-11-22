@@ -10,12 +10,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid profile data.' }, { status: 400 });
     }
 
-    const { full_name, profile_image_url, location } = body as {
-      full_name?: unknown;
-      profile_image_url?: unknown;
+    const { fullname, profileimageurl, location } = body as {
+      fullname?: unknown;
+      profileimageurl?: unknown;
       location?: unknown;
     };
-    const nameValidation = full_name === undefined ? null : validateFullName(full_name);
+    const nameValidation = fullname === undefined ? null : validateFullName(fullname);
     if (nameValidation && !nameValidation.ok) {
       return NextResponse.json({ error: FULL_NAME_MESSAGES.serverRejected }, { status: 400 });
     }
@@ -24,14 +24,14 @@ export async function POST(request: Request) {
       (location !== undefined &&
         location !== null &&
         (typeof location !== 'string' || location.trim().length > 160)) ||
-      (profile_image_url !== undefined &&
-        profile_image_url !== null &&
-        (typeof profile_image_url !== 'string' ||
-          (!profile_image_url.startsWith('data:image/') && !profile_image_url.startsWith('https://'))))
+      (profileimageurl !== undefined &&
+        profileimageurl !== null &&
+        (typeof profileimageurl !== 'string' ||
+          (!profileimageurl.startsWith('data:image/') && !profileimageurl.startsWith('https://'))))
     ) {
       return NextResponse.json({ error: 'Invalid profile name or image.' }, { status: 400 });
     }
-    if (full_name === undefined && profile_image_url === undefined && location === undefined) {
+    if (fullname === undefined && profileimageurl === undefined && location === undefined) {
       return NextResponse.json({ error: 'No profile changes were provided.' }, { status: 400 });
     }
 
@@ -40,7 +40,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
-    let finalImageUrl: string | null | undefined = profile_image_url as string | null | undefined;
+    let finalImageUrl: string | null | undefined = profileimageurl as string | null | undefined;
 
     // Senior Backend Defense: If client submitted a base64 data URL, upload to storage instead of bloating DB
     if (typeof finalImageUrl === 'string' && finalImageUrl.startsWith('data:image/')) {
@@ -72,8 +72,8 @@ export async function POST(request: Request) {
     }
 
     const updated = await updateSessionUser({
-      full_name: nameValidation?.value,
-      profile_image_url: finalImageUrl,
+      fullname: nameValidation?.value,
+      profileimageurl: finalImageUrl,
       location: typeof location === 'string' ? location.trim() || null : location === null ? null : undefined,
     });
     if (!updated) {

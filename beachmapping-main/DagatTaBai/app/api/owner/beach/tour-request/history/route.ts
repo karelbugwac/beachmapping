@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authorizeRoles } from '@/lib/supabase/authorization';
-import { getTourBeachOwnerId, getTourHistory, getTourRequestForBeach } from '@/lib/services/tourRequests';
+import { getTourBeachOwnerId, getTourHistory, getTourRequestForBeach } from '@/lib/services/tourrequests';
 
 export async function GET(request: NextRequest) {
   try {
@@ -8,8 +8,8 @@ export async function GET(request: NextRequest) {
     if (!auth.authorized) {
       return NextResponse.json({ error: auth.message }, { status: auth.status });
     }
-    const beachId = new URL(request.url).searchParams.get('beach_id');
-    if (!beachId) return NextResponse.json({ error: 'A beach_id is required.' }, { status: 400 });
+    const beachId = new URL(request.url).searchParams.get('beachid');
+    if (!beachId) return NextResponse.json({ error: 'A beachid is required.' }, { status: 400 });
 
     if (auth.role !== 'admin') {
       if (await getTourBeachOwnerId(beachId) !== auth.user.id) {

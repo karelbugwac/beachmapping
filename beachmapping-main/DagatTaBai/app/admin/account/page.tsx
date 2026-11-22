@@ -7,7 +7,7 @@ import {
   Loader2,
   Send,
 } from 'lucide-react';
-import { useTheme } from '@/components/theme-provider';
+import { useTheme } from '@/components/themeprovider';
 import { createClient } from '@/lib/supabase/client';
 import { showToast } from '@/components/ui/feedback-toasts';
 

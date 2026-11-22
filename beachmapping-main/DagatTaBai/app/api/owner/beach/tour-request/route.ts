@@ -5,8 +5,8 @@ import {
   getTourBeachOwnerId,
   saveTourDraft,
   transitionTourRequest,
-} from '@/lib/services/tourRequests';
-import { TourWorkflowError } from '@/lib/services/tourTransitions';
+} from '@/lib/services/tourrequests';
+import { TourWorkflowError } from '@/lib/services/tourtransitions';
 
 const noStoreHeaders = { 'Cache-Control': 'no-store, max-age=0' };
 
@@ -22,9 +22,9 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ error: auth.message }, { status: auth.status, headers: noStoreHeaders });
     }
 
-    const beachId = new URL(request.url).searchParams.get('beach_id');
+    const beachId = new URL(request.url).searchParams.get('beachid');
     if (!beachId) {
-      return NextResponse.json({ error: 'A beach_id query parameter is required.' }, { status: 400, headers: noStoreHeaders });
+      return NextResponse.json({ error: 'A beachid query parameter is required.' }, { status: 400, headers: noStoreHeaders });
     }
     if (!await authorizeBeach(auth, beachId)) {
       return NextResponse.json({ error: 'You are not authorized to view this tour.' }, { status: 403, headers: noStoreHeaders });
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const beachId = typeof body.beach_id === 'string' ? body.beach_id : '';
+    const beachId = typeof body.beachid === 'string' ? body.beachid : '';
     const action = body.action || 'submit_for_review';
     if (!beachId || (action !== 'save' && action !== 'submit_for_review')) {
       return NextResponse.json({ error: 'Choose a valid tour action and beach.' }, { status: 400, headers: noStoreHeaders });
@@ -55,8 +55,8 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'You are not authorized to update this tour.' }, { status: 403, headers: noStoreHeaders });
     }
 
-    const tourUrl = (typeof body.requested_tour_url === 'string' && body.requested_tour_url.trim())
-      ? body.requested_tour_url.trim()
+    const tourUrl = (typeof body.requestedtoururl === 'string' && body.requestedtoururl.trim())
+      ? body.requestedtoururl.trim()
       : (body.is_recapture ? 'Recapture Request' : '');
 
     if (!tourUrl) {
@@ -64,8 +64,8 @@ export async function POST(request: NextRequest) {
     }
 
     const combinedNote =
-      typeof body.requester_note === 'string' && body.requester_note.trim()
-        ? body.requester_note.trim()
+      typeof body.requesternote === 'string' && body.requesternote.trim()
+        ? body.requesternote.trim()
         : [body.reason, body.notes]
             .map((part) => (typeof part === 'string' ? part.trim() : ''))
             .filter(Boolean)

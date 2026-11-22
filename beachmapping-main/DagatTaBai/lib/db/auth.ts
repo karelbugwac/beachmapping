@@ -2,23 +2,23 @@ import { createServerSupabaseClient, createAdminClient } from '@/lib/supabase/se
 import { FULL_NAME_MESSAGES, validateFullName } from '@/lib/validation/fullName';
 import { isAccountSuspended } from '@/lib/utils/account-suspension';
 import { isSuspensionActive } from '@/lib/utils/account-status';
-import { persistExpiredSuspension } from '@/lib/server/account-status';
+import { persistExpiredSuspension } from '@/lib/server/accountstatus';
 import { ADMIN_MESSAGES } from '@/lib/validation/admin-messages';
 import { EMAIL_TAKEN_MESSAGE, isDuplicateAuthEmailError } from '@/lib/validation/registration';
 
 export interface AuthUser {
   id: string;
-  full_name: string;
+  fullname: string;
   account_full_name?: string | null;
   email: string;
   role: 'user' | 'beach_owner' | 'beach_manager' | 'admin';
-  profile_image_url?: string | null;
+  profileimageurl?: string | null;
   location?: string | null;
   status: 'active' | 'suspended';
-  suspension_reason: string | null;
-  suspended_at: string | null;
-  suspension_ends_at: string | null;
-  created_at?: string;
+  suspensionreason: string | null;
+  suspendedat: string | null;
+  suspensionendsat: string | null;
+  createdat?: string;
 }
 
 export async function getCurrentSession(): Promise<AuthUser | null> {
@@ -27,25 +27,25 @@ export async function getCurrentSession(): Promise<AuthUser | null> {
   if (error || !data.user) return null;
 
   type SessionProfile = {
-    full_name?: string | null;
+    fullname?: string | null;
     email?: string | null;
     role?: string | null;
-    profile_image_url?: string | null;
+    profileimageurl?: string | null;
     location?: string | null;
-    account_status?: string | null;
-    status_reason?: string | null;
-    suspended_until?: string | null;
-    status_changed_at?: string | null;
+    accountstatus?: string | null;
+    statusreason?: string | null;
+    suspendeduntil?: string | null;
+    statuschangedat?: string | null;
     status?: string | null;
-    suspension_reason?: string | null;
-    suspended_at?: string | null;
-    suspension_ends_at?: string | null;
-    created_at?: string | null;
+    suspensionreason?: string | null;
+    suspendedat?: string | null;
+    suspensionendsat?: string | null;
+    createdat?: string | null;
   };
   const profileColumnSets = [
-    'id, full_name, email, role, profile_image_url, location, account_status, status_reason, status_reason_type, suspended_until, status_changed_at, status, suspension_reason, suspended_at, suspension_ends_at, created_at',
-    'id, full_name, email, role, profile_image_url, location, status, suspension_reason, suspended_at, suspension_ends_at, created_at',
-    'id, full_name, email, role, profile_image_url, location, created_at',
+    'id, fullname, email, role, profileimageurl, location, accountstatus, statusreason, statusreasontype, suspendeduntil, statuschangedat, status, suspensionreason, suspendedat, suspensionendsat, createdat',
+    'id, fullname, email, role, profileimageurl, location, status, suspensionreason, suspendedat, suspensionendsat, createdat',
+    'id, fullname, email, role, profileimageurl, location, createdat',
   ] as const;
   const profiles = supabase.from('profiles') as any;
   let profile: SessionProfile | null = null;
@@ -64,7 +64,7 @@ export async function getCurrentSession(): Promise<AuthUser | null> {
   const email = data.user.email || '';
   const metadata = (data.user.user_metadata || {}) as Record<string, any>;
   const fullName =
-    profile?.full_name ||
+    profile?.fullname ||
     metadata.full_name ||
     metadata.name ||
     (email ? email.split('@')[0] : 'User');
@@ -77,31 +77,31 @@ export async function getCurrentSession(): Promise<AuthUser | null> {
       ? profileRole
       : 'user';
   const profileImageUrl =
-    profile?.profile_image_url ||
+    profile?.profileimageurl ||
     metadata.profile_image_url ||
     metadata.avatar_url ||
     metadata.picture ||
     null;
-  const accountStatus = profile?.account_status || profile?.status || metadata.status || 'active';
-  const suspensionUntil = profile?.suspended_until || profile?.suspension_ends_at ||
+  const accountStatus = profile?.accountstatus || profile?.status || metadata.status || 'active';
+  const suspensionUntil = profile?.suspendeduntil || profile?.suspensionendsat ||
     (typeof metadata.suspension_ends_at === 'string' ? metadata.suspension_ends_at : null);
   const suspension = {
     status: isSuspensionActive(accountStatus, suspensionUntil) ? 'suspended' as const : 'active' as const,
-    suspension_reason: profile?.status_reason || profile?.suspension_reason || metadata.status_reason || null,
-    suspended_at: profile?.status_changed_at || profile?.suspended_at || metadata.status_updated_at || null,
-    suspension_ends_at: suspensionUntil,
+    suspensionreason: profile?.statusreason || profile?.suspensionreason || metadata.status_reason || null,
+    suspendedat: profile?.statuschangedat || profile?.suspendedat || metadata.status_updated_at || null,
+    suspensionendsat: suspensionUntil,
   };
 
   return {
     id: data.user.id,
-    full_name: fullName,
-    account_full_name: profile?.full_name || metadata.full_name || null,
+    fullname: fullName,
+    account_full_name: profile?.fullname || metadata.full_name || null,
     email,
     role,
-    profile_image_url: profileImageUrl,
+    profileimageurl: profileImageUrl,
     location: profile?.location || null,
     ...suspension,
-    created_at: profile?.created_at || data.user.created_at,
+    createdat: profile?.createdat || data.user.created_at,
   };
 }
 
@@ -115,14 +115,14 @@ export async function destroySession(): Promise<void> {
 }
 
 export async function updateSessionUser(updates: {
-  full_name?: string;
-  profile_image_url?: string | null;
+  fullname?: string;
+  profileimageurl?: string | null;
   location?: string | null;
 }): Promise<AuthUser | null> {
-  if (updates.full_name !== undefined) {
-    const nameValidation = validateFullName(updates.full_name);
+  if (updates.fullname !== undefined) {
+    const nameValidation = validateFullName(updates.fullname);
     if (!nameValidation.ok) return null;
-    updates = { ...updates, full_name: nameValidation.value };
+    updates = { ...updates, fullname: nameValidation.value };
   }
 
   const current = await getCurrentSession();
@@ -131,9 +131,9 @@ export async function updateSessionUser(updates: {
   try {
     const adminSupabase = createAdminClient();
     const { data: profile, error: profileError } = await (adminSupabase.from('profiles') as any)
-      .update({ ...updates, updated_at: new Date().toISOString() })
+      .update({ ...updates, updatedat: new Date().toISOString() })
       .eq('id', current.id)
-      .select('id, full_name, email, role, profile_image_url, location, account_status, status_reason, suspended_until, status_changed_at, status, suspension_reason, suspended_at, suspension_ends_at, created_at')
+      .select('id, fullname, email, role, profileimageurl, location, accountstatus, statusreason, suspendeduntil, statuschangedat, status, suspensionreason, suspendedat, suspensionendsat, createdat')
       .maybeSingle();
     if (profileError || !profile) {
       console.error('Profile database update failed:', profileError);
@@ -142,16 +142,16 @@ export async function updateSessionUser(updates: {
 
     return {
       ...current,
-      full_name: profile.full_name,
+      fullname: profile.fullname,
       email: profile.email || current.email,
       role: profile.role,
-      profile_image_url: profile.profile_image_url,
+      profileimageurl: profile.profileimageurl,
       location: profile.location,
-      status: isSuspensionActive(profile.account_status || profile.status, profile.suspended_until || profile.suspension_ends_at) ? 'suspended' : 'active',
-      suspension_reason: profile.status_reason || profile.suspension_reason || null,
-      suspended_at: profile.status_changed_at || profile.suspended_at || null,
-      suspension_ends_at: profile.suspended_until || profile.suspension_ends_at || null,
-      created_at: profile.created_at,
+      status: isSuspensionActive(profile.accountstatus || profile.status, profile.suspendeduntil || profile.suspensionendsat) ? 'suspended' : 'active',
+      suspensionreason: profile.statusreason || profile.suspensionreason || null,
+      suspendedat: profile.statuschangedat || profile.suspendedat || null,
+      suspensionendsat: profile.suspendeduntil || profile.suspensionendsat || null,
+      createdat: profile.createdat,
     };
   } catch (error: unknown) {
     console.error('Profile update failed:', error);
@@ -160,11 +160,11 @@ export async function updateSessionUser(updates: {
 }
 
 export async function registerLocalUser(
-  full_name: string,
+  fullname: string,
   email: string,
   password: string
 ): Promise<{ user?: AuthUser; error?: string; requiresEmailConfirmation?: boolean }> {
-  const nameValidation = validateFullName(full_name);
+  const nameValidation = validateFullName(fullname);
   if (!nameValidation.ok) return { error: FULL_NAME_MESSAGES.serverRejected };
   const cleanName = nameValidation.value;
   const cleanEmail = email.trim().toLowerCase();
@@ -199,9 +199,9 @@ export async function registerLocalUser(
         {
           id: userId,
           email: cleanEmail,
-          full_name: cleanName,
+          fullname: cleanName,
           role: 'user',
-          updated_at: new Date().toISOString(),
+          updatedat: new Date().toISOString(),
         },
         { onConflict: 'id' }
       );
@@ -212,14 +212,14 @@ export async function registerLocalUser(
     return {
       user: {
         id: userId,
-        full_name: cleanName,
+        fullname: cleanName,
         email: cleanEmail,
         role: 'user',
         status: 'active',
-        suspension_reason: null,
-        suspended_at: null,
-        suspension_ends_at: null,
-        created_at: createdAt || new Date().toISOString(),
+        suspensionreason: null,
+        suspendedat: null,
+        suspensionendsat: null,
+        createdat: createdAt || new Date().toISOString(),
       },
       requiresEmailConfirmation: false,
     };
@@ -283,7 +283,7 @@ export async function loginLocalUser(
     try {
       const adminSupabase = createAdminClient();
       const { data: profData, error: profileError } = await (adminSupabase.from('profiles') as any)
-        .select('id, full_name, email, role, profile_image_url, account_status, status_reason, status_reason_type, suspended_until, status, suspension_reason, suspended_at, suspension_ends_at, created_at')
+        .select('id, fullname, email, role, profileimageurl, accountstatus, statusreason, statusreasontype, suspendeduntil, status, suspensionreason, suspendedat, suspensionendsat, createdat')
         .eq('id', data.user.id)
         .maybeSingle();
       if (profileError) throw profileError;
@@ -299,13 +299,13 @@ export async function loginLocalUser(
             {
               id: data.user.id,
               email: data.user.email || cleanEmail,
-              full_name: fallbackName,
+              fullname: fallbackName,
               role: fallbackRole,
-              updated_at: new Date().toISOString(),
+              updatedat: new Date().toISOString(),
             },
             { onConflict: 'id' }
           )
-          .select('id, full_name, email, role, profile_image_url, account_status, status_reason, status_reason_type, suspended_until, status, suspension_reason, suspended_at, suspension_ends_at, created_at')
+          .select('id, fullname, email, role, profileimageurl, accountstatus, statusreason, statusreasontype, suspendeduntil, status, suspensionreason, suspendedat, suspensionendsat, createdat')
           .maybeSingle();
         if (insertedProfile) {
           profile = insertedProfile;
@@ -317,12 +317,12 @@ export async function loginLocalUser(
     }
 
     const metadata = (data.user.user_metadata || {}) as Record<string, any>;
-    const accountStatus = profile?.account_status || profile?.status || 'active';
-    const suspendedUntil = profile?.suspended_until || profile?.suspension_ends_at || null;
+    const accountStatus = profile?.accountstatus || profile?.status || 'active';
+    const suspendedUntil = profile?.suspendeduntil || profile?.suspensionendsat || null;
     if (accountStatus === 'suspended' && !isSuspensionActive('suspended', suspendedUntil)) {
       await persistExpiredSuspension(createAdminClient(), data.user.id);
       if (profile) {
-        profile.account_status = 'active';
+        profile.accountstatus = 'active';
         profile.status = 'active';
       }
     } else if (isSuspensionActive(accountStatus, suspendedUntil)) {
@@ -331,15 +331,15 @@ export async function loginLocalUser(
       return {
         error: ADMIN_MESSAGES.suspended,
         suspendedAccount: {
-          reason: profile?.status_reason || profile?.suspension_reason || null,
-          reasonType: profile?.status_reason_type || null,
+          reason: profile?.statusreason || profile?.suspensionreason || null,
+          reasonType: profile?.statusreasontype || null,
           suspendedUntil,
         },
       };
     }
 
     const fullName =
-      profile?.full_name ||
+      profile?.fullname ||
       metadata.full_name ||
       metadata.name ||
       cleanEmail.split('@')[0];
@@ -348,16 +348,16 @@ export async function loginLocalUser(
       (metadata.role as AuthUser['role']) ||
       (cleanEmail.toLowerCase().includes('admin') ? 'admin' : 'user');
     const profileImageUrl =
-      profile?.profile_image_url ||
+      profile?.profileimageurl ||
       metadata.profile_image_url ||
       metadata.avatar_url ||
       metadata.picture ||
       null;
     const suspension = {
       status: profile?.status === 'suspended' || metadata.status === 'suspended' ? 'suspended' as const : 'active' as const,
-      suspension_reason: profile?.suspension_reason || metadata.status_reason || null,
-      suspended_at: profile?.suspended_at || metadata.status_updated_at || null,
-      suspension_ends_at: profile?.suspension_ends_at || metadata.suspension_ends_at || null,
+      suspensionreason: profile?.suspensionreason || metadata.status_reason || null,
+      suspendedat: profile?.suspendedat || metadata.status_updated_at || null,
+      suspensionendsat: profile?.suspensionendsat || metadata.suspension_ends_at || null,
     };
     if (!isAccountSuspended(suspension)) {
       suspension.status = 'active';
@@ -366,12 +366,12 @@ export async function loginLocalUser(
     return {
       user: {
         id: data.user.id,
-        full_name: fullName,
+        fullname: fullName,
         email: data.user.email || cleanEmail,
         role: role,
-        profile_image_url: profileImageUrl,
+        profileimageurl: profileImageUrl,
         ...suspension,
-        created_at: profile?.created_at || data.user.created_at,
+        createdat: profile?.createdat || data.user.created_at,
       },
     };
   } catch (error: unknown) {

@@ -48,7 +48,7 @@ export async function POST(request: Request) {
   const nonce = formData.get('nonce');
   const challengeResultsValue = formData.get('challenge_results');
   const failed = formData.get('failure') === 'true';
-  const flaggedReasonsValue = formData.get('flagged_reasons');
+  const flaggedReasonsValue = formData.get('flaggedreasons');
   if (typeof nonce !== 'string' || typeof challengeResultsValue !== 'string') {
     return NextResponse.json({ error: LIVE_VERIFICATION_MESSAGES.serverRejected }, { status: 400 });
   }
@@ -72,9 +72,9 @@ export async function POST(request: Request) {
   const nonceHash = createHash('sha256').update(nonce).digest('hex');
   const { ipHash, userAgentHash } = requestHashes(request);
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: session, error: sessionError } = await (adminClient.from('owner_liveness_sessions') as any)
-    .select('nonce_hash,expires_at,consumed_at,completed_at,challenges,status,ip_hash,user_agent_hash,user_id,attempts')
-    .eq('nonce_hash', nonceHash)
+  const { data: session, error: sessionError } = await (adminClient.from('livenesssessions') as any)
+    .select('noncehash,expiresat,consumedat,completedat,challenges,status,iphash,useragenthash,userid,attempts')
+    .eq('noncehash', nonceHash)
     .maybeSingle();
 
   if (sessionError) {
@@ -82,9 +82,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: LIVE_VERIFICATION_MESSAGES.serverRejected }, { status: 500 });
   }
   if (!session ||
-    session.ip_hash !== ipHash ||
-    session.user_agent_hash !== userAgentHash ||
-    (user?.id || null) !== (session.user_id || null)) {
+    session.iphash !== ipHash ||
+    session.useragenthash !== userAgentHash ||
+    (user?.id || null) !== (session.userid || null)) {
     return NextResponse.json({ error: LIVE_VERIFICATION_MESSAGES.serverRejected }, { status: 400 });
   }
   const validity = validateNonceSession(session, nonceHash, Date.now());
@@ -94,13 +94,13 @@ export async function POST(request: Request) {
 
   const submittedAt = new Date().toISOString();
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: claimedSession, error: claimError } = await (adminClient.from('owner_liveness_sessions') as any)
-    .update({ completed_at: submittedAt })
-    .eq('nonce_hash', nonceHash)
+  const { data: claimedSession, error: claimError } = await (adminClient.from('livenesssessions') as any)
+    .update({ completedat: submittedAt })
+    .eq('noncehash', nonceHash)
     .eq('status', 'pending')
-    .is('completed_at', null)
-    .is('consumed_at', null)
-    .select('nonce_hash')
+    .is('completedat', null)
+    .is('consumedat', null)
+    .select('noncehash')
     .maybeSingle();
   if (claimError || !claimedSession) {
     if (claimError) console.error('Unable to claim owner verification result:', claimError);
@@ -169,17 +169,17 @@ export async function POST(request: Request) {
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: updated, error: updateError } = await (adminClient.from('owner_liveness_sessions') as any)
+  const { data: updated, error: updateError } = await (adminClient.from('livenesssessions') as any)
     .update({
       status: 'passed',
-      snapshot_path: path,
-      flagged_reasons: flaggedReasons,
+      snapshotpath: path,
+      flaggedreasons: flaggedReasons,
     })
-    .eq('nonce_hash', nonceHash)
-    .eq('completed_at', submittedAt)
-    .is('consumed_at', null)
+    .eq('noncehash', nonceHash)
+    .eq('completedat', submittedAt)
+    .is('consumedat', null)
     .eq('status', 'pending')
-    .select('nonce_hash')
+    .select('noncehash')
     .maybeSingle();
 
   if (updateError || !updated) {

@@ -39,15 +39,15 @@ export interface AdminUser {
   email: string;
   role: 'user' | 'beach_owner' | 'admin';
   status: 'active' | 'deactivated' | 'suspended';
-  status_reason?: string | null;
-  status_reason_type?: string | null;
-  status_updated_at?: string | null;
-  suspension_ends_at?: string | null;
-  suspended_until?: string | null;
-  account_status?: 'active' | 'under_review' | 'suspended';
-  status_changed_at?: string | null;
+  statusreason?: string | null;
+  statusreasontype?: string | null;
+  statusupdatedat?: string | null;
+  suspensionendsat?: string | null;
+  suspendeduntil?: string | null;
+  accountstatus?: 'active' | 'under_review' | 'suspended';
+  statuschangedat?: string | null;
   location?: string | null;
-  profile_image_url?: string | null;
+  profileimageurl?: string | null;
   joined: string;
   last_sign_in_at?: string | null;
   has_pin: boolean;
@@ -306,19 +306,19 @@ export function UserModerationHub(_props: UserModerationHubProps) {
     }
     statusReturnFocusRef.current = document.activeElement instanceof HTMLElement ? document.activeElement : null;
     const nextStatus = defaultStatus || (user.status === 'active' ? 'suspended' : 'active');
-    const editingSuspension = nextStatus === 'suspended' && user.account_status === 'suspended';
-    const reinstating = nextStatus === 'active' && user.account_status === 'suspended';
+    const editingSuspension = nextStatus === 'suspended' && user.accountstatus === 'suspended';
+    const reinstating = nextStatus === 'active' && user.accountstatus === 'suspended';
     const initialReason = ((nextStatus === 'suspended' && !editingSuspension) || reinstating)
       ? ''
-      : user.status_reason || '';
+      : user.statusreason || '';
     setStatusModalUser(user);
     setTargetStatus(nextStatus);
     setStatusReason(initialReason);
-    setStatusReasonType(editingSuspension ? user.status_reason_type || '' : '');
-    const date = editingSuspension ? user.suspended_until || user.suspension_ends_at : null;
+    setStatusReasonType(editingSuspension ? user.statusreasontype || '' : '');
+    const date = editingSuspension ? user.suspendeduntil || user.suspensionendsat : null;
     const endDate = date ? date.slice(0, 10) : '';
     setSuspensionEndDate(endDate);
-    setStatusInitialDraft({ reason: initialReason, reasonType: user.status_reason_type || '', date: endDate });
+    setStatusInitialDraft({ reason: initialReason, reasonType: user.statusreasontype || '', date: endDate });
     setStatusModalError('');
     setStatusModalSuccess('');
   };
@@ -327,7 +327,7 @@ export function UserModerationHub(_props: UserModerationHubProps) {
   const handleSaveStatus = async () => {
     if (!statusModalUser) return;
 
-    if (targetStatus === 'active' && statusModalUser.account_status === 'suspended') {
+    if (targetStatus === 'active' && statusModalUser.accountstatus === 'suspended') {
       const noteValidation = validateSafeText(statusReason, { max: 500 });
       if (!noteValidation.ok) {
         setStatusModalError(noteValidation.error || ADMIN_MESSAGES.serverError);
@@ -343,24 +343,24 @@ export function UserModerationHub(_props: UserModerationHubProps) {
           body: JSON.stringify({
             action: 'status_change',
             id: statusModalUser.id,
-            to_status: 'active',
+            tostatus: 'active',
             reason: noteValidation.value,
-            reason_type: null,
-            suspended_until: null,
-            expected_status_changed_at: statusModalUser.status_changed_at || null,
+            reasontype: null,
+            suspendeduntil: null,
+            expected_status_changed_at: statusModalUser.statuschangedat || null,
           }),
         });
         const data = await response.json();
         if (!response.ok) throw new Error(data.error || ADMIN_MESSAGES.serverError);
         const updated: Partial<AdminUser> = {
           status: 'active',
-          account_status: 'active',
-          status_reason: null,
-          status_reason_type: null,
-          suspension_ends_at: null,
-          suspended_until: null,
-          status_updated_at: data.status_changed_at,
-          status_changed_at: data.status_changed_at,
+          accountstatus: 'active',
+          statusreason: null,
+          statusreasontype: null,
+          suspensionendsat: null,
+          suspendeduntil: null,
+          statusupdatedat: data.statuschangedat,
+          statuschangedat: data.statuschangedat,
         };
         setUsers((current) => current.map((user) => user.id === statusModalUser.id ? { ...user, ...updated } : user));
         setSelectedUser((current) => current?.id === statusModalUser.id ? { ...current, ...updated } : current);
@@ -420,13 +420,13 @@ export function UserModerationHub(_props: UserModerationHubProps) {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            action: statusModalUser.account_status === 'suspended' ? 'reason_edit' : 'status_change',
+            action: statusModalUser.accountstatus === 'suspended' ? 'reason_edit' : 'status_change',
             id: statusModalUser.id,
-            to_status: 'suspended',
+            tostatus: 'suspended',
             reason: reasonValidation.value,
-            reason_type: statusReasonType,
-            suspended_until: suspensionEndDate || null,
-            expected_status_changed_at: statusModalUser.status_changed_at || null,
+            reasontype: statusReasonType,
+            suspendeduntil: suspensionEndDate || null,
+            expected_status_changed_at: statusModalUser.statuschangedat || null,
           }),
         });
         const data = await response.json();
@@ -434,17 +434,17 @@ export function UserModerationHub(_props: UserModerationHubProps) {
 
         const updated: Partial<AdminUser> = {
           status: 'suspended',
-          account_status: 'suspended',
-          status_reason: data.status_reason,
-          status_reason_type: data.status_reason_type,
-          suspension_ends_at: data.suspended_until,
-          suspended_until: data.suspended_until,
-          status_updated_at: data.status_changed_at,
-          status_changed_at: data.status_changed_at,
+          accountstatus: 'suspended',
+          statusreason: data.statusreason,
+          statusreasontype: data.statusreasontype,
+          suspensionendsat: data.suspendeduntil,
+          suspendeduntil: data.suspendeduntil,
+          statusupdatedat: data.statuschangedat,
+          statuschangedat: data.statuschangedat,
         };
         setUsers((current) => current.map((user) => user.id === statusModalUser.id ? { ...user, ...updated } : user));
         setSelectedUser((current) => current?.id === statusModalUser.id ? { ...current, ...updated } : current);
-        setStatusModalSuccess(statusModalUser.account_status === 'suspended' ? 'Suspension details updated.' : 'Account suspended.');
+        setStatusModalSuccess(statusModalUser.accountstatus === 'suspended' ? 'Suspension details updated.' : 'Account suspended.');
         statusSuccessTimeoutRef.current = window.setTimeout(() => {
           statusSuccessTimeoutRef.current = null;
           setStatusModalUser(null);
@@ -487,7 +487,7 @@ export function UserModerationHub(_props: UserModerationHubProps) {
           action: 'status',
           status: targetStatus,
           reason: statusReason.trim() || null,
-          suspension_ends_at: suspensionEndDate
+          suspensionendsat: suspensionEndDate
             ? new Date(`${suspensionEndDate}T23:59:59`).toISOString()
             : null,
         }),
@@ -499,9 +499,9 @@ export function UserModerationHub(_props: UserModerationHubProps) {
       const newStatus = data.status || targetStatus;
       const newReason = newStatus === 'active'
         ? null
-        : data.status_reason || statusReason.trim() || null;
-      const newSuspensionEnd = data.suspension_ends_at || null;
-      const suspendedAt = data.suspended_at || null;
+        : data.statusreason || statusReason.trim() || null;
+      const newSuspensionEnd = data.suspensionendsat || null;
+      const suspendedAt = data.suspendedat || null;
 
       setUsers((current) =>
         current.map((u) =>
@@ -509,9 +509,9 @@ export function UserModerationHub(_props: UserModerationHubProps) {
             ? {
                 ...u,
                 status: newStatus,
-                status_reason: newReason,
-                status_updated_at: suspendedAt || new Date().toISOString(),
-                suspension_ends_at: newSuspensionEnd,
+                statusreason: newReason,
+                statusupdatedat: suspendedAt || new Date().toISOString(),
+                suspensionendsat: newSuspensionEnd,
               }
             : u
         )
@@ -523,9 +523,9 @@ export function UserModerationHub(_props: UserModerationHubProps) {
             ? {
                 ...prev,
                 status: newStatus,
-                status_reason: newReason,
-                status_updated_at: suspendedAt || new Date().toISOString(),
-                suspension_ends_at: newSuspensionEnd,
+                statusreason: newReason,
+                statusupdatedat: suspendedAt || new Date().toISOString(),
+                suspensionendsat: newSuspensionEnd,
               }
             : null
         );
@@ -546,7 +546,7 @@ export function UserModerationHub(_props: UserModerationHubProps) {
     const hasChanges = statusReason !== statusInitialDraft.reason ||
       statusReasonType !== statusInitialDraft.reasonType ||
       suspensionEndDate !== statusInitialDraft.date;
-    const hasDraft = targetStatus === 'suspended' || statusModalUser?.account_status === 'suspended';
+    const hasDraft = targetStatus === 'suspended' || statusModalUser?.accountstatus === 'suspended';
     if (hasDraft && hasChanges && !statusModalSuccess && !window.confirm('Discard changes?')) return;
     if (statusSuccessTimeoutRef.current !== null) {
       window.clearTimeout(statusSuccessTimeoutRef.current);
@@ -1106,7 +1106,7 @@ export function UserModerationHub(_props: UserModerationHubProps) {
                     {selectedUser.status} Reason
                   </span>
                   <p className="text-xs text-rose-700 dark:text-rose-400">
-                    {selectedUser.status_reason || 'No reason recorded.'}
+                    {selectedUser.statusreason || 'No reason recorded.'}
                   </p>
                 </div>
               )}
@@ -1163,7 +1163,7 @@ export function UserModerationHub(_props: UserModerationHubProps) {
                 </button>
 
                 {selectedUser.id !== currentAdminId && selectedUser.role !== 'admin' && (
-                  selectedUser.account_status === 'suspended' ? (
+                  selectedUser.accountstatus === 'suspended' ? (
                     <>
                       <button
                         type="button"
@@ -1183,7 +1183,7 @@ export function UserModerationHub(_props: UserModerationHubProps) {
                       </button>
                     </>
                   ) : selectedUser.status === 'active' &&
-                    (selectedUser.account_status === 'active' || selectedUser.account_status === 'under_review') ? (
+                    (selectedUser.accountstatus === 'active' || selectedUser.accountstatus === 'under_review') ? (
                     <button
                       type="button"
                       onClick={() => openStatusModal(selectedUser, 'suspended')}
@@ -1383,7 +1383,7 @@ export function UserModerationHub(_props: UserModerationHubProps) {
             }}
           >
             <h2 id="suspension-dialog-title" className="text-lg font-extrabold text-brand-navy-500 dark:text-white">
-              {statusModalUser.account_status === 'suspended'
+              {statusModalUser.accountstatus === 'suspended'
                 ? `Edit suspension reason: ${statusModalUser.name}`
                 : `Suspend ${statusModalUser.name}`}
             </h2>
@@ -1491,7 +1491,7 @@ export function UserModerationHub(_props: UserModerationHubProps) {
                 className="inline-flex min-w-24 items-center justify-center gap-2 rounded-full bg-rose-600 px-4 py-2 text-sm font-bold text-white hover:bg-rose-700 disabled:opacity-50"
               >
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                {statusModalUser.account_status === 'suspended' ? 'Save changes' : 'Suspend'}
+                {statusModalUser.accountstatus === 'suspended' ? 'Save changes' : 'Suspend'}
               </button>
             </div>
           </div>
@@ -1504,7 +1504,7 @@ export function UserModerationHub(_props: UserModerationHubProps) {
             <div className="px-6 py-4 border-b border-slate-100 dark:border-neutral-800 flex items-center justify-between">
               <div>
                 <h3 className="text-base font-extrabold text-brand-navy-500 dark:text-white">
-                  {statusModalUser.account_status === 'suspended' && targetStatus === 'active'
+                  {statusModalUser.accountstatus === 'suspended' && targetStatus === 'active'
                     ? `Reinstate ${statusModalUser.name}`
                     : 'Account Status'}
                 </h3>
@@ -1585,7 +1585,7 @@ export function UserModerationHub(_props: UserModerationHubProps) {
                   />
                 </div>
               )}
-              {targetStatus === 'active' && statusModalUser.account_status === 'suspended' && (
+              {targetStatus === 'active' && statusModalUser.accountstatus === 'suspended' && (
                 <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
                   Optional note
                   <textarea
@@ -1606,7 +1606,7 @@ export function UserModerationHub(_props: UserModerationHubProps) {
               <div className="flex items-center justify-end gap-2 pt-4 border-t border-slate-100 dark:border-neutral-800">
                 <button
                   type="button"
-                  onClick={() => statusModalUser.account_status === 'suspended'
+                  onClick={() => statusModalUser.accountstatus === 'suspended'
                     ? closeStatusModal()
                     : setStatusModalUser(null)}
                   disabled={submitting}
@@ -1618,14 +1618,14 @@ export function UserModerationHub(_props: UserModerationHubProps) {
                   type="button"
                   onClick={handleSaveStatus}
                   disabled={submitting || Boolean(statusModalSuccess) || (
-                    targetStatus === 'active' && statusModalUser.account_status === 'suspended'
+                    targetStatus === 'active' && statusModalUser.accountstatus === 'suspended'
                       ? !validateSafeText(statusReason, { max: 500 }).ok
                       : false
                   )}
                   className="px-5 py-2 text-xs font-bold text-white bg-brand-navy-500 hover:bg-brand-navy-600 dark:bg-brand-teal-600 dark:hover:bg-brand-teal-600 rounded-xl transition-colors flex items-center gap-1.5 shadow-2xs cursor-pointer"
                 >
                   {submitting && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
-                  <span>{statusModalUser.account_status === 'suspended' && targetStatus === 'active' ? 'Confirm reinstate' : 'Apply'}</span>
+                  <span>{statusModalUser.accountstatus === 'suspended' && targetStatus === 'active' ? 'Confirm reinstate' : 'Apply'}</span>
                 </button>
               </div>
             </div>

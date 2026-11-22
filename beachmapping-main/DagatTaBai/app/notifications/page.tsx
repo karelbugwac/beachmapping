@@ -5,17 +5,17 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Bell, Check, CircleAlert, Clock3, MonitorSmartphone, ShieldCheck, MapPin, LogOut } from 'lucide-react';
 import { showToast } from '@/components/ui/feedback-toasts';
-import { SignOutAllDevicesButton } from '@/components/auth/sign-out-all-devices';
+import { SignOutAllDevicesButton } from '@/components/auth/signout';
 
 interface NotificationItem {
   id: string;
   type: 'new_device_login' | 'new_location_login' | 'tour_status';
-  created_at: string;
-  read_at: string | null;
+  createdat: string;
+  readat: string | null;
   response: 'confirmed' | 'unrecognized' | null;
   title?: string | null;
   message?: string | null;
-  action_url?: string | null;
+  actionurl?: string | null;
   browser: string;
   platform: string;
   location?: string | null;
@@ -85,7 +85,7 @@ export default function NotificationsPage() {
     }
   };
 
-  const unreadCount = notifications.filter((item) => !item.read_at).length;
+  const unreadCount = notifications.filter((item) => !item.readat).length;
 
   return (
     <main className="min-h-[70vh] bg-white dark:bg-black px-4 py-10 sm:px-6 sm:py-14">
@@ -133,7 +133,7 @@ export default function NotificationsPage() {
                 <article
                   key={notification.id}
                   className={`rounded-2xl border bg-white p-5 shadow-sm transition-colors dark:bg-neutral-900 sm:p-6 ${
-                    notification.read_at ? 'border-slate-200 dark:border-neutral-800' : 'border-brand-navy-200 ring-1 ring-brand-teal-400 dark:border-brand-navy-900 dark:ring-brand-teal-400'
+                    notification.readat ? 'border-slate-200 dark:border-neutral-800' : 'border-brand-navy-200 ring-1 ring-brand-teal-400 dark:border-brand-navy-900 dark:ring-brand-teal-400'
                   }`}
                 >
                   <div className="flex items-start gap-4">
@@ -160,7 +160,7 @@ export default function NotificationsPage() {
                         <h2 className="font-semibold text-slate-900 dark:text-white">
                           {notification.title || (isLocationAlert ? 'New sign-in location detected' : 'New sign-in detected')}
                         </h2>
-                        {!notification.read_at && <span className="h-2 w-2 rounded-full bg-brand-navy-600" aria-label="Unread" />}
+                        {!notification.readat && <span className="h-2 w-2 rounded-full bg-brand-navy-600" aria-label="Unread" />}
                       </div>
 
                       {isTourAlert ? (
@@ -178,20 +178,20 @@ export default function NotificationsPage() {
 
                       <p className="mt-3 flex items-center gap-1.5 text-xs text-slate-500 dark:text-slate-400">
                         <Clock3 className="h-3.5 w-3.5" />
-                        <time dateTime={notification.created_at}>{formatDate(notification.created_at)}</time>
+                        <time dateTime={notification.createdat}>{formatDate(notification.createdat)}</time>
                       </p>
 
                       {isTourAlert ? (
                         <div className="mt-5 flex flex-wrap items-center gap-3">
-                          {notification.action_url && (
+                          {notification.actionurl && (
                             <Link
-                              href={notification.action_url}
+                              href={notification.actionurl}
                               className="rounded-lg bg-brand-navy-500 px-4 py-2 text-sm font-semibold text-white hover:bg-brand-navy-600"
                             >
                               View tour
                             </Link>
                           )}
-                          {!notification.read_at && (
+                          {!notification.readat && (
                             <button
                               type="button"
                               disabled={busyId === notification.id}

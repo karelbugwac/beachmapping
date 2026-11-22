@@ -29,14 +29,14 @@ interface AccountRow {
   name: string;
   email: string;
   role: AccountRole;
-  account_status: AccountStatus;
-  status_reason: string | null;
-  status_reason_type: string | null;
-  suspended_until: string | null;
-  status_changed_by: string | null;
+  accountstatus: AccountStatus;
+  statusreason: string | null;
+  statusreasontype: string | null;
+  suspendeduntil: string | null;
+  statuschangedby: string | null;
   status_changed_by_name: string | null;
-  status_changed_at: string | null;
-  pin_reset_required: boolean;
+  statuschangedat: string | null;
+  pinresetrequired: boolean;
   joined: string;
   beach_names: string[];
 }
@@ -53,16 +53,16 @@ interface AccountListResponse {
 
 interface AccountDetails {
   account: AccountRow;
-  changed_by: { full_name: string | null; email: string | null } | null;
+  changedby: { fullname: string | null; email: string | null } | null;
   history: Array<{
     id: string;
     action: string;
-    from_status: string | null;
-    to_status: string | null;
+    fromstatus: string | null;
+    tostatus: string | null;
     reason: string | null;
-    reason_type: string | null;
-    created_at: string;
-    admin_id: string | null;
+    reasontype: string | null;
+    createdat: string;
+    adminid: string | null;
   }>;
 }
 
@@ -343,12 +343,12 @@ export function AdminAccountManagement() {
 
   const openStatus = (account: AccountRow, next: AccountStatus) => {
     statusReturnFocusRef.current = actionButtonRefs.current.get(account.id) || null;
-    const editReason = next === 'suspended' && account.account_status === 'suspended';
-    const initialReason = editReason ? account.status_reason || '' : '';
-    const initialReasonType = editReason ? account.status_reason_type || '' : '';
+    const editReason = next === 'suspended' && account.accountstatus === 'suspended';
+    const initialReason = editReason ? account.statusreason || '' : '';
+    const initialReasonType = editReason ? account.statusreasontype || '' : '';
     const tomorrow = addLocalDays(new Date(), 1);
-    const initialDate = editReason && account.suspended_until
-      ? account.suspended_until.slice(0, 10)
+    const initialDate = editReason && account.suspendeduntil
+      ? account.suspendeduntil.slice(0, 10)
       : next === 'suspended' && !editReason ? dateInputValue(addLocalDays(new Date(), 7)) : '';
     setStatusAccount(account);
     setTargetStatus(next);
@@ -475,33 +475,33 @@ export function AdminAccountManagement() {
         body: JSON.stringify({
           action: editingSuspensionReason ? 'reason_edit' : 'status_change',
           id: statusAccount.id,
-          to_status: targetStatus,
+          tostatus: targetStatus,
           reason: validation.value,
-          reason_type: targetStatus === 'suspended' ? reasonType : null,
-          suspended_until: targetStatus === 'suspended' ? suspendDate || null : null,
-          expected_status_changed_at: statusAccount.status_changed_at,
+          reasontype: targetStatus === 'suspended' ? reasonType : null,
+          suspendeduntil: targetStatus === 'suspended' ? suspendDate || null : null,
+          expected_status_changed_at: statusAccount.statuschangedat,
         }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || ADMIN_MESSAGES.serverError);
       const updatedAccount: AccountRow = {
         ...statusAccount,
-        account_status: data.account_status,
-        status_reason: data.status_reason,
-        status_reason_type: data.status_reason_type,
-        suspended_until: data.suspended_until,
-        status_changed_by: data.status_changed_by,
+        accountstatus: data.accountstatus,
+        statusreason: data.statusreason,
+        statusreasontype: data.statusreasontype,
+        suspendeduntil: data.suspendeduntil,
+        statuschangedby: data.statuschangedby,
         status_changed_by_name: data.status_changed_by_name,
-        status_changed_at: data.status_changed_at,
+        statuschangedat: data.statuschangedat,
       };
       setResult((current) => {
         if (!current) return current;
         const counts = { ...current.counts };
-        if (statusAccount.account_status !== updatedAccount.account_status) {
-          counts[statusAccount.account_status] = Math.max(0, counts[statusAccount.account_status] - 1);
-          counts[updatedAccount.account_status] += 1;
+        if (statusAccount.accountstatus !== updatedAccount.accountstatus) {
+          counts[statusAccount.accountstatus] = Math.max(0, counts[statusAccount.accountstatus] - 1);
+          counts[updatedAccount.accountstatus] += 1;
         }
-        const remainsInFilter = statusFilter === 'all' || updatedAccount.account_status === statusFilter;
+        const remainsInFilter = statusFilter === 'all' || updatedAccount.accountstatus === statusFilter;
         const accounts = current.accounts
           .map((account) => account.id === updatedAccount.id ? updatedAccount : account)
           .filter((account) => account.id !== updatedAccount.id || remainsInFilter);
@@ -694,28 +694,28 @@ export function AdminAccountManagement() {
                 const disabled = account.id === result.currentAdminId;
                 const isAdmin = account.role === 'admin';
                 const canManageStatus = !disabled && !isAdmin && ['user', 'beach_owner', 'beach_manager'].includes(account.role);
-                const endPreview = account.account_status === 'suspended'
-                  ? account.suspended_until ? `Until ${formatDate(account.suspended_until)}` : 'Until further notice'
+                const endPreview = account.accountstatus === 'suspended'
+                  ? account.suspendeduntil ? `Until ${formatDate(account.suspendeduntil)}` : 'Until further notice'
                   : '';
                 return (
                   <tr key={account.id} className="align-top hover:bg-slate-50/70 dark:hover:bg-neutral-800/30">
                     <td className="px-5 py-4">
                       <div className="font-bold text-sm text-brand-navy-500 dark:text-white">{account.name}</div>
                       <div className="mt-0.5 text-xs text-slate-500 dark:text-neutral-400">{account.email}</div>
-                      <span className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${statusStyle(account.account_status)}`}>
-                        {statusLabels[account.account_status]}
+                      <span className={`mt-2 inline-flex rounded-full px-2.5 py-1 text-[11px] font-bold ${statusStyle(account.accountstatus)}`}>
+                        {statusLabels[account.accountstatus]}
                       </span>
-                      {account.account_status === 'suspended' && (
+                      {account.accountstatus === 'suspended' && (
                         <div className="mt-1 max-w-xs text-[11px] text-rose-700 dark:text-rose-300">
-                          <p className="truncate" title={account.status_reason || ''}>{account.status_reason || 'No reason provided'}</p>
+                          <p className="truncate" title={account.statusreason || ''}>{account.statusreason || 'No reason provided'}</p>
                           <p className="text-slate-500 dark:text-neutral-400">
-                            {account.status_reason_type || 'Other'} · {endPreview} · by {account.status_changed_by_name || 'Administrator'} on {formatDate(account.status_changed_at)}
+                            {account.statusreasontype || 'Other'} · {endPreview} · by {account.status_changed_by_name || 'Administrator'} on {formatDate(account.statuschangedat)}
                           </p>
                         </div>
                       )}
-                      {account.account_status === 'under_review' && account.status_reason && (
-                        <div className="mt-1 max-w-xs truncate text-[11px] text-brand-navy-700 dark:text-brand-sun-300" title={account.status_reason}>
-                          Internal note: {account.status_reason}
+                      {account.accountstatus === 'under_review' && account.statusreason && (
+                        <div className="mt-1 max-w-xs truncate text-[11px] text-brand-navy-700 dark:text-brand-sun-300" title={account.statusreason}>
+                          Internal note: {account.statusreason}
                         </div>
                       )}
                     </td>
@@ -747,10 +747,10 @@ export function AdminAccountManagement() {
                           <div className="absolute right-0 z-30 mt-1 w-48 rounded-xl border border-slate-200 bg-white p-1.5 shadow-xl dark:border-neutral-700 dark:bg-neutral-900">
                             <ActionItem icon={<Eye />} label="View" onClick={() => void openDetails(account)} />
                                       {disabled && <p className="px-2.5 py-2 text-left text-[11px] font-semibold text-slate-500">You cannot change your own account status.</p>}
-                                      {canManageStatus && account.account_status === 'active' && <ActionItem icon={<Clock />} label="Set under review" onClick={() => openStatus(account, 'under_review')} />}
-                            {canManageStatus && ['active', 'under_review'].includes(account.account_status) && <ActionItem icon={<Shield />} label="Suspend" onClick={() => openStatus(account, 'suspended')} />}
-                            {canManageStatus && account.account_status === 'suspended' && <ActionItem icon={<Shield />} label="Edit reason" onClick={() => openStatus(account, 'suspended')} />}
-                            {canManageStatus && ['under_review', 'suspended'].includes(account.account_status) && <ActionItem icon={<Shield />} label="Reinstate" onClick={() => openStatus(account, 'active')} />}
+                                      {canManageStatus && account.accountstatus === 'active' && <ActionItem icon={<Clock />} label="Set under review" onClick={() => openStatus(account, 'under_review')} />}
+                            {canManageStatus && ['active', 'under_review'].includes(account.accountstatus) && <ActionItem icon={<Shield />} label="Suspend" onClick={() => openStatus(account, 'suspended')} />}
+                            {canManageStatus && account.accountstatus === 'suspended' && <ActionItem icon={<Shield />} label="Edit reason" onClick={() => openStatus(account, 'suspended')} />}
+                            {canManageStatus && ['under_review', 'suspended'].includes(account.accountstatus) && <ActionItem icon={<Shield />} label="Reinstate" onClick={() => openStatus(account, 'active')} />}
                             {!disabled && account.role === 'user' && <ActionItem icon={<Mail />} label="Reset password" onClick={() => { setOpenMenuId(null); setResetAction('reset_password'); setResetAccount(account); setModalError(''); setModalSuccess(''); }} />}
                             {!disabled && account.role === 'beach_owner' && <ActionItem icon={<Shield />} label="Reset PIN" onClick={() => { setOpenMenuId(null); setResetAction('reset_pin'); setResetAccount(account); setModalError(''); setModalSuccess(''); }} />}
                           </div>
@@ -1099,21 +1099,21 @@ export function AdminAccountManagement() {
               </div>
               <div className="mt-4 flex flex-wrap items-center gap-2">
                 <span className="rounded-full bg-brand-teal-50 px-2.5 py-1 text-[11px] font-bold text-brand-teal-700 dark:bg-brand-teal-900/40 dark:text-brand-teal-300">{formatRole(details.account.role)}</span>
-                <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${statusStyle(details.account.account_status)}`}>{statusLabels[details.account.account_status]}</span>
+                <span className={`rounded-full px-2.5 py-1 text-[11px] font-bold ${statusStyle(details.account.accountstatus)}`}>{statusLabels[details.account.accountstatus]}</span>
               </div>
               <dl className="mt-4 space-y-3 rounded-xl bg-slate-50 p-3 text-xs dark:bg-neutral-800/50">
-                {details.account.status_reason_type && <div><dt className="font-bold text-slate-500">Reason type</dt><dd className="mt-1">{details.account.status_reason_type}</dd></div>}
-                <div><dt className="font-bold text-slate-500">Reason</dt><dd className="mt-1 whitespace-pre-wrap text-slate-800 dark:text-neutral-200">{details.account.status_reason || 'No reason recorded.'}</dd></div>
-                {details.account.account_status === 'suspended' && <div><dt className="font-bold text-slate-500">Suspended until</dt><dd className="mt-1">{formatDate(details.account.suspended_until)}</dd></div>}
-                <div><dt className="font-bold text-slate-500">Changed by</dt><dd className="mt-1">{details.changed_by?.full_name || details.changed_by?.email || 'System'}</dd></div>
-                <div><dt className="font-bold text-slate-500">Changed at</dt><dd className="mt-1">{formatDate(details.account.status_changed_at)}</dd></div>
+                {details.account.statusreasontype && <div><dt className="font-bold text-slate-500">Reason type</dt><dd className="mt-1">{details.account.statusreasontype}</dd></div>}
+                <div><dt className="font-bold text-slate-500">Reason</dt><dd className="mt-1 whitespace-pre-wrap text-slate-800 dark:text-neutral-200">{details.account.statusreason || 'No reason recorded.'}</dd></div>
+                {details.account.accountstatus === 'suspended' && <div><dt className="font-bold text-slate-500">Suspended until</dt><dd className="mt-1">{formatDate(details.account.suspendeduntil)}</dd></div>}
+                <div><dt className="font-bold text-slate-500">Changed by</dt><dd className="mt-1">{details.changedby?.fullname || details.changedby?.email || 'System'}</dd></div>
+                <div><dt className="font-bold text-slate-500">Changed at</dt><dd className="mt-1">{formatDate(details.account.statuschangedat)}</dd></div>
               </dl>
               <h3 className="mt-5 text-xs font-extrabold uppercase tracking-wide text-slate-500">History</h3>
               <div className="mt-2 max-h-52 space-y-2 overflow-y-auto">
                 {details.history.length ? details.history.map((item) => (
                   <div key={item.id} className="rounded-xl border border-slate-100 p-3 text-xs dark:border-neutral-800">
-                    <div className="flex justify-between gap-2 font-bold"><span>{item.action === 'status_change' ? `${item.from_status || 'Created'} → ${item.to_status || 'Updated'}` : item.action === 'reason_edit' ? 'Suspension reason updated' : item.action === 'reset_pin' ? 'PIN reset' : 'Password reset email'}</span><span className="shrink-0 text-slate-400">{formatDate(item.created_at)}</span></div>
-                    {item.reason_type && <p className="mt-1 font-semibold text-slate-500">{item.reason_type}</p>}
+                    <div className="flex justify-between gap-2 font-bold"><span>{item.action === 'status_change' ? `${item.fromstatus || 'Created'} → ${item.tostatus || 'Updated'}` : item.action === 'reason_edit' ? 'Suspension reason updated' : item.action === 'reset_pin' ? 'PIN reset' : 'Password reset email'}</span><span className="shrink-0 text-slate-400">{formatDate(item.createdat)}</span></div>
+                    {item.reasontype && <p className="mt-1 font-semibold text-slate-500">{item.reasontype}</p>}
                     {item.reason && <p className="mt-1 whitespace-pre-wrap text-slate-600 dark:text-neutral-300">{item.reason}</p>}
                   </div>
                 )) : <p className="text-xs text-slate-500">No account history yet.</p>}

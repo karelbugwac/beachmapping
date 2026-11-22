@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { authorizeRoles } from '@/lib/supabase/authorization';
-import { isAdministratorAccount, noStoreHeaders } from '@/lib/server/admin-request';
+import { isAdministratorAccount, noStoreHeaders } from '@/lib/server/adminrequest';
 
 export async function GET(
   _request: NextRequest,
@@ -14,7 +14,7 @@ export async function GET(
     }
     const { id } = await params;
     const { data: account, error } = await (auth.adminClient.from('profiles') as any)
-      .select('id, full_name, email, role, account_status, status_reason, status_reason_type, suspended_until, status_changed_by, status_changed_at')
+      .select('id, fullname, email, role, accountstatus, statusreason, statusreasontype, suspendeduntil, statuschangedby, statuschangedat')
       .eq('id', id)
       .maybeSingle();
     if (error) throw error;
@@ -23,20 +23,20 @@ export async function GET(
     }
 
     const [{ data: history, error: historyError }, changedByResult] = await Promise.all([
-      (auth.adminClient.from('admin_audit_log') as any)
-        .select('id, action, from_status, to_status, reason, reason_type, created_at, admin_id')
-        .eq('target_user_id', id)
-        .order('created_at', { ascending: false })
+      (auth.adminClient.from('adminlog') as any)
+        .select('id, action, fromstatus, tostatus, reason, reasontype, createdat, adminid')
+        .eq('targetuserid', id)
+        .order('createdat', { ascending: false })
         .limit(50),
-      account.status_changed_by
-        ? (auth.adminClient.from('profiles') as any).select('full_name, email').eq('id', account.status_changed_by).maybeSingle()
+      account.statuschangedby
+        ? (auth.adminClient.from('profiles') as any).select('fullname, email').eq('id', account.statuschangedby).maybeSingle()
         : Promise.resolve({ data: null, error: null }),
     ]);
     if (historyError) throw historyError;
     if (changedByResult.error) throw changedByResult.error;
     return NextResponse.json({
       account,
-      changed_by: changedByResult.data,
+      changedby: changedByResult.data,
       history: history || [],
     }, { headers: noStoreHeaders() });
   } catch (error: unknown) {

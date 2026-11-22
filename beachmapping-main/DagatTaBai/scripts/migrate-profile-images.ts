@@ -4,20 +4,20 @@ import { createWriteStream } from 'node:fs';
 import { mkdir, readFile, writeFile } from 'node:fs/promises';
 import path from 'node:path';
 import { once } from 'node:events';
-import { compressImageBuffer } from '../lib/server/image-compression';
+import { compressImageBuffer } from '../lib/server/imagecompression';
 import { IMAGE_UPLOAD_CONFIG } from '../lib/utils/image-upload-config';
 import { detectImageMime } from '../lib/utils/image-validation';
 import type { Database } from '../lib/supabase/types';
 
 interface ProfileRow {
   id: string;
-  profile_image_url: string | null;
+  profileimageurl: string | null;
 }
 
 interface MigrationResult {
-  user_id: string;
+  userid: string;
   status: 'pending' | 'migrated' | 'skipped' | 'failed' | 'restored' | 'rolled_back';
-  storage_path?: string;
+  storagepath?: string;
   new_url?: string;
   original_hash?: string;
   error?: string;
@@ -64,8 +64,8 @@ async function forEachProfileBatch(
   for (let from = 0; ; from += BATCH_SIZE) {
     const { data, error } = await client
       .from('profiles')
-      .select('id, profile_image_url')
-      .ilike('profile_image_url', 'data:image/%')
+      .select('id, profileimageurl')
+      .ilike('profileimageurl', 'data:image/%')
       .order('id')
       .range(from, from + BATCH_SIZE - 1);
     if (error) throw error;
@@ -104,8 +104,8 @@ async function runDryRun(client: MigrationClient) {
   await forEachProfileBatch(client, (rows) => {
     for (const row of rows) {
       count += 1;
-      if (typeof row.profile_image_url !== 'string') continue;
-      const inputBytes = estimateDataUrlBytes(row.profile_image_url);
+      if (typeof row.profileimageurl !== 'string') continue;
+      const inputBytes = estimateDataUrlBytes(row.profileimageurl);
       console.log(
         `${row.id}: approximately ${inputBytes} bytes -> avatars/${row.id}/avatar.webp (400x400, WebP, target < 102400 bytes)`
       );
@@ -122,9 +122,9 @@ async function writeBackup(client: MigrationClient, backupPath: string) {
   try {
     await forEachProfileBatch(client, async (rows) => {
       for (const row of rows) {
-        if (typeof row.profile_image_url !== 'string') continue;
-        await writeJsonLine(stream, { user_id: row.id, original_value: row.profile_image_url });
-        hashes.set(row.id, hashValue(row.profile_image_url));
+        if (typeof row.profileimageurl !== 'string') continue;
+        await writeJsonLine(stream, { userid: row.id, original_value: row.profileimageurl });
+        hashes.set(row.id, hashValue(row.profileimageurl));
       }
     });
     stream.end();
@@ -146,27 +146,27 @@ async function runApply(client: MigrationClient) {
   const originalHashes = await writeBackup(client, backupPath);
   const ids = [...originalHashes.keys()];
   const results: MigrationResult[] = ids.map((id) => ({
-    user_id: id,
+    userid: id,
     status: 'pending',
     original_hash: originalHashes.get(id),
   }));
   const writeReport = () => writeFile(
     reportPath,
-    JSON.stringify({ created_at: new Date().toISOString(), backup_path: backupPath, results }, null, 2),
+    JSON.stringify({ createdat: new Date().toISOString(), backup_path: backupPath, results }, null, 2),
     { flag: 'wx' }
   );
   await writeReport();
 
   console.log(`Backed up ${ids.length} profile values to ${backupPath}`);
   console.log(`Rollback report created at ${reportPath}`);
-  const resultById = new Map(results.map((result) => [result.user_id, result]));
+  const resultById = new Map(results.map((result) => [result.userid, result]));
   const storage = client.storage.from('avatars');
 
   for (let offset = 0; offset < ids.length; offset += BATCH_SIZE) {
     const batchIds = ids.slice(offset, offset + BATCH_SIZE);
     const { data: batchRows, error: batchError } = await client
       .from('profiles')
-      .select('id, profile_image_url')
+      .select('id, profileimageurl')
       .in('id', batchIds);
     if (batchError) throw batchError;
 
@@ -182,24 +182,24 @@ async function runApply(client: MigrationClient) {
 
       let storagePath: string | undefined;
       try {
-        if (typeof row.profile_image_url !== 'string' || hashValue(row.profile_image_url) !== result.original_hash) {
+        if (typeof row.profileimageurl !== 'string' || hashValue(row.profileimageurl) !== result.original_hash) {
           result.status = 'skipped';
           result.error = 'Profile changed after the backup was created.';
           continue;
         }
         const { data: current, error: readError } = await client
           .from('profiles')
-          .select('profile_image_url')
+          .select('profileimageurl')
           .eq('id', row.id)
           .maybeSingle();
         if (readError) throw readError;
-        if (!current || current.profile_image_url !== row.profile_image_url) {
+        if (!current || current.profileimageurl !== row.profileimageurl) {
           result.status = 'skipped';
           result.error = 'Profile changed before the image could be uploaded.';
           continue;
         }
 
-        const source = decodeImageDataUrl(row.profile_image_url);
+        const source = decodeImageDataUrl(row.profileimageurl);
         const compressed = await compressImageBuffer(source, 'profile');
         storagePath = `${row.id}/avatar.${compressed.extension}`;
         const { error: uploadError } = await storage.upload(storagePath, compressed.buffer, {
@@ -222,16 +222,16 @@ async function runApply(client: MigrationClient) {
         const newUrl = storage.getPublicUrl(storagePath).data.publicUrl;
         const { data: updated, error: updateError } = await client
           .from('profiles')
-          .update({ profile_image_url: newUrl })
+          .update({ profileimageurl: newUrl })
           .eq('id', row.id)
-          .eq('profile_image_url', row.profile_image_url)
+          .eq('profileimageurl', row.profileimageurl)
           .select('id')
           .maybeSingle();
         if (updateError) throw updateError;
         if (!updated) throw new Error('Profile changed before the image URL could be updated.');
 
         result.status = 'migrated';
-        result.storage_path = storagePath;
+        result.storagepath = storagePath;
         result.new_url = newUrl;
         console.log(`${row.id}: uploaded ${storagePath} (${object.size} bytes)`);
       } catch (error) {
@@ -247,7 +247,7 @@ async function runApply(client: MigrationClient) {
       } finally {
         await writeFile(
           reportPath,
-          JSON.stringify({ created_at: new Date().toISOString(), backup_path: backupPath, results }, null, 2)
+          JSON.stringify({ createdat: new Date().toISOString(), backup_path: backupPath, results }, null, 2)
         );
       }
     }
@@ -269,28 +269,28 @@ async function runRollback(client: MigrationClient) {
     results: MigrationResult[];
   };
   const originals = backupLines.map((line) => JSON.parse(line) as {
-    user_id: string;
+    userid: string;
     original_value: string;
   });
-  const resultById = new Map(report.results.map((result) => [result.user_id, result]));
+  const resultById = new Map(report.results.map((result) => [result.userid, result]));
   const storage = client.storage.from('avatars');
 
   for (let offset = 0; offset < originals.length; offset += BATCH_SIZE) {
     for (const backup of originals.slice(offset, offset + BATCH_SIZE)) {
-      const result = resultById.get(backup.user_id);
+      const result = resultById.get(backup.userid);
       if (!result || !result.new_url || !['migrated', 'restored'].includes(result.status)) continue;
 
       if (result.status === 'migrated') {
         const { data: restored, error: restoreError } = await client
           .from('profiles')
-          .update({ profile_image_url: backup.original_value })
-          .eq('id', backup.user_id)
-          .eq('profile_image_url', result.new_url)
+          .update({ profileimageurl: backup.original_value })
+          .eq('id', backup.userid)
+          .eq('profileimageurl', result.new_url)
           .select('id')
           .maybeSingle();
         if (restoreError || !restored) {
           result.error = restoreError?.message || 'Current profile URL changed; original value was not restored.';
-          console.error(`${backup.user_id}: ${result.error}`);
+          console.error(`${backup.userid}: ${result.error}`);
           await writeFile(reportPath, JSON.stringify(report, null, 2));
           continue;
         }
@@ -298,18 +298,18 @@ async function runRollback(client: MigrationClient) {
         await writeFile(reportPath, JSON.stringify(report, null, 2));
       }
 
-      if (result.storage_path) {
-        const { error: removeError } = await storage.remove([result.storage_path]);
+      if (result.storagepath) {
+        const { error: removeError } = await storage.remove([result.storagepath]);
         if (removeError) {
           result.error = `Profile restored, but Storage cleanup failed: ${removeError.message}`;
-          console.error(`${backup.user_id}: ${result.error}`);
+          console.error(`${backup.userid}: ${result.error}`);
           await writeFile(reportPath, JSON.stringify(report, null, 2));
           continue;
         }
       }
       result.status = 'rolled_back';
       result.error = undefined;
-      console.log(`${backup.user_id}: restored original profile value`);
+      console.log(`${backup.userid}: restored original profile value`);
       await writeFile(reportPath, JSON.stringify(report, null, 2));
     }
   }

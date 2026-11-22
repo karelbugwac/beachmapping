@@ -13,8 +13,8 @@ export async function GET() {
 
     const adminSupabase = createAdminClient();
     const { data: beach, error: beachError } = await (adminSupabase.from('beaches') as any)
-      .select('id, name, slug, status, average_rating')
-      .eq('owner_id', userId)
+      .select('id, name, slug, status, averagerating')
+      .eq('ownerid', userId)
       .maybeSingle();
     if (beachError) throw beachError;
 
@@ -31,10 +31,10 @@ export async function GET() {
     }
 
     // 2. Fetch live reviews for this beach
-    const { data: dbReviews, error: reviewsError } = await (adminSupabase.from('beach_reviews') as any)
-      .select('id, rating, comment, created_at, user_id, profiles:user_id(full_name)')
-      .eq('beach_id', beach.id)
-      .order('created_at', { ascending: false });
+    const { data: dbReviews, error: reviewsError } = await (adminSupabase.from('beachreviews') as any)
+      .select('id, rating, comment, createdat, userid, profiles:userid(fullname)')
+      .eq('beachid', beach.id)
+      .order('createdat', { ascending: false });
 
     if (reviewsError) {
       console.error('Error fetching beach reviews for owner:', reviewsError);
@@ -75,8 +75,8 @@ export async function GET() {
       id: r.id,
       rating: Number(r.rating),
       comment: r.comment,
-      created_at: r.created_at,
-      user_name: maskReviewerName((r.profiles as any)?.full_name),
+      createdat: r.createdat,
+      user_name: maskReviewerName((r.profiles as any)?.fullname),
     }));
 
     return NextResponse.json({

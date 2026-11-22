@@ -28,14 +28,14 @@ export function useRealtimeNotifications(beachId?: string) {
 
     if (beachId) {
       reviewsChannel = supabase
-        .channel(`beach_reviews:${beachId}`)
+        .channel(`beachreviews:${beachId}`)
         .on(
           'postgres_changes',
           {
             event: 'INSERT',
             schema: 'public',
-            table: 'beach_reviews',
-            filter: `beach_id=eq.${beachId}`,
+            table: 'beachreviews',
+            filter: `beachid=eq.${beachId}`,
           },
           (payload) => {
             console.log('New review received:', payload);
@@ -54,9 +54,9 @@ export function useRealtimeNotifications(beachId?: string) {
         .subscribe((status) => {
           console.log('Subscription status:', status);
           if (status === 'SUBSCRIBED') {
-            console.log('Successfully subscribed to beach_reviews for beach:', beachId);
+            console.log('Successfully subscribed to beachreviews for beach:', beachId);
           } else if (status === 'CHANNEL_ERROR') {
-            console.error('Channel error for beach_reviews subscription');
+            console.error('Channel error for beachreviews subscription');
           }
         });
     } else {

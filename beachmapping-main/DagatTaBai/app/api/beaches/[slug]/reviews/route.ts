@@ -61,7 +61,7 @@ export async function POST(
     const newReview = await createReview({
       beachId: beach.id,
       userId: session.id,
-      userName: session.full_name,
+      userName: session.fullname,
       beachName: beach.name,
       rating,
       comment,

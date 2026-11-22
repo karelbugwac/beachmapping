@@ -4,9 +4,9 @@ import { isFacilityCategory } from '@/lib/utils/facility-categories';
 
 const noStoreHeaders = { 'Cache-Control': 'no-store, max-age=0' };
 const tableByType = {
-  cottage: 'beach_cottages',
-  facility: 'beach_facilities',
-  post: 'beach_posts',
+  cottage: 'cottages',
+  facility: 'facilities',
+  post: 'beachposts',
 } as const;
 type CatalogType = keyof typeof tableByType;
 type AuthorizedAuth = Extract<Awaited<ReturnType<typeof authorizeRoles>>, { authorized: true }>;
@@ -35,13 +35,13 @@ async function getAuthorizedBeach(
   auth: AuthorizedAuth,
   beachId: string | null
 ) {
-  let query = (auth.adminClient.from('beaches') as any).select('id, name, owner_id');
+  let query = (auth.adminClient.from('beaches') as any).select('id, name, ownerid');
   if (beachId) query = query.eq('id', beachId);
-  else if (auth.role !== 'admin') query = query.eq('owner_id', auth.user.id);
+  else if (auth.role !== 'admin') query = query.eq('ownerid', auth.user.id);
 
   const { data: beach, error } = await query.maybeSingle();
   if (error) throw error;
-  if (!beach || (auth.role !== 'admin' && beach.owner_id !== auth.user.id)) {
+  if (!beach || (auth.role !== 'admin' && beach.ownerid !== auth.user.id)) {
     return { response: NextResponse.json({ error: 'Beach not found or unauthorized.' }, { status: 404 }) };
   }
   return { beach, auth };
@@ -103,26 +103,26 @@ function toCatalogItem(type: CatalogType, row: Record<string, any>, auth?: Autho
     const image = Array.isArray(row.images) ? row.images[0] : '';
     const photos = Array.isArray(row.photos)
       ? row.photos
-        .sort((left: Record<string, any>, right: Record<string, any>) => left.sort_order - right.sort_order)
+        .sort((left: Record<string, any>, right: Record<string, any>) => left.sortorder - right.sortorder)
         .map((photo: Record<string, any>) => ({
           id: photo.id,
-          image_url: getCottageImageUrl(auth!.adminClient.storage.from('beach-media'), photo.image_url),
-          storage_path: photo.storage_path,
-          sort_order: photo.sort_order,
+          imageurl: getCottageImageUrl(auth!.adminClient.storage.from('beach-media'), photo.imageurl),
+          storagepath: photo.storagepath,
+          sortorder: photo.sortorder,
         }))
       : [];
     const normalizedPhotos = photos.length
       ? photos
       : image
-        ? [{ image_url: getCottageImageUrl(auth!.adminClient.storage.from('beach-media'), image), storage_path: '', sort_order: 0 }]
+        ? [{ imageurl: getCottageImageUrl(auth!.adminClient.storage.from('beach-media'), image), storagepath: '', sortorder: 0 }]
         : [];
     return {
       id: row.id,
       name: row.name,
       price: row.price == null ? '' : String(row.price),
-      capacity: row.capacity_label || (row.capacity ? `${row.capacity} persons` : ''),
+      capacity: row.capacitylabel || (row.capacity ? `${row.capacity} persons` : ''),
       description: row.description || '',
-      image_url: normalizedPhotos[0]?.image_url || (auth ? getCottageImageUrl(auth.adminClient.storage.from('beach-media'), image) : ''),
+      imageurl: normalizedPhotos[0]?.imageurl || (auth ? getCottageImageUrl(auth.adminClient.storage.from('beach-media'), image) : ''),
       photos: normalizedPhotos,
     };
   }
@@ -130,35 +130,35 @@ function toCatalogItem(type: CatalogType, row: Record<string, any>, auth?: Autho
     const cover = Array.isArray(row.images) ? row.images[0] : '';
     const photos = Array.isArray(row.photos)
       ? row.photos
-        .sort((left: Record<string, any>, right: Record<string, any>) => left.sort_order - right.sort_order)
+        .sort((left: Record<string, any>, right: Record<string, any>) => left.sortorder - right.sortorder)
         .map((photo: Record<string, any>) => ({
           id: photo.id,
-          image_url: getCottageImageUrl(auth!.adminClient.storage.from('beach-media'), photo.image_url),
-          storage_path: photo.storage_path,
-          sort_order: photo.sort_order,
+          imageurl: getCottageImageUrl(auth!.adminClient.storage.from('beach-media'), photo.imageurl),
+          storagepath: photo.storagepath,
+          sortorder: photo.sortorder,
         }))
       : [];
     const normalizedPhotos = photos.length
       ? photos
       : cover
-        ? [{ image_url: getCottageImageUrl(auth!.adminClient.storage.from('beach-media'), cover), storage_path: '', sort_order: 0 }]
+        ? [{ imageurl: getCottageImageUrl(auth!.adminClient.storage.from('beach-media'), cover), storagepath: '', sortorder: 0 }]
         : [];
     return {
       id: row.id,
       title: row.name,
       category: row.category || 'amenity',
-      price: row.price_label ?? (row.price == null ? '' : String(row.price)),
+      price: row.pricelabel ?? (row.price == null ? '' : String(row.price)),
       description: row.description || '',
       rates: normalizeFacilityRates(row.category, row.rates),
-      image_url: normalizedPhotos[0]?.image_url || '',
+      imageurl: normalizedPhotos[0]?.imageurl || '',
       photos: normalizedPhotos,
     };
   }
   return {
     id: row.id,
     caption: row.caption || '',
-    image_url: row.image_path || '',
-    created_at: row.created_at,
+    imageurl: row.imagepath || '',
+    createdat: row.createdat,
     likes: 0,
   };
 }
@@ -169,7 +169,7 @@ export async function GET(request: NextRequest) {
     if (!auth.authorized) {
       return NextResponse.json({ error: auth.message }, { status: auth.status, headers: noStoreHeaders });
     }
-    const beachResult = await getAuthorizedBeach(auth, request.nextUrl.searchParams.get('beach_id'));
+    const beachResult = await getAuthorizedBeach(auth, request.nextUrl.searchParams.get('beachid'));
     if ('response' in beachResult) return beachResult.response;
     const { beach } = beachResult;
 
@@ -177,20 +177,20 @@ export async function GET(request: NextRequest) {
       (Object.entries(tableByType) as Array<[CatalogType, (typeof tableByType)[CatalogType]]>).map(async ([type, table]) => {
         const query = (auth.adminClient.from(table) as any)
           .select(type === 'cottage'
-            ? '*, photos:beach_cottage_photos(id, image_url, storage_path, sort_order, created_at)'
+            ? '*, photos:cottagephotos(id, imageurl, storagepath, sortorder, createdat)'
             : type === 'facility'
-              ? '*, photos:beach_facility_photos(id, image_url, storage_path, sort_order, created_at)'
+              ? '*, photos:facilityphotos(id, imageurl, storagepath, sortorder, createdat)'
               : '*');
         const { data, error } = await query
-          .eq('beach_id', beach.id)
-          .order('created_at', { ascending: type === 'post' });
+          .eq('beachid', beach.id)
+          .order('createdat', { ascending: type === 'post' });
         if (error) throw error;
         return [type, (data || []).map((row: Record<string, any>) => toCatalogItem(type, row, auth))] as const;
       })
     );
 
     return NextResponse.json(
-      { beach_id: beach.id, items: Object.fromEntries(entries) },
+      { beachid: beach.id, items: Object.fromEntries(entries) },
       { headers: noStoreHeaders }
     );
   } catch (error: unknown) {
@@ -209,7 +209,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const beachResult = await getAuthorizedBeach(
       auth,
-      typeof body.beach_id === 'string' ? body.beach_id : null
+      typeof body.beachid === 'string' ? body.beachid : null
     );
     if ('response' in beachResult) return beachResult.response;
     const { beach } = beachResult;
@@ -226,38 +226,38 @@ export async function POST(request: NextRequest) {
     }
     const row = type === 'cottage'
       ? {
-          beach_id: beach.id,
+          beachid: beach.id,
           name: typeof body.name === 'string' ? body.name.trim() : '',
           description: typeof body.description === 'string' ? body.description.trim() : null,
           price: parsedPriceValue == null ? null : parsedPriceValue,
-          price_unit: 'per day',
-          capacity_label: typeof body.capacity === 'string' ? body.capacity.trim() || null : null,
-          images: typeof body.image_url === 'string' && body.image_url ? [body.image_url] : [],
+          priceunit: 'per day',
+          capacitylabel: typeof body.capacity === 'string' ? body.capacity.trim() || null : null,
+          images: typeof body.imageurl === 'string' && body.imageurl ? [body.imageurl] : [],
         }
       : type === 'facility'
         ? {
-            beach_id: beach.id,
+            beachid: beach.id,
             name: typeof body.title === 'string' ? body.title.trim() : '',
             description: typeof body.description === 'string' ? body.description.trim() || null : null,
             category: isFacilityCategory(body.category) ? body.category : 'amenity',
             rates: normalizeFacilityRates(body.category, body.rates),
             price: parsedPriceValue == null ? null : parsedPriceValue,
-            price_label: typeof body.price === 'string' ? body.price.trim() || null : null,
-            price_unit: null,
-            images: typeof body.image_url === 'string' && body.image_url ? [body.image_url] : [],
+            pricelabel: typeof body.price === 'string' ? body.price.trim() || null : null,
+            priceunit: null,
+            images: typeof body.imageurl === 'string' && body.imageurl ? [body.imageurl] : [],
           }
         : {
-            beach_id: beach.id,
-            author_id: auth.user.id,
+            beachid: beach.id,
+            authorid: auth.user.id,
             caption: typeof body.caption === 'string' ? body.caption.trim() || null : null,
-            image_path: typeof body.image_url === 'string' ? body.image_url : null,
+            imagepath: typeof body.imageurl === 'string' ? body.imageurl : null,
             status: 'published',
           };
 
     if ((type === 'cottage' || type === 'facility') && !row.name) {
       return NextResponse.json({ error: 'A name is required.' }, { status: 400, headers: noStoreHeaders });
     }
-    if (type === 'post' && !row.caption && !row.image_path) {
+    if (type === 'post' && !row.caption && !row.imagepath) {
       return NextResponse.json({ error: 'A caption or photo is required.' }, { status: 400, headers: noStoreHeaders });
     }
 
@@ -267,7 +267,7 @@ export async function POST(request: NextRequest) {
         .from(tableByType[type]) as any)
         .select('id')
         .eq('id', id)
-        .eq('beach_id', beach.id)
+        .eq('beachid', beach.id)
         .maybeSingle();
       if (existingItemError) throw existingItemError;
       if (!existingItem) {
@@ -280,7 +280,7 @@ export async function POST(request: NextRequest) {
 
     const table = auth.adminClient.from(tableByType[type]) as any;
     const query = id && (type === 'cottage' || type === 'facility')
-      ? table.update(row).eq('id', id).eq('beach_id', beach.id)
+      ? table.update(row).eq('id', id).eq('beachid', beach.id)
       : table.insert(row);
     const { data, error } = await query.select('*').single();
     if (error) throw error;
@@ -289,8 +289,8 @@ export async function POST(request: NextRequest) {
     if (type === 'cottage' || type === 'facility') {
       const { data: itemWithPhotos, error: photosError } = await (auth.adminClient.from(tableByType[type]) as any)
         .select(type === 'cottage'
-          ? '*, photos:beach_cottage_photos(id, image_url, storage_path, sort_order, created_at)'
-          : '*, photos:beach_facility_photos(id, image_url, storage_path, sort_order, created_at)')
+          ? '*, photos:cottagephotos(id, imageurl, storagepath, sortorder, createdat)'
+          : '*, photos:facilityphotos(id, imageurl, storagepath, sortorder, createdat)')
         .eq('id', data.id)
         .single();
       if (photosError) throw photosError;
@@ -316,7 +316,7 @@ export async function DELETE(request: NextRequest) {
     }
     const typeParam = request.nextUrl.searchParams.get('type');
     const id = request.nextUrl.searchParams.get('id');
-    const beachId = request.nextUrl.searchParams.get('beach_id');
+    const beachId = request.nextUrl.searchParams.get('beachid');
     if (!isCatalogType(typeParam) || !id) {
       return NextResponse.json({ error: 'A valid catalog type and item ID are required.' }, { status: 400, headers: noStoreHeaders });
     }
@@ -333,40 +333,40 @@ export async function DELETE(request: NextRequest) {
       const { data: cottage, error: cottageError } = await table
         .select('images')
         .eq('id', id)
-        .eq('beach_id', beachResult.beach.id)
+        .eq('beachid', beachResult.beach.id)
         .maybeSingle();
       if (cottageError) throw cottageError;
       if (!cottage) {
         return NextResponse.json({ error: 'Listing not found.' }, { status: 404, headers: noStoreHeaders });
       }
       cottageImage = Array.isArray(cottage.images) ? cottage.images[0] : null;
-      const { data: photos, error: photosError } = await (beachResult.auth.adminClient.from('beach_cottage_photos') as any)
-        .select('storage_path')
-        .eq('cottage_id', id);
+      const { data: photos, error: photosError } = await (beachResult.auth.adminClient.from('cottagephotos') as any)
+        .select('storagepath')
+        .eq('cottageid', id);
       if (photosError) throw photosError;
-      cottagePhotoPaths = (photos || []).map((photo: { storage_path: string }) => photo.storage_path);
+      cottagePhotoPaths = (photos || []).map((photo: { storagepath: string }) => photo.storagepath);
     } else if (typeParam === 'facility') {
       const { data: facility, error: facilityError } = await table
         .select('images')
         .eq('id', id)
-        .eq('beach_id', beachResult.beach.id)
+        .eq('beachid', beachResult.beach.id)
         .maybeSingle();
       if (facilityError) throw facilityError;
       if (!facility) {
         return NextResponse.json({ error: 'Listing not found.' }, { status: 404, headers: noStoreHeaders });
       }
       facilityImage = Array.isArray(facility.images) ? facility.images[0] : null;
-      const { data: photos, error: photosError } = await (beachResult.auth.adminClient.from('beach_facility_photos') as any)
-        .select('storage_path')
-        .eq('facility_id', id);
+      const { data: photos, error: photosError } = await (beachResult.auth.adminClient.from('facilityphotos') as any)
+        .select('storagepath')
+        .eq('facilityid', id);
       if (photosError) throw photosError;
-      facilityPhotoPaths = (photos || []).map((photo: { storage_path: string }) => photo.storage_path);
+      facilityPhotoPaths = (photos || []).map((photo: { storagepath: string }) => photo.storagepath);
     }
 
     const { data, error } = await table
       .delete()
       .eq('id', id)
-      .eq('beach_id', beachResult.beach.id)
+      .eq('beachid', beachResult.beach.id)
       .select('id');
     if (error) throw error;
     if (!data?.length) {
@@ -378,7 +378,7 @@ export async function DELETE(request: NextRequest) {
         const path = getOwnedCottageImagePath(
           auth.adminClient.storage.from('beach-media'),
           cottageImage,
-          beachResult.beach.owner_id,
+          beachResult.beach.ownerid,
           beachResult.beach.id
         );
         if (path && !cottagePhotoPaths.includes(path)) cottagePhotoPaths.push(path);
@@ -392,14 +392,14 @@ export async function DELETE(request: NextRequest) {
         const path = getOwnedCottageImagePath(
           auth.adminClient.storage.from('beach-media'),
           facilityImage,
-          beachResult.beach.owner_id,
+          beachResult.beach.ownerid,
           beachResult.beach.id
         );
         if (path && !facilityPhotoPaths.includes(path)) facilityPhotoPaths.push(path);
       }
       if (facilityPhotoPaths.length) {
         facilityPhotoPaths = facilityPhotoPaths.filter((path) =>
-          path.startsWith(`${beachResult.beach.owner_id}/${beachResult.beach.id}/facilities/`)
+          path.startsWith(`${beachResult.beach.ownerid}/${beachResult.beach.id}/facilities/`)
           && !path.includes('..')
         );
         const { error: removeError } = await auth.adminClient.storage.from('beach-media').remove(facilityPhotoPaths);

@@ -76,16 +76,16 @@ export async function POST(request: Request) {
       }
     }
 
-    // Upsert with explicit visit_date and strict 3s timeout
-    const upsertPromise = (adminSupabase.from('visitor_events') as any).upsert(
+    // Upsert with explicit visitdate and strict 3s timeout
+    const upsertPromise = (adminSupabase.from('visitorevents') as any).upsert(
       {
-        session_id: sessionId,
-        page_key: pageKey,
-        event_type: eventType,
-        beach_id: beachId,
-        visit_date: today,
+        sessionid: sessionId,
+        pagekey: pageKey,
+        eventtype: eventType,
+        beachid: beachId,
+        visitdate: today,
       },
-      { onConflict: 'session_id,page_key,visit_date', ignoreDuplicates: true }
+      { onConflict: 'sessionid,pagekey,visitdate', ignoreDuplicates: true }
     );
 
     const upsertTimeoutPromise = new Promise<{ error: Error }>((_, reject) =>
@@ -95,7 +95,7 @@ export async function POST(request: Request) {
     const { error } = await Promise.race([upsertPromise, upsertTimeoutPromise]);
     if (error) {
       const errMsg = typeof error === 'object' && error !== null ? JSON.stringify(error) : String(error);
-      console.warn('[Analytics] visitor_events upsert notice:', errMsg);
+      console.warn('[Analytics] visitorevents upsert notice:', errMsg);
       markTracked(dedupKey);
       // Fail-safe: Always return HTTP 200 for non-critical telemetry to prevent browser console errors
       return NextResponse.json({ tracked: false, status: 'skipped' }, { status: 200 });

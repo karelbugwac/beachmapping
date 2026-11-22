@@ -1,4 +1,4 @@
-import type { TideExtreme } from './tide-interpolation';
+import type { TideExtreme } from './tideinterpolation';
 
 interface OpenWatersExtreme {
   time?: unknown;

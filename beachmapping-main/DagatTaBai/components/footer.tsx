@@ -4,7 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { usePathname } from 'next/navigation';
-import { Mail, MapPin, Clock } from 'lucide-react';
+import { Mail, MapPin } from 'lucide-react';
 
 export function Footer() {
   const pathname = usePathname();
@@ -37,7 +37,7 @@ export function Footer() {
               </span>
             </Link>
             <div className="space-y-1.5">
-              <p className="text-sm font-semibold text-slate-900 dark:text-white tracking-tight">
+              <p className="text-sm font-semibold text-[#1F3F74] dark:text-brand-teal-300 tracking-tight">
                 See beyond pictures
               </p>
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed">
@@ -51,7 +51,7 @@ export function Footer() {
 
             {/* Section 1: Explore */}
             <div className="space-y-3">
-              <h4 className="font-bold text-xs uppercase tracking-wider text-slate-900 dark:text-white font-display">
+              <h4 className="font-bold text-xs uppercase tracking-wider text-[#1F3F74] dark:text-brand-teal-300 font-display">
                 Explore
               </h4>
               <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-400">
@@ -95,7 +95,7 @@ export function Footer() {
 
             {/* Section 2: Legal & Guidelines */}
             <div className="space-y-3">
-              <h4 className="font-bold text-xs uppercase tracking-wider text-slate-900 dark:text-white font-display">
+              <h4 className="font-bold text-xs uppercase tracking-wider text-[#1F3F74] dark:text-brand-teal-300 font-display">
                 Legal &amp; Guidelines
               </h4>
               <ul className="space-y-2 text-xs text-slate-600 dark:text-slate-400">
@@ -124,7 +124,7 @@ export function Footer() {
 
             {/* Section 3: Get in Touch */}
             <div className="space-y-3">
-              <h4 className="font-bold text-xs uppercase tracking-wider text-slate-900 dark:text-white font-display">
+              <h4 className="font-bold text-xs uppercase tracking-wider text-[#1F3F74] dark:text-brand-teal-300 font-display">
                 Get in Touch
               </h4>
               <div className="space-y-2.5 text-xs text-slate-600 dark:text-slate-400">
@@ -143,10 +143,6 @@ export function Footer() {
                 <div className="flex items-start gap-2.5">
                   <MapPin className="w-3.5 h-3.5 text-brand-navy-500 dark:text-brand-teal-300 flex-shrink-0 mt-0.5" />
                   <span>Barangay Binongkalan, Catmon, Cebu 6006</span>
-                </div>
-                <div className="flex items-start gap-2.5">
-                  <Clock className="w-3.5 h-3.5 text-brand-navy-500 dark:text-brand-teal-300 flex-shrink-0 mt-0.5" />
-                  <span>Monday – Friday: 8:00 AM – 5:00 PM (PST)</span>
                 </div>
               </div>
             </div>

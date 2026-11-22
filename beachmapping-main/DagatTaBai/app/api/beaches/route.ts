@@ -41,12 +41,12 @@ export async function POST(request: Request) {
       cover_image,
       profile_image,
       images,
-      opening_hours,
-      entrance_fee,
-      cottage_fee,
+      openinghours,
+      entrancefee,
+      cottagefee,
       rules,
-      contact_phone,
-      contact_email,
+      contactphone,
+      contactemail,
     } = body;
 
     if (!name || !location) {
@@ -61,7 +61,7 @@ export async function POST(request: Request) {
 
     const supabase = await createServerSupabaseClient();
     const { data: userData } = await supabase.auth.getUser();
-    const owner_id = userData?.user?.id || null;
+    const ownerid = userData?.user?.id || null;
 
     const coordinates = getValidBeachCoordinates(latitude, longitude);
     if (!coordinates) {
@@ -74,22 +74,22 @@ export async function POST(request: Request) {
     const beachPayload: any = {
       name: name.trim(),
       slug,
-      owner_id: owner_id,
+      ownerid: ownerid,
       description: description || '',
       location: location.trim(),
       latitude: coordinates.latitude,
       longitude: coordinates.longitude,
-      cover_image: cover_image || null,
-      profile_image: profile_image || null,
+      coverimageurl: cover_image || null,
+      profileimageurl: profile_image || null,
       images: Array.isArray(images) ? images : [],
-      opening_hours: opening_hours || '8:00 AM - 6:00 PM',
-      entrance_fee: entrance_fee || null,
-      cottage_fee: cottage_fee || null,
+      openinghours: openinghours || '8:00 AM - 6:00 PM',
+      entrancefee: entrancefee || null,
+      cottagefee: cottagefee || null,
       rules: rules || null,
-      contact_phone: contact_phone || null,
-      contact_email: contact_email || null,
+      contactphone: contactphone || null,
+      contactemail: contactemail || null,
       status: 'active',
-      updated_at: new Date().toISOString(),
+      updatedat: new Date().toISOString(),
     };
 
     if (id) {

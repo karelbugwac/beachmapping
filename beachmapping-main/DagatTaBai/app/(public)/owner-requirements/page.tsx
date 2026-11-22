@@ -10,10 +10,10 @@ const requirements = [
 
 export default function OwnerRequirementsPage() {
   return (
-    <main className="mx-auto max-w-4xl space-y-8 px-4 py-12 sm:px-6">
+    <main className="mx-auto max-w-4xl space-y-8 px-4 py-12 font-display sm:px-6">
       <header className="space-y-3">
         <p className="text-xs font-semibold uppercase text-brand-teal-700">Beach Owner Listings</p>
-        <h1 className="text-3xl font-bold text-slate-950 dark:text-white">Application requirements</h1>
+        <h1 className="font-display text-xl font-semibold tracking-tight text-slate-950 dark:text-white sm:text-2xl">Application requirements</h1>
         <p className="max-w-2xl text-sm text-slate-600 dark:text-slate-300">Prepare these details and documents before applying. Your documents are uploaded to private storage and reviewed by the administrator.</p>
       </header>
 

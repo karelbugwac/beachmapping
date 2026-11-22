@@ -5,9 +5,9 @@ export async function syncBeachAverageRating(beachId: string): Promise<void> {
   if (!beachId || beachId === 'platform') return;
   try {
     const adminSupabase = createAdminClient();
-    const { data: rows } = await (adminSupabase.from('beach_reviews') as any)
+    const { data: rows } = await (adminSupabase.from('beachreviews') as any)
       .select('rating')
-      .eq('beach_id', beachId);
+      .eq('beachid', beachId);
 
     const ratings = Array.isArray(rows)
       ? rows.map((r: any) => Number(r.rating)).filter((n: number) => Number.isFinite(n) && n > 0)
@@ -19,7 +19,7 @@ export async function syncBeachAverageRating(beachId: string): Promise<void> {
         : 0;
 
     await (adminSupabase.from('beaches') as any)
-      .update({ average_rating: avg, updated_at: new Date().toISOString() })
+      .update({ averagerating: avg, updatedat: new Date().toISOString() })
       .eq('id', beachId);
 
     invalidateBeachesCache();
@@ -30,36 +30,36 @@ export async function syncBeachAverageRating(beachId: string): Promise<void> {
 
 export interface ReviewRecord {
   id: string;
-  beach_id: string;
+  beachid: string;
   beach_slug?: string;
-  user_id: string;
+  userid: string;
   user_name: string;
-  beach_name?: string;
+  beachname?: string;
   review_type?: 'beach' | 'platform';
   rating: number;
   comment: string;
-  created_at: string;
-  updated_at: string;
+  createdat: string;
+  updatedat: string;
 }
 
 export async function getReviewsForBeach(beachId: string): Promise<ReviewRecord[]> {
   const supabase = await createServerSupabaseClient();
-  const { data, error } = await (supabase.from('beach_reviews') as any)
-    .select('*, profiles:user_id(full_name)')
-    .eq('beach_id', beachId)
-    .order('created_at', { ascending: false });
+  const { data, error } = await (supabase.from('beachreviews') as any)
+    .select('*, profiles:userid(fullname)')
+    .eq('beachid', beachId)
+    .order('createdat', { ascending: false });
   if (error) throw error;
 
   return (data || []).map((review: any) => ({
     id: review.id,
-    beach_id: review.beach_id,
-    user_id: review.user_id,
-    user_name: review.profiles?.full_name || 'Verified Visitor',
+    beachid: review.beachid,
+    userid: review.userid,
+    user_name: review.profiles?.fullname || 'Verified Visitor',
     review_type: 'beach' as const,
     rating: Number(review.rating),
     comment: review.comment,
-    created_at: review.created_at,
-    updated_at: review.updated_at,
+    createdat: review.createdat,
+    updatedat: review.updatedat,
   }));
 }
 
@@ -67,46 +67,46 @@ export async function getReviewsByUserId(userId: string): Promise<ReviewRecord[]
   const supabase = createAdminClient();
 
   // 1. Fetch beach reviews
-  const { data: beachData } = await (supabase.from('beach_reviews') as any)
-    .select('*, beaches:beach_id(name, slug)')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+  const { data: beachData } = await (supabase.from('beachreviews') as any)
+    .select('*, beaches:beachid(name, slug)')
+    .eq('userid', userId)
+    .order('createdat', { ascending: false });
 
   // 2. Fetch platform feedback reviews
-  const { data: platformData } = await (supabase.from('platform_reviews') as any)
+  const { data: platformData } = await (supabase.from('platformreviews') as any)
     .select('*')
-    .eq('user_id', userId)
-    .order('created_at', { ascending: false });
+    .eq('userid', userId)
+    .order('createdat', { ascending: false });
 
   const beachReviews: ReviewRecord[] = (beachData || []).map((review: any) => ({
     id: review.id,
-    beach_id: review.beach_id,
+    beachid: review.beachid,
     beach_slug: review.beaches?.slug,
-    user_id: review.user_id,
+    userid: review.userid,
     user_name: 'You',
-    beach_name: review.beaches?.name || 'Beach Destination',
+    beachname: review.beaches?.name || 'Beach Destination',
     review_type: 'beach' as const,
     rating: Number(review.rating),
     comment: review.comment,
-    created_at: review.created_at,
-    updated_at: review.updated_at,
+    createdat: review.createdat,
+    updatedat: review.updatedat,
   }));
 
   const platformReviews: ReviewRecord[] = (platformData || []).map((review: any) => ({
     id: review.id,
-    beach_id: 'platform',
-    user_id: review.user_id,
+    beachid: 'platform',
+    userid: review.userid,
     user_name: 'You',
-    beach_name: 'Dagat Ta Bai Platform Feedback',
+    beachname: 'Dagat Ta Bai Platform Feedback',
     review_type: 'platform' as const,
     rating: Number(review.rating),
     comment: review.comment,
-    created_at: review.created_at,
-    updated_at: review.created_at,
+    createdat: review.createdat,
+    updatedat: review.createdat,
   }));
 
   return [...beachReviews, ...platformReviews].sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    (a, b) => new Date(b.createdat).getTime() - new Date(a.createdat).getTime()
   );
 }
 
@@ -121,14 +121,14 @@ export async function createReview(payload: {
   const rating = Math.max(1, Math.min(5, Math.round(payload.rating)));
   const comment = payload.comment.trim();
   const supabase = await createServerSupabaseClient();
-  const { data, error } = await (supabase.from('beach_reviews') as any)
+  const { data, error } = await (supabase.from('beachreviews') as any)
     .insert({
-      beach_id: payload.beachId,
-      user_id: payload.userId,
+      beachid: payload.beachId,
+      userid: payload.userId,
       rating,
       comment,
     })
-    .select('*, beaches:beach_id(name, slug)')
+    .select('*, beaches:beachid(name, slug)')
     .single();
   if (error) throw error;
 
@@ -136,37 +136,37 @@ export async function createReview(payload: {
 
   return {
     id: data.id,
-    beach_id: data.beach_id,
-    user_id: data.user_id,
+    beachid: data.beachid,
+    userid: data.userid,
     user_name: payload.userName,
-    beach_name: data.beaches?.name || payload.beachName,
+    beachname: data.beaches?.name || payload.beachName,
     beach_slug: data.beaches?.slug,
     rating: Number(data.rating),
     comment: data.comment,
-    created_at: data.created_at,
-    updated_at: data.updated_at,
+    createdat: data.createdat,
+    updatedat: data.updatedat,
   };
 }
 
 export async function deleteReview(reviewId: string, userId: string): Promise<boolean> {
   const supabase = createAdminClient();
-  await (supabase.from('beach_review_reports') as any).delete().eq('review_id', reviewId);
-  const { data: beachDeleted } = await (supabase.from('beach_reviews') as any)
+  await (supabase.from('reviewreports') as any).delete().eq('reviewid', reviewId);
+  const { data: beachDeleted } = await (supabase.from('beachreviews') as any)
     .delete()
     .eq('id', reviewId)
-    .eq('user_id', userId)
-    .select('id, beach_id');
+    .eq('userid', userId)
+    .select('id, beachid');
   if (Array.isArray(beachDeleted) && beachDeleted.length > 0) {
-    if (beachDeleted[0]?.beach_id) {
-      await syncBeachAverageRating(beachDeleted[0].beach_id);
+    if (beachDeleted[0]?.beachid) {
+      await syncBeachAverageRating(beachDeleted[0].beachid);
     }
     return true;
   }
 
-  const { data: platformDeleted } = await (supabase.from('platform_reviews') as any)
+  const { data: platformDeleted } = await (supabase.from('platformreviews') as any)
     .delete()
     .eq('id', reviewId)
-    .eq('user_id', userId)
+    .eq('userid', userId)
     .select('id');
   return Array.isArray(platformDeleted) && platformDeleted.length > 0;
 }

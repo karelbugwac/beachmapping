@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Loader2 } from 'lucide-react';
-import { ReviewCard } from '@/components/review-card';
+import { ReviewCard } from '@/components/review';
 
 export default function MyReviewsPage() {
   const [reviews, setReviews] = useState<any[]>([]);
@@ -80,8 +80,8 @@ export default function MyReviewsPage() {
             <div key={r.id} className="space-y-2">
               <div className="text-xs font-bold text-brand-teal-700 dark:text-brand-teal-400">
                 Review on{' '}
-                <Link href={`/beaches/${r.beach_slug || r.beach_id}`} className="underline">
-                  {r.beach_name || 'Beach Resort'}
+                <Link href={`/beaches/${r.beach_slug || r.beachid}`} className="underline">
+                  {r.beachname || 'Beach Resort'}
                 </Link>
               </div>
               <ReviewCard review={r} canDelete={true} onDelete={handleDelete} />

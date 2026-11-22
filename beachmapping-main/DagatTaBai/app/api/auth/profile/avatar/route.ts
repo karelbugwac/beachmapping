@@ -56,7 +56,7 @@ export async function POST(request: Request) {
 
     // Save ONLY the public URL in PostgreSQL
     const updated = await updateSessionUser({
-      profile_image_url: publicUrl,
+      profileimageurl: publicUrl,
     });
 
     if (!updated) {
@@ -68,7 +68,7 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      profile_image_url: publicUrl,
+      profileimageurl: publicUrl,
       user: updated,
     });
   } catch (error: unknown) {

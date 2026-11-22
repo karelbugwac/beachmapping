@@ -11,52 +11,52 @@ export async function persistExpiredSuspension(
   userId: string
 ): Promise<void> {
   const { data: profile, error } = await (adminClient.from('profiles') as any)
-    .select('account_status, suspended_until, status_changed_at, role')
+    .select('accountstatus, suspendeduntil, statuschangedat, role')
     .eq('id', userId)
     .maybeSingle();
   if (error) throw error;
   if (
-    profile?.account_status !== 'suspended' ||
-    isSuspensionActive('suspended', profile.suspended_until)
+    profile?.accountstatus !== 'suspended' ||
+    isSuspensionActive('suspended', profile.suspendeduntil)
   ) return;
 
   const now = new Date().toISOString();
   let update = (adminClient.from('profiles') as any)
     .update({
-      account_status: 'active',
-      status_reason: null,
-      status_reason_type: null,
-      suspended_until: null,
-      status_changed_by: null,
-      status_changed_at: now,
-      updated_at: now,
+      accountstatus: 'active',
+      statusreason: null,
+      statusreasontype: null,
+      suspendeduntil: null,
+      statuschangedby: null,
+      statuschangedat: now,
+      updatedat: now,
     })
     .eq('id', userId)
-    .eq('account_status', 'suspended');
-  update = profile.status_changed_at
-    ? update.eq('status_changed_at', profile.status_changed_at)
-    : update.is('status_changed_at', null);
+    .eq('accountstatus', 'suspended');
+  update = profile.statuschangedat
+    ? update.eq('statuschangedat', profile.statuschangedat)
+    : update.is('statuschangedat', null);
   const { data: changed, error: updateError } = await update.select('id').maybeSingle();
   if (updateError) throw updateError;
   if (!changed) return;
 
-  const { error: auditError } = await (adminClient.from('admin_audit_log') as any).insert({
-    admin_id: null,
-    target_user_id: userId,
+  const { error: auditError } = await (adminClient.from('adminlog') as any).insert({
+    adminid: null,
+    targetuserid: userId,
     action: 'status_change',
-    from_status: 'suspended',
-    to_status: 'active',
+    fromstatus: 'suspended',
+    tostatus: 'active',
     reason: 'Suspension period ended',
   });
   if (auditError) throw auditError;
 
-  const { error: notificationError } = await (adminClient.from('user_notifications') as any).insert({
-    user_id: userId,
-    login_device_id: null,
-    type: 'account_status',
+  const { error: notificationError } = await (adminClient.from('usernotifications') as any).insert({
+    userid: userId,
+    logindeviceid: null,
+    type: 'accountstatus',
     title: 'Account reinstated',
     message: 'Your suspension period has ended. Your account is active again.',
-    action_url: profile.role === 'beach_owner' || profile.role === 'beach_manager' ? '/owner/account' : '/profile',
+    actionurl: profile.role === 'beach_owner' || profile.role === 'beach_manager' ? '/owner/account' : '/profile',
   });
   if (notificationError) throw notificationError;
   if (profile.role === 'beach_owner' || profile.role === 'beach_manager') {

@@ -1,10 +1,10 @@
 import { createAdminClient } from '@/lib/supabase/server';
 
 interface FailedLivenessSession {
-  nonce_hash: string;
+  noncehash: string;
   status: string;
   attempts: number;
-  user_id: string | null;
+  userid: string | null;
 }
 
 export async function recordFailedLiveness(
@@ -15,31 +15,31 @@ export async function recordFailedLiveness(
   reasons: string[]
 ) {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: failedSession, error: sessionError } = await (adminClient.from('owner_liveness_sessions') as any)
+  const { data: failedSession, error: sessionError } = await (adminClient.from('livenesssessions') as any)
     .update({
       status: 'failed',
       attempts: session.attempts + 1,
-      flagged_reasons: reasons,
+      flaggedreasons: reasons,
     })
-    .eq('nonce_hash', session.nonce_hash)
+    .eq('noncehash', session.noncehash)
     .eq('status', session.status)
-    .eq('completed_at', completedAt)
-    .is('consumed_at', null)
-    .select('nonce_hash')
+    .eq('completedat', completedAt)
+    .is('consumedat', null)
+    .select('noncehash')
     .maybeSingle();
   if (sessionError || !failedSession) {
     console.error('Unable to record failed owner verification:', sessionError?.code || 'stale session');
     return false;
   }
 
-  if (!session.user_id) return true;
+  if (!session.userid) return true;
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: application, error: applicationLookupError } = await (adminClient.from('owner_applications') as any)
-    .select('id,liveness_attempts')
-    .eq('applicant_user_id', session.user_id)
+  const { data: application, error: applicationLookupError } = await (adminClient.from('ownerapplications') as any)
+    .select('id,livenessattempts')
+    .eq('applicantuserid', session.userid)
     .eq('status', 'needs_changes')
-    .order('created_at', { ascending: false })
+    .order('createdat', { ascending: false })
     .limit(1)
     .maybeSingle();
   if (applicationLookupError) {
@@ -48,17 +48,17 @@ export async function recordFailedLiveness(
   }
   if (!application) return true;
 
-  const attempts = Number.isInteger(application.liveness_attempts) ? application.liveness_attempts : 0;
+  const attempts = Number.isInteger(application.livenessattempts) ? application.livenessattempts : 0;
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { data: updatedApplication, error: applicationUpdateError } = await (adminClient.from('owner_applications') as any)
+  const { data: updatedApplication, error: applicationUpdateError } = await (adminClient.from('ownerapplications') as any)
     .update({
-      liveness_status: 'failed',
-      liveness_attempts: attempts + 1,
-      liveness_checked_at: checkedAt,
-      liveness_flagged_reasons: reasons,
+      livenessstatus: 'failed',
+      livenessattempts: attempts + 1,
+      livenesscheckedat: checkedAt,
+      livenessflaggedreasons: reasons,
     })
     .eq('id', application.id)
-    .eq('liveness_attempts', attempts)
+    .eq('livenessattempts', attempts)
     .select('id')
     .maybeSingle();
   if (applicationUpdateError || !updatedApplication) {

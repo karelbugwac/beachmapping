@@ -1,5 +1,5 @@
 import { createClient } from '@/lib/supabase/client';
-import { publishAuthSession } from '@/lib/client/auth-session-store';
+import { publishAuthSession } from '@/lib/client/session';
 
 export async function signOutAndClearClientState(userId?: string | null) {
   const supabase = createClient();

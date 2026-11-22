@@ -5,7 +5,6 @@ import Link from 'next/link';
 import {
   Check,
   AlertCircle,
-  Mail,
 } from 'lucide-react';
 import { ScrollReveal } from '@/components/ui/scroll-reveal';
 import {
@@ -107,7 +106,7 @@ export default function ContactPage() {
   };
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black text-slate-900 dark:text-zinc-100 transition-colors duration-200">
+    <div className="min-h-screen bg-white dark:bg-black text-slate-900 dark:text-zinc-100 font-display transition-colors duration-200">
       
       {/* ── Floating Error Alert (5s Duration, Solid Red, No Close Button) ── */}
       {errorMessage && (
@@ -122,7 +121,7 @@ export default function ContactPage() {
       {/* ── Page Header (Clean Scale, Underline Only on Click/Hover for FAQ Link) ── */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 pt-10 sm:pt-16 pb-8 text-center space-y-2">
         <ScrollReveal direction="up" duration={650}>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-brand-navy-500 dark:text-brand-teal-300 leading-tight">
+          <h1 className="font-display text-xl sm:text-2xl font-semibold tracking-tight text-brand-navy-500 dark:text-brand-teal-300 leading-tight">
             Contact &amp; Support
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-xl mx-auto leading-relaxed mt-2">
@@ -141,27 +140,6 @@ export default function ContactPage() {
       {/* ── Clean, Centered, Well-Spaced Form Layout (Frameless, NO Containers) ── */}
       <div className="max-w-xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
 
-        {/* Direct Gmail Shortcut */}
-        <div className="mb-6 p-4 rounded-2xl bg-blue-50/70 dark:bg-blue-950/30 border border-blue-100 dark:border-blue-900/40 flex items-center justify-between gap-3 flex-wrap">
-          <div className="space-y-0.5">
-            <span className="text-xs font-bold text-[#1F3F74] dark:text-sky-300">
-              Prefer typing directly in Gmail?
-            </span>
-            <p className="text-[11px] text-slate-600 dark:text-slate-400">
-              Opens Gmail compose to <span className="font-semibold text-slate-900 dark:text-white">support.dagattabai@gmail.com</span> ready for your concern.
-            </p>
-          </div>
-          <a
-            href="https://mail.google.com/mail/?view=cm&fs=1&to=support.dagattabai@gmail.com&su=Inquiry%20-%20Dagat%20Ta%20Bai&body=Hello%20Dagat%20Ta%20Bai%20Support,%0A%0AMy%20concern%20is:%20"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full bg-[#1F3F74] hover:bg-[#285091] text-white text-xs font-bold transition-all shadow-xs cursor-pointer"
-          >
-            <Mail className="w-3.5 h-3.5" />
-            <span>Open in Gmail</span>
-          </a>
-        </div>
-        
         {submitted ? (
           /* Frameless Confirmation View with Bold Circle Checkmark */
           <div className="py-16 sm:py-24 text-center space-y-5 max-w-md mx-auto animate-in fade-in duration-300">
@@ -169,7 +147,7 @@ export default function ContactPage() {
               <Check className="w-8 h-8 stroke-[3]" />
             </div>
             <div className="space-y-2">
-              <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 dark:text-white tracking-tight">
+              <h2 className="font-display text-lg font-semibold text-slate-900 dark:text-white tracking-tight sm:text-xl">
                 Message Sent Successfully
               </h2>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 leading-relaxed">
@@ -189,7 +167,7 @@ export default function ContactPage() {
                   });
                   setFieldErrors({});
                 }}
-                className="inline-flex items-center justify-center px-8 py-3 rounded-full bg-brand-navy-500 hover:bg-brand-navy-600 text-white font-bold text-xs sm:text-sm shadow-md transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+                className="inline-flex items-center justify-center px-8 py-3 rounded-full bg-[#F4BF3E] hover:bg-[#e0a92e] text-black font-display font-medium text-xs sm:text-sm shadow-md transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
               >
                 Send Another Message
               </button>
@@ -203,7 +181,7 @@ export default function ContactPage() {
               
               {/* Full Legal Name */}
               <div className="space-y-1.5">
-                <label htmlFor="contact-full-name" className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                <label htmlFor="contact-full-name" className="block text-xs font-bold text-brand-navy-500 dark:text-brand-teal-300">
                   Full Legal Name <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -235,9 +213,9 @@ export default function ContactPage() {
                   className={`w-full px-5 py-3 text-xs sm:text-sm bg-white dark:bg-neutral-900 border rounded-full text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 transition-all shadow-2xs ${
                     fieldErrors.name
                       ? 'border-red-500 ring-1 ring-red-500'
-                      : 'border-slate-200 dark:border-neutral-800 focus:border-brand-navy-500 dark:focus:border-brand-teal-600'
+                      : 'border-[#1F3F74]/40 dark:border-[#4987BA]/40 focus:border-[#1F3F74] dark:focus:border-[#4987BA]'
                   }`}
-                  placeholder="Patrick James D. Leswe"
+                  placeholder="Anna B. Juan"
                 />
                 {fieldErrors.name && (
                   <p id="contact-full-name-error" role="alert" className="text-[11px] text-red-600 font-medium pl-4 flex items-center gap-1">
@@ -249,7 +227,7 @@ export default function ContactPage() {
 
               {/* Email Address */}
               <div className="space-y-1.5">
-                <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+                <label className="block text-xs font-bold text-brand-navy-500 dark:text-brand-teal-300">
                   Email Address <span className="text-red-500">*</span>
                 </label>
                 <input
@@ -262,7 +240,7 @@ export default function ContactPage() {
                   className={`w-full px-5 py-3 text-xs sm:text-sm bg-white dark:bg-neutral-900 border rounded-full text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 transition-all shadow-2xs ${
                     fieldErrors.email
                       ? 'border-red-500 ring-1 ring-red-500'
-                      : 'border-slate-200 dark:border-neutral-800 focus:border-brand-navy-500 dark:focus:border-brand-teal-600'
+                      : 'border-[#1F3F74]/40 dark:border-[#4987BA]/40 focus:border-[#1F3F74] dark:focus:border-[#4987BA]'
                   }`}
                   placeholder="owner@resort.com"
                 />
@@ -277,21 +255,21 @@ export default function ContactPage() {
 
             {/* Subject Line (Proper Spacing) */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+              <label className="block text-xs font-bold text-brand-navy-500 dark:text-brand-teal-300">
                 Subject Line
               </label>
               <input
                 type="text"
                 value={formData.subject}
                 onChange={(e) => setFormData({ ...formData, subject: e.target.value })}
-                className="w-full px-5 py-3 text-xs sm:text-sm bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-full text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-navy-500 dark:focus:border-brand-teal-600 transition-all shadow-2xs"
+                className="w-full px-5 py-3 text-xs sm:text-sm bg-white dark:bg-neutral-900 border border-[#1F3F74]/40 dark:border-[#4987BA]/40 rounded-full text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4987BA]/30 focus:border-[#1F3F74] dark:focus:border-[#4987BA] transition-all shadow-2xs"
                 placeholder="Brief summary of your question or report"
               />
             </div>
 
             {/* Message Details (Proper Spacing) */}
             <div className="space-y-1.5">
-              <label className="block text-xs font-bold text-slate-700 dark:text-slate-300">
+              <label className="block text-xs font-bold text-brand-navy-500 dark:text-brand-teal-300">
                 Message Details <span className="text-red-500">*</span>
               </label>
               <textarea
@@ -304,7 +282,7 @@ export default function ContactPage() {
                 className={`w-full px-5 py-3.5 text-xs sm:text-sm bg-white dark:bg-neutral-900 border rounded-2xl text-slate-900 dark:text-white placeholder:italic placeholder:text-slate-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 transition-all shadow-2xs ${
                   fieldErrors.message
                     ? 'border-red-500 ring-1 ring-red-500'
-                    : 'border-slate-200 dark:border-neutral-800 focus:border-brand-navy-500 dark:focus:border-brand-teal-600'
+                    : 'border-[#1F3F74]/40 dark:border-[#4987BA]/40 focus:border-[#1F3F74] dark:focus:border-[#4987BA]'
                 }`}
                 placeholder="Please describe your message, question, or specific beach feedback in detail..."
               />
@@ -320,7 +298,7 @@ export default function ContactPage() {
               <button
                 type="submit"
                 disabled={sending || !validateFullName(formData.name).ok || Boolean(nameInputError)}
-                className="w-full inline-flex items-center justify-center px-7 py-3 rounded-full bg-brand-navy-500 hover:bg-brand-navy-600 disabled:opacity-60 disabled:cursor-not-allowed text-white font-display uppercase tracking-[0.12em] font-medium text-xs sm:text-sm shadow-md transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
+                className="w-full inline-flex items-center justify-center px-7 py-3 rounded-full bg-[#F4BF3E] hover:bg-[#e0a92e] disabled:opacity-60 disabled:cursor-not-allowed text-black font-display normal-case font-medium text-xs sm:text-sm shadow-md transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0 cursor-pointer"
               >
                 {sending ? 'Sending...' : 'Send Message'}
               </button>

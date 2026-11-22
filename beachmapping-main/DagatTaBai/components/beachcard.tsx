@@ -20,7 +20,7 @@ function parseOpeningHoursForCard(openingHours: string | Record<string, string>)
   return 'Not set';
 }
 
-export function BeachCard({ beach }: { beach: BeachRecord | { id: string; slug?: string; name: string; location: string; description: string; cover_image?: string | null; average_rating: number; activities?: string[]; amenities?: string[]; opening_hours: string | Record<string, string> } }) {
+export function BeachCard({ beach }: { beach: BeachRecord | { id: string; slug?: string; name: string; location: string; description: string; cover_image?: string | null; averagerating: number; activities?: string[]; amenities?: string[]; openinghours: string | Record<string, string> } }) {
   return (
     <div className="bg-white dark:bg-zinc-900 rounded-2xl border border-slate-200/80 dark:border-zinc-800 shadow-2xs hover:shadow-md transition-all duration-200 overflow-hidden flex flex-col justify-between group">
       <div>
@@ -43,7 +43,7 @@ export function BeachCard({ beach }: { beach: BeachRecord | { id: string; slug?:
           {/* Rating Badge */}
           <div className="absolute top-3 right-3 bg-white/90 dark:bg-zinc-900/90 backdrop-blur-md px-2.5 py-1 rounded-full text-xs font-bold text-slate-800 dark:text-zinc-200 flex items-center gap-1 shadow-2xs">
             <Star className="w-3.5 h-3.5 fill-brand-sun-400 text-brand-sun-700" />
-            <span>{beach.average_rating.toFixed(1)}</span>
+            <span>{beach.averagerating.toFixed(1)}</span>
           </div>
         </div>
 
@@ -89,7 +89,7 @@ export function BeachCard({ beach }: { beach: BeachRecord | { id: string; slug?:
       <div className="px-5 pb-5 pt-2 border-t border-slate-100 dark:border-zinc-800 flex items-center justify-between text-xs">
         <div className="flex items-center gap-1 text-slate-500 dark:text-zinc-400">
           <Clock className="w-3.5 h-3.5" />
-          <span className="text-[11px]">{parseOpeningHoursForCard(beach.opening_hours)}</span>
+          <span className="text-[11px]">{parseOpeningHoursForCard(beach.openinghours)}</span>
         </div>
 
         <Link

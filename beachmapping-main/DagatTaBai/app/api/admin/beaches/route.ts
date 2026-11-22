@@ -2,8 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { authorizeRoles } from '@/lib/supabase/authorization';
 import { invalidateBeachesCache } from '@/lib/db/beaches';
-import { getTourRequestForBeach, approveTourRequest } from '@/lib/services/tourRequests';
-import { getCoordinateRequestForBeach, approveCoordinateRequest } from '@/lib/services/coordinateRequests';
+import { getTourRequestForBeach, approveTourRequest } from '@/lib/services/tourrequests';
+import { getCoordinateRequestForBeach, approveCoordinateRequest } from '@/lib/services/coordinates';
 
 export async function GET() {
   try {
@@ -30,17 +30,17 @@ export async function PATCH(request: NextRequest) {
       name,
       description,
       status,
-      virtual_tour_url,
+      virtualtoururl,
       latitude,
       longitude,
       location,
-      contact_phone,
-      contact_email,
-      cover_image_url,
-      profile_image_url,
-      opening_hours,
-      entrance_fee,
-      cottage_fee,
+      contactphone,
+      contactemail,
+      coverimageurl,
+      profileimageurl,
+      openinghours,
+      entrancefee,
+      cottagefee,
       rules,
       images,
     } = body;
@@ -50,7 +50,7 @@ export async function PATCH(request: NextRequest) {
     }
 
     const updates: Record<string, any> = {
-      updated_at: new Date().toISOString(),
+      updatedat: new Date().toISOString(),
     };
 
     if (name !== undefined) updates.name = String(name).trim();
@@ -63,8 +63,8 @@ export async function PATCH(request: NextRequest) {
       updates.status = status;
     }
 
-    if (virtual_tour_url !== undefined) {
-      updates.virtual_tour_url = virtual_tour_url ? String(virtual_tour_url).trim() : null;
+    if (virtualtoururl !== undefined) {
+      updates.virtualtoururl = virtualtoururl ? String(virtualtoururl).trim() : null;
     }
 
     if (latitude !== undefined) {
@@ -87,13 +87,13 @@ export async function PATCH(request: NextRequest) {
       updates.location = location.trim();
     }
 
-    if (contact_phone !== undefined) updates.contact_phone = contact_phone ? String(contact_phone).trim() : null;
-    if (contact_email !== undefined) updates.contact_email = contact_email ? String(contact_email).trim() : null;
-    if (cover_image_url !== undefined) updates.cover_image_url = cover_image_url ? String(cover_image_url).trim() : null;
-    if (profile_image_url !== undefined) updates.profile_image_url = profile_image_url ? String(profile_image_url).trim() : null;
-    if (opening_hours !== undefined) updates.opening_hours = opening_hours;
-    if (entrance_fee !== undefined) updates.entrance_fee = entrance_fee;
-    if (cottage_fee !== undefined) updates.cottage_fee = cottage_fee;
+    if (contactphone !== undefined) updates.contactphone = contactphone ? String(contactphone).trim() : null;
+    if (contactemail !== undefined) updates.contactemail = contactemail ? String(contactemail).trim() : null;
+    if (coverimageurl !== undefined) updates.coverimageurl = coverimageurl ? String(coverimageurl).trim() : null;
+    if (profileimageurl !== undefined) updates.profileimageurl = profileimageurl ? String(profileimageurl).trim() : null;
+    if (openinghours !== undefined) updates.openinghours = openinghours;
+    if (entrancefee !== undefined) updates.entrancefee = entrancefee;
+    if (cottagefee !== undefined) updates.cottagefee = cottagefee;
     if (rules !== undefined) updates.rules = rules;
     if (images !== undefined) updates.images = images;
 
@@ -111,13 +111,13 @@ export async function PATCH(request: NextRequest) {
 
     // Sync any pending tour or coordinate requests if admin directly updated those fields
     try {
-      if (virtual_tour_url !== undefined && updates.virtual_tour_url) {
+      if (virtualtoururl !== undefined && updates.virtualtoururl) {
         const pendingTour = await getTourRequestForBeach(id);
         if (pendingTour && pendingTour.status === 'review') {
           await approveTourRequest({
             beachId: id,
             reviewerId: auth.user.id,
-            overrideTourUrl: updates.virtual_tour_url,
+            overrideTourUrl: updates.virtualtoururl,
           });
         }
       }
@@ -165,7 +165,7 @@ export async function DELETE(request: NextRequest) {
 
     // 1. Fetch beach details to identify associated beach owner
     const { data: beach, error: fetchError } = await (adminClient.from('beaches') as any)
-      .select('id, name, owner_id, contact_email')
+      .select('id, name, ownerid, contactemail')
       .eq('id', id)
       .maybeSingle();
 
@@ -174,13 +174,13 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: 'Beach listing not found.' }, { status: 404 });
     }
 
-    let ownerId: string | null = beach.owner_id || null;
+    let ownerId: string | null = beach.ownerid || null;
 
-    // Fallback: look up owner via owner_applications or profiles if owner_id was not set directly
-    if (!ownerId && beach.contact_email) {
+    // Fallback: look up owner via ownerapplications or profiles if ownerid was not set directly
+    if (!ownerId && beach.contactemail) {
       const { data: ownerProfile } = await (adminClient.from('profiles') as any)
         .select('id, role')
-        .ilike('email', beach.contact_email.trim())
+        .ilike('email', beach.contactemail.trim())
         .maybeSingle();
       if (
         ownerProfile?.id &&
@@ -191,16 +191,16 @@ export async function DELETE(request: NextRequest) {
     }
 
     if (!ownerId && beach.name) {
-      const { data: appMatch } = await (adminClient.from('owner_applications') as any)
-        .select('applicant_user_id, applicant_email')
-        .ilike('beach_name', beach.name.trim())
+      const { data: appMatch } = await (adminClient.from('ownerapplications') as any)
+        .select('applicantuserid, applicantemail')
+        .ilike('beachname', beach.name.trim())
         .maybeSingle();
-      if (appMatch?.applicant_user_id) {
-        ownerId = appMatch.applicant_user_id;
-      } else if (appMatch?.applicant_email) {
+      if (appMatch?.applicantuserid) {
+        ownerId = appMatch.applicantuserid;
+      } else if (appMatch?.applicantemail) {
         const { data: ownerProfile } = await (adminClient.from('profiles') as any)
           .select('id, role')
-          .ilike('email', appMatch.applicant_email.trim())
+          .ilike('email', appMatch.applicantemail.trim())
           .maybeSingle();
         if (
           ownerProfile?.id &&
@@ -213,19 +213,19 @@ export async function DELETE(request: NextRequest) {
 
     // 2. Clean up child records referencing this beach so foreign keys do not block deletion
     const childTables = [
-      'beach_review_reports',
-      'beach_reviews',
-      'beach_activities',
-      'beach_facilities',
-      'beach_external_links',
-      'beach_cottages',
-      'beach_posts',
-      'beach_tour_requests',
-      'beach_coordinate_requests',
+      'reviewreports',
+      'beachreviews',
+      'beachactivities',
+      'facilities',
+      'externallinks',
+      'cottages',
+      'beachposts',
+      'tourrequests',
+      'coordinaterequests',
     ] as const;
     await Promise.allSettled(
       childTables.map((table) =>
-        (adminClient.from(table) as any).delete().eq('beach_id', id)
+        (adminClient.from(table) as any).delete().eq('beachid', id)
       )
     );
 
@@ -241,11 +241,11 @@ export async function DELETE(request: NextRequest) {
       // Unlink any other beaches or applications before deleting user
       await Promise.allSettled([
         (adminClient.from('beaches') as any)
-          .update({ owner_id: null })
-          .eq('owner_id', ownerId),
-        (adminClient.from('owner_applications') as any)
+          .update({ ownerid: null })
+          .eq('ownerid', ownerId),
+        (adminClient.from('ownerapplications') as any)
           .delete()
-          .eq('applicant_user_id', ownerId),
+          .eq('applicantuserid', ownerId),
       ]);
 
       const { error: deleteAuthError } = await adminClient.auth.admin.deleteUser(ownerId);
@@ -259,9 +259,9 @@ export async function DELETE(request: NextRequest) {
     }
 
     if (beach.name) {
-      await (adminClient.from('owner_applications') as any)
+      await (adminClient.from('ownerapplications') as any)
         .delete()
-        .ilike('beach_name', beach.name.trim());
+        .ilike('beachname', beach.name.trim());
     }
 
     invalidateBeachesCache();

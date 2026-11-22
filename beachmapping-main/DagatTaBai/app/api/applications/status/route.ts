@@ -20,10 +20,10 @@ export async function GET(request: NextRequest) {
     }
     const adminClient = createAdminClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let query = (adminClient.from('owner_applications') as any)
-      .select('id, applicant_full_name, applicant_email, business_name, beach_name, beach_location, contact_phone, status, status_note, status_updated_at, rejection_reason, created_at, reviewed_at, liveness_status')
-      .eq('applicant_user_id', user.id)
-      .order('created_at', { ascending: false });
+    let query = (adminClient.from('ownerapplications') as any)
+      .select('id, applicantfullname, applicantemail, businessname, beachname, beachlocation, contactphone, status, statusnote, statusupdatedat, rejectionreason, createdat, reviewedat, livenessstatus')
+      .eq('applicantuserid', user.id)
+      .order('createdat', { ascending: false });
     if (edit && applicationId) query = query.eq('id', applicationId);
     else if (pendingOnly) query = query.eq('status', 'pending').limit(1);
     else query = query.limit(1);

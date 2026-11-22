@@ -6,28 +6,28 @@ interface PlatformReviewRow {
   id: string;
   rating: number;
   comment: string;
-  created_at: string;
-  profiles: { full_name: string | null; profile_image_url: string | null; role: string | null } | null;
+  createdat: string;
+  profiles: { fullname: string | null; profileimageurl: string | null; role: string | null } | null;
 }
 
 export async function GET() {
   try {
     const supabase = createAdminClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.from('platform_reviews') as any)
-      .select('id, rating, comment, created_at, profiles:profiles!platform_reviews_user_id_fkey(full_name, profile_image_url, role)')
-      .order('created_at', { ascending: false })
+    const { data, error } = await (supabase.from('platformreviews') as any)
+      .select('id, rating, comment, createdat, profiles:profiles!platform_reviews_user_id_fkey(fullname, profileimageurl, role)')
+      .order('createdat', { ascending: false })
       .limit(100);
     if (error) throw error;
 
     return NextResponse.json((data || []).map((review: PlatformReviewRow) => ({
       id: review.id,
-      user_name: review.profiles?.full_name || 'Dagat Ta Bai user',
-      profile_image_url: review.profiles?.profile_image_url || null,
+      user_name: review.profiles?.fullname || 'Dagat Ta Bai user',
+      profileimageurl: review.profiles?.profileimageurl || null,
       user_role: review.profiles?.role || 'user',
       rating: Number(review.rating),
       comment: review.comment,
-      created_at: review.created_at,
+      createdat: review.createdat,
     })), { headers: { 'Cache-Control': 'public, max-age=60, s-maxage=300, stale-while-revalidate=600' } });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Could not load platform feedback.';
@@ -52,15 +52,15 @@ export async function POST(request: Request) {
 
     const supabase = await createServerSupabaseClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.from('platform_reviews') as any)
-      .insert({ user_id: user.id, rating, comment })
-      .select('id, rating, comment, created_at')
+    const { data, error } = await (supabase.from('platformreviews') as any)
+      .insert({ userid: user.id, rating, comment })
+      .select('id, rating, comment, createdat')
       .single();
     if (error) throw error;
     return NextResponse.json({
       ...data,
-      user_name: user.full_name,
-      profile_image_url: user.profile_image_url || null,
+      user_name: user.fullname,
+      profileimageurl: user.profileimageurl || null,
       user_role: user.role,
     }, { status: 201 });
   } catch (error: unknown) {

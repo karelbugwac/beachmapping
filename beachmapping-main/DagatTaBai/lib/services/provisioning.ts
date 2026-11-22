@@ -3,7 +3,7 @@ import { createAdminClient } from '../supabase/server';
 import { hashPin } from './pin';
 import { getValidBeachCoordinates } from '../utils/beach-coordinates';
 import { FULL_NAME_MESSAGES, validateFullName } from '../validation/fullName';
-import { sendOwnerApplicationStatusEmail } from './ownerApplicationEmails';
+import { sendOwnerApplicationStatusEmail } from './owneremails';
 
 export type ProvisionResult =
   | { userId: string; email: string; success: true }
@@ -59,8 +59,8 @@ export async function provisionBeachOwner(
     if (isUuid) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const { data, error: fetchApplicationError } = await (adminSupabase
-        .from('owner_applications') as any)
-        .select('applicant_full_name, applicant_email, business_name, beach_name, beach_description, beach_location, latitude, longitude, contact_phone, cover_image_path, profile_image_path, virtual_tour_url')
+        .from('ownerapplications') as any)
+        .select('applicantfullname, applicantemail, businessname, beachname, beachdescription, beachlocation, latitude, longitude, contactphone, coverimagepath, profileimagepath, virtualtoururl')
         .eq('id', applicationId)
         .maybeSingle();
       if (fetchApplicationError) {
@@ -70,11 +70,11 @@ export async function provisionBeachOwner(
     }
 
     if (application) {
-      if (!email && application.applicant_email) {
-        email = application.applicant_email.trim().toLowerCase();
+      if (!email && application.applicantemail) {
+        email = application.applicantemail.trim().toLowerCase();
       }
-      if (!name && application.applicant_full_name) {
-        name = application.applicant_full_name.trim();
+      if (!name && application.applicantfullname) {
+        name = application.applicantfullname.trim();
       }
     }
 
@@ -94,8 +94,8 @@ export async function provisionBeachOwner(
     name = nameValidation.value;
 
     const beachName = (
-      application?.beach_name ||
-      application?.business_name ||
+      application?.beachname ||
+      application?.businessname ||
       name
     ).trim();
 
@@ -132,11 +132,11 @@ export async function provisionBeachOwner(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const { error: profileError } = await (adminSupabase.from('profiles') as any).upsert({
       id: userId,
-      full_name: name,
+      fullname: name,
       email: email.toLowerCase(),
       role: 'beach_owner',
       pin: hashPin(randomizedPin),
-      updated_at: new Date().toISOString(),
+      updatedat: new Date().toISOString(),
     });
     if (profileError) throw profileError;
 
@@ -144,22 +144,22 @@ export async function provisionBeachOwner(
     if (isUuid) {
       const reviewedAt = new Date().toISOString();
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      let applicationUpdate = (adminSupabase.from('owner_applications') as any)
+      let applicationUpdate = (adminSupabase.from('ownerapplications') as any)
         .update({
-          applicant_user_id: userId,
+          applicantuserid: userId,
           status: 'approved',
-          ...(reviewMetadata?.note !== undefined ? { status_note: reviewMetadata.note ?? null } : {}),
-          status_updated_at: reviewedAt,
-          decided_at: reviewedAt,
-          reviewed_at: reviewedAt,
-          ...(reviewMetadata?.reviewedBy ? { reviewed_by: reviewMetadata.reviewedBy } : {}),
-          updated_at: reviewedAt,
+          ...(reviewMetadata?.note !== undefined ? { statusnote: reviewMetadata.note ?? null } : {}),
+          statusupdatedat: reviewedAt,
+          decidedat: reviewedAt,
+          reviewedat: reviewedAt,
+          ...(reviewMetadata?.reviewedBy ? { reviewedby: reviewMetadata.reviewedBy } : {}),
+          updatedat: reviewedAt,
         })
         .eq('id', applicationId);
       if (reviewMetadata?.expectedStatusUpdatedAt) {
         applicationUpdate = applicationUpdate
           .eq('status', 'under_review')
-          .eq('status_updated_at', reviewMetadata.expectedStatusUpdatedAt);
+          .eq('statusupdatedat', reviewMetadata.expectedStatusUpdatedAt);
       }
       const { data: updatedApplication, error: applicationError } = await applicationUpdate
         .select('id')
@@ -177,7 +177,7 @@ export async function provisionBeachOwner(
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const existingBeachQuery = (adminSupabase.from('beaches') as any).select('id');
       const { data: existingBeach, error: existingBeachError } = await existingBeachQuery
-        .eq('owner_id', userId)
+        .eq('ownerid', userId)
         .maybeSingle();
       if (existingBeachError) throw existingBeachError;
 
@@ -186,18 +186,18 @@ export async function provisionBeachOwner(
         const coordinates = getValidBeachCoordinates(application.latitude, application.longitude);
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         const { error: beachError } = await (adminSupabase.from('beaches') as any).insert({
-          owner_id: userId,
+          ownerid: userId,
           name: beachName,
           slug: `${baseSlug}-${userId.slice(0, 8)}`,
-          description: application.beach_description || '',
-          location: application.beach_location || 'Catmon, Cebu',
+          description: application.beachdescription || '',
+          location: application.beachlocation || 'Catmon, Cebu',
           latitude: coordinates?.latitude ?? null,
           longitude: coordinates?.longitude ?? null,
-          contact_phone: application.contact_phone || null,
-          contact_email: application.applicant_email || email,
-          cover_image_url: application.cover_image_path || null,
-          profile_image_url: application.profile_image_path || null,
-          virtual_tour_url: application.virtual_tour_url || null,
+          contactphone: application.contactphone || null,
+          contactemail: application.applicantemail || email,
+          coverimageurl: application.coverimagepath || null,
+          profileimageurl: application.profileimagepath || null,
+          virtualtoururl: application.virtualtoururl || null,
           status: 'active',
         });
         if (beachError) throw beachError;

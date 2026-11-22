@@ -4,6 +4,7 @@ import React, { useState, useMemo } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 import {
   Eye,
   EyeOff,
@@ -122,8 +123,37 @@ export default function UserRegisterPage() {
     }
   };
 
-  const handleGoogleSignIn = () => {
-    window.location.href = '/api/auth/google?redirect=/home';
+  const handleGoogleSignIn = async () => {
+    try {
+      const supabase = createClient();
+      const redirectTo = `${window.location.origin}/api/auth/callback/google`;
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'select_account',
+          },
+        },
+      });
+
+      if (error) {
+        console.error('Google OAuth error:', error);
+        showToast('Google sign-in failed. Please try again.', 'error');
+        return;
+      }
+
+      if (data.url) {
+        // Store redirect target in cookie for callback
+        document.cookie = `dtb_oauth_redirect=${encodeURIComponent('/home')}; path=/; max-age=600; SameSite=Lax`;
+        window.location.href = data.url;
+      }
+    } catch (err) {
+      console.error('Google OAuth error:', err);
+      showToast('Google sign-in failed. Please try again.', 'error');
+    }
   };
 
   const inputCls = (fieldTouched: boolean, isValid: boolean, hasValue: boolean) =>

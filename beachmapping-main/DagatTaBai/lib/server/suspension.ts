@@ -1,4 +1,4 @@
-import { isAdministratorAccount } from '@/lib/server/admin-request';
+import { isAdministratorAccount } from '@/lib/server/adminrequest';
 
 const SUSPENDABLE_ROLES = new Set(['user', 'beach_owner', 'beach_manager']);
 

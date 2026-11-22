@@ -4,7 +4,7 @@ import {
   getAllCoordinateRequests,
   approveCoordinateRequest,
   rejectCoordinateRequest,
-} from '@/lib/services/coordinateRequests';
+} from '@/lib/services/coordinates';
 
 const noStoreHeaders = { 'Cache-Control': 'no-store, max-age=0' };
 
@@ -39,20 +39,20 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { action, beach_id, request_id, rejection_reason } = body;
+    const { action, beachid, request_id, rejectionreason } = body;
 
-    let targetBeachId = typeof beach_id === 'string' ? beach_id : '';
+    let targetBeachId = typeof beachid === 'string' ? beachid : '';
     if (!targetBeachId && typeof request_id === 'string') {
       const allReqs = await getAllCoordinateRequests();
       const matched = allReqs.find((r) => r.id === request_id);
-      if (matched?.beach_id) {
-        targetBeachId = matched.beach_id;
+      if (matched?.beachid) {
+        targetBeachId = matched.beachid;
       }
     }
 
     if (!targetBeachId) {
       return NextResponse.json(
-        { error: 'beach_id is required.' },
+        { error: 'beachid is required.' },
         { status: 400, headers: noStoreHeaders }
       );
     }
@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
     } else if (action === 'reject') {
       await rejectCoordinateRequest({
         beachId: targetBeachId,
-        rejectionReason: rejection_reason || 'Coordinates could not be verified by Admin.',
+        rejectionReason: rejectionreason || 'Coordinates could not be verified by Admin.',
         reviewerId: auth.user.id,
       });
 

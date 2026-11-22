@@ -7,8 +7,6 @@
     "build": "next build",
     "start": "node --max-http-header-size=65536 ./node_modules/next/dist/bin/next start",
     "lint": "eslint .",
-    "test:image-upload": "tsx --test tests/image-upload.test.ts",
-    "test:live-verification": "tsx --test tests/live-verification.test.ts",
     "images:migrate-profile:dry-run": "node --env-file=.env.image-migration.local --import tsx scripts/migrate-profile-images.ts",
     "images:migrate-profile:apply": "node --env-file=.env.image-migration.local --import tsx scripts/migrate-profile-images.ts --apply",
     "images:migrate-profile:rollback": "node --env-file=.env.image-migration.local --import tsx scripts/migrate-profile-images.ts --rollback"

@@ -19,7 +19,7 @@ import {
   Wind,
   Thermometer,
 } from 'lucide-react';
-import { HeroMapSection } from '@/components/hero-map-section';
+import { HeroMapSection } from '@/components/heromap';
 import { ScrollReveal } from '@/components/ui/scroll-reveal';
 import { useRealtimeSync } from '@/lib/realtime-sync';
 
@@ -75,11 +75,11 @@ const VIRTUAL_TOURS: VirtualTourItem[] = [
 interface SystemTestimonial {
   id: string;
   user_name: string;
-  profile_image_url?: string | null;
+  profileimageurl?: string | null;
   user_role?: string;
   rating: number;
   comment: string;
-  created_at: string;
+  createdat: string;
 }
 
 // Helper function to mask user name: e.g. "Charisse Villamor" -> "C*** V***"
@@ -223,11 +223,11 @@ export default function HomePage() {
       />
 
       {/* Section 1: Your Beach Guide (Modern IDE / Product Showcase UI — Interactive & Functional) */}
-      <section className="w-full bg-white dark:bg-black border-b border-slate-100 dark:border-neutral-900 transition-colors duration-200 py-14 sm:py-20 px-4 sm:px-6 lg:px-8">
+      <section className="w-full bg-white dark:bg-black border-b border-slate-100 dark:border-neutral-900 transition-colors duration-200 pt-20 sm:pt-24 pb-14 sm:pb-20 px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto space-y-12 sm:space-y-16">
           <ScrollReveal direction="up" duration={650}>
             <div className="text-center max-w-2xl mx-auto space-y-2.5">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-medium tracking-tight text-[#1F3F74] dark:text-white leading-tight">
+              <h2 className="font-display text-lg sm:text-xl font-semibold tracking-tight text-[#1F3F74] dark:text-brand-teal-300 leading-tight">
                 Your Beach Guide
               </h2>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-lg mx-auto leading-relaxed">
@@ -469,7 +469,7 @@ export default function HomePage() {
         <div className="max-w-7xl mx-auto">
           <ScrollReveal direction="up" duration={650}>
             <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-14 space-y-2.5">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-medium tracking-tight text-[#1F3F74] dark:text-white leading-tight">
+              <h2 className="font-display text-lg sm:text-xl font-semibold tracking-tight text-[#1F3F74] dark:text-brand-teal-300 leading-tight">
                 How It Works
               </h2>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-lg mx-auto leading-relaxed">
@@ -482,7 +482,7 @@ export default function HomePage() {
             {/* Step 1 */}
             <ScrollReveal direction="up" delay={100} duration={600} className="relative p-6 sm:p-7 rounded-2xl bg-white dark:bg-[#0a0a0a] border border-slate-200/80 dark:border-neutral-800 shadow-sm flex flex-col justify-between space-y-4 hover:border-[#1F3F74]/30 dark:hover:border-sky-500/30 transition-all">
               <div className="space-y-3">
-                <div className="w-11 h-11 rounded-xl bg-[#F4BF3E]/20 text-[#1F3F74] dark:text-[#F4BF3E] font-display font-black text-lg flex items-center justify-center">
+                <div className="font-display font-black text-3xl text-[#1F3F74] dark:text-[#F4BF3E] leading-none">
                   01
                 </div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white font-display">
@@ -497,7 +497,7 @@ export default function HomePage() {
             {/* Step 2 */}
             <ScrollReveal direction="up" delay={200} duration={600} className="relative p-6 sm:p-7 rounded-2xl bg-white dark:bg-[#0a0a0a] border border-slate-200/80 dark:border-neutral-800 shadow-sm flex flex-col justify-between space-y-4 hover:border-[#1F3F74]/30 dark:hover:border-sky-500/30 transition-all">
               <div className="space-y-3">
-                <div className="w-11 h-11 rounded-xl bg-[#F4BF3E]/20 text-[#1F3F74] dark:text-[#F4BF3E] font-display font-black text-lg flex items-center justify-center">
+                <div className="font-display font-black text-3xl text-[#1F3F74] dark:text-[#F4BF3E] leading-none">
                   02
                 </div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white font-display">
@@ -512,7 +512,7 @@ export default function HomePage() {
             {/* Step 3 */}
             <ScrollReveal direction="up" delay={300} duration={600} className="relative p-6 sm:p-7 rounded-2xl bg-white dark:bg-[#0a0a0a] border border-slate-200/80 dark:border-neutral-800 shadow-sm flex flex-col justify-between space-y-4 hover:border-[#1F3F74]/30 dark:hover:border-sky-500/30 transition-all">
               <div className="space-y-3">
-                <div className="w-11 h-11 rounded-xl bg-[#F4BF3E]/20 text-[#1F3F74] dark:text-[#F4BF3E] font-display font-black text-lg flex items-center justify-center">
+                <div className="font-display font-black text-3xl text-[#1F3F74] dark:text-[#F4BF3E] leading-none">
                   03
                 </div>
                 <h3 className="text-base font-bold text-slate-900 dark:text-white font-display">
@@ -533,7 +533,7 @@ export default function HomePage() {
           {/* Header */}
           <ScrollReveal direction="up" duration={650}>
             <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-14 space-y-2.5">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-medium tracking-tight text-[#1F3F74] dark:text-white leading-tight">
+              <h2 className="font-display text-lg sm:text-xl font-semibold tracking-tight text-[#1F3F74] dark:text-brand-teal-300 leading-tight">
                 Take a 360° Look Around
               </h2>
               <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-xl mx-auto leading-relaxed font-display">
@@ -622,7 +622,7 @@ export default function HomePage() {
 
             {/* Tour Info */}
             <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/90 via-black/70 to-transparent p-6">
-              <h3 className="font-display font-medium text-xl sm:text-2xl text-white mb-1">
+              <h3 className="font-display font-medium text-lg text-white mb-1">
                 {selectedTour.name}
               </h3>
               <p className="text-sm text-white/80 font-light">
@@ -638,7 +638,7 @@ export default function HomePage() {
         <div className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto">
           <ScrollReveal direction="up" duration={600}>
             <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12 space-y-2.5">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-medium tracking-tight text-[#1F3F74] dark:text-white leading-tight">
+              <h2 className="font-display text-lg sm:text-xl font-semibold tracking-tight text-[#1F3F74] dark:text-brand-teal-300 leading-tight">
                 What People Are Saying
               </h2>
               <p className="mt-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400 font-display">
@@ -662,10 +662,10 @@ export default function HomePage() {
                           <div className="flex items-center gap-2.5 min-w-0">
                             <div className="relative flex h-10 w-10 flex-shrink-0 items-center justify-center overflow-hidden rounded-full bg-brand-navy-50 text-sm font-bold text-brand-navy-500 dark:bg-brand-navy-900/60 dark:text-brand-navy-200">
                               <span>{item.user_name?.trim().charAt(0).toUpperCase() || 'U'}</span>
-                              {item.profile_image_url ? (
+                              {item.profileimageurl ? (
                                 // eslint-disable-next-line @next/next/no-img-element
                                 <img
-                                  src={item.profile_image_url}
+                                  src={item.profileimageurl}
                                   alt={`${maskUserName(item.user_name)} profile`}
                                   width={40}
                                   height={40}
@@ -710,8 +710,8 @@ export default function HomePage() {
                           &ldquo;{item.comment}&rdquo;
                         </p>
                       </div>
-                      <time className="text-xs text-slate-400 dark:text-slate-500" dateTime={item.created_at}>
-                        {new Date(item.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                      <time className="text-xs text-slate-400 dark:text-slate-500" dateTime={item.createdat}>
+                        {new Date(item.createdat).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                       </time>
                     </div>
                   </ScrollReveal>
@@ -739,7 +739,7 @@ export default function HomePage() {
         <div className="py-14 sm:py-20 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto relative z-10 text-center space-y-5">
           <ScrollReveal direction="up" duration={650}>
             <div className="space-y-3">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-display font-medium tracking-tight text-white leading-tight">
+              <h2 className="font-display text-lg sm:text-xl font-semibold tracking-tight text-white leading-tight">
                 Be Part of Dagat Ta Bai
               </h2>
               <p className="text-xs sm:text-sm text-brand-navy-100/90 max-w-lg mx-auto leading-relaxed font-display">
@@ -751,7 +751,7 @@ export default function HomePage() {
               {/* Yellow Button: Black text, refined compact padding */}
               <Link
                 href="/apply"
-                className="inline-flex items-center justify-center px-6 py-2.5 sm:px-7 sm:py-3 rounded-full bg-[#F4BF3E] hover:bg-[#e2af35] text-black text-xs sm:text-sm font-display uppercase tracking-[0.12em] font-medium transition-all duration-200 shadow-md hover:shadow-lg shadow-amber-500/20 hover:-translate-y-0.5 active:translate-y-0"
+                className="inline-flex items-center justify-center px-6 py-2.5 sm:px-7 sm:py-3 rounded-full bg-[#F4BF3E] hover:bg-[#e2af35] text-black text-xs sm:text-sm font-display normal-case font-medium transition-all duration-200 shadow-md hover:shadow-lg shadow-amber-500/20 hover:-translate-y-0.5 active:translate-y-0"
               >
                 Apply as Beach Owner
               </Link>

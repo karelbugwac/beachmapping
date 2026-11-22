@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { provisionBeachOwner } from '@/lib/services/ownerProvisioning';
+import { provisionBeachOwner } from '@/lib/services/provisioning';
 
 /**
  * Supabase Database Webhook Target.
- * Fired when an `owner_applications` record status is updated to 'approved'.
+ * Fired when an `ownerapplications` record status is updated to 'approved'.
  */
 export async function POST(req: NextRequest) {
   try {
@@ -24,7 +24,7 @@ export async function POST(req: NextRequest) {
       record &&
       record.status === 'approved' &&
       (!old_record || old_record.status !== 'approved') &&
-      !record.applicant_user_id
+      !record.applicantuserid
     ) {
       const result = await provisionBeachOwner(record.id);
 

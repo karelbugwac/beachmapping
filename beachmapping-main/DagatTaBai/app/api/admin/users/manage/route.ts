@@ -1,9 +1,9 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { NextRequest, NextResponse } from 'next/server';
 import { authorizeRoles } from '@/lib/supabase/authorization';
-import { validateAdminMutationRequest, noStoreHeaders } from '@/lib/server/admin-request';
-import { isCurrentStatusVersion, isForbiddenSuspensionTarget, validateSuspensionEndDate } from '@/lib/server/suspension-policy';
-import { persistExpiredSuspension } from '@/lib/server/account-status';
+import { validateAdminMutationRequest, noStoreHeaders } from '@/lib/server/adminrequest';
+import { isCurrentStatusVersion, isForbiddenSuspensionTarget, validateSuspensionEndDate } from '@/lib/server/suspension';
+import { persistExpiredSuspension } from '@/lib/server/accountstatus';
 import { canTransitionAccountStatus, isSuspensionActive, type AccountStatus } from '@/lib/utils/account-status';
 import { validateAdminSearch, validateSafeText } from '@/lib/validation/safe-text';
 import { ADMIN_MESSAGES, SUSPENSION_REASON_TYPES } from '@/lib/validation/admin-messages';
@@ -18,17 +18,17 @@ const roleValues = ['users', 'beach_owner'] as const;
 
 interface ProfileRow {
   id: string;
-  full_name: string;
+  fullname: string;
   email: string | null;
   role: string;
-  account_status: AccountStatus;
-  status_reason: string | null;
-  status_reason_type: string | null;
-  suspended_until: string | null;
-  status_changed_by: string | null;
-  status_changed_at: string | null;
-  pin_reset_required: boolean;
-  created_at: string;
+  accountstatus: AccountStatus;
+  statusreason: string | null;
+  statusreasontype: string | null;
+  suspendeduntil: string | null;
+  statuschangedby: string | null;
+  statuschangedat: string | null;
+  pinresetrequired: boolean;
+  createdat: string;
 }
 
 interface AccountListRow {
@@ -36,14 +36,14 @@ interface AccountListRow {
   name: string;
   email: string;
   role: string;
-  account_status: AccountStatus;
-  status_reason: string | null;
-  status_reason_type: string | null;
-  suspended_until: string | null;
-  status_changed_by: string | null;
+  accountstatus: AccountStatus;
+  statusreason: string | null;
+  statusreasontype: string | null;
+  suspendeduntil: string | null;
+  statuschangedby: string | null;
   status_changed_by_name: string | null;
-  status_changed_at: string | null;
-  pin_reset_required: boolean;
+  statuschangedat: string | null;
+  pinresetrequired: boolean;
   joined: string;
   beach_names: string[];
 }
@@ -97,15 +97,15 @@ export async function GET(request: NextRequest) {
 
     // Normalize expired suspensions before calculating the filtered counts.
     let suspendedQuery = (admin.from('profiles') as any)
-      .select('id, suspended_until')
-      .eq('account_status', 'suspended');
+      .select('id, suspendeduntil')
+      .eq('accountstatus', 'suspended');
     suspendedQuery = role === 'beach_owner'
       ? suspendedQuery.eq('role', 'beach_owner')
       : suspendedQuery.in('role', ['user', 'beach_manager']);
     const { data: suspendedProfiles, error: suspendedProfilesError } = await suspendedQuery;
     if (suspendedProfilesError) throw suspendedProfilesError;
     for (const profile of suspendedProfiles || []) {
-      if (!isSuspensionActive('suspended', profile.suspended_until)) {
+      if (!isSuspensionActive('suspended', profile.suspendeduntil)) {
         await persistExpiredSuspension(admin, profile.id);
       }
     }
@@ -114,7 +114,7 @@ export async function GET(request: NextRequest) {
     if (query.value) {
       const pattern = `%${query.value.replace(/[\\%_]/gu, '\\$&')}%`;
       const [{ data: nameMatches, error: nameError }, { data: emailMatches, error: emailError }] = await Promise.all([
-        filterRole((admin.from('profiles') as any).select('id')).ilike('full_name', pattern),
+        filterRole((admin.from('profiles') as any).select('id')).ilike('fullname', pattern),
         filterRole((admin.from('profiles') as any).select('id')).ilike('email', pattern),
       ]);
       if (nameError) throw nameError;
@@ -123,12 +123,12 @@ export async function GET(request: NextRequest) {
       for (const profile of [...(nameMatches || []), ...(emailMatches || [])]) ids.add(profile.id);
       if (role === 'beach_owner') {
         const { data: beachMatches, error: beachSearchError } = await (admin.from('beaches') as any)
-          .select('owner_id')
+          .select('ownerid')
           .ilike('name', pattern)
-          .not('owner_id', 'is', null);
+          .not('ownerid', 'is', null);
         if (beachSearchError) throw beachSearchError;
         for (const beach of beachMatches || []) {
-          if (beach.owner_id) ids.add(beach.owner_id);
+          if (beach.ownerid) ids.add(beach.ownerid);
         }
       }
       matchingIds = [...ids];
@@ -139,7 +139,7 @@ export async function GET(request: NextRequest) {
       let countQuery = (admin.from('profiles') as any)
         .select('id', { count: 'exact', head: true });
       countQuery = filterRole(countQuery);
-      if (countStatus !== 'all') countQuery = countQuery.eq('account_status', countStatus);
+      if (countStatus !== 'all') countQuery = countQuery.eq('accountstatus', countStatus);
       if (matchingIds) countQuery = countQuery.in('id', matchingIds);
       const { count, error } = await countQuery;
       if (error) throw error;
@@ -174,52 +174,52 @@ export async function GET(request: NextRequest) {
     const page = Number(pageRaw);
     const start = (page - 1) * pageSize;
     let profilesQuery = (admin.from('profiles') as any)
-      .select('id, full_name, email, role, account_status, status_reason, status_reason_type, suspended_until, status_changed_by, status_changed_at, pin_reset_required, created_at', { count: 'exact' })
-      .order('created_at', { ascending: false })
+      .select('id, fullname, email, role, accountstatus, statusreason, statusreasontype, suspendeduntil, statuschangedby, statuschangedat, pinresetrequired, createdat', { count: 'exact' })
+      .order('createdat', { ascending: false })
       .range(start, start + pageSize - 1);
     profilesQuery = filterRole(profilesQuery);
-    if (status !== 'all') profilesQuery = profilesQuery.eq('account_status', status);
+    if (status !== 'all') profilesQuery = profilesQuery.eq('accountstatus', status);
     if (matchingIds) profilesQuery = profilesQuery.in('id', matchingIds);
     const { data: profiles, error: profilesError, count: filteredCount } = await profilesQuery;
     if (profilesError) throw profilesError;
     const records = (profiles || []) as ProfileRow[];
     const ids = records.map((profile) => profile.id);
-    const changerIds = [...new Set(records.map((profile) => profile.status_changed_by).filter((id): id is string => Boolean(id)))];
+    const changerIds = [...new Set(records.map((profile) => profile.statuschangedby).filter((id): id is string => Boolean(id)))];
     const [{ data: beaches, error: beachError }, { data: changers, error: changersError }] = await Promise.all([
       role === 'beach_owner' && ids.length
-        ? (admin.from('beaches') as any).select('owner_id, name').in('owner_id', ids)
+        ? (admin.from('beaches') as any).select('ownerid, name').in('ownerid', ids)
         : Promise.resolve({ data: [], error: null }),
       changerIds.length
-        ? (admin.from('profiles') as any).select('id, full_name, email').in('id', changerIds)
+        ? (admin.from('profiles') as any).select('id, fullname, email').in('id', changerIds)
         : Promise.resolve({ data: [], error: null }),
     ]);
     if (beachError) throw beachError;
     if (changersError) throw changersError;
 
     const changerById = new Map<string, string>();
-    for (const profile of (changers || []) as Array<{ id: string; full_name: string | null; email: string | null }>) {
-      changerById.set(profile.id, profile.full_name || profile.email || 'Administrator');
+    for (const profile of (changers || []) as Array<{ id: string; fullname: string | null; email: string | null }>) {
+      changerById.set(profile.id, profile.fullname || profile.email || 'Administrator');
     }
     const beachesByOwner = new Map<string, string[]>();
     for (const beach of beaches || []) {
-      if (!beach.owner_id) continue;
-      beachesByOwner.set(beach.owner_id, [...(beachesByOwner.get(beach.owner_id) || []), beach.name]);
+      if (!beach.ownerid) continue;
+      beachesByOwner.set(beach.ownerid, [...(beachesByOwner.get(beach.ownerid) || []), beach.name]);
     }
 
     const accounts: AccountListRow[] = records.map((profile) => ({
         id: profile.id,
-        name: profile.full_name || 'User',
+        name: profile.fullname || 'User',
         email: profile.email || '',
         role: profile.role || 'unknown',
-        account_status: profile.account_status as AccountStatus,
-        status_reason: profile.status_reason,
-        status_reason_type: profile.status_reason_type,
-        suspended_until: profile.suspended_until,
-        status_changed_by: profile.status_changed_by,
-        status_changed_by_name: profile.status_changed_by ? changerById.get(profile.status_changed_by) || 'Administrator' : null,
-        status_changed_at: profile.status_changed_at,
-        pin_reset_required: Boolean(profile.pin_reset_required),
-        joined: profile.created_at,
+        accountstatus: profile.accountstatus as AccountStatus,
+        statusreason: profile.statusreason,
+        statusreasontype: profile.statusreasontype,
+        suspendeduntil: profile.suspendeduntil,
+        statuschangedby: profile.statuschangedby,
+        status_changed_by_name: profile.statuschangedby ? changerById.get(profile.statuschangedby) || 'Administrator' : null,
+        statuschangedat: profile.statuschangedat,
+        pinresetrequired: Boolean(profile.pinresetrequired),
+        joined: profile.createdat,
         beach_names: beachesByOwner.get(profile.id) || [],
       }));
 
@@ -255,12 +255,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Account not found.' }, { status: 404, headers: noStoreHeaders() });
     }
     const isReasonEdit = action === 'reason_edit';
-    if ((!isReasonEdit && action !== 'status_change') || !['active', 'under_review', 'suspended'].includes(body?.to_status)) {
+    if ((!isReasonEdit && action !== 'status_change') || !['active', 'under_review', 'suspended'].includes(body?.tostatus)) {
       return NextResponse.json({ error: ADMIN_MESSAGES.notAllowed }, { status: 403, headers: noStoreHeaders() });
     }
 
     const { data: target, error: targetError } = await (auth.adminClient.from('profiles') as any)
-      .select('id, email, role, account_status, status_changed_at, suspended_until')
+      .select('id, email, role, accountstatus, statuschangedat, suspendeduntil')
       .eq('id', id)
       .maybeSingle();
     if (targetError) throw targetError;
@@ -271,18 +271,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: "You don't have permission to do that." }, { status: 403, headers: noStoreHeaders() });
     }
 
-    if (target.account_status === 'suspended' && !isSuspensionActive('suspended', target.suspended_until)) {
+    if (target.accountstatus === 'suspended' && !isSuspensionActive('suspended', target.suspendeduntil)) {
       await persistExpiredSuspension(auth.adminClient, id);
       return NextResponse.json({ error: ADMIN_MESSAGES.staleChange }, { status: 409, headers: noStoreHeaders() });
     }
 
     const expected = body?.expected_status_changed_at;
-    if (!isCurrentStatusVersion(target.status_changed_at || null, expected)) {
+    if (!isCurrentStatusVersion(target.statuschangedat || null, expected)) {
       return NextResponse.json({ error: ADMIN_MESSAGES.staleChange }, { status: 409, headers: noStoreHeaders() });
     }
 
-    const from = target.account_status as AccountStatus;
-    const to = body.to_status as AccountStatus;
+    const from = target.accountstatus as AccountStatus;
+    const to = body.tostatus as AccountStatus;
     if (isReasonEdit && (from !== 'suspended' || to !== 'suspended')) {
       return NextResponse.json({ error: ADMIN_MESSAGES.staleChange }, { status: 409, headers: noStoreHeaders() });
     }
@@ -304,14 +304,14 @@ export async function POST(request: NextRequest) {
     if (!validation.ok) {
       return NextResponse.json({ error: validation.error }, { status: 400, headers: noStoreHeaders() });
     }
-    if (suspending && !SUSPENSION_REASON_TYPES.includes(body.reason_type)) {
+    if (suspending && !SUSPENSION_REASON_TYPES.includes(body.reasontype)) {
       return NextResponse.json({ error: ADMIN_MESSAGES.reasonTypeRequired }, { status: 400, headers: noStoreHeaders() });
     }
     const reasonText = validation.value || null;
 
     let suspendedUntil: string | null = null;
     if (to === 'suspended') {
-      const dateValidation = validateSuspensionEndDate(body.suspended_until);
+      const dateValidation = validateSuspensionEndDate(body.suspendeduntil);
       if (!dateValidation.ok) {
         return NextResponse.json({ error: ADMIN_MESSAGES.suspensionDateInvalid }, { status: 400, headers: noStoreHeaders() });
       }
@@ -336,23 +336,23 @@ export async function POST(request: NextRequest) {
     const now = new Date().toISOString();
     let update = (auth.adminClient.from('profiles') as any)
       .update({
-        account_status: to,
-        status_reason: to === 'suspended' ? reasonText : to === 'under_review' ? reasonText : null,
-        status_reason_type: to === 'suspended' ? body.reason_type : null,
-        suspended_until: to === 'suspended' ? suspendedUntil : null,
+        accountstatus: to,
+        statusreason: to === 'suspended' ? reasonText : to === 'under_review' ? reasonText : null,
+        statusreasontype: to === 'suspended' ? body.reasontype : null,
+        suspendeduntil: to === 'suspended' ? suspendedUntil : null,
         status: to === 'suspended' ? 'suspended' : 'active',
-        suspension_reason: to === 'suspended' ? reasonText : null,
-        suspended_at: to === 'suspended' ? now : null,
-        suspension_ends_at: to === 'suspended' ? suspendedUntil : null,
-        status_changed_by: auth.user.id,
-        status_changed_at: now,
-        updated_at: now,
+        suspensionreason: to === 'suspended' ? reasonText : null,
+        suspendedat: to === 'suspended' ? now : null,
+        suspensionendsat: to === 'suspended' ? suspendedUntil : null,
+        statuschangedby: auth.user.id,
+        statuschangedat: now,
+        updatedat: now,
       })
       .eq('id', id)
-      .eq('account_status', from);
+      .eq('accountstatus', from);
     update = expected
-      ? update.eq('status_changed_at', expected)
-      : update.is('status_changed_at', null);
+      ? update.eq('statuschangedat', expected)
+      : update.is('statuschangedat', null);
     const { data: changed, error: updateError } = await update.select('id').maybeSingle();
     if (updateError) throw updateError;
     if (!changed) {
@@ -360,19 +360,19 @@ export async function POST(request: NextRequest) {
     }
 
     const { data: adminProfile } = await (auth.adminClient.from('profiles') as any)
-      .select('full_name, email')
+      .select('fullname, email')
       .eq('id', auth.user.id)
       .maybeSingle();
-    const adminName = adminProfile?.full_name || adminProfile?.email || auth.user.email || 'Administrator';
+    const adminName = adminProfile?.fullname || adminProfile?.email || auth.user.email || 'Administrator';
 
-    const { error: auditError } = await (auth.adminClient.from('admin_audit_log') as any).insert({
-      admin_id: auth.user.id,
-      target_user_id: id,
+    const { error: auditError } = await (auth.adminClient.from('adminlog') as any).insert({
+      adminid: auth.user.id,
+      targetuserid: id,
       action: isReasonEdit ? 'reason_edit' : 'status_change',
-      from_status: from,
-      to_status: to,
+      fromstatus: from,
+      tostatus: to,
       reason: reasonText,
-      reason_type: to === 'suspended' ? body.reason_type : null,
+      reasontype: to === 'suspended' ? body.reasontype : null,
     });
     if (auditError) throw auditError;
 
@@ -384,17 +384,17 @@ export async function POST(request: NextRequest) {
     }
     const title = to === 'suspended' ? 'Account suspended' : to === 'under_review' ? 'Account under review' : 'Account reinstated';
     const message = to === 'suspended'
-      ? `Your account has been suspended. Reason: ${body.reason_type}: ${reasonText}${suspendedUntil ? ` Until ${new Date(suspendedUntil).toLocaleDateString()}.` : ' Until further notice.'}`
+      ? `Your account has been suspended. Reason: ${body.reasontype}: ${reasonText}${suspendedUntil ? ` Until ${new Date(suspendedUntil).toLocaleDateString()}.` : ' Until further notice.'}`
       : to === 'under_review'
         ? 'Your account is under review. You can continue to use your account.'
         : 'Your account has been reinstated and is active again.';
-    const { error: notificationError } = await (auth.adminClient.from('user_notifications') as any).insert({
-      user_id: id,
-      login_device_id: null,
-      type: 'account_status',
+    const { error: notificationError } = await (auth.adminClient.from('usernotifications') as any).insert({
+      userid: id,
+      logindeviceid: null,
+      type: 'accountstatus',
       title,
       message,
-      action_url: owner ? '/owner/account' : '/profile',
+      actionurl: owner ? '/owner/account' : '/profile',
     });
     if (notificationError) {
       console.error('Account status notification failed:', notificationError);
@@ -403,13 +403,13 @@ export async function POST(request: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      account_status: to,
-      status_reason: to === 'suspended' || to === 'under_review' ? reasonText : null,
-      status_reason_type: to === 'suspended' ? body.reason_type : null,
-      suspended_until: suspendedUntil,
-      status_changed_by: auth.user.id,
+      accountstatus: to,
+      statusreason: to === 'suspended' || to === 'under_review' ? reasonText : null,
+      statusreasontype: to === 'suspended' ? body.reasontype : null,
+      suspendeduntil: suspendedUntil,
+      statuschangedby: auth.user.id,
       status_changed_by_name: adminName,
-      status_changed_at: now,
+      statuschangedat: now,
     }, { headers: noStoreHeaders() });
   } catch (error: unknown) {
     console.error('Failed to change account status:', error);

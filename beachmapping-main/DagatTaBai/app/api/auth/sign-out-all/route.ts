@@ -26,11 +26,11 @@ export async function POST(request: Request) {
   }
 
   const adminClient = createAdminClient();
-  // login_devices has no signed-out marker; remove only this authenticated user's rows.
+  // logindevices has no signed-out marker; remove only this authenticated user's rows.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error: devicesError } = await (adminClient.from('login_devices') as any)
+  const { error: devicesError } = await (adminClient.from('logindevices') as any)
     .delete()
-    .eq('user_id', user.id);
+    .eq('userid', user.id);
   if (devicesError) {
     console.error('Could not clear login device records:', devicesError.code || 'unknown');
     return NextResponse.json(

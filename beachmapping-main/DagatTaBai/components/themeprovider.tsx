@@ -1,7 +1,7 @@
 'use client';
 
 import React, { createContext, useContext } from 'react';
-import { useWaveThemeToggle, type Theme } from '@/lib/hooks/use-wave-theme';
+import { useWaveThemeToggle, type Theme } from '@/lib/hooks/usewavetheme';
 
 export type { Theme };
 

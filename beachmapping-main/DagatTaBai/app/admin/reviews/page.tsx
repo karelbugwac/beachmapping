@@ -1,7 +1,7 @@
 'use client';
 
 import React, { Suspense } from 'react';
-import { UserModerationHub } from '@/components/admin/user-moderation-hub';
+import { UserModerationHub } from '@/components/admin/users';
 import { Loader2 } from 'lucide-react';
 
 export default function AdminReviewsPage() {

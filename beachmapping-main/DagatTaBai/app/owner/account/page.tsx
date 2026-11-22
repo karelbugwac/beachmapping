@@ -6,9 +6,9 @@ import {
   AlertCircle,
   ChevronDown,
 } from 'lucide-react';
-import { useTheme } from '@/components/theme-provider';
+import { useTheme } from '@/components/themeprovider';
 import { compactMobileError } from '@/components/ui/feedback-toasts';
-import { SignOutAllDevicesButton } from '@/components/auth/sign-out-all-devices';
+import { SignOutAllDevicesButton } from '@/components/auth/signout';
 import { createClient } from '@/lib/supabase/client';
 
 export default function OwnerSettingsPage() {

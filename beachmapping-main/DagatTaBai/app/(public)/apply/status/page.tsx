@@ -6,22 +6,22 @@ import { CheckCircle2, Clock3, FileText, Loader2, RotateCcw, XCircle } from 'luc
 
 interface ApplicationStatus {
   id: string;
-  applicant_full_name: string;
-  business_name: string;
-  beach_name: string;
+  applicantfullname: string;
+  businessname: string;
+  beachname: string;
   status: string;
-  status_note: string | null;
-  status_updated_at: string;
-  rejection_reason: string | null;
-  created_at: string;
+  statusnote: string | null;
+  statusupdatedat: string;
+  rejectionreason: string | null;
+  createdat: string;
 }
 
 interface StatusHistoryItem {
   id: string;
-  from_status: string | null;
-  to_status: string;
+  fromstatus: string | null;
+  tostatus: string;
   note: string | null;
-  created_at: string;
+  createdat: string;
 }
 
 const steps = [
@@ -84,14 +84,14 @@ export default function ApplicationStatusPage() {
   const isRejected = application?.status === 'rejected';
   const isNeedsChanges = application?.status === 'needs_changes';
   return (
-    <main className="min-h-screen bg-slate-50 px-4 py-12 text-slate-900 dark:bg-black dark:text-zinc-100">
+    <main className="min-h-screen bg-slate-50 px-4 py-12 font-display text-slate-900 dark:bg-black dark:text-zinc-100">
       <section className="mx-auto max-w-3xl rounded-3xl border border-slate-200 bg-white p-6 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 sm:p-10">
         <div className="mb-8 flex items-center gap-3">
           <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-brand-teal-100 text-brand-teal-700 dark:bg-brand-teal-700/30 dark:text-brand-teal-300">
             <FileText className="h-6 w-6" aria-hidden="true" />
           </div>
           <div>
-            <h1 className="text-2xl font-extrabold text-brand-navy-700 dark:text-white">My application</h1>
+            <h1 className="font-display text-xl font-semibold tracking-tight text-brand-navy-700 dark:text-white sm:text-2xl">My application</h1>
             <p className="text-sm text-slate-500 dark:text-neutral-400">Track your beach owner application.</p>
           </div>
         </div>
@@ -126,8 +126,8 @@ export default function ApplicationStatusPage() {
         ) : (
           <>
             <div className="mb-8 rounded-2xl bg-slate-50 p-4 dark:bg-neutral-800/50">
-              <p className="font-bold">{application.beach_name || application.business_name}</p>
-              <p className="text-sm text-slate-500 dark:text-neutral-400">{application.business_name}</p>
+              <p className="font-bold">{application.beachname || application.businessname}</p>
+              <p className="text-sm text-slate-500 dark:text-neutral-400">{application.businessname}</p>
             </div>
 
             {isRejected ? (
@@ -137,7 +137,7 @@ export default function ApplicationStatusPage() {
                   Application not approved
                 </div>
                 <p className="mt-2 whitespace-pre-wrap text-sm text-rose-900 dark:text-rose-100">
-                  {application.rejection_reason || application.status_note || 'Your application was not approved.'}
+                  {application.rejectionreason || application.statusnote || 'Your application was not approved.'}
                 </p>
               </div>
             ) : (
@@ -165,7 +165,7 @@ export default function ApplicationStatusPage() {
                 {isNeedsChanges && (
                   <div className="mt-6 rounded-2xl border border-brand-sun-200 bg-brand-sun-50 p-5 text-sm text-brand-navy-700 dark:border-brand-sun-700/50 dark:bg-brand-sun-900/20 dark:text-brand-sun-100">
                     <p className="font-bold">Changes requested</p>
-                    <p className="mt-1 whitespace-pre-wrap">{application.status_note}</p>
+                    <p className="mt-1 whitespace-pre-wrap">{application.statusnote}</p>
                     <Link
                       href={`/apply?applicationId=${encodeURIComponent(application.id)}`}
                       className="mt-4 inline-flex items-center gap-2 rounded-full bg-brand-navy-500 px-5 py-2.5 font-bold text-white hover:bg-brand-navy-600 dark:bg-brand-teal-600 dark:hover:bg-brand-teal-500"
@@ -175,10 +175,10 @@ export default function ApplicationStatusPage() {
                     </Link>
                   </div>
                 )}
-                {!isNeedsChanges && application.status_note && (
+                {!isNeedsChanges && application.statusnote && (
                   <div className="mt-6 rounded-2xl bg-slate-50 p-4 text-sm dark:bg-neutral-800/50">
                     <p className="font-bold">Message from the review team</p>
-                    <p className="mt-1 whitespace-pre-wrap text-slate-600 dark:text-neutral-300">{application.status_note}</p>
+                    <p className="mt-1 whitespace-pre-wrap text-slate-600 dark:text-neutral-300">{application.statusnote}</p>
                   </div>
                 )}
               </>
@@ -202,10 +202,10 @@ export default function ApplicationStatusPage() {
                   {historyError && <p className="text-sm text-rose-700 dark:text-rose-300" role="alert">{historyError}</p>}
                   {history?.map((item) => (
                     <div key={item.id} className="border-l-2 border-brand-teal-400 pl-4 text-sm">
-                      <p className="font-semibold capitalize">{item.to_status.replaceAll('_', ' ')}</p>
+                      <p className="font-semibold capitalize">{item.tostatus.replaceAll('_', ' ')}</p>
                       {item.note && <p className="whitespace-pre-wrap text-slate-600 dark:text-neutral-300">{item.note}</p>}
-                      <time className="text-xs text-slate-500 dark:text-neutral-400" dateTime={item.created_at}>
-                        {new Date(item.created_at).toLocaleString()}
+                      <time className="text-xs text-slate-500 dark:text-neutral-400" dateTime={item.createdat}>
+                        {new Date(item.createdat).toLocaleString()}
                       </time>
                     </div>
                   ))}

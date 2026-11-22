@@ -24,7 +24,7 @@ export async function GET(
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (adminSupabase.from('owner_applications') as any)
+    const { data, error } = await (adminSupabase.from('ownerapplications') as any)
       .select('*')
       .eq('id', resolvedParams.id)
       .single();
@@ -33,10 +33,10 @@ export async function GET(
       return NextResponse.json({ error: 'Application not found' }, { status: 404 });
     }
 
-    const { data: applicantProfile, error: applicantProfileError } = data.applicant_user_id
+    const { data: applicantProfile, error: applicantProfileError } = data.applicantuserid
       ? await auth.adminClient.from('profiles')
-        .select('account_status, suspended_until, status_reason, profile_image_url')
-        .eq('id', data.applicant_user_id)
+        .select('accountstatus, suspendeduntil, statusreason, profileimageurl')
+        .eq('id', data.applicantuserid)
         .maybeSingle()
       : { data: null, error: null };
     if (applicantProfileError) {
@@ -70,12 +70,13 @@ export async function GET(
 
     let documents;
     try {
-      const [permit, ownership, idPhoto] = await Promise.all([
-        signDocument(data.business_permit_path, 'owner-application-documents'),
-        signDocument(data.proof_of_ownership_path, 'owner-application-documents'),
-        signDocument(data.liveness_snapshot_path, 'owner-verification-snapshots'),
+      const [permit, ownership, idPhoto, validId] = await Promise.all([
+        signDocument(data.businesspermitpath, 'owner-application-documents'),
+        signDocument(data.proofofownershippath, 'owner-application-documents'),
+        signDocument(data.livenesssnapshotpath, 'owner-verification-snapshots'),
+        signDocument(data.valididpath, 'owner-application-documents'),
       ]);
-      documents = { permit, ownership, id_photo: idPhoto };
+      documents = { permit, ownership, id_photo: idPhoto, valid_id: validId };
     } catch {
       return NextResponse.json(
         { error: 'Unable to load application documents.' },
@@ -83,11 +84,12 @@ export async function GET(
       );
     }
     const storagePathFields = new Set([
-      'business_permit_path',
-      'proof_of_ownership_path',
+      'businesspermitpath',
+      'proofofownershippath',
+      'valididpath',
       'ownership_proof_path',
-      'live_selfie_path',
-      'liveness_snapshot_path',
+      'liveselfiepath',
+      'livenesssnapshotpath',
     ]);
     const applicationData = Object.fromEntries(
       Object.entries(data).filter(([field]) => !storagePathFields.has(field))
@@ -97,16 +99,17 @@ export async function GET(
       {
         application: {
           ...applicationData,
-          applicant_profile_image_url: applicantProfile?.profile_image_url || null,
+          applicant_profile_image_url: applicantProfile?.profileimageurl || null,
           documents,
-          account_status: applicantProfile
-            ? isSuspensionActive(applicantProfile.account_status, applicantProfile.suspended_until)
+          accountstatus: applicantProfile
+            ? isSuspensionActive(applicantProfile.accountstatus, applicantProfile.suspendeduntil)
               ? 'suspended'
-              : applicantProfile.account_status === 'suspended' ? 'active' : applicantProfile.account_status
+              : applicantProfile.accountstatus === 'suspended' ? 'active' : applicantProfile.accountstatus
             : null,
-          account_status_reason: applicantProfile?.status_reason || null,
+          account_status_reason: applicantProfile?.statusreason || null,
           business_permit_url: documents.permit.full_url,
           proof_of_ownership_url: documents.ownership.full_url,
+          valid_id_url: documents.valid_id.full_url,
           liveness_snapshot_url: documents.id_photo.full_url,
           live_selfie_url: documents.id_photo.full_url,
         },

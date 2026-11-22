@@ -1,9 +1,9 @@
 import { NextResponse } from 'next/server';
-import { provisionBeachOwner } from '@/lib/services/ownerProvisioning';
-import { sendOwnerApplicationStatusEmail } from '@/lib/services/ownerApplicationEmails';
+import { provisionBeachOwner } from '@/lib/services/provisioning';
+import { sendOwnerApplicationStatusEmail } from '@/lib/services/owneremails';
 import { createAdminClient } from '@/lib/supabase/server';
 import { authorizeRoles } from '@/lib/supabase/authorization';
-import { validateAdminMutationRequest, noStoreHeaders } from '@/lib/server/admin-request';
+import { validateAdminMutationRequest, noStoreHeaders } from '@/lib/server/adminrequest';
 import { validateSafeText } from '@/lib/validation/safe-text';
 import { ADMIN_MESSAGES } from '@/lib/validation/admin-messages';
 import { canTransitionApplication, isCurrentApplicationVersion } from '@/lib/utils/application-progress';
@@ -36,8 +36,8 @@ export async function POST(
 
     const adminSupabase = createAdminClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: application, error: applicationError } = await (adminSupabase.from('owner_applications') as any)
-      .select('id, status, status_updated_at, liveness_status, applicant_email, applicant_full_name, beach_name, business_name')
+    const { data: application, error: applicationError } = await (adminSupabase.from('ownerapplications') as any)
+      .select('id, status, statusupdatedat, livenessstatus, applicantemail, applicantfullname, beachname, businessname')
       .eq('id', id)
       .maybeSingle();
     if (applicationError) throw applicationError;
@@ -50,8 +50,8 @@ export async function POST(
         return NextResponse.json({ error: 'Only an approved application can have its PIN resent.' }, { status: 409, headers: noStoreHeaders() });
       }
       const result = await provisionBeachOwner(
-        application.applicant_email,
-        application.applicant_full_name || 'Beach Owner',
+        application.applicantemail,
+        application.applicantfullname || 'Beach Owner',
         id
       );
       if (!result.success) {
@@ -64,7 +64,7 @@ export async function POST(
     }
 
     if (typeof body.expected_status_updated_at !== 'string' ||
-      !isCurrentApplicationVersion(application.status_updated_at, body.expected_status_updated_at)) {
+      !isCurrentApplicationVersion(application.statusupdatedat, body.expected_status_updated_at)) {
       return NextResponse.json(
         { error: 'Someone else already changed this application. Refresh and try again.' },
         { status: 409, headers: noStoreHeaders() }
@@ -77,7 +77,7 @@ export async function POST(
       approve: { to: 'approved', requiresNote: false },
       reject: { to: 'rejected', requiresNote: true },
     }[action as 'start_review' | 'request_changes' | 'approve' | 'reject'];
-    const noteInput = body.note ?? body.rejection_reason ?? '';
+    const noteInput = body.note ?? body.rejectionreason ?? '';
     let note: string | null = null;
     if (transition.requiresNote) {
       if (typeof noteInput !== 'string' || !noteInput.trim()) {
@@ -99,7 +99,7 @@ export async function POST(
     if (!canTransitionApplication(application.status, transition.to, 'admin', note)) {
       return NextResponse.json({ error: 'This application can no longer be changed in that way.' }, { status: 409, headers: noStoreHeaders() });
     }
-    if (action === 'approve' && application.liveness_status !== 'passed') {
+    if (action === 'approve' && application.livenessstatus !== 'passed') {
       return NextResponse.json({ error: 'Live verification must pass before this application can be approved.' }, { status: 400, headers: noStoreHeaders() });
     }
 
@@ -107,11 +107,11 @@ export async function POST(
     if (action === 'approve') {
       // Claim the reviewed version before provisioning so parallel admin actions become stale.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: claimed, error: claimError } = await (adminSupabase.from('owner_applications') as any)
-        .update({ status_updated_at: now, reviewed_by: auth.user.id, updated_at: now })
+      const { data: claimed, error: claimError } = await (adminSupabase.from('ownerapplications') as any)
+        .update({ statusupdatedat: now, reviewedby: auth.user.id, updatedat: now })
         .eq('id', id)
         .eq('status', 'under_review')
-        .eq('status_updated_at', body.expected_status_updated_at)
+        .eq('statusupdatedat', body.expected_status_updated_at)
         .select('id')
         .maybeSingle();
       if (claimError) throw claimError;
@@ -122,8 +122,8 @@ export async function POST(
         );
       }
       const result = await provisionBeachOwner(
-        application.applicant_email,
-        application.applicant_full_name || 'Beach Owner',
+        application.applicantemail,
+        application.applicantfullname || 'Beach Owner',
         id,
         { expectedStatusUpdatedAt: now, reviewedBy: auth.user.id, note }
       );
@@ -134,8 +134,8 @@ export async function POST(
         );
       }
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const approvedApplicationQuery = (adminSupabase.from('owner_applications') as any)
-        .select('id, status, status_updated_at, status_note, rejection_reason');
+      const approvedApplicationQuery = (adminSupabase.from('ownerapplications') as any)
+        .select('id, status, statusupdatedat, statusnote, rejectionreason');
       const { data: approvedApplication, error: approvedApplicationError } = await approvedApplicationQuery
         .eq('id', id)
         .single();
@@ -145,21 +145,21 @@ export async function POST(
 
     const updateValues = {
       status: transition.to,
-      status_note: note,
-      rejection_reason: action === 'reject' ? note : null,
-      status_updated_at: now,
-      reviewed_at: now,
-      reviewed_by: auth.user.id,
-      decided_at: action === 'reject' ? now : null,
-      updated_at: now,
+      statusnote: note,
+      rejectionreason: action === 'reject' ? note : null,
+      statusupdatedat: now,
+      reviewedat: now,
+      reviewedby: auth.user.id,
+      decidedat: action === 'reject' ? now : null,
+      updatedat: now,
     };
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: updatedApplication, error: updateError } = await (adminSupabase.from('owner_applications') as any)
+    const { data: updatedApplication, error: updateError } = await (adminSupabase.from('ownerapplications') as any)
       .update(updateValues)
       .eq('id', id)
       .eq('status', application.status)
-      .eq('status_updated_at', body.expected_status_updated_at)
-      .select('id, status, status_updated_at, status_note, rejection_reason')
+      .eq('statusupdatedat', body.expected_status_updated_at)
+      .select('id, status, statusupdatedat, statusnote, rejectionreason')
       .maybeSingle();
     if (updateError) throw updateError;
     if (!updatedApplication) {
@@ -170,11 +170,11 @@ export async function POST(
     }
 
     if (action === 'reject' && note) {
-      const beachName = application.beach_name || application.business_name || application.applicant_full_name || 'Beach Resort';
+      const beachName = application.beachname || application.businessname || application.applicantfullname || 'Beach Resort';
       await sendOwnerApplicationStatusEmail({
         status: 'rejected',
-        recipientEmail: application.applicant_email,
-        applicantName: application.applicant_full_name || 'Applicant',
+        recipientEmail: application.applicantemail,
+        applicantName: application.applicantfullname || 'Applicant',
         beachName,
         rejectionReason: note,
       }).catch((emailErr) => console.warn('Failed to send rejection email:', emailErr));

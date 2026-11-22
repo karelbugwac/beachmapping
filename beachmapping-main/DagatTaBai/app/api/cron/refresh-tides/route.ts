@@ -59,16 +59,16 @@ export async function GET(req: NextRequest) {
         coordinates.longitude
       );
 
-      // Upsert into beach_weather_snapshots
+      // Upsert into weathersnapshots
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: upsertError } = await (adminClient.from('beach_weather_snapshots') as any)
+      const { error: upsertError } = await (adminClient.from('weathersnapshots') as any)
         .upsert(
           {
-            beach_id: beach.id,
-            tide_extremes: tideExtremes,
-            synced_at: new Date().toISOString(),
+            beachid: beach.id,
+            tideextremes: tideExtremes,
+            syncedat: new Date().toISOString(),
           },
-          { onConflict: 'beach_id' }
+          { onConflict: 'beachid' }
         );
 
       results.push({

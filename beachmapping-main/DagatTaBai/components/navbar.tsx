@@ -16,21 +16,22 @@ import {
   Calendar,
   Store,
   ShieldCheck,
-  Info,
-  Mail,
   Check,
   Clock3,
   CircleAlert,
   ChevronUp,
+  ChevronRight,
+  MonitorSmartphone,
+  MapPin,
 } from 'lucide-react';
-import { ThemeToggle } from '@/components/theme-toggle';
+import { ThemeToggle } from '@/components/themetoggle';
 import type { AuthUser } from '@/lib/db/auth';
-import { publishAuthSession, updateAuthSessionUser } from '@/lib/client/auth-session-store';
+import { publishAuthSession, updateAuthSessionUser } from '@/lib/client/session';
 import { signOutAndClearClientState } from '@/lib/client/logout';
 
 // Helper function to get display name from AuthUser
 function getDisplayName(user: AuthUser): string {
-  return user.full_name || user.email?.split('@')[0] || 'User';
+  return user.fullname || user.email?.split('@')[0] || 'User';
 }
 
 export function Navbar() {
@@ -42,6 +43,7 @@ export function Navbar() {
   const [notificationHoverOpen, setNotificationHoverOpen] = useState(false);
   const [notifications, setNotifications] = useState<any[]>([]);
   const [loadingNotifications, setLoadingNotifications] = useState(false);
+  const [weather, setWeather] = useState<{ temp: number; condition: string; icon: string } | null>(null);
 
   const pathname = usePathname();
 
@@ -55,6 +57,7 @@ export function Navbar() {
     pathname === '/reset-password';
 
   const hasTransparentHero = pathname === '/' || pathname === '/home';
+  const isHomePage = pathname === '/home';
   const isTransparent = hasTransparentHero && !isScrolled;
 
   // Ultra-efficient passive scroll listener with RAF throttling to prevent long tasks
@@ -78,20 +81,29 @@ export function Navbar() {
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // Desktop navigation links with strictly unique IDs (Public landing: Clean Home, Apply, About, Contact)
+  // Shared info pages — same categories on desktop and mobile drawer
+  const infoLinks = [
+    { id: 'community', label: 'Community Guidelines', shortLabel: 'Guidelines', href: '/community-guidelines' },
+    { id: 'faq', label: 'FAQs', shortLabel: 'FAQs', href: '/faq' },
+    { id: 'feedback', label: 'Feedback', shortLabel: 'Feedback', href: '/feedback' },
+    { id: 'about', label: 'About Us', shortLabel: 'About', href: '/about' },
+    { id: 'contact', label: 'Contact Us', shortLabel: 'Contact', href: '/contact' },
+  ];
+
+  // Desktop navigation links with strictly unique IDs
   const desktopLinks = [
     { id: 'desk-home', label: 'Home', href: user ? '/home' : '/' },
     { id: 'desk-apply', label: 'Apply', href: '/apply' },
     ...(user ? [{ id: 'desk-status', label: 'My application', href: '/apply/status' }] : []),
-    { id: 'desk-about', label: 'About', href: '/about' },
-    { id: 'desk-contact', label: 'Contact', href: '/contact' },
+    ...infoLinks.map((link) => ({ id: `desk-${link.id}`, label: link.shortLabel, href: link.href })),
   ];
 
-  // Mobile drawer links — simplified for landing page (no icons, no descriptions)
+  // Mobile drawer links — same categories as desktop
   const mobileDrawerLinks = [
     { id: 'mob-home', label: 'Home', href: user ? '/home' : '/' },
-    { id: 'mob-about', label: 'About', href: '/about' },
-    { id: 'mob-contact', label: 'Contact', href: '/contact' },
+    { id: 'mob-apply', label: 'Apply as Beach Owner', href: '/apply' },
+    ...(user ? [{ id: 'mob-status', label: 'My application', href: '/apply/status' }] : []),
+    ...infoLinks.map((link) => ({ id: `mob-${link.id}`, label: link.label, href: link.href })),
   ];
 
   // Fetch session user once on mount
@@ -121,7 +133,26 @@ export function Navbar() {
       }
     };
 
+    const loadWeather = async () => {
+      try {
+        const res = await fetch('/api/weather', { cache: 'no-store' });
+        if (res.ok) {
+          const data = await res.json();
+          if (data?.current) {
+            setWeather({
+              temp: data.current.temp,
+              condition: data.current.condition,
+              icon: data.current.condition || 'sunny',
+            });
+          }
+        }
+      } catch {
+        // Weather load failed, silently ignore
+      }
+    };
+
     void checkSession();
+    void loadWeather();
 
     import('@/lib/supabase/client')
       .then(({ createClient }) => {
@@ -161,8 +192,8 @@ export function Navbar() {
           const updated = {
             ...prev,
             ...detail,
-            full_name: detail.full_name !== undefined ? detail.full_name : prev.full_name,
-            profile_image_url: detail.profile_image_url !== undefined ? detail.profile_image_url : prev.profile_image_url,
+            fullname: detail.fullname !== undefined ? detail.fullname : prev.fullname,
+            profileimageurl: detail.profileimageurl !== undefined ? detail.profileimageurl : prev.profileimageurl,
           };
           updateAuthSessionUser(() => updated);
           return updated;
@@ -284,10 +315,12 @@ export function Navbar() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 md:h-18">
             
-            {/* ── LEFT: Logo & Brand Name (Title Case, Clean & Modern) ── */}
+            {/* ── LEFT: Logo & Brand Name (Title Case, Clean & Modern) - Only hides on /home until scrolled ── */}
             <Link
               href={user ? '/home' : '/'}
-              className="group flex items-center gap-2.5 sm:gap-3 flex-shrink-0 select-none py-1 transition-transform duration-200 hover:scale-[1.02]"
+              className={`group flex items-center gap-2.5 sm:gap-3 flex-shrink-0 select-none py-1 transition-all duration-300 hover:scale-[1.02] ${
+                !isHomePage || isScrolled ? 'opacity-100' : 'opacity-0 pointer-events-none'
+              }`}
               aria-label="Dagat Ta Bai Home"
             >
               <div className="relative w-8 h-8 sm:w-9 sm:h-9 flex-shrink-0 transition-transform duration-300 group-hover:scale-105">
@@ -340,14 +373,40 @@ export function Navbar() {
                     href={link.href}
                     className={`relative px-3.5 py-1.5 rounded-full font-display uppercase tracking-[0.16em] text-[11px] lg:text-xs font-semibold transition-all duration-150 ${
                       isActive
-                        ? 'text-[#1F3F74] dark:text-[#5B9BD5] bg-sky-50/80 dark:bg-sky-950/40 font-bold'
+                        ? 'text-[#1F3F74] dark:text-[#5B9BD5] font-bold'
                         : 'text-slate-600 dark:text-slate-300 hover:text-slate-900 dark:hover:text-white hover:bg-white/70 dark:hover:bg-neutral-800/60'
                     }`}
                   >
                     <span>{link.label}</span>
+                    {isActive && (
+                      <span className="absolute left-3.5 right-3.5 -bottom-0.5 h-[2px] rounded-full bg-[#1F3F74] dark:bg-[#5B9BD5]" />
+                    )}
                   </Link>
                 );
               })}
+
+              {/* Weather Forecast in Navbar */}
+              {weather && (
+                <Link
+                  href="/weather"
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full font-display text-[11px] lg:text-xs font-semibold transition-all duration-150 ${
+                    isTransparent
+                      ? 'text-white hover:bg-white/15'
+                      : 'text-slate-600 dark:text-slate-300 hover:bg-white/70 dark:hover:bg-neutral-800/60'
+                  }`}
+                >
+                  <span className="text-lg">
+                    {weather.condition.toLowerCase().includes('sun') || weather.condition.toLowerCase().includes('clear')
+                      ? '☀️'
+                      : weather.condition.toLowerCase().includes('cloud')
+                      ? '☁️'
+                      : weather.condition.toLowerCase().includes('rain')
+                      ? '🌧️'
+                      : '🌤️'}
+                  </span>
+                  <span>{weather.temp}°C</span>
+                </Link>
+              )}
             </nav>
 
             {/* ── RIGHT: Theme Toggle (Desktop only) + CTA Button / User Profile ── */}
@@ -419,7 +478,7 @@ export function Navbar() {
                                 key={notif.id}
                                 href="/notifications"
                                 className={`block p-2.5 rounded-xl text-xs leading-relaxed transition-colors ${
-                                  notif.read_at
+                                  notif.readat
                                     ? 'bg-slate-50 dark:bg-neutral-800 text-slate-500 dark:text-neutral-400 hover:bg-slate-100 dark:hover:bg-neutral-700'
                                     : 'bg-brand-navy-50 dark:bg-brand-navy-900/50 text-slate-900 dark:text-white hover:bg-brand-navy-100 dark:hover:bg-brand-navy-800'
                                 }`}
@@ -442,7 +501,7 @@ export function Navbar() {
                                       {notif.message || ''}
                                     </p>
                                     <p className="text-[9px] text-slate-400 dark:text-neutral-500 mt-1">
-                                      {new Date(notif.created_at).toLocaleString()}
+                                      {new Date(notif.createdat).toLocaleString()}
                                     </p>
                                   </div>
                                 </div>
@@ -468,11 +527,11 @@ export function Navbar() {
                   >
                     <div className="relative w-8 h-8 rounded-full bg-[#1F3F74] dark:bg-[#285091] text-white flex items-center justify-center font-bold text-xs overflow-hidden shadow-xs">
                       <span>{getDisplayName(user).charAt(0).toUpperCase()}</span>
-                      {user.profile_image_url && (
+                      {user.profileimageurl && (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
-                          key={user.profile_image_url}
-                          src={user.profile_image_url}
+                          key={user.profileimageurl}
+                          src={user.profileimageurl}
                           alt=""
                           width={32}
                           height={32}
@@ -508,7 +567,7 @@ export function Navbar() {
                 /* Public / Visitor: Sign Up Button (Yellow with black text, not bold) */
                 <Link
                   href="/register"
-                  className="inline-flex items-center justify-center px-4 sm:px-5 py-2 font-display uppercase tracking-[0.14em] font-medium text-xs text-black bg-[#F4BF3E] hover:bg-[#e2af35] rounded-full transition-all shadow-md hover:shadow-lg active:scale-95 border border-amber-300/40"
+                  className="inline-flex items-center justify-center px-4 sm:px-5 py-2 font-display normal-case font-medium text-xs text-black bg-[#F4BF3E] hover:bg-[#e2af35] rounded-full transition-all shadow-md hover:shadow-lg active:scale-95 border border-amber-300/40"
                 >
                   Sign Up
                 </Link>
@@ -592,20 +651,44 @@ export function Navbar() {
                     key={link.id}
                     href={link.href}
                     onClick={() => setMobileMenuOpen(false)}
-                    className={`block px-4 py-3 rounded-xl font-display uppercase tracking-[0.16em] text-xs font-bold transition-all ${
+                    className={`flex items-center justify-between px-4 py-3 rounded-xl font-display uppercase tracking-[0.16em] text-xs font-medium transition-all ${
                       isActive
-                        ? 'text-[#1F3F74] dark:text-[#F4BF3E] bg-white dark:bg-neutral-900 font-extrabold'
+                        ? 'text-[#1F3F74] dark:text-[#F4BF3E] bg-white dark:bg-neutral-900 font-semibold'
                         : 'text-slate-700 dark:text-white hover:text-[#1F3F74] dark:hover:text-[#F4BF3E] hover:bg-white dark:hover:bg-neutral-900/60'
                     }`}
                   >
-                    {link.label}
+                    <span>{link.label}</span>
+                    <ChevronRight className="w-4 h-4 opacity-60" />
                   </Link>
                 );
               })}
+
+              {/* Weather Forecast in Mobile Drawer */}
+              {weather && (
+                <Link
+                  href="/weather"
+                  onClick={() => setMobileMenuOpen(false)}
+                  className="flex items-center gap-3 px-4 py-3 rounded-xl font-display text-xs font-semibold text-slate-700 dark:text-white hover:bg-white dark:hover:bg-neutral-900/60 transition-all"
+                >
+                  <span className="text-2xl">
+                    {weather.condition.toLowerCase().includes('sun') || weather.condition.toLowerCase().includes('clear')
+                      ? '☀️'
+                      : weather.condition.toLowerCase().includes('cloud')
+                      ? '☁️'
+                      : weather.condition.toLowerCase().includes('rain')
+                      ? '🌧️'
+                      : '🌤️'}
+                  </span>
+                  <div>
+                    <span className="font-bold">{weather.temp}°C</span>
+                    <span className="text-slate-500 dark:text-slate-400 ml-2">{weather.condition}</span>
+                  </div>
+                </Link>
+              )}
             </div>
 
             {/* Drawer Footer: Modern Theme Toggle & Auth State if Logged In */}
-            <div className="p-5 border-t border-slate-100 dark:border-neutral-800 space-y-4 bg-white/70 dark:bg-neutral-950 transition-colors duration-200">
+            <div className="p-5 border-t border-slate-100 dark:border-neutral-800 space-y-4">
               {/* Modern Style Theme Switch */}
               <ThemeToggle variant="drawer" />
 

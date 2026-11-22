@@ -3,7 +3,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
-import { Store, ArrowRight } from 'lucide-react';
+import { Store, ArrowRight, ChevronDown } from 'lucide-react';
 
 interface HeroSlide {
   id: string;
@@ -17,21 +17,21 @@ const HERO_SLIDES: HeroSlide[] = [
   {
     id: 'ranola',
     resortName: 'Rañola Beach Resort',
-    subtext: 'Tranquil shores, authentic open cottages, and crystal shallows in Catmon, Cebu.',
+    subtext: 'Known for its clear waters and rock shoreline.',
     image: '/ranola.jpg',
     slug: 'ra-ola-beach',
   },
   {
     id: 'litebay',
     resortName: 'LiteBay Resort',
-    subtext: 'Peaceful private cove with shaded cottage huts and relaxing Camotes Sea breezes.',
+    subtext: 'Known for its peaceful seaside setting and affordable beach getaway.',
     image: '/litebay.jpg',
     slug: 'litebay-resort',
   },
   {
     id: 'hinagdan',
     resortName: 'Hinagdan Beach Resort',
-    subtext: 'Iconic limestone cliffside stairway descending into refreshing natural tidal pools.',
+    subtext: 'Known for its cliffside location and cliff-jumping experience.',
     image: '/hinagdan.jpg',
     slug: 'hinagdan-beach',
   },
@@ -163,7 +163,7 @@ export function HeroMapSection({
       aria-label="Binongkalan Beach Resorts Showcase"
       onTouchStart={handleTouchStart}
       onTouchEnd={handleTouchEnd}
-      className="relative w-full h-[85vh] sm:h-[90vh] lg:h-[94vh] min-h-[560px] overflow-hidden text-white select-none transition-colors duration-200"
+      className="relative w-full h-[88vh] sm:h-[100vh] lg:h-[108vh] min-h-[600px] overflow-hidden text-white select-none transition-colors duration-200"
     >
       {/* ── Background Slides: Smooth Crossfade + Subtle Ken-Burns Zoom ── */}
       <div className="absolute inset-0 z-0 bg-black">
@@ -190,11 +190,11 @@ export function HeroMapSection({
         })}
 
         {/* Light & Clean Gradient Overlay: Keeps middle of photos bright, vivid & crystal clear */}
-        <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/85 via-black/15 to-black/35 pointer-events-none" />
+        <div className="absolute inset-0 z-20 bg-gradient-to-t from-black/70 via-black/10 to-black/20 pointer-events-none sm:from-black/85 sm:via-black/15 sm:to-black/35" />
       </div>
 
       {/* ── Main Hero Content (Adjusted lower down to emphasize resort scenery, refined sizing) ── */}
-      <div className="relative z-30 flex flex-col justify-end items-center md:items-start h-full px-5 sm:px-8 lg:px-12 text-center md:text-left pt-24 pb-8 sm:pb-10 md:pb-12 max-w-7xl mx-auto w-full">
+      <div className="relative z-30 flex flex-col justify-end items-center md:items-start h-full px-5 sm:px-8 lg:px-12 text-center md:text-left pt-24 pb-32 sm:pb-32 md:pb-36 max-w-7xl mx-auto w-full">
         <div className="space-y-2.5 sm:space-y-3 max-w-xl w-full">
 
           {/* Dynamic Beach Name Headline: Refined & Elegant Size, Emphasizing Beach Photography */}
@@ -246,6 +246,14 @@ export function HeroMapSection({
           </p>
 
         </div>
+      </div>
+
+      {/* ── Scroll Indicator: hints there's more content below ── */}
+      <div className="absolute bottom-12 left-1/2 z-40 flex -translate-x-1/2 flex-col items-center gap-1 text-white/90">
+        <span className="font-display text-[10px] font-medium uppercase tracking-[0.2em] drop-shadow-md">
+          Scroll
+        </span>
+        <ChevronDown className="h-5 w-5 animate-bounce drop-shadow-md" />
       </div>
     </section>
   );

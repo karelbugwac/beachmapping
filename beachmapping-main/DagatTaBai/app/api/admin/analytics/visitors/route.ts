@@ -16,10 +16,10 @@ export async function GET() {
 
     let events: any[] = [];
     try {
-      const { data, error } = await (adminClient.from('visitor_events') as any)
-        .select('visit_date')
-        .eq('event_type', 'platform_visit')
-        .gte('visit_date', series.startDate);
+      const { data, error } = await (adminClient.from('visitorevents') as any)
+        .select('visitdate')
+        .eq('eventtype', 'platform_visit')
+        .gte('visitdate', series.startDate);
       if (!error && Array.isArray(data)) {
         events = data;
       }

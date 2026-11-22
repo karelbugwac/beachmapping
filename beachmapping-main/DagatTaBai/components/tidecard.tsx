@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect, useId } from 'react';
-import { calculateCurrentTide, type TideExtreme } from '@/lib/services/tide-interpolation';
+import { calculateCurrentTide, type TideExtreme } from '@/lib/services/tideinterpolation';
 
 interface TideCardProps {
   extremes: TideExtreme[];

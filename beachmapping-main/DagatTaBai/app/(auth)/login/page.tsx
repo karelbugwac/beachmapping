@@ -4,6 +4,7 @@ import React, { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 import {
   Eye,
   EyeOff,
@@ -27,7 +28,7 @@ function UserLoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [touched, setTouched] = useState({ email: false, password: false });
-  const [suspendedAccount, setSuspendedAccount] = useState<{ reason: string | null; reason_type: string | null; suspended_until: string | null } | null>(null);
+  const [suspendedAccount, setSuspendedAccount] = useState<{ reason: string | null; reasontype: string | null; suspendeduntil: string | null } | null>(null);
   const [lockoutSeconds, setLockoutSeconds] = useState(0);
   const [loginErrorMessage, setLoginErrorMessage] = useState<string | null>(null);
 
@@ -107,7 +108,7 @@ function UserLoginForm() {
 
       const data = await res.json();
       if (data.code === 'ACCOUNT_SUSPENDED') {
-        setSuspendedAccount({ reason: data.reason || null, reason_type: data.reason_type || null, suspended_until: data.suspended_until || null });
+        setSuspendedAccount({ reason: data.reason || null, reasontype: data.reasontype || null, suspendeduntil: data.suspendeduntil || null });
         return;
       }
       if (res.status === 429) {
@@ -140,16 +141,42 @@ function UserLoginForm() {
     }
   };
 
-  const handleGoogleSignIn = () => {
+  const handleGoogleSignIn = async () => {
     if (lockoutSeconds > 0) {
       return;
     }
-    const params = new URLSearchParams();
-    if (email.trim()) {
-      params.set('email', email.trim());
+    
+    try {
+      const supabase = createClient();
+      const redirectTo = `${window.location.origin}/api/auth/callback/google`;
+      
+      const { data, error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
+        options: {
+          redirectTo,
+          queryParams: {
+            access_type: 'offline',
+            prompt: 'select_account',
+          },
+        },
+      });
+
+      if (error) {
+        console.error('Google OAuth error:', error);
+        showToast('Google sign-in failed. Please try again.', 'error');
+        return;
+      }
+
+      if (data.url) {
+        // Store redirect target in cookie for callback
+        const redirectTarget = getSafeInternalRedirect(searchParams.get('redirect'), '/home');
+        document.cookie = `dtb_oauth_redirect=${encodeURIComponent(redirectTarget)}; path=/; max-age=600; SameSite=Lax`;
+        window.location.href = data.url;
+      }
+    } catch (err) {
+      console.error('Google OAuth error:', err);
+      showToast('Google sign-in failed. Please try again.', 'error');
     }
-    params.set('redirect', getSafeInternalRedirect(searchParams.get('redirect'), '/home'));
-    window.location.href = `/api/auth/google?${params.toString()}`;
   };
 
   return (
@@ -336,10 +363,10 @@ function UserLoginForm() {
         {suspendedAccount && (
           <div role="alert" className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-200">
             <p className="font-bold">Your account is suspended.</p>
-            {suspendedAccount.reason_type && <p className="mt-1 font-semibold">{suspendedAccount.reason_type}</p>}
+            {suspendedAccount.reasontype && <p className="mt-1 font-semibold">{suspendedAccount.reasontype}</p>}
             {suspendedAccount.reason && <p className="mt-1 whitespace-pre-wrap">{suspendedAccount.reason}</p>}
             <p className="mt-1">
-              This suspension is in effect {suspendedAccount.suspended_until ? `until ${new Date(suspendedAccount.suspended_until).toLocaleDateString()}` : 'until further notice'}.
+              This suspension is in effect {suspendedAccount.suspendeduntil ? `until ${new Date(suspendedAccount.suspendeduntil).toLocaleDateString()}` : 'until further notice'}.
             </p>
             <Link href="/contact" className="mt-2 inline-block font-semibold underline">Contact us</Link>
           </div>

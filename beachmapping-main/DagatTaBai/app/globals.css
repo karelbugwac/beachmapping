@@ -62,7 +62,7 @@
   h2,
   h3,
   .font-heading {
-    font-family: var(--font-inter), system-ui, sans-serif;
+    font-family: var(--font-montserrat), var(--font-inter), system-ui, sans-serif;
     letter-spacing: -0.01em;
     font-weight: 700;
   }
@@ -446,8 +446,33 @@ a.bg-brand-navy-500:active {
     color: var(--color-brand-teal);
   }
 
+  .border-slate-200,
+  .border-slate-300,
+  .border-neutral-200,
+  .border-neutral-300 {
+    border-color: rgb(18 65 104 / 0.28);
+  }
+
   .dark .border-slate-200,
-  .dark .border-slate-300 {
+  .dark .border-slate-300,
+  .dark .border-neutral-200,
+  .dark .border-neutral-300,
+  .dark .border-neutral-700,
+  .dark .border-neutral-800 {
+    border-color: rgb(73 135 186 / 0.45);
+  }
+
+  .admin-console .border-slate-200 { border-color: #e2e8f0; }
+  .admin-console .border-slate-300 { border-color: #cbd5e1; }
+  .admin-console .border-neutral-200 { border-color: #e5e5e5; }
+  .admin-console .border-neutral-300 { border-color: #d4d4d4; }
+
+  .dark .admin-console .border-slate-200,
+  .dark .admin-console .border-slate-300,
+  .dark .admin-console .border-neutral-200,
+  .dark .admin-console .border-neutral-300,
+  .dark .admin-console .border-neutral-700,
+  .dark .admin-console .border-neutral-800 {
     border-color: var(--color-sand-200);
   }
 

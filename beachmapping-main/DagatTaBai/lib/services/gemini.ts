@@ -13,13 +13,13 @@ import {
   getBaiRandomInputFallback,
   matchBaiInstantAnswer,
   getBaiApologyFallback,
-} from '@/lib/services/baiKnowledgeBase';
+} from '@/lib/services/baiknowledge';
 import {
   scanLiveSystemSnapshot,
   formatSystemScanForAiPrompt,
   scanSystemForDirectAnswer,
   type SystemScanSnapshot,
-} from '@/lib/services/systemScanner';
+} from '@/lib/services/scanner';
 
 const GEMINI_MODEL_CANDIDATES = [
   process.env.GEMINI_MODEL,

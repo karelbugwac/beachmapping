@@ -18,7 +18,7 @@ interface OwnerReviewItem {
   id: string;
   rating: number;
   comment: string;
-  created_at: string;
+  createdat: string;
   user_name: string;
 }
 
@@ -356,8 +356,8 @@ export default function OwnerReviewsPage() {
         {filteredReviews.length > 0 ? (
           <div className="divide-y divide-slate-200 dark:divide-neutral-800">
             {filteredReviews.map((r) => {
-              const formattedDate = r.created_at
-                ? new Date(r.created_at).toLocaleDateString('en-US', {
+              const formattedDate = r.createdat
+                ? new Date(r.createdat).toLocaleDateString('en-US', {
                     month: 'short',
                     day: 'numeric',
                     year: 'numeric',

@@ -2,7 +2,7 @@
 
 import React from 'react';
 import { Sun, Moon } from 'lucide-react';
-import { useTheme } from '@/components/theme-provider';
+import { useTheme } from '@/components/themeprovider';
 
 interface ThemeToggleProps {
   className?: string;
@@ -16,30 +16,27 @@ export function ThemeToggle({ className = '', variant = 'minimal', isTransparent
 
   if (variant === 'drawer') {
     return (
-      <div className={`w-full flex items-center justify-between py-2.5 px-3 rounded-xl bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 transition-colors duration-200 ${className}`}>
-        <span className="flex items-center gap-2.5 text-xs font-semibold text-slate-800 dark:text-white">
-          {isDark ? (
-            <Moon className="w-4 h-4 text-[#F4BF3E]" />
-          ) : (
-            <Sun className="w-4 h-4 text-amber-500" />
-          )}
-          <span>{isDark ? 'Night Mode' : 'Sunlit Mode'}</span>
+      <div className={`w-full flex items-center justify-between py-1 ${className}`}>
+        <span className="font-display text-xs font-medium uppercase tracking-[0.16em] text-slate-600 dark:text-neutral-300">
+          {isDark ? 'Night Mode' : 'Day Mode'}
         </span>
 
-        {/* Modern iOS / Material style pill toggle switch */}
+        {/* Modern pill toggle switch */}
         <button
           type="button"
           role="switch"
           aria-checked={isDark}
           onClick={toggleTheme}
           disabled={isTransitioning}
-          className={`relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed ${
-            isDark ? 'bg-[#1F3F74]' : 'bg-slate-200'
+          className={`relative inline-flex h-7 w-12 shrink-0 cursor-pointer rounded-full p-0.5 transition-all duration-300 ease-in-out focus:outline-none disabled:opacity-50 disabled:cursor-not-allowed ${
+            isDark
+              ? 'bg-gradient-to-r from-[#16305a] to-[#1F3F74] shadow-md shadow-[#1F3F74]/30'
+              : 'bg-slate-200 dark:bg-neutral-700'
           }`}
           aria-label={isDark ? 'Switch to light mode' : 'Switch to dark mode'}
         >
           <span
-            className={`pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow-md ring-0 transition duration-200 ease-in-out flex items-center justify-center ${
+            className={`pointer-events-none inline-flex h-6 w-6 transform items-center justify-center rounded-full bg-white shadow-md ring-1 ring-black/5 transition duration-300 ease-in-out ${
               isDark ? 'translate-x-5' : 'translate-x-0'
             }`}
           >

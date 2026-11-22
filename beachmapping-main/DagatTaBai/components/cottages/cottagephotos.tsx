@@ -7,9 +7,9 @@ import { formatFacilityFeeAmount, type FacilityFeeItem } from '@/lib/utils/facil
 
 export interface CottagePhoto {
   id?: string;
-  image_url: string;
-  storage_path?: string;
-  sort_order?: number;
+  imageurl: string;
+  storagepath?: string;
+  sortorder?: number;
 }
 
 export interface PhotoViewerItem {
@@ -46,7 +46,7 @@ export function PhotoViewerModal({
   const closeButtonRef = useRef<HTMLButtonElement>(null);
   const thumbnailRefs = useRef<Array<HTMLButtonElement | null>>([]);
   const selectedPhoto = photos[selectedIndex];
-  const selectedPhotoKey = selectedPhoto?.id || selectedPhoto?.image_url || '';
+  const selectedPhotoKey = selectedPhoto?.id || selectedPhoto?.imageurl || '';
   const hasMultiplePhotos = photos.length > 1;
   const resolvedRate = price;
   const formattedRate = (() => {
@@ -160,7 +160,7 @@ export function PhotoViewerModal({
               )}
               <Image
                 key={selectedPhotoKey}
-                src={selectedPhoto.image_url}
+                src={selectedPhoto.imageurl}
                 alt={`${name}, image ${selectedIndex + 1}`}
                 fill
                 priority
@@ -209,7 +209,7 @@ export function PhotoViewerModal({
       {hasMultiplePhotos && (
         <div className="flex w-full min-w-0 shrink-0 justify-start gap-2 overflow-x-auto bg-white p-2">
           {photos.map((photo, index) => {
-            const photoKey = photo.id || photo.image_url || String(index);
+            const photoKey = photo.id || photo.imageurl || String(index);
             return (
               <button
                 key={photoKey}
@@ -230,7 +230,7 @@ export function PhotoViewerModal({
                   </span>
                 ) : (
                   <Image
-                    src={photo.image_url}
+                    src={photo.imageurl}
                     alt=""
                     fill
                     unoptimized

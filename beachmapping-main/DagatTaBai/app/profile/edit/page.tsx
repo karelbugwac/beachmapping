@@ -25,7 +25,7 @@ export default function EditProfilePage() {
       .then((response) => response.json())
       .then((data) => {
         if (!data.user) throw new Error('Please sign in to edit your profile.');
-        setName(data.user.full_name || '');
+        setName(data.user.fullname || '');
         setEmail(data.user.email || '');
       })
       .catch((error: unknown) => showToast(error instanceof Error ? error.message : 'Could not load your profile.', 'error'))
@@ -45,16 +45,16 @@ export default function EditProfilePage() {
       const response = await fetch('/api/auth/profile', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ full_name: submittedName.value }),
+        body: JSON.stringify({ fullname: submittedName.value }),
       });
       const data = await response.json().catch(() => null);
       if (!response.ok) {
         throw new Error(data?.error || `Could not save your profile (HTTP ${response.status}).`);
       }
-      if (!data?.user?.full_name) throw new Error('The server did not confirm the profile update.');
+      if (!data?.user?.fullname) throw new Error('The server did not confirm the profile update.');
       window.dispatchEvent(
         new CustomEvent('dtb_user_updated', {
-          detail: { full_name: data.user.full_name },
+          detail: { fullname: data.user.fullname },
         })
       );
       showToast('Profile updated successfully.');

@@ -24,40 +24,40 @@ import { prepareImageForUpload } from '@/lib/utils/image-compression';
 import { formatImageSize } from '@/lib/utils/image-upload-config';
 import { CoastalEmptyState } from '@/components/ui/coastal-empty-state';
 import { confirmAction } from '@/components/ui/confirm-dialog';
-import { VirtualTourModal, extractTourEmbedUrl } from '@/components/virtual-tour-modal';
-import { LocationPickerModal } from '@/components/map/location-picker-modal';
+import { VirtualTourModal, extractTourEmbedUrl } from '@/components/vtmodal';
+import { LocationPickerModal } from '@/components/map/locationpicker';
 import { filterAdminSearchInput, SAFE_TEXT_MESSAGES } from '@/lib/validation/safe-text';
-import type { TourRequestWithBeach } from '@/lib/services/tourRequests';
-import type { CoordinateRequestWithBeach } from '@/lib/services/coordinateRequests';
+import type { TourRequestWithBeach } from '@/lib/services/tourrequests';
+import type { CoordinateRequestWithBeach } from '@/lib/services/coordinates';
 import { notifyRealtimeSync, useRealtimeSync } from '@/lib/realtime-sync';
 
 type BeachReviewItem = {
   id: string;
-  beach_id?: string | null;
-  user_id?: string | null;
+  beachid?: string | null;
+  userid?: string | null;
   review_type?: 'beach' | 'platform';
   user_name: string;
-  beach_name: string;
+  beachname: string;
   rating: number;
   comment: string;
-  created_at: string;
-  updated_at?: string;
+  createdat: string;
+  updatedat?: string;
 };
 
 type BeachReviewReport = {
   id: string;
-  review_id?: string | null;
-  beach_id?: string | null;
+  reviewid?: string | null;
+  beachid?: string | null;
   reason: string;
   status: 'pending' | 'resolved' | 'dismissed';
-  created_at: string;
+  createdat: string;
   reporter: string;
   beach: string;
   review: {
     id: string;
     rating: number;
     comment: string;
-    created_at: string;
+    createdat: string;
     reviewer: string;
   } | null;
 };
@@ -124,7 +124,7 @@ export default function AdminBeachesPage() {
   // Beach Details & Management Modal State
   const [editingBeach, setEditingBeach] = useState<BeachRecord | null>(null);
   const [editTab, setEditTab] = useState<'basic' | 'reviews' | 'tour' | 'coordinates' | 'rates' | 'photos' | 'posts' | 'dos'>('basic');
-  const [resortPosts, setResortPosts] = useState<Array<{ id: string; caption: string; image_url?: string; created_at: string }>>([]);
+  const [resortPosts, setResortPosts] = useState<Array<{ id: string; caption: string; imageurl?: string; createdat: string }>>([]);
   const [newPostCaption, setNewPostCaption] = useState('');
   const [newPostImage, setNewPostImage] = useState('');
   const [resortRules, setResortRules] = useState<Array<{ id: string; type: 'do' | 'dont'; title: string; description: string; category: string }>>([]);
@@ -139,13 +139,13 @@ export default function AdminBeachesPage() {
     location: '',
     latitude: '',
     longitude: '',
-    virtual_tour_url: '',
-    contact_phone: '',
-    contact_email: '',
+    virtualtoururl: '',
+    contactphone: '',
+    contactemail: '',
     cover_image: '',
     profile_image: '',
-    entrance_fee: '',
-    cottage_fee: '',
+    entrancefee: '',
+    cottagefee: '',
     status: 'active',
   });
   const [isSavingEdit, setIsSavingEdit] = useState(false);
@@ -251,25 +251,25 @@ export default function AdminBeachesPage() {
   );
 
   const getBeachTourRequest = (beach: BeachRecord) => {
-    return pendingTourRequests.find((r) => r.beach_id === beach.id) || null;
+    return pendingTourRequests.find((r) => r.beachid === beach.id) || null;
   };
 
   const getBeachCoordRequest = (beach: BeachRecord) => {
-    return pendingCoordRequests.find((r) => r.beach_id === beach.id) || null;
+    return pendingCoordRequests.find((r) => r.beachid === beach.id) || null;
   };
 
   const getBeachReviews = (beach: BeachRecord) => {
     return reviews.filter(
       (r) =>
-        r.beach_id === beach.id ||
-        r.beach_name?.trim().toLowerCase() === beach.name?.trim().toLowerCase()
+        r.beachid === beach.id ||
+        r.beachname?.trim().toLowerCase() === beach.name?.trim().toLowerCase()
     );
   };
 
   const getBeachReports = (beach: BeachRecord) => {
     return reports.filter(
       (rep) =>
-        rep.beach_id === beach.id ||
+        rep.beachid === beach.id ||
         rep.beach?.trim().toLowerCase() === beach.name?.trim().toLowerCase()
     );
   };
@@ -295,7 +295,7 @@ export default function AdminBeachesPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Failed to delete review.');
       setReviews((current) => current.filter((item) => item.id !== review.id));
-      setReports((current) => current.filter((rep) => rep.review_id !== review.id));
+      setReports((current) => current.filter((rep) => rep.reviewid !== review.id));
       notifyRealtimeSync('reviews');
       void fetchBeaches();
       showToast('Review deleted.', 'destructive');
@@ -382,8 +382,8 @@ export default function AdminBeachesPage() {
       if (!response.ok) throw new Error(data.error || 'Failed to delete beach.');
 
       setBeaches((current) => current.filter((item) => item.id !== beach.id));
-      setTourRequests((current) => current.filter((req) => req.beach_id !== beach.id));
-      setCoordinateRequests((current) => current.filter((req) => req.beach_id !== beach.id));
+      setTourRequests((current) => current.filter((req) => req.beachid !== beach.id));
+      setCoordinateRequests((current) => current.filter((req) => req.beachid !== beach.id));
       if (editingBeach?.id === beach.id) {
         setEditingBeach(null);
       }
@@ -404,9 +404,9 @@ export default function AdminBeachesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'approve',
-          beach_id: req.beach_id,
+          beachid: req.beachid,
           request_id: req.id,
-          virtual_tour_url: overrideUrl?.trim() || undefined,
+          virtualtoururl: overrideUrl?.trim() || undefined,
         }),
       });
       const data = await res.json();
@@ -414,11 +414,11 @@ export default function AdminBeachesPage() {
 
       if (data.tourUrl && data.tourUrl !== 'Recapture Request') {
         setBeaches((current) =>
-          current.map((b) => (b.id === req.beach_id ? { ...b, virtual_tour_url: data.tourUrl } : b))
+          current.map((b) => (b.id === req.beachid ? { ...b, virtualtoururl: data.tourUrl } : b))
         );
-        if (editingBeach?.id === req.beach_id) {
-          setEditingBeach((prev) => (prev ? { ...prev, virtual_tour_url: data.tourUrl } : null));
-          setEditForm((prev) => ({ ...prev, virtual_tour_url: data.tourUrl }));
+        if (editingBeach?.id === req.beachid) {
+          setEditingBeach((prev) => (prev ? { ...prev, virtualtoururl: data.tourUrl } : null));
+          setEditForm((prev) => ({ ...prev, virtualtoururl: data.tourUrl }));
         }
       }
       if (data.request) {
@@ -445,7 +445,7 @@ export default function AdminBeachesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'request_changes',
-          beach_id: rejectingRequest.beach_id,
+          beachid: rejectingRequest.beachid,
           request_id: rejectingRequest.id,
           note: rejectReason.trim(),
         }),
@@ -476,7 +476,7 @@ export default function AdminBeachesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'approve',
-          beach_id: req.beach_id,
+          beachid: req.beachid,
           request_id: req.id,
         }),
       });
@@ -485,32 +485,32 @@ export default function AdminBeachesPage() {
 
       setBeaches((current) =>
         current.map((b) =>
-          b.id === req.beach_id
+          b.id === req.beachid
             ? {
                 ...b,
-                latitude: req.requested_latitude,
-                longitude: req.requested_longitude,
-                location: req.requested_location || b.location,
+                latitude: req.requestedlatitude,
+                longitude: req.requestedlongitude,
+                location: req.requestedlocation || b.location,
               }
             : b
         )
       );
-      if (editingBeach?.id === req.beach_id) {
+      if (editingBeach?.id === req.beachid) {
         setEditingBeach((prev) =>
           prev
             ? {
                 ...prev,
-                latitude: req.requested_latitude,
-                longitude: req.requested_longitude,
-                location: req.requested_location || prev.location,
+                latitude: req.requestedlatitude,
+                longitude: req.requestedlongitude,
+                location: req.requestedlocation || prev.location,
               }
             : null
         );
         setEditForm((prev) => ({
           ...prev,
-          latitude: String(req.requested_latitude),
-          longitude: String(req.requested_longitude),
-          location: req.requested_location || prev.location,
+          latitude: String(req.requestedlatitude),
+          longitude: String(req.requestedlongitude),
+          location: req.requestedlocation || prev.location,
         }));
       }
 
@@ -534,9 +534,9 @@ export default function AdminBeachesPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: 'reject',
-          beach_id: rejectingCoordRequest.beach_id,
+          beachid: rejectingCoordRequest.beachid,
           request_id: rejectingCoordRequest.id,
-          rejection_reason: coordRejectReason.trim() || undefined,
+          rejectionreason: coordRejectReason.trim() || undefined,
         }),
       });
       const data = await res.json();
@@ -561,13 +561,13 @@ export default function AdminBeachesPage() {
     setEditingBeach(beach);
     setEditTab(initialTab);
 
-    let cleanPhone = beach.contact_phone || '';
+    let cleanPhone = beach.contactphone || '';
     if (cleanPhone.startsWith('+63')) {
       cleanPhone = cleanPhone.replace('+63', '').trim();
     }
 
-    const coverImg = beach.cover_image || (beach as any).cover_image_url || '';
-    const profileImg = beach.profile_image || (beach as any).profile_image_url || '';
+    const coverImg = beach.cover_image || (beach as any).coverimageurl || '';
+    const profileImg = beach.profile_image || (beach as any).profileimageurl || '';
 
     setEditForm({
       id: beach.id,
@@ -576,13 +576,13 @@ export default function AdminBeachesPage() {
       location: beach.location || '',
       latitude: beach.latitude == null ? '' : String(beach.latitude),
       longitude: beach.longitude == null ? '' : String(beach.longitude),
-      virtual_tour_url: beach.virtual_tour_url || '',
-      contact_phone: cleanPhone,
-      contact_email: beach.contact_email || '',
+      virtualtoururl: beach.virtualtoururl || '',
+      contactphone: cleanPhone,
+      contactemail: beach.contactemail || '',
       cover_image: coverImg,
       profile_image: profileImg,
-      entrance_fee: beach.entrance_fee ? String(beach.entrance_fee) : '',
-      cottage_fee: beach.cottage_fee ? String(beach.cottage_fee) : '',
+      entrancefee: beach.entrancefee ? String(beach.entrancefee) : '',
+      cottagefee: beach.cottagefee ? String(beach.cottagefee) : '',
       status: beach.status || 'active',
     });
   };
@@ -596,7 +596,7 @@ export default function AdminBeachesPage() {
       return;
     }
 
-    if (editForm.contact_email && !editForm.contact_email.includes('@')) {
+    if (editForm.contactemail && !editForm.contactemail.includes('@')) {
       showToast('Valid contact email must include "@".', 'error');
       return;
     }
@@ -626,15 +626,15 @@ export default function AdminBeachesPage() {
         name: editForm.name.trim(),
         description: editForm.description.trim(),
         location: editForm.location.trim(),
-        virtual_tour_url: editForm.virtual_tour_url.trim() || null,
-        contact_phone: editForm.contact_phone.trim() ? `+63 ${editForm.contact_phone.trim()}` : null,
-        contact_email: editForm.contact_email.trim() || null,
+        virtualtoururl: editForm.virtualtoururl.trim() || null,
+        contactphone: editForm.contactphone.trim() ? `+63 ${editForm.contactphone.trim()}` : null,
+        contactemail: editForm.contactemail.trim() || null,
         cover_image: editForm.cover_image.trim() || null,
-        cover_image_url: editForm.cover_image.trim() || null,
+        coverimageurl: editForm.cover_image.trim() || null,
         profile_image: editForm.profile_image.trim() || null,
-        profile_image_url: editForm.profile_image.trim() || null,
-        entrance_fee: editForm.entrance_fee ? String(editForm.entrance_fee) : null,
-        cottage_fee: editForm.cottage_fee ? String(editForm.cottage_fee) : null,
+        profileimageurl: editForm.profile_image.trim() || null,
+        entrancefee: editForm.entrancefee ? String(editForm.entrancefee) : null,
+        cottagefee: editForm.cottagefee ? String(editForm.cottagefee) : null,
       };
       if (hasLatitude && hasLongitude) {
         payload.latitude = parsedLatitude;
@@ -841,15 +841,15 @@ export default function AdminBeachesPage() {
                     <div className="min-w-0">
                       <p className="font-bold text-xs text-brand-navy-500 dark:text-white">{req.beach?.name || 'Beach'}</p>
                       <p className="mt-1 text-[10px] text-slate-500 dark:text-neutral-400">
-                        {req.status.replace('_', ' ')} · Updated {new Date(req.status_updated_at).toLocaleString()}
+                        {req.status.replace('_', ' ')} · Updated {new Date(req.statusupdatedat).toLocaleString()}
                       </p>
                     </div>
                     <div className="flex items-center gap-1.5">
-                      {req.requested_tour_url && (
+                      {req.requestedtoururl && (
                         <button
                           type="button"
                           onClick={() => {
-                            setPreviewTourUrl(req.requested_tour_url);
+                            setPreviewTourUrl(req.requestedtoururl);
                             setPreviewTourBeachName(req.beach?.name || 'Beach');
                             setShowPreviewModal(true);
                           }}
@@ -904,7 +904,7 @@ export default function AdminBeachesPage() {
                         {req.beach?.name || 'Beach'}
                       </p>
                       <p className="text-[11px] font-mono text-slate-500 dark:text-neutral-400">
-                        {req.requested_latitude.toFixed(4)}, {req.requested_longitude.toFixed(4)}
+                        {req.requestedlatitude.toFixed(4)}, {req.requestedlongitude.toFixed(4)}
                       </p>
                     </div>
 
@@ -1007,9 +1007,9 @@ export default function AdminBeachesPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
           {filteredBeaches.map((beach) => {
-            const hasTour = Boolean(beach.virtual_tour_url);
+            const hasTour = Boolean(beach.virtualtoururl);
             const isActive = beach.status === 'active';
-            const coverImg = beach.cover_image || (beach as any).cover_image_url;
+            const coverImg = beach.cover_image || (beach as any).coverimageurl;
             const beachReviews = getBeachReviews(beach);
             const beachReports = getBeachReports(beach);
             const beachTourReq = getBeachTourRequest(beach);
@@ -1085,7 +1085,7 @@ export default function AdminBeachesPage() {
 
                       <div className="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-brand-sun-50 dark:bg-brand-navy-900/40 text-brand-navy-700 dark:text-brand-sun-400 text-xs font-bold shrink-0">
                         <Star className="w-3.5 h-3.5 fill-current" />
-                        <span>{beach.average_rating ? Number(beach.average_rating).toFixed(1) : 'New'}</span>
+                        <span>{beach.averagerating ? Number(beach.averagerating).toFixed(1) : 'New'}</span>
                       </div>
                     </div>
 
@@ -1098,25 +1098,25 @@ export default function AdminBeachesPage() {
                               <div className="min-w-0">
                                 <span className="inline-flex items-center gap-1 text-[11px] font-bold text-[#1F3F74] dark:text-[#4987BA]">
                                   <Compass className="w-3.5 h-3.5 shrink-0" />
-                                  {beachTourReq.requested_tour_url === 'Recapture Request'
+                                  {beachTourReq.requestedtoururl === 'Recapture Request'
                                     ? '360° Tour Recapture Request'
                                     : '360° Virtual Tour Request'}
                                 </span>
-                                {beachTourReq.requester_note && (
+                                {beachTourReq.requesternote && (
                                   <p className="mt-0.5 text-[11px] text-slate-600 dark:text-neutral-400 line-clamp-2">
-                                    {beachTourReq.requester_note}
+                                    {beachTourReq.requesternote}
                                   </p>
                                 )}
                               </div>
                             </div>
 
                             <div className="flex flex-wrap items-center gap-1.5">
-                              {beachTourReq.requested_tour_url &&
-                              beachTourReq.requested_tour_url !== 'Recapture Request' ? (
+                              {beachTourReq.requestedtoururl &&
+                              beachTourReq.requestedtoururl !== 'Recapture Request' ? (
                                 <button
                                   type="button"
                                   onClick={() => {
-                                    setPreviewTourUrl(beachTourReq.requested_tour_url);
+                                    setPreviewTourUrl(beachTourReq.requestedtoururl);
                                     setPreviewTourBeachName(beach.name);
                                     setShowPreviewModal(true);
                                   }}
@@ -1161,12 +1161,12 @@ export default function AdminBeachesPage() {
                                 Pin Coordinates Request
                               </span>
                               <p className="mt-0.5 text-[11px] font-mono text-slate-600 dark:text-neutral-300">
-                                {Number(beachCoordReq.requested_latitude).toFixed(5)},{' '}
-                                {Number(beachCoordReq.requested_longitude).toFixed(5)}
+                                {Number(beachCoordReq.requestedlatitude).toFixed(5)},{' '}
+                                {Number(beachCoordReq.requestedlongitude).toFixed(5)}
                               </p>
-                              {beachCoordReq.requester_note && (
+                              {beachCoordReq.requesternote && (
                                 <p className="mt-0.5 text-[11px] text-slate-500 dark:text-neutral-400 line-clamp-2">
-                                  {beachCoordReq.requester_note}
+                                  {beachCoordReq.requesternote}
                                 </p>
                               )}
                             </div>
@@ -1312,11 +1312,11 @@ export default function AdminBeachesPage() {
               </div>
 
               <div className="flex items-center gap-2 shrink-0">
-                {editingBeach.virtual_tour_url && (
+                {editingBeach.virtualtoururl && (
                   <button
                     type="button"
                     onClick={() => {
-                      setPreviewTourUrl(editingBeach.virtual_tour_url);
+                      setPreviewTourUrl(editingBeach.virtualtoururl);
                       setPreviewTourBeachName(editingBeach.name);
                       setShowPreviewModal(true);
                     }}
@@ -1439,9 +1439,9 @@ export default function AdminBeachesPage() {
                         <input
                           type="text"
                           maxLength={10}
-                          value={editForm.contact_phone}
+                          value={editForm.contactphone}
                           onChange={(e) =>
-                            setEditForm({ ...editForm, contact_phone: e.target.value.replace(/\D/g, '') })
+                            setEditForm({ ...editForm, contactphone: e.target.value.replace(/\D/g, '') })
                           }
                           placeholder="9123456789"
                           className="w-full pl-11 pr-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-teal-600"
@@ -1455,8 +1455,8 @@ export default function AdminBeachesPage() {
                       </label>
                       <input
                         type="email"
-                        value={editForm.contact_email}
-                        onChange={(e) => setEditForm({ ...editForm, contact_email: e.target.value })}
+                        value={editForm.contactemail}
+                        onChange={(e) => setEditForm({ ...editForm, contactemail: e.target.value })}
                         placeholder="contact@resort.ph"
                         className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-teal-600"
                       />
@@ -1487,8 +1487,8 @@ export default function AdminBeachesPage() {
                       <div className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-brand-sun-50 dark:bg-brand-navy-900/40 text-brand-navy-700 dark:text-brand-sun-400 text-xs font-bold">
                         <Star className="w-3.5 h-3.5 fill-current" />
                         <span>
-                          {editingBeach.average_rating
-                            ? Number(editingBeach.average_rating).toFixed(1)
+                          {editingBeach.averagerating
+                            ? Number(editingBeach.averagerating).toFixed(1)
                             : 'New'}
                         </span>
                       </div>
@@ -1516,7 +1516,7 @@ export default function AdminBeachesPage() {
                   ) : (
                     <div className="space-y-2.5">
                       {editingBeachReviews.map((review) => {
-                        const report = editingBeachReports.find((r) => r.review_id === review.id);
+                        const report = editingBeachReports.find((r) => r.reviewid === review.id);
                         return (
                           <div
                             key={review.id}
@@ -1529,7 +1529,7 @@ export default function AdminBeachesPage() {
                                 </span>
                                 <StarRating rating={review.rating} />
                                 <span className="text-[11px] text-slate-400">
-                                  {new Date(review.created_at).toLocaleDateString()}
+                                  {new Date(review.createdat).toLocaleDateString()}
                                 </span>
                                 {report && (
                                   <span className="rounded-full bg-rose-50 dark:bg-rose-950/50 px-2 py-0.5 text-[10px] font-bold text-rose-600 dark:text-rose-300">
@@ -1568,31 +1568,31 @@ export default function AdminBeachesPage() {
                         <div className="space-y-1">
                           <span className="inline-flex items-center gap-1.5 text-xs font-bold text-amber-900 dark:text-amber-300">
                             <Compass className="w-4 h-4" />
-                            {editingBeachTourReq.requested_tour_url === 'Recapture Request'
+                            {editingBeachTourReq.requestedtoururl === 'Recapture Request'
                               ? 'Pending 360° Tour Recapture Request'
                               : 'Pending 360° Virtual Tour Update'}
                           </span>
-                          {editingBeachTourReq.requester_note && (
+                          {editingBeachTourReq.requesternote && (
                             <p className="text-xs text-slate-600 dark:text-neutral-300">
-                              Owner note: &ldquo;{editingBeachTourReq.requester_note}&rdquo;
+                              Owner note: &ldquo;{editingBeachTourReq.requesternote}&rdquo;
                             </p>
                           )}
-                          {editingBeachTourReq.requested_tour_url &&
-                            editingBeachTourReq.requested_tour_url !== 'Recapture Request' && (
+                          {editingBeachTourReq.requestedtoururl &&
+                            editingBeachTourReq.requestedtoururl !== 'Recapture Request' && (
                               <p className="text-[11px] font-mono text-slate-500 dark:text-neutral-400 break-all">
-                                Requested URL: {editingBeachTourReq.requested_tour_url}
+                                Requested URL: {editingBeachTourReq.requestedtoururl}
                               </p>
                             )}
                         </div>
                       </div>
 
                       <div className="flex flex-wrap items-center gap-2">
-                        {editingBeachTourReq.requested_tour_url &&
-                          editingBeachTourReq.requested_tour_url !== 'Recapture Request' && (
+                        {editingBeachTourReq.requestedtoururl &&
+                          editingBeachTourReq.requestedtoururl !== 'Recapture Request' && (
                             <button
                               type="button"
                               onClick={() => {
-                                setPreviewTourUrl(editingBeachTourReq.requested_tour_url);
+                                setPreviewTourUrl(editingBeachTourReq.requestedtoururl);
                                 setPreviewTourBeachName(editingBeach.name);
                                 setShowPreviewModal(true);
                               }}
@@ -1603,7 +1603,7 @@ export default function AdminBeachesPage() {
                           )}
                         <button
                           type="button"
-                          onClick={() => void handleApproveTour(editingBeachTourReq, editForm.virtual_tour_url)}
+                          onClick={() => void handleApproveTour(editingBeachTourReq, editForm.virtualtoururl)}
                           disabled={isProcessingAction}
                           className="px-3 py-1.5 rounded-lg text-xs font-bold bg-[#1F3F74] hover:bg-[#18325c] text-white disabled:opacity-50 cursor-pointer"
                         >
@@ -1627,19 +1627,19 @@ export default function AdminBeachesPage() {
                     </label>
                     <input
                       type="url"
-                      value={editForm.virtual_tour_url}
-                      onChange={(e) => setEditForm({ ...editForm, virtual_tour_url: e.target.value })}
+                      value={editForm.virtualtoururl}
+                      onChange={(e) => setEditForm({ ...editForm, virtualtoururl: e.target.value })}
                       placeholder="https://kuula.co/share/... or Street View embed URL"
                       className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-teal-600"
                     />
                   </div>
 
-                  {editForm.virtual_tour_url && (
+                  {editForm.virtualtoururl && (
                     <div className="space-y-1.5">
                       <span className="text-xs font-bold text-slate-500">Live Preview</span>
                       <div className="relative h-64 w-full rounded-xl overflow-hidden border border-slate-200 dark:border-neutral-800 bg-black">
                         <iframe
-                          src={extractTourEmbedUrl(editForm.virtual_tour_url) || ''}
+                          src={extractTourEmbedUrl(editForm.virtualtoururl) || ''}
                           className="w-full h-full border-0"
                           allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; magnetometer; picture-in-picture; web-share; vr; xr-spatial-tracking"
                           allowFullScreen
@@ -1662,17 +1662,17 @@ export default function AdminBeachesPage() {
                           Pending Pin Coordinates Update
                         </span>
                         <p className="text-xs font-mono text-slate-700 dark:text-neutral-200">
-                          Proposed Pin: {Number(editingBeachCoordReq.requested_latitude).toFixed(5)},{' '}
-                          {Number(editingBeachCoordReq.requested_longitude).toFixed(5)}
+                          Proposed Pin: {Number(editingBeachCoordReq.requestedlatitude).toFixed(5)},{' '}
+                          {Number(editingBeachCoordReq.requestedlongitude).toFixed(5)}
                         </p>
-                        {editingBeachCoordReq.requested_location && (
+                        {editingBeachCoordReq.requestedlocation && (
                           <p className="text-xs text-slate-600 dark:text-neutral-300">
-                            Proposed Location: {editingBeachCoordReq.requested_location}
+                            Proposed Location: {editingBeachCoordReq.requestedlocation}
                           </p>
                         )}
-                        {editingBeachCoordReq.requester_note && (
+                        {editingBeachCoordReq.requesternote && (
                           <p className="text-xs text-slate-500 dark:text-neutral-400">
-                            Owner note: &ldquo;{editingBeachCoordReq.requester_note}&rdquo;
+                            Owner note: &ldquo;{editingBeachCoordReq.requesternote}&rdquo;
                           </p>
                         )}
                       </div>
@@ -1768,8 +1768,8 @@ export default function AdminBeachesPage() {
                       <input
                         type="number"
                         step="any"
-                        value={editForm.entrance_fee}
-                        onChange={(e) => setEditForm({ ...editForm, entrance_fee: e.target.value })}
+                        value={editForm.entrancefee}
+                        onChange={(e) => setEditForm({ ...editForm, entrancefee: e.target.value })}
                         placeholder="50"
                         className="w-full pl-8 pr-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-teal-600"
                       />
@@ -1787,8 +1787,8 @@ export default function AdminBeachesPage() {
                       <input
                         type="number"
                         step="any"
-                        value={editForm.cottage_fee}
-                        onChange={(e) => setEditForm({ ...editForm, cottage_fee: e.target.value })}
+                        value={editForm.cottagefee}
+                        onChange={(e) => setEditForm({ ...editForm, cottagefee: e.target.value })}
                         placeholder="500"
                         className="w-full pl-8 pr-3.5 py-2 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-teal-600"
                       />
@@ -1864,8 +1864,8 @@ export default function AdminBeachesPage() {
                             {
                               id: `post-${Date.now()}`,
                               caption: newPostCaption.trim(),
-                              image_url: newPostImage.trim() || undefined,
-                              created_at: 'Just now',
+                              imageurl: newPostImage.trim() || undefined,
+                              createdat: 'Just now',
                             },
                             ...prev,
                           ]);
@@ -1888,15 +1888,15 @@ export default function AdminBeachesPage() {
                       >
                         <div className="flex items-center justify-between text-xs">
                           <span className="font-bold text-slate-900 dark:text-white">{editForm.name || 'Resort'}</span>
-                          <span className="text-[10px] text-slate-400">{post.created_at}</span>
+                          <span className="text-[10px] text-slate-400">{post.createdat}</span>
                         </div>
                         <p className="text-xs text-slate-700 dark:text-neutral-300 leading-relaxed">
                           {post.caption}
                         </p>
-                        {post.image_url && (
+                        {post.imageurl && (
                           <div className="relative h-36 w-full rounded-lg overflow-hidden bg-slate-900">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            <img src={post.image_url} alt="Post" className="w-full h-full object-cover" />
+                            <img src={post.imageurl} alt="Post" className="w-full h-full object-cover" />
                           </div>
                         )}
                         <div className="flex justify-end">
@@ -2196,9 +2196,9 @@ export default function AdminBeachesPage() {
           isOpen={true}
           onClose={() => setPreviewCoordRequest(null)}
           beachName={`Proposed: ${previewCoordRequest.beach?.name || 'Beach'}`}
-          location={previewCoordRequest.requested_location || 'Barangay Binongkalan'}
-          latitude={previewCoordRequest.requested_latitude}
-          longitude={previewCoordRequest.requested_longitude}
+          location={previewCoordRequest.requestedlocation || 'Barangay Binongkalan'}
+          latitude={previewCoordRequest.requestedlatitude}
+          longitude={previewCoordRequest.requestedlongitude}
           onSave={async () => {
             await handleApproveCoord(previewCoordRequest);
             setPreviewCoordRequest(null);

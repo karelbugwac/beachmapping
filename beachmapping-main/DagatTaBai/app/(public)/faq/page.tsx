@@ -77,12 +77,12 @@ export default function FaqPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-white dark:bg-black text-slate-900 dark:text-white font-sans transition-colors duration-200">
+    <div className="flex flex-col min-h-screen bg-white dark:bg-black text-slate-900 dark:text-white font-display transition-colors duration-200">
       
       {/* ── Page Header (Matching Homepage Typography Scale) ──────── */}
       <section className="pt-12 sm:pt-16 pb-8 px-4 sm:px-6 lg:px-8 max-w-4xl mx-auto text-center space-y-3">
         <ScrollReveal direction="up" duration={650}>
-          <h1 className="text-2xl sm:text-3xl lg:text-4xl font-display font-medium tracking-tight text-[#1F3F74] dark:text-white leading-tight">
+          <h1 className="font-display text-xl sm:text-2xl font-semibold tracking-tight text-[#1F3F74] dark:text-brand-teal-300 leading-tight">
             Frequently Asked Questions
           </h1>
           <p className="text-xs sm:text-sm text-slate-600 dark:text-slate-400 max-w-xl mx-auto leading-relaxed mt-2">

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createAdminClient, createServerSupabaseClient } from '@/lib/supabase/server';
 import { hashPin } from '@/lib/services/pin';
-import { validateAdminMutationRequest, noStoreHeaders } from '@/lib/server/admin-request';
+import { validateAdminMutationRequest, noStoreHeaders } from '@/lib/server/adminrequest';
 import { isSuspensionActive } from '@/lib/utils/account-status';
 
 export async function POST(request: NextRequest) {
@@ -16,7 +16,7 @@ export async function POST(request: NextRequest) {
 
   const adminClient = createAdminClient();
   const { data: profileData, error: profileError } = await adminClient.from('profiles')
-    .select('role, account_status, suspended_until, pin_reset_required')
+    .select('role, accountstatus, suspendeduntil, pinresetrequired')
     .eq('id', authData.user.id)
     .maybeSingle();
   if (profileError) {
@@ -25,17 +25,17 @@ export async function POST(request: NextRequest) {
   }
   const profile = profileData as {
     role: string;
-    account_status: 'active' | 'under_review' | 'suspended';
-    suspended_until: string | null;
-    pin_reset_required: boolean;
+    accountstatus: 'active' | 'under_review' | 'suspended';
+    suspendeduntil: string | null;
+    pinresetrequired: boolean;
   } | null;
   if (!profile || !['beach_owner', 'beach_manager'].includes(profile.role)) {
     return NextResponse.json({ error: "You don't have permission to do that." }, { status: 403, headers: noStoreHeaders() });
   }
-  if (isSuspensionActive(profile.account_status, profile.suspended_until)) {
+  if (isSuspensionActive(profile.accountstatus, profile.suspendeduntil)) {
     return NextResponse.json({ error: 'Your account is suspended.' }, { status: 403, headers: noStoreHeaders() });
   }
-  if (!profile.pin_reset_required) {
+  if (!profile.pinresetrequired) {
     return NextResponse.json({ error: 'A new PIN is not required for this account.' }, { status: 409, headers: noStoreHeaders() });
   }
 
@@ -55,10 +55,10 @@ export async function POST(request: NextRequest) {
   const { data: updatedData, error: updateError } = await adminClient.from('profiles')
     .update({
       pin: hashPin(body.pin),
-      updated_at: new Date().toISOString(),
+      updatedat: new Date().toISOString(),
     })
     .eq('id', authData.user.id)
-    .eq('pin_reset_required', true)
+    .eq('pinresetrequired', true)
     .select('id')
     .maybeSingle();
   if (updateError) {
@@ -77,9 +77,9 @@ export async function POST(request: NextRequest) {
   }
 
   const { error: clearRequirementError } = await adminClient.from('profiles')
-    .update({ pin_reset_required: false, updated_at: new Date().toISOString() })
+    .update({ pinresetrequired: false, updatedat: new Date().toISOString() })
     .eq('id', authData.user.id)
-    .eq('pin_reset_required', true);
+    .eq('pinresetrequired', true);
   if (clearRequirementError) {
     console.error('Could not finish owner PIN reset:', clearRequirementError);
     return NextResponse.json({ error: 'Something went wrong. Please try again.' }, { status: 500, headers: noStoreHeaders() });

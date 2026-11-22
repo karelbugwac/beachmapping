@@ -7,12 +7,12 @@ export const dynamic = 'force-dynamic';
 interface NotificationRow {
   id: string;
   type: 'new_device_login' | 'new_location_login' | 'tour_status';
-  created_at: string;
-  read_at: string | null;
+  createdat: string;
+  readat: string | null;
   response: 'confirmed' | 'unrecognized' | null;
   title?: string | null;
   message?: string | null;
-  action_url?: string | null;
+  actionurl?: string | null;
   device?: { browser: string | null; platform: string | null } | null;
   browser?: string;
   platform?: string;
@@ -29,10 +29,10 @@ export async function GET() {
   try {
     const supabase = await createServerSupabaseClient();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (supabase.from('user_notifications') as any)
-      .select('id, type, title, message, action_url, created_at, read_at, response, device:login_devices!user_notifications_login_device_id_fkey(browser, platform)')
-      .eq('user_id', user.id)
-      .order('created_at', { ascending: false })
+    const { data, error } = await (supabase.from('usernotifications') as any)
+      .select('id, type, title, message, actionurl, createdat, readat, response, device:logindevices!user_notifications_login_device_id_fkey(browser, platform)')
+      .eq('userid', user.id)
+      .order('createdat', { ascending: false })
       .limit(100);
 
     if (!error && Array.isArray(data)) {
@@ -41,9 +41,9 @@ export async function GET() {
         type: notification.type || 'new_device_login',
         title: notification.title,
         message: notification.message,
-        action_url: notification.action_url,
-        created_at: notification.created_at,
-        read_at: notification.read_at,
+        actionurl: notification.actionurl,
+        createdat: notification.createdat,
+        readat: notification.readat,
         response: notification.response,
         browser: notification.device?.browser || 'Browser',
         platform: notification.device?.platform || 'Unknown device',
@@ -59,11 +59,11 @@ export async function GET() {
     const admin = createAdminClient();
     const { data: authUserData } = await admin.auth.admin.getUserById(user.id);
     if (Array.isArray(authUserData?.user?.user_metadata?.location_notifications)) {
-      locationNotifications = authUserData.user.user_metadata.location_notifications.map((item: NotificationRow) => ({
+      locationNotifications = authUserData.user.user_metadata.location_notifications.map((item: NotificationRow & Record<string, any>) => ({
         id: item.id,
         type: 'new_location_login',
-        created_at: item.created_at,
-        read_at: item.read_at,
+        createdat: item.createdat ?? item.created_at,
+        readat: item.readat ?? item.read_at,
         response: item.response,
         browser: item.browser || 'Browser',
         platform: item.platform || 'Unknown device',
@@ -76,11 +76,11 @@ export async function GET() {
   }
 
   const combined = [...dbNotifications, ...locationNotifications].sort(
-    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    (a, b) => new Date(b.createdat).getTime() - new Date(a.createdat).getTime()
   );
 
   return NextResponse.json({
     notifications: combined,
-    unreadCount: combined.filter((notification) => !notification.read_at).length,
+    unreadCount: combined.filter((notification) => !notification.readat).length,
   }, { headers: { 'Cache-Control': 'no-store, max-age=0' } });
 }

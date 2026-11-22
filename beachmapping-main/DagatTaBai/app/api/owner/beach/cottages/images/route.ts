@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
 
     const formData = await request.formData();
     const file = formData.get('file');
-    const beachId = formData.get('beach_id');
+    const beachId = formData.get('beachid');
     if (!(file instanceof File)) {
       return NextResponse.json({ error: 'Choose a cottage image.' }, { status: 400 });
     }
@@ -24,11 +24,11 @@ export async function POST(request: NextRequest) {
     }
 
     const { data: beach, error: beachError } = await (auth.adminClient.from('beaches') as any)
-      .select('id, owner_id')
+      .select('id, ownerid')
       .eq('id', beachId)
       .maybeSingle();
     if (beachError) throw beachError;
-    if (!beach || (auth.role !== 'admin' && beach.owner_id !== auth.user.id)) {
+    if (!beach || (auth.role !== 'admin' && beach.ownerid !== auth.user.id)) {
       return NextResponse.json({ error: 'Beach not found or unauthorized.' }, { status: 404 });
     }
 
@@ -46,7 +46,7 @@ export async function POST(request: NextRequest) {
     }
 
     const extension = actualType === 'image/webp' ? 'webp' : 'jpg';
-    const path = `${beach.owner_id}/${beach.id}/cottages/${randomUUID()}.${extension}`;
+    const path = `${beach.ownerid}/${beach.id}/cottages/${randomUUID()}.${extension}`;
     const storage = auth.adminClient.storage.from(bucketName);
     const { error: uploadError } = await storage.upload(
       path,
@@ -71,23 +71,23 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: auth.message }, { status: auth.status });
     }
 
-    const beachId = request.nextUrl.searchParams.get('beach_id');
+    const beachId = request.nextUrl.searchParams.get('beachid');
     const imageUrl = request.nextUrl.searchParams.get('url');
     if (!beachId || !imageUrl) {
       return NextResponse.json({ error: 'A beach ID and cottage image URL are required.' }, { status: 400 });
     }
 
     const { data: beach, error: beachError } = await (auth.adminClient.from('beaches') as any)
-      .select('id, owner_id')
+      .select('id, ownerid')
       .eq('id', beachId)
       .maybeSingle();
     if (beachError) throw beachError;
-    if (!beach || (auth.role !== 'admin' && beach.owner_id !== auth.user.id)) {
+    if (!beach || (auth.role !== 'admin' && beach.ownerid !== auth.user.id)) {
       return NextResponse.json({ error: 'Beach not found or unauthorized.' }, { status: 404 });
     }
 
     const publicUrl = auth.adminClient.storage.from(bucketName).getPublicUrl('').data.publicUrl;
-    const allowedPrefix = `${publicUrl}${beach.owner_id}/${beach.id}/cottages/`;
+    const allowedPrefix = `${publicUrl}${beach.ownerid}/${beach.id}/cottages/`;
     if (!imageUrl.startsWith(allowedPrefix)) {
       return NextResponse.json({ error: 'Image does not belong to this beach.' }, { status: 400 });
     }

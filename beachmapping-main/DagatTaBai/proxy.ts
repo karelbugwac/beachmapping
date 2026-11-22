@@ -107,20 +107,20 @@ export async function proxy(request: NextRequest) {
 
   let profileStatus: {
     role?: string;
-    pin_reset_required?: boolean;
-    account_status?: string;
-    status_reason?: string | null;
-    suspended_until?: string | null;
+    pinresetrequired?: boolean;
+    accountstatus?: string;
+    statusreason?: string | null;
+    suspendeduntil?: string | null;
     status?: string;
-    suspension_reason?: string | null;
-    suspended_at?: string | null;
-    suspension_ends_at?: string | null;
+    suspensionreason?: string | null;
+    suspendedat?: string | null;
+    suspensionendsat?: string | null;
   } | null = null;
   if (checkSuspension || isOwnerRoute || isAdminRoute || isOwnerApiRoute ||
     isApplicationStatusRoute || isNotificationsPage) {
     const profileColumnSets = [
-      'role, account_status, status_reason, suspended_until, pin_reset_required, status, suspension_reason, suspended_at, suspension_ends_at',
-      'role, status, suspension_reason, suspended_at, suspension_ends_at',
+      'role, accountstatus, statusreason, suspendeduntil, pinresetrequired, status, suspensionreason, suspendedat, suspensionendsat',
+      'role, status, suspensionreason, suspendedat, suspensionendsat',
       'role',
     ] as const;
     let profileError: { code?: string } | null = null;
@@ -150,19 +150,19 @@ export async function proxy(request: NextRequest) {
   }
 
   const metadata = (data.user.user_metadata || {}) as Record<string, unknown>;
-  const accountStatus = profileStatus?.account_status === 'suspended' || profileStatus?.status === 'suspended' || metadata.status === 'suspended'
+  const accountStatus = profileStatus?.accountstatus === 'suspended' || profileStatus?.status === 'suspended' || metadata.status === 'suspended'
     ? 'suspended'
     : 'active';
-  const suspendedUntil = profileStatus?.suspended_until ||
-    profileStatus?.suspension_ends_at ||
-    (typeof metadata.suspension_ends_at === 'string' ? metadata.suspension_ends_at : null);
+  const suspendedUntil = profileStatus?.suspendeduntil ||
+    profileStatus?.suspensionendsat ||
+    (typeof metadata.suspensionendsat === 'string' ? metadata.suspensionendsat : null);
   if (checkSuspension && isSuspensionActive(accountStatus, suspendedUntil)) {
     if (isApiRoute) {
       return NextResponse.json({
         code: 'ACCOUNT_SUSPENDED',
-        reason: profileStatus?.status_reason || profileStatus?.suspension_reason ||
-          (typeof metadata.status_reason === 'string' ? metadata.status_reason : null),
-        suspended_until: suspendedUntil,
+        reason: profileStatus?.statusreason || profileStatus?.suspensionreason ||
+          (typeof metadata.statusreason === 'string' ? metadata.statusreason : null),
+        suspendeduntil: suspendedUntil,
       }, {
         status: 403,
         headers: { 'Cache-Control': 'private, no-store, max-age=0' },
@@ -172,7 +172,7 @@ export async function proxy(request: NextRequest) {
   }
 
   const isOwnerProfile = profileStatus?.role === 'beach_owner' || profileStatus?.role === 'beach_manager';
-  if (isOwnerProfile && profileStatus?.pin_reset_required) {
+  if (isOwnerProfile && profileStatus?.pinresetrequired) {
     if (isApiRoute && pathname !== '/api/owner/reset-pin') {
       return NextResponse.json({ error: 'Please create a new PIN to continue.' }, {
         status: 403,

@@ -8,7 +8,7 @@ export interface BeachPhoto {
   category: string;
   caption: string;
   photo_url: string;
-  created_at?: string;
+  createdat?: string;
   likes?: number;
   price?: string;
   description?: string;
@@ -25,12 +25,12 @@ export interface BeachCottage {
   description: string;
   price: string | null;
   capacity: string | null;
-  image_url: string | null;
+  imageurl: string | null;
   photos?: Array<{
     id?: string;
-    image_url: string;
-    storage_path?: string;
-    sort_order?: number;
+    imageurl: string;
+    storagepath?: string;
+    sortorder?: number;
   }>;
 }
 
@@ -46,19 +46,19 @@ export interface BeachFacility {
   category: string;
   description: string;
   price: string | null;
-  image_url: string | null;
+  imageurl: string | null;
   rates?: FacilityRate[];
   photos?: Array<{
-    image_url: string;
-    sort_order?: number;
+    imageurl: string;
+    sortorder?: number;
   }>;
 }
 
 export interface BeachPost {
   id: string;
   caption: string;
-  image_url: string | null;
-  created_at: string;
+  imageurl: string | null;
+  createdat: string;
 }
 
 export interface BeachRecord {
@@ -72,31 +72,31 @@ export interface BeachRecord {
   cover_image: string | null;
   profile_image?: string | null;
   images: BeachPhoto[];
-  virtual_tour_url: string | null;
-  contact_phone: string | null;
-  contact_email: string | null;
-  facebook_url?: string | null;
-  instagram_url?: string | null;
-  peak_days?: string | null;
-  peak_hours?: string | null;
-  best_visiting_time?: string | null;
-  opening_hours: string | Record<string, string>;
-  entrance_fee: string | null;
+  virtualtoururl: string | null;
+  contactphone: string | null;
+  contactemail: string | null;
+  facebookurl?: string | null;
+  instagramurl?: string | null;
+  peakdays?: string | null;
+  peakhours?: string | null;
+  bestvisitingtime?: string | null;
+  openinghours: string | Record<string, string>;
+  entrancefee: string | null;
   entrance_fee_adults?: string | null;
   entrance_fee_children?: string | null;
   entrance_fee_senior?: string | null;
-  cottage_fee: string | null;
+  cottagefee: string | null;
   rules: string | null;
   status: 'active' | 'suspended';
-  average_rating: number;
+  averagerating: number;
   amenities: string[];
   activities: string[];
   external_links: BeachExternalLink[];
   cottages?: BeachCottage[];
   facility_items?: BeachFacility[];
   posts?: BeachPost[];
-  created_at: string;
-  updated_at: string;
+  createdat: string;
+  updatedat: string;
 }
 
 // In-memory cache TTL: 60s prevents repeated DB roundtrips during burst traffic
@@ -128,7 +128,7 @@ function beachRecordCompleteness(beach: BeachRecord): number {
     Number(Boolean(beach.cover_image)) * 3 +
     Number(Boolean(beach.profile_image)) * 2 +
     Number(Boolean(beach.description)) +
-    Number(Boolean(beach.contact_phone || beach.contact_email)) +
+    Number(Boolean(beach.contactphone || beach.contactemail)) +
     beach.images.length +
     beach.amenities.length +
     beach.activities.length
@@ -145,16 +145,24 @@ export function invalidateBeachesCache() {
 
 async function getApprovedTourUrls(beachIds: string[]): Promise<Map<string, string>> {
   if (beachIds.length === 0) return new Map();
-  const supabase = await createServerSupabaseClient() as unknown as SupabaseClient<Database, 'public', 'public', Database['public']>;
-  const { data, error } = await supabase.from('beach_published_tours')
-    .select('beach_id, requested_tour_url')
-    .in('beach_id', beachIds);
-  if (error?.code === 'PGRST205' && error.message.includes('beach_published_tours')) {
-    console.warn('Approved beach tours are unavailable because beach_published_tours is missing from the Supabase schema cache.');
-    return new Map();
+  try {
+    const supabase = await createServerSupabaseClient() as unknown as SupabaseClient<Database, 'public', 'public', Database['public']>;
+    const { data, error } = await supabase.from('beach_published_tours')
+      .select('beachid, requestedtoururl')
+      .in('beachid', beachIds);
+    if (error?.code === 'PGRST205' && error.message.includes('beach_published_tours')) {
+      console.warn('Approved beach tours are unavailable because beach_published_tours is missing from the Supabase schema cache.');
+      return new Map();
+    }
+    if (error) {
+      console.error('beach_published_tours query error:', error);
+      throw error;
+    }
+    return new Map((data || []).map((tour) => [tour.beachid, tour.requestedtoururl]));
+  } catch (err) {
+    console.error('getApprovedTourUrls failed:', err);
+    return new Map(); // Return empty map on error to not break the main query
   }
-  if (error) throw error;
-  return new Map((data || []).map((tour) => [tour.beach_id, tour.requested_tour_url]));
 }
 
 export async function getAllBeaches(): Promise<BeachRecord[]> {
@@ -168,71 +176,83 @@ export async function getAllBeaches(): Promise<BeachRecord[]> {
   const dbBeaches: any[] = [];
   let offset = 0;
 
-  while (true) {
-    const { data, error } = await supabase
-      .from('beaches')
-      .select(`
-        *,
-        beach_activities ( name ),
-        beach_facilities ( name ),
-        beach_external_links ( label, url )
-      `)
-      .eq('status', 'active')
-      .order('id', { ascending: true })
-      .range(offset, offset + pageSize - 1);
+  try {
+    while (true) {
+      const { data, error } = await supabase
+        .from('beaches')
+        .select(`
+          *,
+          beachactivities ( name ),
+          facilities ( name ),
+          externallinks ( label, url )
+        `)
+        .eq('status', 'active')
+        .order('id', { ascending: true })
+        .range(offset, offset + pageSize - 1);
 
-    if (error) throw error;
-    if (!data) break;
-    dbBeaches.push(...data);
-    if (data.length < pageSize) break;
-    offset += data.length;
+      if (error) {
+        console.error('Beaches query error:', error);
+        throw error;
+      }
+      if (!data) break;
+      dbBeaches.push(...data);
+      if (data.length < pageSize) break;
+      offset += data.length;
+    }
+  } catch (err) {
+    console.error('Failed to fetch beaches:', err);
+    throw err;
   }
 
-  const { data: profiles, error: profileError } = await (createAdminClient()
-    .from('profiles') as any)
-    .select('id, account_status, suspended_until')
-    .eq('account_status', 'suspended');
-  if (profileError) throw profileError;
-  const suspensionProfiles = profiles as Array<{
-    id: string;
-    account_status: 'active' | 'under_review' | 'suspended';
-    suspended_until: string | null;
-  }> | null;
-  const suspendedOwners = new Set(
-    (suspensionProfiles || [])
-      .filter((profile) => isSuspensionActive(profile.account_status, profile.suspended_until))
-      .map((profile) => profile.id)
-  );
+  try {
+    const { data: profiles, error: profileError } = await (createAdminClient()
+      .from('profiles') as any)
+      .select('id, accountstatus, suspendeduntil')
+      .eq('accountstatus', 'suspended');
+    if (profileError) {
+      console.error('Profiles query error:', profileError);
+      throw profileError;
+    }
+    const suspensionProfiles = profiles as Array<{
+      id: string;
+      accountstatus: 'active' | 'under_review' | 'suspended';
+      suspendeduntil: string | null;
+    }> | null;
+    const suspendedOwners = new Set(
+      (suspensionProfiles || [])
+        .filter((profile) => isSuspensionActive(profile.accountstatus, profile.suspendeduntil))
+        .map((profile) => profile.id)
+    );
 
-  const approvedTours = await getApprovedTourUrls(dbBeaches.map((beach) => String(beach.id)));
+    const approvedTours = await getApprovedTourUrls(dbBeaches.map((beach) => String(beach.id)));
   const seenIds = new Set<string>();
   const seenSlugs = new Set<string>();
   const mapped: BeachRecord[] = dbBeaches
     .filter((beach) => {
       const id = String(beach.id || '');
       const slug = String(beach.slug || '').toLowerCase();
-      if (!id || (beach.owner_id && suspendedOwners.has(beach.owner_id)) || seenIds.has(id) || (slug && seenSlugs.has(slug))) return false;
+      if (!id || (beach.ownerid && suspendedOwners.has(beach.ownerid)) || seenIds.has(id) || (slug && seenSlugs.has(slug))) return false;
       seenIds.add(id);
       if (slug) seenSlugs.add(slug);
       return true;
     })
     .map((b: any) => {
-        // Parse opening_hours if it's a JSON string
-        let parsedOpeningHours = b.opening_hours || '';
-        if (typeof b.opening_hours === 'string' && b.opening_hours.startsWith('{')) {
+        // Parse openinghours if it's a JSON string
+        let parsedOpeningHours = b.openinghours || '';
+        if (typeof b.openinghours === 'string' && b.openinghours.startsWith('{')) {
           try {
-            parsedOpeningHours = JSON.parse(b.opening_hours);
+            parsedOpeningHours = JSON.parse(b.openinghours);
           } catch {
-            parsedOpeningHours = b.opening_hours;
+            parsedOpeningHours = b.openinghours;
           }
         }
 
-        // Split entrance_fee into adults, children, and senior
+        // Split entrancefee into adults, children, and senior
         let entranceFeeAdults = null;
         let entranceFeeChildren = null;
         let entranceFeeSenior = null;
-        if (b.entrance_fee && b.entrance_fee.includes('|')) {
-          const [adults, children, senior] = b.entrance_fee.split('|');
+        if (b.entrancefee && b.entrancefee.includes('|')) {
+          const [adults, children, senior] = b.entrancefee.split('|');
           entranceFeeAdults = adults || null;
           entranceFeeChildren = children || null;
           entranceFeeSenior = senior || null;
@@ -247,31 +267,31 @@ export async function getAllBeaches(): Promise<BeachRecord[]> {
           location: b.location,
           latitude: coordinates?.latitude ?? null,
           longitude: coordinates?.longitude ?? null,
-          cover_image: b.cover_image_url || b.cover_image || null,
-          profile_image: b.profile_image_url || b.profile_image || null,
+          cover_image: b.coverimageurl || b.cover_image || null,
+          profile_image: b.profileimageurl || b.profile_image || null,
           images: Array.isArray(b.images) ? b.images : [],
-          virtual_tour_url: approvedTours.get(String(b.id)) || null,
-          contact_phone: b.contact_phone || null,
-          contact_email: b.contact_email || null,
-          facebook_url: b.facebook_url || null,
-          instagram_url: b.instagram_url || null,
-          peak_days: b.peak_days || null,
-          peak_hours: b.peak_hours || null,
-          best_visiting_time: b.best_visiting_time || null,
-          opening_hours: parsedOpeningHours,
-          entrance_fee: b.entrance_fee,
+          virtualtoururl: approvedTours.get(String(b.id)) || null,
+          contactphone: b.contactphone || null,
+          contactemail: b.contactemail || null,
+          facebookurl: b.facebookurl || null,
+          instagramurl: b.instagramurl || null,
+          peakdays: b.peakdays || null,
+          peakhours: b.peakhours || null,
+          bestvisitingtime: b.bestvisitingtime || null,
+          openinghours: parsedOpeningHours,
+          entrancefee: b.entrancefee,
           entrance_fee_adults: entranceFeeAdults,
           entrance_fee_children: entranceFeeChildren,
           entrance_fee_senior: entranceFeeSenior,
-          cottage_fee: b.cottage_fee,
+          cottagefee: b.cottagefee,
           rules: b.rules,
           status: b.status,
-          average_rating: Number(b.average_rating || 0),
-          activities: b.beach_activities?.map((activity: any) => activity.name).filter(Boolean) || [],
-          amenities: b.beach_facilities?.map((facility: any) => facility.name).filter(Boolean) || [],
-          external_links: b.beach_external_links?.map((el: any) => ({ label: el.label, url: el.url })) || [],
-          created_at: b.created_at,
-          updated_at: b.updated_at,
+          averagerating: Number(b.averagerating || 0),
+          activities: b.beachactivities?.map((activity: any) => activity.name).filter(Boolean) || [],
+          amenities: b.facilities?.map((facility: any) => facility.name).filter(Boolean) || [],
+          external_links: b.externallinks?.map((el: any) => ({ label: el.label, url: el.url })) || [],
+          createdat: b.createdat,
+          updatedat: b.updatedat,
         };
       });
 
@@ -296,6 +316,10 @@ export async function getAllBeaches(): Promise<BeachRecord[]> {
     expiresAt: Date.now() + BEACH_CACHE_TTL_MS,
   };
   return uniqueBeaches;
+  } catch (err) {
+    console.error('getAllBeaches failed:', err);
+    throw err;
+  }
 }
 
 export async function getBeachBySlug(slug: string): Promise<BeachRecord | null> {
@@ -326,9 +350,9 @@ export async function getBeachBySlug(slug: string): Promise<BeachRecord | null> 
       .from('beaches')
       .select(`
         *,
-        beach_activities ( name ),
-        beach_facilities ( name ),
-        beach_external_links ( label, url )
+        beachactivities ( name ),
+        facilities ( name ),
+        externallinks ( label, url )
       `);
 
     let dbBeach: any = null;
@@ -345,9 +369,9 @@ export async function getBeachBySlug(slug: string): Promise<BeachRecord | null> 
           .from('beaches')
           .select(`
             *,
-            beach_activities ( name ),
-            beach_facilities ( name ),
-            beach_external_links ( label, url )
+            beachactivities ( name ),
+            facilities ( name ),
+            externallinks ( label, url )
           `)
           .eq('status', 'active')
           .ilike('slug', `${normalized}%`)
@@ -362,9 +386,9 @@ export async function getBeachBySlug(slug: string): Promise<BeachRecord | null> 
             .from('beaches')
             .select(`
               *,
-              beach_activities ( name ),
-              beach_facilities ( name ),
-              beach_external_links ( label, url )
+              beachactivities ( name ),
+              facilities ( name ),
+              externallinks ( label, url )
             `)
             .eq('status', 'active')
             .ilike('name', `%${cleanName}%`)
@@ -379,36 +403,36 @@ export async function getBeachBySlug(slug: string): Promise<BeachRecord | null> 
 
     if (dbBeach) {
       const b = dbBeach as any;
-      if (b.owner_id) {
+      if (b.ownerid) {
         const { data: ownerProfile, error: ownerError } = await (createAdminClient()
           .from('profiles') as any)
-          .select('account_status, suspended_until')
-          .eq('id', b.owner_id)
+          .select('accountstatus, suspendeduntil')
+          .eq('id', b.ownerid)
           .maybeSingle();
         if (ownerError) throw ownerError;
-        if (ownerProfile && isSuspensionActive(ownerProfile.account_status, ownerProfile.suspended_until)) {
+        if (ownerProfile && isSuspensionActive(ownerProfile.accountstatus, ownerProfile.suspendeduntil)) {
           slugBeachCache.set(normalized, { data: null, expiresAt: now + BEACH_CACHE_TTL_MS });
           return null;
         }
       }
       const approvedTours = await getApprovedTourUrls([String(b.id)]);
 
-      // Parse opening_hours if it's a JSON string
-      let parsedOpeningHours = b.opening_hours || '';
-      if (typeof b.opening_hours === 'string' && b.opening_hours.startsWith('{')) {
+      // Parse openinghours if it's a JSON string
+      let parsedOpeningHours = b.openinghours || '';
+      if (typeof b.openinghours === 'string' && b.openinghours.startsWith('{')) {
         try {
-          parsedOpeningHours = JSON.parse(b.opening_hours);
+          parsedOpeningHours = JSON.parse(b.openinghours);
         } catch {
-          parsedOpeningHours = b.opening_hours;
+          parsedOpeningHours = b.openinghours;
         }
       }
 
-      // Split entrance_fee into adults, children, and senior
+      // Split entrancefee into adults, children, and senior
       let entranceFeeAdults = null;
       let entranceFeeChildren = null;
       let entranceFeeSenior = null;
-      if (b.entrance_fee && b.entrance_fee.includes('|')) {
-        const [adults, children, senior] = b.entrance_fee.split('|');
+      if (b.entrancefee && b.entrancefee.includes('|')) {
+        const [adults, children, senior] = b.entrancefee.split('|');
         entranceFeeAdults = adults || null;
         entranceFeeChildren = children || null;
         entranceFeeSenior = senior || null;
@@ -423,31 +447,31 @@ export async function getBeachBySlug(slug: string): Promise<BeachRecord | null> 
         location: b.location,
         latitude: coordinates?.latitude ?? null,
         longitude: coordinates?.longitude ?? null,
-        cover_image: b.cover_image_url || b.cover_image || null,
-        profile_image: b.profile_image_url || b.profile_image || null,
+        cover_image: b.coverimageurl || b.cover_image || null,
+        profile_image: b.profileimageurl || b.profile_image || null,
         images: Array.isArray(b.images) ? b.images : [],
-        virtual_tour_url: approvedTours.get(String(b.id)) || null,
-        contact_phone: b.contact_phone || null,
-        contact_email: b.contact_email || null,
-        facebook_url: b.facebook_url || null,
-        instagram_url: b.instagram_url || null,
-        peak_days: b.peak_days || null,
-        peak_hours: b.peak_hours || null,
-        best_visiting_time: b.best_visiting_time || null,
-        opening_hours: parsedOpeningHours,
-        entrance_fee: b.entrance_fee,
+        virtualtoururl: approvedTours.get(String(b.id)) || null,
+        contactphone: b.contactphone || null,
+        contactemail: b.contactemail || null,
+        facebookurl: b.facebookurl || null,
+        instagramurl: b.instagramurl || null,
+        peakdays: b.peakdays || null,
+        peakhours: b.peakhours || null,
+        bestvisitingtime: b.bestvisitingtime || null,
+        openinghours: parsedOpeningHours,
+        entrancefee: b.entrancefee,
         entrance_fee_adults: entranceFeeAdults,
         entrance_fee_children: entranceFeeChildren,
         entrance_fee_senior: entranceFeeSenior,
-        cottage_fee: b.cottage_fee,
+        cottagefee: b.cottagefee,
         rules: b.rules,
         status: b.status,
-        average_rating: Number(b.average_rating || 0),
-        activities: b.beach_activities?.map((activity: any) => activity.name).filter(Boolean) || [],
-        amenities: b.beach_facilities?.map((facility: any) => facility.name).filter(Boolean) || [],
-        external_links: b.beach_external_links?.map((el: any) => ({ label: el.label, url: el.url })) || [],
-        created_at: b.created_at,
-        updated_at: b.updated_at,
+        averagerating: Number(b.averagerating || 0),
+        activities: b.beachactivities?.map((activity: any) => activity.name).filter(Boolean) || [],
+        amenities: b.facilities?.map((facility: any) => facility.name).filter(Boolean) || [],
+        external_links: b.externallinks?.map((el: any) => ({ label: el.label, url: el.url })) || [],
+        createdat: b.createdat,
+        updatedat: b.updatedat,
       };
 
       slugBeachCache.set(normalized, {

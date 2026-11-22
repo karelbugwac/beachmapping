@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { authorizeRoles } from '@/lib/supabase/authorization';
-import { getAllTourRequests, getTourRequestForAdmin, transitionTourRequest } from '@/lib/services/tourRequests';
-import { TourWorkflowError } from '@/lib/services/tourTransitions';
+import { getAllTourRequests, getTourRequestForAdmin, transitionTourRequest } from '@/lib/services/tourrequests';
+import { TourWorkflowError } from '@/lib/services/tourtransitions';
 
 const noStoreHeaders = { 'Cache-Control': 'no-store, max-age=0' };
 
@@ -35,13 +35,13 @@ export async function POST(request: NextRequest) {
     let requestId = typeof body?.request_id === 'string' ? body.request_id : '';
     const note = typeof body?.note === 'string'
       ? body.note.trim()
-      : typeof body?.rejection_reason === 'string'
-      ? body.rejection_reason.trim()
+      : typeof body?.rejectionreason === 'string'
+      ? body.rejectionreason.trim()
       : '';
 
-    if (!requestId && typeof body?.beach_id === 'string') {
+    if (!requestId && typeof body?.beachid === 'string') {
       const allReqs = await getAllTourRequests();
-      const matched = allReqs.find((r) => r.beach_id === body.beach_id);
+      const matched = allReqs.find((r) => r.beachid === body.beachid);
       if (matched?.id) {
         requestId = matched.id;
       }
@@ -71,7 +71,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       success: true,
       message: action === 'approve' ? '360° Virtual Tour request approved!' : '360° Virtual Tour request rejected / changes requested.',
-      tourUrl: tour.requested_tour_url,
+      tourUrl: tour.requestedtoururl,
       request: { ...tour, beach: currentTour.beach, owner: currentTour.owner }
     }, { headers: noStoreHeaders });
   } catch (error) {

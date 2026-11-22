@@ -8,9 +8,9 @@ interface AccountState {
   id: string;
   role: string;
   status: 'active' | 'suspended';
-  suspension_reason: string | null;
-  suspended_at: string | null;
-  suspension_ends_at: string | null;
+  suspensionreason: string | null;
+  suspendedat: string | null;
+  suspensionendsat: string | null;
 }
 
 async function fetchAccountState(): Promise<AccountState | null> {
@@ -120,7 +120,7 @@ export function AccountSuspensionGate() {
           src="/logo.png"
           alt="Dagat Ta Bai"
           className="w-16 h-16 animate-spin"
-          style={{ width: '64px', height: '64px' }}
+          style={{ width: '64px', height: '64px', objectFit: 'contain' }}
         />
       </div>
     );
@@ -171,9 +171,9 @@ export function AccountSuspensionGate() {
         <div id="account-suspension-description" className="mt-4 space-y-3 text-sm text-slate-700 dark:text-neutral-300">
           {isSuspended ? (
             <>
-              <p><span className="font-semibold">Reason:</span> {account.suspension_reason?.trim() || 'No reason was provided. Please contact support.'}</p>
-              <p><span className="font-semibold">Suspended on:</span> {formatDate(account.suspended_at)}</p>
-              <p><span className="font-semibold">Duration:</span> {account.suspension_ends_at ? `Until ${formatDate(account.suspension_ends_at)}` : 'Indefinite'}</p>
+              <p><span className="font-semibold">Reason:</span> {account.suspensionreason?.trim() || 'No reason was provided. Please contact support.'}</p>
+              <p><span className="font-semibold">Suspended on:</span> {formatDate(account.suspendedat)}</p>
+              <p><span className="font-semibold">Duration:</span> {account.suspensionendsat ? `Until ${formatDate(account.suspensionendsat)}` : 'Indefinite'}</p>
               <p className="pt-1">If you believe this is a mistake, please contact support.</p>
             </>
           ) : (

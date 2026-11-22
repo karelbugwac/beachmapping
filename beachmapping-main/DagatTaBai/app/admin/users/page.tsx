@@ -1,7 +1,7 @@
 'use client';
 
 import React, { Suspense } from 'react';
-import { AdminAccountManagement } from '@/components/admin/account-management';
+import { AdminAccountManagement } from '@/components/admin/accmanagement';
 import { Loader2 } from 'lucide-react';
 
 export default function AdminUsersPage() {

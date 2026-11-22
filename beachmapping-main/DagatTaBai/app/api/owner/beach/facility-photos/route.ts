@@ -5,18 +5,18 @@ const noStoreHeaders = { 'Cache-Control': 'no-store, max-age=0' };
 type AuthorizedAuth = Extract<Awaited<ReturnType<typeof authorizeRoles>>, { authorized: true }>;
 
 async function getOwnedFacility(auth: AuthorizedAuth, beachId: string, facilityId: string) {
-  let beachQuery = (auth.adminClient.from('beaches') as any).select('id, owner_id').eq('id', beachId);
-  if (auth.role !== 'admin') beachQuery = beachQuery.eq('owner_id', auth.user.id);
+  let beachQuery = (auth.adminClient.from('beaches') as any).select('id, ownerid').eq('id', beachId);
+  if (auth.role !== 'admin') beachQuery = beachQuery.eq('ownerid', auth.user.id);
   const { data: beach, error: beachError } = await beachQuery.maybeSingle();
   if (beachError) throw beachError;
   if (!beach) {
     return { response: NextResponse.json({ error: 'Beach not found or unauthorized.' }, { status: 404 }) };
   }
 
-  const { data: facility, error: facilityError } = await (auth.adminClient.from('beach_facilities') as any)
-    .select('id, beach_id, images')
+  const { data: facility, error: facilityError } = await (auth.adminClient.from('facilities') as any)
+    .select('id, beachid, images')
     .eq('id', facilityId)
-    .eq('beach_id', beach.id)
+    .eq('beachid', beach.id)
     .maybeSingle();
   if (facilityError) throw facilityError;
   if (!facility) {
@@ -30,16 +30,16 @@ function isOwnedFacilityPath(path: string, ownerId: string, beachId: string) {
 }
 
 async function updateLegacyCover(auth: AuthorizedAuth, facilityId: string, beachId: string) {
-  const { data: photos, error: photosError } = await (auth.adminClient.from('beach_facility_photos') as any)
-    .select('image_url')
-    .eq('facility_id', facilityId)
-    .order('sort_order', { ascending: true })
-    .order('created_at', { ascending: true });
+  const { data: photos, error: photosError } = await (auth.adminClient.from('facilityphotos') as any)
+    .select('imageurl')
+    .eq('facilityid', facilityId)
+    .order('sortorder', { ascending: true })
+    .order('createdat', { ascending: true });
   if (photosError) throw photosError;
-  const { error } = await (auth.adminClient.from('beach_facilities') as any)
-    .update({ images: photos?.length ? [photos[0].image_url] : [] })
+  const { error } = await (auth.adminClient.from('facilities') as any)
+    .update({ images: photos?.length ? [photos[0].imageurl] : [] })
     .eq('id', facilityId)
-    .eq('beach_id', beachId);
+    .eq('beachid', beachId);
   if (error) throw error;
 }
 
@@ -52,18 +52,18 @@ export async function POST(request: NextRequest) {
 
     const body = await request.json();
     if (
-      typeof body.beach_id !== 'string'
-      || typeof body.facility_id !== 'string'
-      || typeof body.storage_path !== 'string'
+      typeof body.beachid !== 'string'
+      || typeof body.facilityid !== 'string'
+      || typeof body.storagepath !== 'string'
     ) {
       return NextResponse.json(
         { error: 'Beach, facility, and storage path are required.' },
         { status: 400, headers: noStoreHeaders }
       );
     }
-    const owned = await getOwnedFacility(auth, body.beach_id, body.facility_id);
+    const owned = await getOwnedFacility(auth, body.beachid, body.facilityid);
     if ('response' in owned) return owned.response;
-    if (!isOwnedFacilityPath(body.storage_path, owned.beach.owner_id, owned.beach.id)) {
+    if (!isOwnedFacilityPath(body.storagepath, owned.beach.ownerid, owned.beach.id)) {
       return NextResponse.json(
         { error: 'The photo storage path does not belong to this facility owner.' },
         { status: 403, headers: noStoreHeaders }
@@ -71,36 +71,36 @@ export async function POST(request: NextRequest) {
     }
 
     const storage = auth.adminClient.storage.from('beach-media');
-    const imageUrl = storage.getPublicUrl(body.storage_path).data.publicUrl;
-    const { data: currentPhotos, error: currentError } = await (auth.adminClient.from('beach_facility_photos') as any)
-      .select('sort_order')
-      .eq('facility_id', owned.facility.id);
+    const imageUrl = storage.getPublicUrl(body.storagepath).data.publicUrl;
+    const { data: currentPhotos, error: currentError } = await (auth.adminClient.from('facilityphotos') as any)
+      .select('sortorder')
+      .eq('facilityid', owned.facility.id);
     if (currentError) throw currentError;
     const sortOrder = currentPhotos?.length
-      ? currentPhotos.reduce((max: number, photo: { sort_order: number }) => Math.max(max, photo.sort_order), -1) + 1
+      ? currentPhotos.reduce((max: number, photo: { sortorder: number }) => Math.max(max, photo.sortorder), -1) + 1
       : 0;
-    const { data: photo, error } = await (auth.adminClient.from('beach_facility_photos') as any)
+    const { data: photo, error } = await (auth.adminClient.from('facilityphotos') as any)
       .insert({
-        facility_id: owned.facility.id,
-        image_url: imageUrl,
-        storage_path: body.storage_path,
-        sort_order: sortOrder,
+        facilityid: owned.facility.id,
+        imageurl: imageUrl,
+        storagepath: body.storagepath,
+        sortorder: sortOrder,
       })
-      .select('id, facility_id, image_url, storage_path, sort_order, created_at')
+      .select('id, facilityid, imageurl, storagepath, sortorder, createdat')
       .single();
     if (error) {
-      const { error: cleanupError } = await storage.remove([body.storage_path]);
+      const { error: cleanupError } = await storage.remove([body.storagepath]);
       if (cleanupError) console.error('Failed to clean up an unregistered facility photo:', cleanupError.message);
       throw error;
     }
     try {
       await updateLegacyCover(auth, owned.facility.id, owned.beach.id);
     } catch (coverError) {
-      const { error: deleteRowError } = await (auth.adminClient.from('beach_facility_photos') as any)
+      const { error: deleteRowError } = await (auth.adminClient.from('facilityphotos') as any)
         .delete()
         .eq('id', photo.id);
       if (deleteRowError) console.error('Failed to clean up a facility photo row after cover update failed:', deleteRowError.message);
-      const { error: cleanupError } = await storage.remove([body.storage_path]);
+      const { error: cleanupError } = await storage.remove([body.storagepath]);
       if (cleanupError) console.error('Failed to clean up a facility photo file after cover update failed:', cleanupError.message);
       throw coverError;
     }
@@ -119,18 +119,18 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ error: auth.message }, { status: auth.status, headers: noStoreHeaders });
     }
     const body = await request.json();
-    if (typeof body.beach_id !== 'string' || typeof body.facility_id !== 'string' || !Array.isArray(body.photo_ids)) {
+    if (typeof body.beachid !== 'string' || typeof body.facilityid !== 'string' || !Array.isArray(body.photo_ids)) {
       return NextResponse.json(
         { error: 'Beach, facility, and ordered photo IDs are required.' },
         { status: 400, headers: noStoreHeaders }
       );
     }
-    const owned = await getOwnedFacility(auth, body.beach_id, body.facility_id);
+    const owned = await getOwnedFacility(auth, body.beachid, body.facilityid);
     if ('response' in owned) return owned.response;
 
-    const { data: photos, error } = await (auth.adminClient.from('beach_facility_photos') as any)
+    const { data: photos, error } = await (auth.adminClient.from('facilityphotos') as any)
       .select('id')
-      .eq('facility_id', owned.facility.id);
+      .eq('facilityid', owned.facility.id);
     if (error) throw error;
     const requestedIds = new Set(body.photo_ids);
     if (
@@ -142,10 +142,10 @@ export async function PATCH(request: NextRequest) {
     }
 
     for (const [sortOrder, photoId] of body.photo_ids.entries()) {
-      const { error: updateError } = await (auth.adminClient.from('beach_facility_photos') as any)
-        .update({ sort_order: sortOrder })
+      const { error: updateError } = await (auth.adminClient.from('facilityphotos') as any)
+        .update({ sortorder: sortOrder })
         .eq('id', photoId)
-        .eq('facility_id', owned.facility.id);
+        .eq('facilityid', owned.facility.id);
       if (updateError) throw updateError;
     }
     await updateLegacyCover(auth, owned.facility.id, owned.beach.id);
@@ -164,8 +164,8 @@ export async function DELETE(request: NextRequest) {
       return NextResponse.json({ error: auth.message }, { status: auth.status, headers: noStoreHeaders });
     }
     const params = request.nextUrl.searchParams;
-    const beachId = params.get('beach_id');
-    const facilityId = params.get('facility_id');
+    const beachId = params.get('beachid');
+    const facilityId = params.get('facilityid');
     const photoId = params.get('photo_id');
     if (!beachId || !facilityId || !photoId) {
       return NextResponse.json(
@@ -176,28 +176,28 @@ export async function DELETE(request: NextRequest) {
     const owned = await getOwnedFacility(auth, beachId, facilityId);
     if ('response' in owned) return owned.response;
 
-    const { data: photo, error: photoError } = await (auth.adminClient.from('beach_facility_photos') as any)
-      .select('id, storage_path')
+    const { data: photo, error: photoError } = await (auth.adminClient.from('facilityphotos') as any)
+      .select('id, storagepath')
       .eq('id', photoId)
-      .eq('facility_id', owned.facility.id)
+      .eq('facilityid', owned.facility.id)
       .maybeSingle();
     if (photoError) throw photoError;
     if (!photo) {
       return NextResponse.json({ error: 'Facility photo not found.' }, { status: 404, headers: noStoreHeaders });
     }
-    if (!isOwnedFacilityPath(photo.storage_path, owned.beach.owner_id, owned.beach.id)) {
+    if (!isOwnedFacilityPath(photo.storagepath, owned.beach.ownerid, owned.beach.id)) {
       return NextResponse.json(
         { error: 'The photo storage path does not belong to this facility owner.' },
         { status: 403, headers: noStoreHeaders }
       );
     }
 
-    const { error: removeError } = await auth.adminClient.storage.from('beach-media').remove([photo.storage_path]);
+    const { error: removeError } = await auth.adminClient.storage.from('beach-media').remove([photo.storagepath]);
     if (removeError) throw removeError;
-    const { error: deleteError } = await (auth.adminClient.from('beach_facility_photos') as any)
+    const { error: deleteError } = await (auth.adminClient.from('facilityphotos') as any)
       .delete()
       .eq('id', photo.id)
-      .eq('facility_id', owned.facility.id);
+      .eq('facilityid', owned.facility.id);
     if (deleteError) throw deleteError;
     await updateLegacyCover(auth, owned.facility.id, owned.beach.id);
     return NextResponse.json({ success: true }, { headers: noStoreHeaders });

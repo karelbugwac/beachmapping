@@ -44,24 +44,24 @@ export async function GET() {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (auth.adminClient.from('owner_applications') as any)
+    const { data, error } = await (auth.adminClient.from('ownerapplications') as any)
       .select('*')
-      .order('created_at', { ascending: false });
+      .order('createdat', { ascending: false });
 
     if (error) {
       console.error('Failed to fetch applications:', error);
       return NextResponse.json({ error: 'Failed to load applications.' }, { status: 500 });
     }
 
-    const applications = (data || []) as Array<{ applicant_user_id?: string | null; [key: string]: unknown }>;
+    const applications = (data || []) as Array<{ applicantuserid?: string | null; [key: string]: unknown }>;
     const applicantIds = [...new Set(
       applications
-        .map((application) => application.applicant_user_id)
+        .map((application) => application.applicantuserid)
         .filter((id): id is string => Boolean(id))
     )];
     const { data: profiles, error: profilesError } = applicantIds.length
       ? await auth.adminClient.from('profiles')
-        .select('id, account_status, suspended_until, status_reason')
+        .select('id, accountstatus, suspendeduntil, statusreason')
         .in('id', applicantIds)
       : { data: [], error: null };
     if (profilesError) {
@@ -69,24 +69,24 @@ export async function GET() {
       return NextResponse.json({ error: 'Failed to load applications.' }, { status: 500 });
     }
 
-    const profileById = new Map<string, { account_status: AccountStatus; status_reason: string | null }>(
+    const profileById = new Map<string, { accountstatus: AccountStatus; statusreason: string | null }>(
       (profiles || []).map((profile) => [
         profile.id,
         {
-          account_status: isSuspensionActive(profile.account_status, profile.suspended_until)
+          accountstatus: isSuspensionActive(profile.accountstatus, profile.suspendeduntil)
             ? 'suspended'
-            : profile.account_status === 'suspended' ? 'active' : profile.account_status,
-          status_reason: profile.status_reason,
+            : profile.accountstatus === 'suspended' ? 'active' : profile.accountstatus,
+          statusreason: profile.statusreason,
         },
       ])
     );
     const applicationsWithAccountStatus = applications.map((application) => ({
       ...application,
-      account_status: application.applicant_user_id
-        ? profileById.get(application.applicant_user_id)?.account_status || null
+      accountstatus: application.applicantuserid
+        ? profileById.get(application.applicantuserid)?.accountstatus || null
         : null,
-      account_status_reason: application.applicant_user_id
-        ? profileById.get(application.applicant_user_id)?.status_reason || null
+      account_status_reason: application.applicantuserid
+        ? profileById.get(application.applicantuserid)?.statusreason || null
         : null,
     }));
 
@@ -108,20 +108,21 @@ export async function POST(request: Request) {
   const uploadedPaths: string[] = [];
   try {
     const formData = await request.formData();
-    const applicationId = getFormValue(formData, 'application_id');
+    const applicationId = getFormValue(formData, 'applicationid');
     const expectedStatusUpdatedAt = getFormValue(formData, 'expected_status_updated_at');
     const isRevision = Boolean(applicationId || expectedStatusUpdatedAt);
-    const nameValidation = validateFullName(getFormValue(formData, 'applicant_full_name'));
+    const nameValidation = validateFullName(getFormValue(formData, 'applicantfullname'));
     if (!nameValidation.ok) {
       return NextResponse.json({ error: FULL_NAME_MESSAGES.serverRejected }, { status: 400 });
     }
 
     const permit = formData.get('business_permit');
     const ownershipProof = formData.get('proof_of_ownership');
-    if (!(permit instanceof File) || !(ownershipProof instanceof File)) {
-      return NextResponse.json({ error: 'Upload both the business permit and ownership document.' }, { status: 400 });
+    const validId = formData.get('valid_id');
+    if (!(permit instanceof File) || !(ownershipProof instanceof File) || !(validId instanceof File)) {
+      return NextResponse.json({ error: 'Upload the business permit, ownership document, and valid ID.' }, { status: 400 });
     }
-    for (const file of [permit, ownershipProof]) {
+    for (const file of [permit, ownershipProof, validId]) {
       if (!ALLOWED_DOCUMENT_TYPES.has(file.type)) {
         return NextResponse.json({ error: 'Documents must be PDF, JPEG, or WebP files.' }, { status: 400 });
       }
@@ -145,12 +146,12 @@ export async function POST(request: Request) {
     }
 
     const parsed = ownerApplicationSchema.safeParse({
-      applicant_full_name: nameValidation.value,
-      applicant_email: getFormValue(formData, 'applicant_email').trim().toLowerCase(),
-      business_name: getFormValue(formData, 'business_name'),
-      beach_name: getFormValue(formData, 'beach_name'),
-      beach_location: getFormValue(formData, 'beach_location'),
-      contact_phone: getFormValue(formData, 'contact_phone'),
+      applicantfullname: nameValidation.value,
+      applicantemail: getFormValue(formData, 'applicantemail').trim().toLowerCase(),
+      businessname: getFormValue(formData, 'businessname'),
+      beachname: getFormValue(formData, 'beachname'),
+      beachlocation: getFormValue(formData, 'beachlocation'),
+      contactphone: getFormValue(formData, 'contactphone'),
       agreeToTerms: getFormValue(formData, 'agreeToTerms') === 'true',
     });
     if (!parsed.success) {
@@ -170,19 +171,19 @@ export async function POST(request: Request) {
     const adminClient = createAdminClient();
     adminSupabase = adminClient;
     let previousDocumentPaths: string[] = [];
-    const normalizedEmail = parsed.data.applicant_email.trim().toLowerCase();
+    const normalizedEmail = parsed.data.applicantemail.trim().toLowerCase();
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: pendingEmailApplications, error: pendingEmailLookupError } = await (adminClient.from('owner_applications') as any)
-      .select('applicant_email')
+    const { data: pendingEmailApplications, error: pendingEmailLookupError } = await (adminClient.from('ownerapplications') as any)
+      .select('applicantemail')
       .eq('status', 'pending');
     if (pendingEmailLookupError) {
       console.error('Unable to check for a pending owner application by email:', pendingEmailLookupError);
       return NextResponse.json({ error: 'We could not submit your application. Please try again.' }, { status: 500 });
     }
     const hasPendingEmailApplication = (pendingEmailApplications || []).some(
-      (application: { applicant_email?: unknown }) =>
-        typeof application.applicant_email === 'string' &&
-        application.applicant_email.trim().toLowerCase() === normalizedEmail
+      (application: { applicantemail?: unknown }) =>
+        typeof application.applicantemail === 'string' &&
+        application.applicantemail.trim().toLowerCase() === normalizedEmail
     );
     if (hasPendingEmailApplication) {
       return NextResponse.json({ error: PENDING_APPLICATION_MESSAGE }, { status: 409 });
@@ -190,9 +191,9 @@ export async function POST(request: Request) {
 
     if (user) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: pendingApplication, error: pendingLookupError } = await (adminClient.from('owner_applications') as any)
+      const { data: pendingApplication, error: pendingLookupError } = await (adminClient.from('ownerapplications') as any)
         .select('id')
-        .eq('applicant_user_id', user.id)
+        .eq('applicantuserid', user.id)
         .eq('status', 'pending')
         .limit(1)
         .maybeSingle();
@@ -207,10 +208,10 @@ export async function POST(request: Request) {
 
     if (isRevision && user) {
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: currentApplication, error: currentApplicationError } = await (adminClient.from('owner_applications') as any)
-        .select('id, status, status_updated_at, business_permit_path, proof_of_ownership_path')
+      const { data: currentApplication, error: currentApplicationError } = await (adminClient.from('ownerapplications') as any)
+        .select('id, status, statusupdatedat, businesspermitpath, proofofownershippath, valididpath')
         .eq('id', applicationId)
-        .eq('applicant_user_id', user.id)
+        .eq('applicantuserid', user.id)
         .maybeSingle();
       if (currentApplicationError) {
         console.error('Unable to verify application revision:', currentApplicationError);
@@ -219,12 +220,13 @@ export async function POST(request: Request) {
       if (!currentApplication || currentApplication.status !== 'needs_changes') {
         return NextResponse.json({ error: 'This application is not available to continue.' }, { status: 404 });
       }
-      if (currentApplication.status_updated_at !== expectedStatusUpdatedAt) {
+      if (currentApplication.statusupdatedat !== expectedStatusUpdatedAt) {
         return NextResponse.json({ error: 'Someone else already updated this application. Refresh and try again.' }, { status: 409 });
       }
       previousDocumentPaths = [
-        currentApplication.business_permit_path,
-        currentApplication.proof_of_ownership_path,
+        currentApplication.businesspermitpath,
+        currentApplication.proofofownershippath,
+        currentApplication.valididpath,
       ].filter((path): path is string => typeof path === 'string' && path.length > 0);
     }
     const livenessNonce = getFormValue(formData, 'liveness_nonce');
@@ -234,9 +236,9 @@ export async function POST(request: Request) {
     const { ipHash, userAgentHash } = requestHashes(request);
     const nonceHash = createHash('sha256').update(livenessNonce).digest('hex');
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: livenessSession, error: livenessError } = await (adminClient.from('owner_liveness_sessions') as any)
-      .select('nonce_hash,ip_hash,user_agent_hash,user_id,expires_at,completed_at,consumed_at,status,snapshot_path,attempts,flagged_reasons')
-      .eq('nonce_hash', nonceHash)
+    const { data: livenessSession, error: livenessError } = await (adminClient.from('livenesssessions') as any)
+      .select('noncehash,iphash,useragenthash,userid,expiresat,completedat,consumedat,status,snapshotpath,attempts,flaggedreasons')
+      .eq('noncehash', nonceHash)
       .maybeSingle();
     if (livenessError) {
       console.error('Unable to verify owner application liveness session:', livenessError);
@@ -244,27 +246,27 @@ export async function POST(request: Request) {
     }
     if (
       !livenessSession ||
-      livenessSession.ip_hash !== ipHash ||
-      livenessSession.user_agent_hash !== userAgentHash ||
-      (user?.id || null) !== (livenessSession.user_id || null) ||
+      livenessSession.iphash !== ipHash ||
+      livenessSession.useragenthash !== userAgentHash ||
+      (user?.id || null) !== (livenessSession.userid || null) ||
       livenessSession.status !== 'passed' ||
-      !livenessSession.completed_at ||
-      !livenessSession.snapshot_path ||
-      livenessSession.consumed_at ||
-      new Date(livenessSession.expires_at).getTime() <= Date.now()
+      !livenessSession.completedat ||
+      !livenessSession.snapshotpath ||
+      livenessSession.consumedat ||
+      new Date(livenessSession.expiresat).getTime() <= Date.now()
     ) {
       return NextResponse.json({ error: 'Please complete the live selfie check before submitting your application.' }, { status: 400 });
     }
 
     const { data: snapshotFile, error: snapshotDownloadError } = await adminClient.storage
       .from(SNAPSHOT_BUCKET)
-      .download(livenessSession.snapshot_path);
+      .download(livenessSession.snapshotpath);
     if (snapshotDownloadError || !snapshotFile) {
       console.error('Unable to load verified owner selfie:', snapshotDownloadError?.message || 'missing snapshot');
       const recorded = await recordFailedLiveness(
         adminClient,
         livenessSession,
-        livenessSession.completed_at,
+        livenessSession.completedat,
         new Date().toISOString(),
         ['snapshot_unavailable']
       );
@@ -281,7 +283,7 @@ export async function POST(request: Request) {
       const recorded = await recordFailedLiveness(
         adminClient,
         livenessSession,
-        livenessSession.completed_at,
+        livenessSession.completedat,
         new Date().toISOString(),
         snapshotValidation.reasons
       );
@@ -312,46 +314,48 @@ export async function POST(request: Request) {
 
     const businessPermitPath = await uploadDocument(permit, 'business-permit');
     const ownershipProofPath = await uploadDocument(ownershipProof, 'ownership-proof');
+    const validIdPath = await uploadDocument(validId, 'valid-id');
 
     const submittedAt = new Date().toISOString();
     const applicationValues = {
-      applicant_full_name: parsed.data.applicant_full_name,
-      applicant_email: parsed.data.applicant_email,
-      applicant_user_id: user?.id || null,
-      business_name: parsed.data.business_name,
-      beach_name: parsed.data.beach_name,
-      applicant_location: null,
-      contact_phone: parsed.data.contact_phone,
-      beach_location: parsed.data.beach_location,
-      business_permit_path: businessPermitPath,
-      proof_of_ownership_path: ownershipProofPath,
-      liveness_status: 'passed',
-      liveness_checked_at: submittedAt,
-      liveness_attempts: livenessSession.attempts,
-      liveness_snapshot_path: livenessSession.snapshot_path,
-      liveness_flagged_reasons: livenessSession.flagged_reasons,
-      live_selfie_path: livenessSession.snapshot_path,
-      live_selfie_captured_at: livenessSession.completed_at,
+      applicantfullname: parsed.data.applicantfullname,
+      applicantemail: parsed.data.applicantemail,
+      applicantuserid: user?.id || null,
+      businessname: parsed.data.businessname,
+      beachname: parsed.data.beachname,
+      applicantlocation: null,
+      contactphone: parsed.data.contactphone,
+      beachlocation: parsed.data.beachlocation,
+      businesspermitpath: businessPermitPath,
+      proofofownershippath: ownershipProofPath,
+      valididpath: validIdPath,
+      livenessstatus: 'passed',
+      livenesscheckedat: submittedAt,
+      livenessattempts: livenessSession.attempts,
+      livenesssnapshotpath: livenessSession.snapshotpath,
+      livenessflaggedreasons: livenessSession.flaggedreasons,
+      liveselfiepath: livenessSession.snapshotpath,
+      liveselfiecapturedat: livenessSession.completedat,
       status: 'pending',
-      status_note: null,
-      status_updated_at: submittedAt,
-      rejection_reason: null,
-      decided_at: null,
-      reviewed_at: null,
-      reviewed_by: null,
-      updated_at: submittedAt,
+      statusnote: null,
+      statusupdatedat: submittedAt,
+      rejectionreason: null,
+      decidedat: null,
+      reviewedat: null,
+      reviewedby: null,
+      updatedat: submittedAt,
     };
 
     if (isRevision && user) {
       // Consume the verified liveness session before changing the existing application.
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: consumedSession, error: consumeError } = await (adminClient.from('owner_liveness_sessions') as any)
-        .update({ consumed_at: submittedAt })
-        .eq('nonce_hash', nonceHash)
+      const { data: consumedSession, error: consumeError } = await (adminClient.from('livenesssessions') as any)
+        .update({ consumedat: submittedAt })
+        .eq('noncehash', nonceHash)
         .eq('status', 'passed')
-        .gt('expires_at', submittedAt)
-        .is('consumed_at', null)
-        .select('nonce_hash')
+        .gt('expiresat', submittedAt)
+        .is('consumedat', null)
+        .select('noncehash')
         .maybeSingle();
       if (consumeError || !consumedSession) {
         if (consumeError) console.error('Unable to consume owner application liveness session:', consumeError);
@@ -362,13 +366,13 @@ export async function POST(request: Request) {
       }
 
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { data: updatedApplication, error: updateError } = await (adminClient.from('owner_applications') as any)
+      const { data: updatedApplication, error: updateError } = await (adminClient.from('ownerapplications') as any)
         .update(applicationValues)
         .eq('id', applicationId)
-        .eq('applicant_user_id', user.id)
+        .eq('applicantuserid', user.id)
         .eq('status', 'needs_changes')
-        .eq('status_updated_at', expectedStatusUpdatedAt)
-        .select('id, status, liveness_status')
+        .eq('statusupdatedat', expectedStatusUpdatedAt)
+        .select('id, status, livenessstatus')
         .maybeSingle();
       if (updateError || !updatedApplication) {
         const { error: cleanupError } = await adminClient.storage.from(DOCUMENT_BUCKET).remove(uploadedPaths);
@@ -392,7 +396,7 @@ export async function POST(request: Request) {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data, error } = await (adminClient.from('owner_applications') as any)
+    const { data, error } = await (adminClient.from('ownerapplications') as any)
       .insert(applicationValues)
       .select()
       .single();
@@ -408,18 +412,18 @@ export async function POST(request: Request) {
     }
 
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const { data: consumedSession, error: consumeError } = await (adminClient.from('owner_liveness_sessions') as any)
-      .update({ consumed_at: new Date().toISOString() })
-      .eq('nonce_hash', nonceHash)
+    const { data: consumedSession, error: consumeError } = await (adminClient.from('livenesssessions') as any)
+      .update({ consumedat: new Date().toISOString() })
+      .eq('noncehash', nonceHash)
       .eq('status', 'passed')
-      .gt('expires_at', new Date().toISOString())
-      .is('consumed_at', null)
-      .select('nonce_hash')
+      .gt('expiresat', new Date().toISOString())
+      .is('consumedat', null)
+      .select('noncehash')
       .maybeSingle();
     if (consumeError || !consumedSession) {
       console.error('Unable to consume owner application liveness session:', consumeError);
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const { error: deleteError } = await (adminClient.from('owner_applications') as any).delete().eq('id', data.id);
+      const { error: deleteError } = await (adminClient.from('ownerapplications') as any).delete().eq('id', data.id);
       if (deleteError) console.error('Unable to remove application after liveness session conflict:', deleteError);
       const { error: cleanupError } = await adminClient.storage.from(DOCUMENT_BUCKET).remove(uploadedPaths);
       if (cleanupError) console.error('Unable to remove documents after liveness session conflict:', cleanupError);
@@ -428,7 +432,7 @@ export async function POST(request: Request) {
     }
 
     return NextResponse.json(
-      { success: true, application: { id: data.id, status: data.status, liveness_status: data.liveness_status } },
+      { success: true, application: { id: data.id, status: data.status, livenessstatus: data.livenessstatus } },
       { status: 201 }
     );
   } catch (err: unknown) {

@@ -27,21 +27,21 @@ ON CONFLICT (id) DO UPDATE SET
     allowed_mime_types = EXCLUDED.allowed_mime_types;
 
 DROP TABLE IF EXISTS
-    public.email_notifications,
-    public.platform_reviews,
-    public.beach_reviews,
-    public.beach_rules,
-    public.beach_food_drinks,
-    public.beach_rooms,
-    public.beach_equipment,
-    public.beach_facilities,
-    public.beach_activities,
-    public.beach_cottages,
-    public.beach_opening_hours,
-    public.beach_general_information,
-    public.beach_external_links,
-    public.beach_weather_snapshots,
-    public.owner_applications,
+    public.emailnotifications,
+    public.platformreviews,
+    public.beachreviews,
+    public.beachrules,
+    public.fooddrinks,
+    public.rooms,
+    public.equipment,
+    public.facilities,
+    public.beachactivities,
+    public.cottages,
+    public.openinghours,
+    public.beachinfo,
+    public.externallinks,
+    public.weathersnapshots,
+    public.ownerapplications,
     public.beaches,
     public.profiles
 CASCADE;
@@ -52,11 +52,11 @@ CREATE TABLE public.profiles (
         REFERENCES auth.users(id)
         ON DELETE CASCADE,
 
-    full_name TEXT NOT NULL,
+    fullname TEXT NOT NULL,
 
     email TEXT,
 
-    profile_image_url TEXT,
+    profileimageurl TEXT,
 
     location TEXT,
 
@@ -72,16 +72,16 @@ CREATE TABLE public.profiles (
             )
         ),
 
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    createdat TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updatedat TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 
 CREATE TABLE public.beaches (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-    owner_id UUID UNIQUE
+    ownerid UUID UNIQUE
         REFERENCES public.profiles(id)
         ON DELETE SET NULL,
 
@@ -91,11 +91,11 @@ CREATE TABLE public.beaches (
 
     description TEXT,
 
-    profile_image_url TEXT,
+    profileimageurl TEXT,
 
-    cover_image_url TEXT,
+    coverimageurl TEXT,
 
-    virtual_tour_url TEXT,
+    virtualtoururl TEXT,
 
     location TEXT NOT NULL,
 
@@ -103,17 +103,17 @@ CREATE TABLE public.beaches (
 
     longitude NUMERIC(11, 8),
 
-    contact_phone TEXT,
+    contactphone TEXT,
 
-    contact_email TEXT,
+    contactemail TEXT,
 
     images JSONB NOT NULL DEFAULT '[]'::jsonb,
 
-    opening_hours TEXT NOT NULL DEFAULT '8:00 AM - 6:00 PM',
+    openinghours TEXT NOT NULL DEFAULT '8:00 AM - 6:00 PM',
 
-    entrance_fee TEXT,
+    entrancefee TEXT,
 
-    cottage_fee TEXT,
+    cottagefee TEXT,
 
     rules TEXT,
 
@@ -126,68 +126,68 @@ CREATE TABLE public.beaches (
             )
         ),
 
-    average_rating NUMERIC(3, 2) NOT NULL DEFAULT 0.00
+    averagerating NUMERIC(3, 2) NOT NULL DEFAULT 0.00
         CHECK (
-            average_rating >= 0
-            AND average_rating <= 5
+            averagerating >= 0
+            AND averagerating <= 5
         ),
 
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    createdat TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updatedat TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 
-CREATE TABLE public.beach_general_information (
+CREATE TABLE public.beachinfo (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-    beach_id UUID NOT NULL UNIQUE
+    beachid UUID NOT NULL UNIQUE
         REFERENCES public.beaches(id)
         ON DELETE CASCADE,
 
-    entrance_fee NUMERIC(10, 2),
+    entrancefee NUMERIC(10, 2),
 
-    child_entrance_fee NUMERIC(10, 2),
+    childentrancefee NUMERIC(10, 2),
 
-    senior_entrance_fee NUMERIC(10, 2),
+    seniorentrancefee NUMERIC(10, 2),
 
-    entrance_fee_notes TEXT,
+    entrancefeenotes TEXT,
 
-    general_information TEXT,
+    generalinformation TEXT,
 
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updatedat TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 
-CREATE TABLE public.beach_opening_hours (
+CREATE TABLE public.openinghours (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-    beach_id UUID NOT NULL
+    beachid UUID NOT NULL
         REFERENCES public.beaches(id)
         ON DELETE CASCADE,
 
-    day_of_week SMALLINT NOT NULL
+    dayofweek SMALLINT NOT NULL
         CHECK (
-            day_of_week BETWEEN 0 AND 6
+            dayofweek BETWEEN 0 AND 6
         ),
 
-    is_open BOOLEAN NOT NULL DEFAULT true,
+    isopen BOOLEAN NOT NULL DEFAULT true,
 
-    opening_time TIME,
+    openingtime TIME,
 
-    closing_time TIME,
+    closingtime TIME,
 
     UNIQUE (
-        beach_id,
-        day_of_week
+        beachid,
+        dayofweek
     )
 );
 
 
-CREATE TABLE public.beach_cottages (
+CREATE TABLE public.cottages (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-    beach_id UUID NOT NULL
+    beachid UUID NOT NULL
         REFERENCES public.beaches(id)
         ON DELETE CASCADE,
 
@@ -197,7 +197,7 @@ CREATE TABLE public.beach_cottages (
 
     price NUMERIC(10, 2),
 
-    price_unit TEXT NOT NULL DEFAULT 'per day',
+    priceunit TEXT NOT NULL DEFAULT 'per day',
 
     capacity INTEGER
         CHECK (
@@ -207,20 +207,20 @@ CREATE TABLE public.beach_cottages (
 
     images TEXT[] NOT NULL DEFAULT '{}',
 
-    is_available BOOLEAN NOT NULL DEFAULT true,
+    isavailable BOOLEAN NOT NULL DEFAULT true,
 
-    display_order INTEGER NOT NULL DEFAULT 0,
+    displayorder INTEGER NOT NULL DEFAULT 0,
 
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    createdat TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updatedat TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 
-CREATE TABLE public.beach_activities (
+CREATE TABLE public.beachactivities (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-    beach_id UUID NOT NULL
+    beachid UUID NOT NULL
         REFERENCES public.beaches(id)
         ON DELETE CASCADE,
 
@@ -230,24 +230,24 @@ CREATE TABLE public.beach_activities (
 
     price NUMERIC(10, 2),
 
-    price_unit TEXT,
+    priceunit TEXT,
 
     images TEXT[] NOT NULL DEFAULT '{}',
 
-    is_available BOOLEAN NOT NULL DEFAULT true,
+    isavailable BOOLEAN NOT NULL DEFAULT true,
 
-    display_order INTEGER NOT NULL DEFAULT 0,
+    displayorder INTEGER NOT NULL DEFAULT 0,
 
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    createdat TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updatedat TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 
-CREATE TABLE public.beach_facilities (
+CREATE TABLE public.facilities (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-    beach_id UUID NOT NULL
+    beachid UUID NOT NULL
         REFERENCES public.beaches(id)
         ON DELETE CASCADE,
 
@@ -257,24 +257,24 @@ CREATE TABLE public.beach_facilities (
 
     price NUMERIC(10, 2),
 
-    price_unit TEXT,
+    priceunit TEXT,
 
     images TEXT[] NOT NULL DEFAULT '{}',
 
-    is_available BOOLEAN NOT NULL DEFAULT true,
+    isavailable BOOLEAN NOT NULL DEFAULT true,
 
-    display_order INTEGER NOT NULL DEFAULT 0,
+    displayorder INTEGER NOT NULL DEFAULT 0,
 
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    createdat TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updatedat TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 
-CREATE TABLE public.beach_equipment (
+CREATE TABLE public.equipment (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-    beach_id UUID NOT NULL
+    beachid UUID NOT NULL
         REFERENCES public.beaches(id)
         ON DELETE CASCADE,
 
@@ -282,9 +282,9 @@ CREATE TABLE public.beach_equipment (
 
     description TEXT,
 
-    rental_price NUMERIC(10, 2),
+    rentalprice NUMERIC(10, 2),
 
-    price_unit TEXT,
+    priceunit TEXT,
 
     quantity INTEGER
         CHECK (
@@ -294,20 +294,20 @@ CREATE TABLE public.beach_equipment (
 
     images TEXT[] NOT NULL DEFAULT '{}',
 
-    is_available BOOLEAN NOT NULL DEFAULT true,
+    isavailable BOOLEAN NOT NULL DEFAULT true,
 
-    display_order INTEGER NOT NULL DEFAULT 0,
+    displayorder INTEGER NOT NULL DEFAULT 0,
 
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    createdat TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updatedat TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 
-CREATE TABLE public.beach_rooms (
+CREATE TABLE public.rooms (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-    beach_id UUID NOT NULL
+    beachid UUID NOT NULL
         REFERENCES public.beaches(id)
         ON DELETE CASCADE,
 
@@ -317,7 +317,7 @@ CREATE TABLE public.beach_rooms (
 
     price NUMERIC(10, 2),
 
-    price_unit TEXT NOT NULL DEFAULT 'per night',
+    priceunit TEXT NOT NULL DEFAULT 'per night',
 
     capacity INTEGER
         CHECK (
@@ -327,20 +327,20 @@ CREATE TABLE public.beach_rooms (
 
     images TEXT[] NOT NULL DEFAULT '{}',
 
-    is_available BOOLEAN NOT NULL DEFAULT true,
+    isavailable BOOLEAN NOT NULL DEFAULT true,
 
-    display_order INTEGER NOT NULL DEFAULT 0,
+    displayorder INTEGER NOT NULL DEFAULT 0,
 
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    createdat TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updatedat TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 
-CREATE TABLE public.beach_food_drinks (
+CREATE TABLE public.fooddrinks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-    beach_id UUID NOT NULL
+    beachid UUID NOT NULL
         REFERENCES public.beaches(id)
         ON DELETE CASCADE,
 
@@ -354,20 +354,20 @@ CREATE TABLE public.beach_food_drinks (
 
     images TEXT[] NOT NULL DEFAULT '{}',
 
-    is_available BOOLEAN NOT NULL DEFAULT true,
+    isavailable BOOLEAN NOT NULL DEFAULT true,
 
-    display_order INTEGER NOT NULL DEFAULT 0,
+    displayorder INTEGER NOT NULL DEFAULT 0,
 
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    createdat TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updatedat TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 
-CREATE TABLE public.beach_rules (
+CREATE TABLE public.beachrules (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-    beach_id UUID NOT NULL
+    beachid UUID NOT NULL
         REFERENCES public.beaches(id)
         ON DELETE CASCADE,
 
@@ -383,20 +383,20 @@ CREATE TABLE public.beach_rules (
 
     description TEXT,
 
-    display_order INTEGER NOT NULL DEFAULT 0,
+    displayorder INTEGER NOT NULL DEFAULT 0,
 
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    createdat TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 
-CREATE TABLE public.beach_reviews (
+CREATE TABLE public.beachreviews (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-    beach_id UUID NOT NULL
+    beachid UUID NOT NULL
         REFERENCES public.beaches(id)
         ON DELETE CASCADE,
 
-    user_id UUID NOT NULL
+    userid UUID NOT NULL
         REFERENCES public.profiles(id)
         ON DELETE CASCADE,
 
@@ -409,16 +409,16 @@ CREATE TABLE public.beach_reviews (
 
     photos TEXT[] NOT NULL DEFAULT '{}',
 
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    createdat TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updatedat TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 
-CREATE TABLE public.platform_reviews (
+CREATE TABLE public.platformreviews (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-    user_id UUID
+    userid UUID
         REFERENCES public.profiles(id)
         ON DELETE SET NULL,
 
@@ -429,38 +429,38 @@ CREATE TABLE public.platform_reviews (
 
     comment TEXT NOT NULL,
 
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    createdat TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updatedat TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 
-CREATE TABLE public.login_devices (
+CREATE TABLE public.logindevices (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    device_id UUID NOT NULL,
+    userid UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    deviceid UUID NOT NULL,
     browser TEXT NOT NULL,
     platform TEXT NOT NULL,
-    first_seen_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    last_seen_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    UNIQUE (user_id, device_id)
+    firstseenat TIMESTAMPTZ NOT NULL DEFAULT now(),
+    lastseenat TIMESTAMPTZ NOT NULL DEFAULT now(),
+    UNIQUE (userid, deviceid)
 );
 
 
-CREATE TABLE public.user_notifications (
+CREATE TABLE public.usernotifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
-    login_device_id UUID NOT NULL REFERENCES public.login_devices(id) ON DELETE CASCADE,
+    userid UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+    logindeviceid UUID NOT NULL REFERENCES public.logindevices(id) ON DELETE CASCADE,
     type TEXT NOT NULL CHECK (type IN ('new_device_login')),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    read_at TIMESTAMPTZ,
+    createdat TIMESTAMPTZ NOT NULL DEFAULT now(),
+    readat TIMESTAMPTZ,
     response TEXT CHECK (response IN ('confirmed', 'unrecognized')),
-    responded_at TIMESTAMPTZ
+    respondedat TIMESTAMPTZ
 );
 
 
 CREATE INDEX idx_user_notifications_owner_created
-ON public.user_notifications(user_id, created_at DESC);
+ON public.usernotifications(userid, createdat DESC);
 
 
 CREATE OR REPLACE FUNCTION public.register_login_device(
@@ -489,28 +489,28 @@ BEGIN
     FOR UPDATE;
 
     SELECT count(*) INTO v_known_device_count
-    FROM public.login_devices
-    WHERE user_id = v_user_id;
+    FROM public.logindevices
+    WHERE userid = v_user_id;
 
-    INSERT INTO public.login_devices (user_id, device_id, browser, platform)
+    INSERT INTO public.logindevices (userid, deviceid, browser, platform)
     VALUES (v_user_id, p_device_id, p_browser, p_platform)
-    ON CONFLICT (user_id, device_id) DO NOTHING
+    ON CONFLICT (userid, deviceid) DO NOTHING
     RETURNING id INTO v_device_id;
 
     v_is_new := FOUND;
 
     IF v_is_new THEN
         IF v_known_device_count > 0 THEN
-            INSERT INTO public.user_notifications (user_id, login_device_id, type)
+            INSERT INTO public.usernotifications (userid, logindeviceid, type)
             VALUES (v_user_id, v_device_id, 'new_device_login');
         END IF;
     ELSE
-        UPDATE public.login_devices
+        UPDATE public.logindevices
         SET browser = p_browser,
             platform = p_platform,
-            last_seen_at = now()
-        WHERE user_id = v_user_id
-          AND device_id = p_device_id;
+            lastseenat = now()
+        WHERE userid = v_user_id
+          AND deviceid = p_device_id;
     END IF;
 
     RETURN v_is_new;
@@ -522,31 +522,31 @@ REVOKE ALL ON FUNCTION public.register_login_device(UUID, TEXT, TEXT) FROM PUBLI
 GRANT EXECUTE ON FUNCTION public.register_login_device(UUID, TEXT, TEXT) TO authenticated;
 
 
-CREATE TABLE public.beach_review_reports (
+CREATE TABLE public.reviewreports (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    review_id UUID NOT NULL REFERENCES public.beach_reviews(id) ON DELETE CASCADE,
-    beach_id UUID NOT NULL REFERENCES public.beaches(id) ON DELETE CASCADE,
-    reporter_user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    reviewid UUID NOT NULL REFERENCES public.beachreviews(id) ON DELETE CASCADE,
+    beachid UUID NOT NULL REFERENCES public.beaches(id) ON DELETE CASCADE,
+    reporteruserid UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     reason TEXT NOT NULL,
     status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'removed', 'dismissed')),
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-    reviewed_at TIMESTAMPTZ
+    createdat TIMESTAMPTZ NOT NULL DEFAULT now(),
+    reviewedat TIMESTAMPTZ
 );
 
 
-CREATE TABLE public.ai_chat_messages (
+CREATE TABLE public.chatmessages (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
+    userid UUID NOT NULL REFERENCES public.profiles(id) ON DELETE CASCADE,
     role TEXT NOT NULL CHECK (role IN ('user', 'assistant')),
     content TEXT NOT NULL,
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    createdat TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 
-CREATE TABLE public.owner_applications (
+CREATE TABLE public.ownerapplications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-    applicant_user_id UUID
+    applicantuserid UUID
         REFERENCES public.profiles(id)
         ON DELETE SET NULL,
 
@@ -554,35 +554,35 @@ CREATE TABLE public.owner_applications (
         REFERENCES public.profiles(id)
         ON DELETE SET NULL,
 
-    applicant_full_name TEXT NOT NULL,
+    applicantfullname TEXT NOT NULL,
 
-    applicant_email TEXT NOT NULL,
+    applicantemail TEXT NOT NULL,
 
-    applicant_location TEXT,
+    applicantlocation TEXT,
 
-    contact_phone TEXT NOT NULL,
+    contactphone TEXT NOT NULL,
 
-    business_name TEXT NOT NULL,
+    businessname TEXT NOT NULL,
 
-    beach_name TEXT NOT NULL,
+    beachname TEXT NOT NULL,
 
-    beach_description TEXT,
+    beachdescription TEXT,
 
-    beach_location TEXT NOT NULL,
+    beachlocation TEXT NOT NULL,
 
     latitude NUMERIC(10, 8),
 
     longitude NUMERIC(11, 8),
 
-    business_permit_path TEXT NOT NULL,
+    businesspermitpath TEXT NOT NULL,
 
-    proof_of_ownership_path TEXT NOT NULL,
+    proofofownershippath TEXT NOT NULL,
 
-    profile_image_path TEXT,
+    profileimagepath TEXT,
 
-    cover_image_path TEXT,
+    coverimagepath TEXT,
 
-    virtual_tour_url TEXT,
+    virtualtoururl TEXT,
 
     status TEXT NOT NULL DEFAULT 'pending'
         CHECK (
@@ -593,43 +593,43 @@ CREATE TABLE public.owner_applications (
             )
         ),
 
-    rejection_reason TEXT,
+    rejectionreason TEXT,
 
-    reviewed_by UUID
+    reviewedby UUID
         REFERENCES public.profiles(id)
         ON DELETE SET NULL,
 
-    reviewed_at TIMESTAMPTZ,
+    reviewedat TIMESTAMPTZ,
 
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    createdat TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-    updated_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    updatedat TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 
-CREATE TABLE public.visitor_events (
+CREATE TABLE public.visitorevents (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-    session_id UUID NOT NULL,
+    sessionid UUID NOT NULL,
 
-    page_key TEXT NOT NULL,
+    pagekey TEXT NOT NULL,
 
-    event_type TEXT NOT NULL CHECK (event_type IN ('platform_visit', 'beach_profile_view')),
+    eventtype TEXT NOT NULL CHECK (eventtype IN ('platform_visit', 'beach_profile_view')),
 
-    beach_id UUID REFERENCES public.beaches(id) ON DELETE CASCADE,
+    beachid UUID REFERENCES public.beaches(id) ON DELETE CASCADE,
 
-    visit_date DATE NOT NULL DEFAULT CURRENT_DATE,
+    visitdate DATE NOT NULL DEFAULT CURRENT_DATE,
 
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+    createdat TIMESTAMPTZ NOT NULL DEFAULT now(),
 
-    CONSTRAINT visitor_events_session_page_date_unique UNIQUE (session_id, page_key, visit_date)
+    CONSTRAINT visitor_events_session_page_date_unique UNIQUE (sessionid, pagekey, visitdate)
 );
 
 
-CREATE TABLE public.beach_external_links (
+CREATE TABLE public.externallinks (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-    beach_id UUID NOT NULL
+    beachid UUID NOT NULL
         REFERENCES public.beaches(id)
         ON DELETE CASCADE,
 
@@ -637,41 +637,41 @@ CREATE TABLE public.beach_external_links (
 
     url TEXT NOT NULL,
 
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    createdat TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 
-CREATE TABLE public.beach_weather_snapshots (
+CREATE TABLE public.weathersnapshots (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-    beach_id UUID NOT NULL
+    beachid UUID NOT NULL
         REFERENCES public.beaches(id)
         ON DELETE CASCADE,
 
-    weather_data JSONB NOT NULL,
+    weatherdata JSONB NOT NULL,
 
-    synced_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    syncedat TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 
-CREATE TABLE public.email_notifications (
+CREATE TABLE public.emailnotifications (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
 
-    recipient_email TEXT NOT NULL,
+    recipientemail TEXT NOT NULL,
 
-    recipient_name TEXT,
+    recipientname TEXT,
 
-    notification_type TEXT NOT NULL
+    notificationtype TEXT NOT NULL
         CHECK (
-            notification_type IN (
+            notificationtype IN (
                 'application_received',
                 'application_approved',
                 'application_rejected'
             )
         ),
 
-    application_id UUID
-        REFERENCES public.owner_applications(id)
+    applicationid UUID
+        REFERENCES public.ownerapplications(id)
         ON DELETE CASCADE,
 
     subject TEXT NOT NULL,
@@ -687,11 +687,11 @@ CREATE TABLE public.email_notifications (
             )
         ),
 
-    sent_at TIMESTAMPTZ,
+    sentat TIMESTAMPTZ,
 
-    error_message TEXT,
+    errormessage TEXT,
 
-    created_at TIMESTAMPTZ NOT NULL DEFAULT now()
+    createdat TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
 
@@ -705,9 +705,9 @@ BEGIN
 
     INSERT INTO public.profiles (
         id,
-        full_name,
+        fullname,
         email,
-        profile_image_url,
+        profileimageurl,
         location,
         pin,
         role
@@ -744,11 +744,11 @@ BEGIN
 
     ON CONFLICT (id)
     DO UPDATE SET
-        full_name = EXCLUDED.full_name,
+        fullname = EXCLUDED.fullname,
         email = EXCLUDED.email,
-        profile_image_url = COALESCE(
-            EXCLUDED.profile_image_url,
-            public.profiles.profile_image_url
+        profileimageurl = COALESCE(
+            EXCLUDED.profileimageurl,
+            public.profiles.profileimageurl
         ),
         location = COALESCE(
             EXCLUDED.location,
@@ -762,7 +762,7 @@ BEGIN
             WHEN lower(COALESCE(EXCLUDED.email, '')) = 'official.dagattabai@gmail.com' THEN 'admin'
             ELSE public.profiles.role
         END,
-        updated_at = now();
+        updatedat = now();
 
     RETURN NEW;
 
@@ -816,18 +816,18 @@ BEGIN
 
     UPDATE public.profiles
     SET
-        full_name = COALESCE(
+        fullname = COALESCE(
             NEW.raw_user_meta_data->>'full_name',
             NEW.raw_user_meta_data->>'name',
-            public.profiles.full_name
+            public.profiles.fullname
         ),
 
         email = NEW.email,
 
-        profile_image_url = COALESCE(
+        profileimageurl = COALESCE(
             NEW.raw_user_meta_data->>'avatar_url',
             NEW.raw_user_meta_data->>'picture',
-            public.profiles.profile_image_url
+            public.profiles.profileimageurl
         ),
 
         location = COALESCE(
@@ -840,7 +840,7 @@ BEGIN
             public.profiles.pin
         ),
 
-        updated_at = now()
+        updatedat = now()
 
     WHERE id = NEW.id;
 
@@ -908,7 +908,7 @@ AS $$
             SELECT 1
             FROM public.beaches
             WHERE public.beaches.id = p_beach_id
-            AND public.beaches.owner_id = auth.uid()
+            AND public.beaches.ownerid = auth.uid()
         );
 $$;
 
@@ -945,24 +945,24 @@ BEGIN
 
     target_beach_id :=
         COALESCE(
-            NEW.beach_id,
-            OLD.beach_id
+            NEW.beachid,
+            OLD.beachid
         );
 
     UPDATE public.beaches
     SET
-        average_rating = COALESCE(
+        averagerating = COALESCE(
             (
                 SELECT ROUND(
                     AVG(rating)::numeric,
                     2
                 )
-                FROM public.beach_reviews
-                WHERE beach_id = target_beach_id
+                FROM public.beachreviews
+                WHERE beachid = target_beach_id
             ),
             0.00
         ),
-        updated_at = now()
+        updatedat = now()
     WHERE id = target_beach_id;
 
     RETURN COALESCE(NEW, OLD);
@@ -973,7 +973,7 @@ $$;
 
 CREATE TRIGGER trigger_recalculate_beach_rating
 AFTER INSERT OR UPDATE OR DELETE
-ON public.beach_reviews
+ON public.beachreviews
 FOR EACH ROW
 EXECUTE FUNCTION public.recalculate_beach_rating();
 
@@ -986,17 +986,17 @@ SET search_path = public
 AS $$
 BEGIN
 
-    INSERT INTO public.email_notifications (
-        recipient_email,
-        recipient_name,
-        notification_type,
-        application_id,
+    INSERT INTO public.emailnotifications (
+        recipientemail,
+        recipientname,
+        notificationtype,
+        applicationid,
         subject,
         message
     )
     VALUES (
-        NEW.applicant_email,
-        NEW.applicant_full_name,
+        NEW.applicantemail,
+        NEW.applicantfullname,
         'application_received',
         NEW.id,
         'Dagat Ta Bai - Application Received',
@@ -1011,7 +1011,7 @@ $$;
 
 CREATE TRIGGER trigger_application_received_email
 AFTER INSERT
-ON public.owner_applications
+ON public.ownerapplications
 FOR EACH ROW
 EXECUTE FUNCTION public.queue_application_received_email();
 
@@ -1028,17 +1028,17 @@ BEGIN
        AND OLD.status IS DISTINCT FROM 'approved'
     THEN
 
-        INSERT INTO public.email_notifications (
-            recipient_email,
-            recipient_name,
-            notification_type,
-            application_id,
+        INSERT INTO public.emailnotifications (
+            recipientemail,
+            recipientname,
+            notificationtype,
+            applicationid,
             subject,
             message
         )
         VALUES (
-            NEW.applicant_email,
-            NEW.applicant_full_name,
+            NEW.applicantemail,
+            NEW.applicantfullname,
             'application_approved',
             NEW.id,
             'Dagat Ta Bai - Application Approved',
@@ -1049,23 +1049,23 @@ BEGIN
        AND OLD.status IS DISTINCT FROM 'rejected'
     THEN
 
-        INSERT INTO public.email_notifications (
-            recipient_email,
-            recipient_name,
-            notification_type,
-            application_id,
+        INSERT INTO public.emailnotifications (
+            recipientemail,
+            recipientname,
+            notificationtype,
+            applicationid,
             subject,
             message
         )
         VALUES (
-            NEW.applicant_email,
-            NEW.applicant_full_name,
+            NEW.applicantemail,
+            NEW.applicantfullname,
             'application_rejected',
             NEW.id,
             'Dagat Ta Bai - Application Update',
             COALESCE(
                 'Your beach owner application was not approved. Reason: '
-                || NEW.rejection_reason,
+                || NEW.rejectionreason,
                 'Your beach owner application was not approved.'
             )
         );
@@ -1080,7 +1080,7 @@ $$;
 
 CREATE TRIGGER trigger_application_status_email
 AFTER UPDATE OF status
-ON public.owner_applications
+ON public.ownerapplications
 FOR EACH ROW
 EXECUTE FUNCTION public.queue_application_status_email();
 
@@ -1089,50 +1089,50 @@ ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 
 ALTER TABLE public.beaches ENABLE ROW LEVEL SECURITY;
 
-ALTER TABLE public.beach_general_information ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.beachinfo ENABLE ROW LEVEL SECURITY;
 
-ALTER TABLE public.beach_opening_hours ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.openinghours ENABLE ROW LEVEL SECURITY;
 
-ALTER TABLE public.beach_cottages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.cottages ENABLE ROW LEVEL SECURITY;
 
-ALTER TABLE public.beach_activities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.beachactivities ENABLE ROW LEVEL SECURITY;
 
-ALTER TABLE public.beach_facilities ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.facilities ENABLE ROW LEVEL SECURITY;
 
-ALTER TABLE public.beach_equipment ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.equipment ENABLE ROW LEVEL SECURITY;
 
-ALTER TABLE public.beach_rooms ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.rooms ENABLE ROW LEVEL SECURITY;
 
-ALTER TABLE public.beach_food_drinks ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.fooddrinks ENABLE ROW LEVEL SECURITY;
 
-ALTER TABLE public.beach_rules ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.beachrules ENABLE ROW LEVEL SECURITY;
 
-ALTER TABLE public.beach_reviews ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.beachreviews ENABLE ROW LEVEL SECURITY;
 
-ALTER TABLE public.platform_reviews ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.platformreviews ENABLE ROW LEVEL SECURITY;
 
-ALTER TABLE public.login_devices ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.logindevices ENABLE ROW LEVEL SECURITY;
 
-ALTER TABLE public.user_notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.usernotifications ENABLE ROW LEVEL SECURITY;
 
-ALTER TABLE public.beach_review_reports ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.reviewreports ENABLE ROW LEVEL SECURITY;
 
-ALTER TABLE public.ai_chat_messages ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.chatmessages ENABLE ROW LEVEL SECURITY;
 
-ALTER TABLE public.owner_applications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.ownerapplications ENABLE ROW LEVEL SECURITY;
 
-ALTER TABLE public.beach_external_links ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.externallinks ENABLE ROW LEVEL SECURITY;
 
-ALTER TABLE public.beach_weather_snapshots ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.weathersnapshots ENABLE ROW LEVEL SECURITY;
 
-ALTER TABLE public.email_notifications ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.emailnotifications ENABLE ROW LEVEL SECURITY;
 
-ALTER TABLE public.visitor_events ENABLE ROW LEVEL SECURITY;
+ALTER TABLE public.visitorevents ENABLE ROW LEVEL SECURITY;
 
-REVOKE ALL ON public.login_devices, public.user_notifications FROM anon, authenticated;
-GRANT SELECT ON public.login_devices, public.user_notifications TO authenticated;
-GRANT UPDATE (read_at, response, responded_at) ON public.user_notifications TO authenticated;
-GRANT ALL ON public.login_devices, public.user_notifications TO service_role;
+REVOKE ALL ON public.logindevices, public.usernotifications FROM anon, authenticated;
+GRANT SELECT ON public.logindevices, public.usernotifications TO authenticated;
+GRANT UPDATE (readat, response, respondedat) ON public.usernotifications TO authenticated;
+GRANT ALL ON public.logindevices, public.usernotifications TO service_role;
 
 
 CREATE POLICY "Authenticated users can view profiles"
@@ -1174,7 +1174,7 @@ ON public.beaches
 FOR SELECT
 USING (
     status = 'active'
-    OR auth.uid() = owner_id
+    OR auth.uid() = ownerid
     OR public.is_admin()
 );
 
@@ -1196,300 +1196,300 @@ ON public.beaches
 FOR UPDATE
 TO authenticated
 USING (
-    auth.uid() = owner_id
+    auth.uid() = ownerid
 )
 WITH CHECK (
-    auth.uid() = owner_id
+    auth.uid() = ownerid
 );
 
 
 CREATE POLICY "Public can view general information"
-ON public.beach_general_information
+ON public.beachinfo
 FOR SELECT
 USING (true);
 
 
 CREATE POLICY "Beach managers manage general information"
-ON public.beach_general_information
+ON public.beachinfo
 FOR ALL
 TO authenticated
 USING (
-    public.owns_beach(beach_id)
+    public.owns_beach(beachid)
 )
 WITH CHECK (
-    public.owns_beach(beach_id)
+    public.owns_beach(beachid)
 );
 
 
 CREATE POLICY "Public can view opening hours"
-ON public.beach_opening_hours
+ON public.openinghours
 FOR SELECT
 USING (true);
 
 
 CREATE POLICY "Beach managers manage opening hours"
-ON public.beach_opening_hours
+ON public.openinghours
 FOR ALL
 TO authenticated
 USING (
-    public.owns_beach(beach_id)
+    public.owns_beach(beachid)
 )
 WITH CHECK (
-    public.owns_beach(beach_id)
+    public.owns_beach(beachid)
 );
 
 
 CREATE POLICY "Public can view cottages"
-ON public.beach_cottages
+ON public.cottages
 FOR SELECT
 USING (true);
 
 
 CREATE POLICY "Beach managers manage cottages"
-ON public.beach_cottages
+ON public.cottages
 FOR ALL
 TO authenticated
 USING (
-    public.owns_beach(beach_id)
+    public.owns_beach(beachid)
 )
 WITH CHECK (
-    public.owns_beach(beach_id)
+    public.owns_beach(beachid)
 );
 
 
 CREATE POLICY "Public can view activities"
-ON public.beach_activities
+ON public.beachactivities
 FOR SELECT
 USING (true);
 
 
 CREATE POLICY "Beach managers manage activities"
-ON public.beach_activities
+ON public.beachactivities
 FOR ALL
 TO authenticated
 USING (
-    public.owns_beach(beach_id)
+    public.owns_beach(beachid)
 )
 WITH CHECK (
-    public.owns_beach(beach_id)
+    public.owns_beach(beachid)
 );
 
 
 CREATE POLICY "Public can view facilities"
-ON public.beach_facilities
+ON public.facilities
 FOR SELECT
 USING (true);
 
 
 CREATE POLICY "Beach managers manage facilities"
-ON public.beach_facilities
+ON public.facilities
 FOR ALL
 TO authenticated
 USING (
-    public.owns_beach(beach_id)
+    public.owns_beach(beachid)
 )
 WITH CHECK (
-    public.owns_beach(beach_id)
+    public.owns_beach(beachid)
 );
 
 
 CREATE POLICY "Public can view equipment"
-ON public.beach_equipment
+ON public.equipment
 FOR SELECT
 USING (true);
 
 
 CREATE POLICY "Beach managers manage equipment"
-ON public.beach_equipment
+ON public.equipment
 FOR ALL
 TO authenticated
 USING (
-    public.owns_beach(beach_id)
+    public.owns_beach(beachid)
 )
 WITH CHECK (
-    public.owns_beach(beach_id)
+    public.owns_beach(beachid)
 );
 
 
 CREATE POLICY "Public can view rooms"
-ON public.beach_rooms
+ON public.rooms
 FOR SELECT
 USING (true);
 
 
 CREATE POLICY "Beach managers manage rooms"
-ON public.beach_rooms
+ON public.rooms
 FOR ALL
 TO authenticated
 USING (
-    public.owns_beach(beach_id)
+    public.owns_beach(beachid)
 )
 WITH CHECK (
-    public.owns_beach(beach_id)
+    public.owns_beach(beachid)
 );
 
 
 CREATE POLICY "Public can view food and drinks"
-ON public.beach_food_drinks
+ON public.fooddrinks
 FOR SELECT
 USING (true);
 
 
 CREATE POLICY "Beach managers manage food and drinks"
-ON public.beach_food_drinks
+ON public.fooddrinks
 FOR ALL
 TO authenticated
 USING (
-    public.owns_beach(beach_id)
+    public.owns_beach(beachid)
 )
 WITH CHECK (
-    public.owns_beach(beach_id)
+    public.owns_beach(beachid)
 );
 
 
 CREATE POLICY "Public can view beach rules"
-ON public.beach_rules
+ON public.beachrules
 FOR SELECT
 USING (true);
 
 
 CREATE POLICY "Beach managers manage beach rules"
-ON public.beach_rules
+ON public.beachrules
 FOR ALL
 TO authenticated
 USING (
-    public.owns_beach(beach_id)
+    public.owns_beach(beachid)
 )
 WITH CHECK (
-    public.owns_beach(beach_id)
+    public.owns_beach(beachid)
 );
 
 
 CREATE POLICY "Public can view beach reviews"
-ON public.beach_reviews
+ON public.beachreviews
 FOR SELECT
 USING (true);
 
 
 CREATE POLICY "Authenticated users can create beach reviews"
-ON public.beach_reviews
+ON public.beachreviews
 FOR INSERT
 TO authenticated
 WITH CHECK (
-    auth.uid() = user_id
+    auth.uid() = userid
 );
 
 
 CREATE POLICY "Users can update their own beach reviews"
-ON public.beach_reviews
+ON public.beachreviews
 FOR UPDATE
 TO authenticated
 USING (
-    auth.uid() = user_id
+    auth.uid() = userid
 )
 WITH CHECK (
-    auth.uid() = user_id
+    auth.uid() = userid
 );
 
 
 CREATE POLICY "Users and admins can delete beach reviews"
-ON public.beach_reviews
+ON public.beachreviews
 FOR DELETE
 TO authenticated
 USING (
-    auth.uid() = user_id
+    auth.uid() = userid
     OR public.is_admin()
 );
 
 
 CREATE POLICY "Public can view platform reviews"
-ON public.platform_reviews
+ON public.platformreviews
 FOR SELECT
 USING (true);
 
 
 CREATE POLICY "Authenticated users can create platform reviews"
-ON public.platform_reviews
+ON public.platformreviews
 FOR INSERT
 TO authenticated
 WITH CHECK (
-    auth.uid() = user_id
+    auth.uid() = userid
 );
 
 
 CREATE POLICY "Users can update their platform reviews"
-ON public.platform_reviews
+ON public.platformreviews
 FOR UPDATE
 TO authenticated
 USING (
-    auth.uid() = user_id
+    auth.uid() = userid
 )
 WITH CHECK (
-    auth.uid() = user_id
+    auth.uid() = userid
 );
 
 
 CREATE POLICY "Users and admins can delete platform reviews"
-ON public.platform_reviews
+ON public.platformreviews
 FOR DELETE
 TO authenticated
 USING (
-    auth.uid() = user_id
+    auth.uid() = userid
     OR public.is_admin()
 );
 
 
 CREATE POLICY "Users can view their login devices"
-ON public.login_devices
+ON public.logindevices
 FOR SELECT
 TO authenticated
 USING (
-    auth.uid() = user_id
+    auth.uid() = userid
 );
 
 
 CREATE POLICY "Users can view their notifications"
-ON public.user_notifications
+ON public.usernotifications
 FOR SELECT
 TO authenticated
 USING (
-    auth.uid() = user_id
+    auth.uid() = userid
 );
 
 
 CREATE POLICY "Users can update their notifications"
-ON public.user_notifications
+ON public.usernotifications
 FOR UPDATE
 TO authenticated
 USING (
-    auth.uid() = user_id
+    auth.uid() = userid
 )
 WITH CHECK (
-    auth.uid() = user_id
+    auth.uid() = userid
 );
 
 
 CREATE POLICY "Anyone can submit owner applications"
-ON public.owner_applications
+ON public.ownerapplications
 FOR INSERT
 WITH CHECK (
-    applicant_user_id IS NULL
-    OR applicant_user_id = auth.uid()
+    applicantuserid IS NULL
+    OR applicantuserid = auth.uid()
 );
 
 
 CREATE POLICY "Applicants can view their applications"
-ON public.owner_applications
+ON public.ownerapplications
 FOR SELECT
 TO authenticated
 USING (
-    applicant_user_id = auth.uid()
+    applicantuserid = auth.uid()
     OR public.is_admin()
 );
 
 
 CREATE POLICY "Admins can manage owner applications"
-ON public.owner_applications
+ON public.ownerapplications
 FOR ALL
 TO authenticated
 USING (
@@ -1501,31 +1501,31 @@ WITH CHECK (
 
 
 CREATE POLICY "Public can view external links"
-ON public.beach_external_links
+ON public.externallinks
 FOR SELECT
 USING (true);
 
 
 CREATE POLICY "Beach managers manage external links"
-ON public.beach_external_links
+ON public.externallinks
 FOR ALL
 TO authenticated
 USING (
-    public.owns_beach(beach_id)
+    public.owns_beach(beachid)
 )
 WITH CHECK (
-    public.owns_beach(beach_id)
+    public.owns_beach(beachid)
 );
 
 
 CREATE POLICY "Public can view weather"
-ON public.beach_weather_snapshots
+ON public.weathersnapshots
 FOR SELECT
 USING (true);
 
 
 CREATE POLICY "Admins manage weather"
-ON public.beach_weather_snapshots
+ON public.weathersnapshots
 FOR ALL
 TO authenticated
 USING (
@@ -1537,11 +1537,11 @@ WITH CHECK (
 
 
 CREATE POLICY "Users can view their email notifications"
-ON public.email_notifications
+ON public.emailnotifications
 FOR SELECT
 TO authenticated
 USING (
-    recipient_email = (
+    recipientemail = (
         SELECT email
         FROM public.profiles
         WHERE id = auth.uid()
@@ -1555,7 +1555,7 @@ ON public.profiles(role);
 
 
 CREATE INDEX idx_beaches_owner
-ON public.beaches(owner_id);
+ON public.beaches(ownerid);
 
 
 CREATE INDEX idx_beaches_status
@@ -1571,64 +1571,64 @@ ON public.beaches(location);
 
 
 CREATE INDEX idx_general_information_beach
-ON public.beach_general_information(beach_id);
+ON public.beachinfo(beachid);
 
 
 CREATE INDEX idx_opening_hours_beach
-ON public.beach_opening_hours(beach_id);
+ON public.openinghours(beachid);
 
 
 CREATE INDEX idx_cottages_beach
-ON public.beach_cottages(beach_id, display_order);
+ON public.cottages(beachid, displayorder);
 
 
 CREATE INDEX idx_activities_beach
-ON public.beach_activities(beach_id, display_order);
+ON public.beachactivities(beachid, displayorder);
 
 
 CREATE INDEX idx_facilities_beach
-ON public.beach_facilities(beach_id, display_order);
+ON public.facilities(beachid, displayorder);
 
 
 CREATE INDEX idx_equipment_beach
-ON public.beach_equipment(beach_id, display_order);
+ON public.equipment(beachid, displayorder);
 
 
 CREATE INDEX idx_rooms_beach
-ON public.beach_rooms(beach_id, display_order);
+ON public.rooms(beachid, displayorder);
 
 
 CREATE INDEX idx_food_drinks_beach
-ON public.beach_food_drinks(beach_id, display_order);
+ON public.fooddrinks(beachid, displayorder);
 
 
 CREATE INDEX idx_rules_beach
-ON public.beach_rules(beach_id, rule_type, display_order);
+ON public.beachrules(beachid, rule_type, displayorder);
 
 
 CREATE INDEX idx_beach_reviews_beach
-ON public.beach_reviews(beach_id, created_at DESC);
+ON public.beachreviews(beachid, createdat DESC);
 
 
 CREATE INDEX idx_beach_reviews_user
-ON public.beach_reviews(user_id);
+ON public.beachreviews(userid);
 
 
 CREATE INDEX idx_platform_reviews_user
-ON public.platform_reviews(user_id);
+ON public.platformreviews(userid);
 
 
 CREATE INDEX idx_owner_applications_status
-ON public.owner_applications(status);
+ON public.ownerapplications(status);
 
 
 CREATE INDEX idx_owner_applications_user
-ON public.owner_applications(applicant_user_id);
+ON public.ownerapplications(applicantuserid);
 
 
 CREATE INDEX idx_email_notifications_status
-ON public.email_notifications(status);
+ON public.emailnotifications(status);
 
 
 CREATE INDEX idx_email_notifications_application
-ON public.email_notifications(application_id);
+ON public.emailnotifications(applicationid);

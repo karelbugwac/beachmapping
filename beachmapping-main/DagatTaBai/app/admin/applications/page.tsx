@@ -31,20 +31,20 @@ import { getApplicationNotesDisplay } from '@/lib/utils/application-review-notes
 
 interface ApplicationItem {
   id: string;
-  applicant_full_name: string;
+  applicantfullname: string;
   applicant_name?: string;
-  applicant_email: string;
-  business_name: string;
-  beach_name: string;
-  beach_location?: string | null;
-  contact_phone?: string;
+  applicantemail: string;
+  businessname: string;
+  beachname: string;
+  beachlocation?: string | null;
+  contactphone?: string;
   contact_info?: string;
-  business_permit_path?: string;
+  businesspermitpath?: string;
   business_permit_url?: string | null;
-  proof_of_ownership_path?: string;
+  proofofownershippath?: string;
   proof_of_ownership_url?: string | null;
   ownership_proof_path?: string;
-  live_selfie_path?: string;
+  liveselfiepath?: string;
   live_selfie_url?: string | null;
   applicant_profile_image_url?: string | null;
   documents?: {
@@ -53,12 +53,12 @@ interface ApplicationItem {
     id_photo: ApplicationDocumentAsset;
   };
   status: 'draft' | 'pending' | 'under_review' | 'needs_changes' | 'approved' | 'rejected';
-  status_updated_at: string;
-  status_note?: string | null;
-  account_status?: 'active' | 'under_review' | 'suspended' | null;
+  statusupdatedat: string;
+  statusnote?: string | null;
+  accountstatus?: 'active' | 'under_review' | 'suspended' | null;
   account_status_reason?: string | null;
-  rejection_reason?: string;
-  created_at: string;
+  rejectionreason?: string;
+  createdat: string;
 }
 
 interface ApplicationDocumentAsset {
@@ -84,11 +84,11 @@ interface PreviewDocument {
 
 interface ApplicationHistoryItem {
   id: string;
-  from_status: string | null;
-  to_status: string;
+  fromstatus: string | null;
+  tostatus: string;
   note: string | null;
   changed_by_name: string;
-  created_at: string;
+  createdat: string;
 }
 
 function getApplicationDocuments(application: ApplicationItem): ApplicationDocument[] {
@@ -397,16 +397,16 @@ export default function AdminApplicationsPage() {
       const searchLower = searchQuery.toLowerCase().trim();
       const matchesSearch =
         searchLower === '' ||
-        (app.applicant_full_name || '').toLowerCase().includes(searchLower) ||
-        (app.applicant_email || '').toLowerCase().includes(searchLower) ||
-        (app.beach_name || '').toLowerCase().includes(searchLower) ||
-        (app.business_name || '').toLowerCase().includes(searchLower);
+        (app.applicantfullname || '').toLowerCase().includes(searchLower) ||
+        (app.applicantemail || '').toLowerCase().includes(searchLower) ||
+        (app.beachname || '').toLowerCase().includes(searchLower) ||
+        (app.businessname || '').toLowerCase().includes(searchLower);
       return matchesStatus && matchesSearch;
     });
   }, [applications, statusFilter, searchQuery]);
 
   const notesDisplay = selectedApp
-    ? getApplicationNotesDisplay(selectedApp.status, selectedApp.rejection_reason)
+    ? getApplicationNotesDisplay(selectedApp.status, selectedApp.rejectionreason)
     : null;
 
   // Open View Modal & load signed document URLs
@@ -424,7 +424,7 @@ export default function AdminApplicationsPage() {
   const handleOpenView = async (app: ApplicationItem, trigger: HTMLButtonElement) => {
     viewTriggerRef.current = trigger;
     setSelectedApp(app);
-    const initialNote = app.status_note || app.rejection_reason || '';
+    const initialNote = app.statusnote || app.rejectionreason || '';
     setAdminNotes(initialNote);
     setInitialNotes(initialNote);
     setDocumentMessage(null);
@@ -438,7 +438,7 @@ export default function AdminApplicationsPage() {
       const data = await res.json();
       if (!res.ok || !data?.application) throw new Error('Could not load application documents.');
       setSelectedApp(data.application);
-      const detailNote = data.application.status_note || data.application.rejection_reason || '';
+      const detailNote = data.application.statusnote || data.application.rejectionreason || '';
       setAdminNotes(detailNote);
       setInitialNotes(detailNote);
     } catch {
@@ -477,7 +477,7 @@ export default function AdminApplicationsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action: isResend ? 'resend_pin' : 'approve',
-          expected_status_updated_at: selectedApp.status_updated_at,
+          expected_status_updated_at: selectedApp.statusupdatedat,
           note: adminNotes,
         }),
       });
@@ -492,7 +492,7 @@ export default function AdminApplicationsPage() {
         setSelectedApp((prev) => (prev ? { ...prev, ...updated } : null));
       }
       notifyRealtimeSync('all');
-      showToast(isResend ? 'A new PIN was emailed to the applicant.' : `Approved! 6-digit PIN emailed to ${selectedApp.applicant_email}.`, 'success');
+      showToast(isResend ? 'A new PIN was emailed to the applicant.' : `Approved! 6-digit PIN emailed to ${selectedApp.applicantemail}.`, 'success');
     } catch (err: unknown) {
       showToast(err instanceof Error ? err.message : 'Approval failed', 'error');
     } finally {
@@ -515,7 +515,7 @@ export default function AdminApplicationsPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           action,
-          expected_status_updated_at: selectedApp.status_updated_at,
+          expected_status_updated_at: selectedApp.statusupdatedat,
           note: validation.value,
         }),
       });
@@ -527,7 +527,7 @@ export default function AdminApplicationsPage() {
         prev.map((a) => a.id === selectedApp.id ? { ...a, ...updated } : a)
       );
       setSelectedApp((prev) => prev ? { ...prev, ...updated } : null);
-      setAdminNotes(updated.status_note || '');
+      setAdminNotes(updated.statusnote || '');
       setNotesError('');
       notifyRealtimeSync('applications');
       showToast(
@@ -774,27 +774,27 @@ export default function AdminApplicationsPage() {
                     <td className="py-4 px-6">
                       <div className="flex items-center gap-3">
                         <div className="w-9 h-9 rounded-full bg-brand-teal-100 dark:bg-brand-teal-700/80 text-brand-teal-700 dark:text-brand-teal-300 flex items-center justify-center font-bold text-xs uppercase flex-shrink-0">
-                          {app.applicant_full_name ? app.applicant_full_name.charAt(0) : 'A'}
+                          {app.applicantfullname ? app.applicantfullname.charAt(0) : 'A'}
                         </div>
                         <div className="min-w-0">
                           <span className="font-bold text-sm text-slate-900 dark:text-white block truncate">
-                            {app.applicant_full_name}
+                            {app.applicantfullname}
                           </span>
                           <span className="text-slate-400 text-xs dark:text-neutral-400 block truncate">
-                            {app.applicant_email}
+                            {app.applicantemail}
                           </span>
-                          {app.account_status ? (
+                          {app.accountstatus ? (
                             <span
                               className={`mt-1 inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-bold ${
-                                app.account_status === 'suspended'
+                                app.accountstatus === 'suspended'
                                   ? 'bg-rose-50 text-rose-700 dark:bg-rose-950/50 dark:text-rose-300'
-                                  : app.account_status === 'under_review'
+                                  : app.accountstatus === 'under_review'
                                     ? 'bg-brand-sun-50 text-brand-navy-700 dark:bg-brand-navy-900/50 dark:text-brand-sun-300'
                                     : 'bg-brand-teal-50 text-brand-teal-700 dark:bg-brand-teal-900/40 dark:text-brand-teal-300'
                               }`}
                               title={app.account_status_reason || undefined}
                             >
-                              Account: {app.account_status.replaceAll('_', ' ')}
+                              Account: {app.accountstatus.replaceAll('_', ' ')}
                             </span>
                           ) : (
                             <span className="mt-1 block text-[10px] text-slate-400">No linked account</span>
@@ -805,10 +805,10 @@ export default function AdminApplicationsPage() {
 
                     <td className="py-4 px-6 whitespace-nowrap">
                       <span className="font-bold text-sm text-brand-navy-500 dark:text-brand-teal-300 block">
-                        {app.beach_name}
+                        {app.beachname}
                       </span>
                       <span className="text-slate-400 text-xs dark:text-neutral-400 block">
-                        {app.business_name}
+                        {app.businessname}
                       </span>
                     </td>
 
@@ -836,7 +836,7 @@ export default function AdminApplicationsPage() {
                     </td>
 
                     <td className="py-4 px-6 text-center whitespace-nowrap text-slate-500 dark:text-neutral-400 font-medium tabular-nums">
-                      {new Date(app.created_at).toLocaleDateString(undefined, {
+                      {new Date(app.createdat).toLocaleDateString(undefined, {
                         year: 'numeric',
                         month: 'short',
                         day: 'numeric',
@@ -883,38 +883,38 @@ export default function AdminApplicationsPage() {
                 <ApplicantAvatar
                   key={selectedApp.applicant_profile_image_url || 'no-profile-image'}
                   imageUrl={selectedApp.applicant_profile_image_url}
-                  name={selectedApp.applicant_full_name || selectedApp.applicant_name || 'Applicant'}
+                  name={selectedApp.applicantfullname || selectedApp.applicant_name || 'Applicant'}
                 />
                 <h3 className="mt-3 break-words text-base font-extrabold">
-                  {selectedApp.applicant_full_name || selectedApp.applicant_name || 'Not provided'}
+                  {selectedApp.applicantfullname || selectedApp.applicant_name || 'Not provided'}
                 </h3>
                 <p className="mt-1 text-xs font-medium text-brand-teal-100">Beach owner applicant</p>
               </div>
               <dl className="space-y-4 text-xs">
                 <div>
                   <dt className="text-[10px] font-bold uppercase tracking-wider text-brand-teal-200">Email</dt>
-                  <dd className="mt-1 break-all font-semibold">{selectedApp.applicant_email || 'Not provided'}</dd>
+                  <dd className="mt-1 break-all font-semibold">{selectedApp.applicantemail || 'Not provided'}</dd>
                 </div>
                 <div>
                   <dt className="text-[10px] font-bold uppercase tracking-wider text-brand-teal-200">Phone</dt>
-                  <dd className="mt-1 font-semibold">{selectedApp.contact_phone || selectedApp.contact_info || 'Not provided'}</dd>
+                  <dd className="mt-1 font-semibold">{selectedApp.contactphone || selectedApp.contact_info || 'Not provided'}</dd>
                 </div>
                 <div>
                   <dt className="text-[10px] font-bold uppercase tracking-wider text-brand-teal-200">Submitted</dt>
                   <dd className="mt-1 font-semibold">
-                    {new Date(selectedApp.created_at).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
+                    {new Date(selectedApp.createdat).toLocaleDateString(undefined, { year: 'numeric', month: 'short', day: 'numeric' })}
                   </dd>
                 </div>
                 <div>
                   <dt className="text-[10px] font-bold uppercase tracking-wider text-brand-teal-200">Linked account</dt>
                   <dd className="mt-1 font-semibold">
-                    {selectedApp.account_status
-                      ? `Has a linked account · ${selectedApp.account_status.replaceAll('_', ' ')}`
+                    {selectedApp.accountstatus
+                      ? `Has a linked account · ${selectedApp.accountstatus.replaceAll('_', ' ')}`
                       : 'No linked account yet'}
                   </dd>
                   {selectedApp.account_status_reason && (
                     <dd className="mt-1 whitespace-pre-wrap text-brand-teal-100">
-                      {selectedApp.account_status === 'suspended' ? 'Reason: ' : 'Note: '}{selectedApp.account_status_reason}
+                      {selectedApp.accountstatus === 'suspended' ? 'Reason: ' : 'Note: '}{selectedApp.account_status_reason}
                     </dd>
                   )}
                 </div>
@@ -929,7 +929,7 @@ export default function AdminApplicationsPage() {
                 <div className="min-w-0 flex-1">
                   <div className="flex flex-wrap items-center gap-2">
                     <h3 id="application-view-title" className="truncate text-lg font-extrabold text-brand-navy-500 dark:text-white">
-                      {selectedApp.beach_name}
+                      {selectedApp.beachname}
                     </h3>
                     <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-bold capitalize ${
                       selectedApp.status === 'approved'
@@ -945,7 +945,7 @@ export default function AdminApplicationsPage() {
                     </span>
                   </div>
                   <p className="mt-1 truncate text-xs text-slate-500 dark:text-neutral-400">
-                    {selectedApp.beach_location || 'Location not provided'}
+                    {selectedApp.beachlocation || 'Location not provided'}
                   </p>
                 </div>
                 <button
@@ -1005,12 +1005,12 @@ export default function AdminApplicationsPage() {
                         </span>
                         <span className="min-w-0 flex-1 pb-1">
                           <span className="block font-bold capitalize text-slate-800 dark:text-neutral-100">
-                            {item.from_status ? `${item.from_status.replaceAll('_', ' ')} → ` : ''}
-                            {item.to_status.replaceAll('_', ' ')}
+                            {item.fromstatus ? `${item.fromstatus.replaceAll('_', ' ')} → ` : ''}
+                            {item.tostatus.replaceAll('_', ' ')}
                           </span>
                           {item.note && <span className="mt-1 block whitespace-pre-wrap text-slate-600 dark:text-neutral-300">{item.note}</span>}
                           <span className="mt-1 block text-slate-400">
-                            by {item.changed_by_name} · {new Date(item.created_at).toLocaleString()}
+                            by {item.changed_by_name} · {new Date(item.createdat).toLocaleString()}
                           </span>
                         </span>
                       </li>

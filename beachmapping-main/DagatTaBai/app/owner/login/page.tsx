@@ -29,7 +29,7 @@ export default function OwnerLoginPage() {
   const [showPin, setShowPin] = useState(false);
   const [pinError, setPinError] = useState('');
   const [loading, setLoading] = useState(false);
-  const [suspensionInfo, setSuspensionInfo] = useState<{ reason: string | null; reason_type: string | null; suspended_until: string | null } | null>(null);
+  const [suspensionInfo, setSuspensionInfo] = useState<{ reason: string | null; reasontype: string | null; suspendeduntil: string | null } | null>(null);
 
   // Floating toast message state (Centered, solid green/red, white text, 5s duration, NO "x")
   const [toast, setToast] = useState<{ type: 'success' | 'error'; message: string } | null>(null);
@@ -171,7 +171,7 @@ export default function OwnerLoginPage() {
       const data = await res.json();
 
       if (data.code === 'ACCOUNT_SUSPENDED') {
-        setSuspensionInfo({ reason: data.reason || null, reason_type: data.reason_type || null, suspended_until: data.suspended_until || null });
+        setSuspensionInfo({ reason: data.reason || null, reasontype: data.reasontype || null, suspendeduntil: data.suspendeduntil || null });
         setPinError('');
         return;
       }
@@ -353,10 +353,10 @@ export default function OwnerLoginPage() {
                 {suspensionInfo && (
                   <div role="alert" className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-900 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-200">
                     <p className="font-bold">Your account is suspended.</p>
-                    {suspensionInfo.reason_type && <p className="mt-1 font-semibold">{suspensionInfo.reason_type}</p>}
+                    {suspensionInfo.reasontype && <p className="mt-1 font-semibold">{suspensionInfo.reasontype}</p>}
                     {suspensionInfo.reason && <p className="mt-1 whitespace-pre-wrap">{suspensionInfo.reason}</p>}
                     <p className="mt-1">
-                      This suspension is in effect {suspensionInfo.suspended_until ? `until ${new Date(suspensionInfo.suspended_until).toLocaleDateString()}` : 'until further notice'}.
+                      This suspension is in effect {suspensionInfo.suspendeduntil ? `until ${new Date(suspensionInfo.suspendeduntil).toLocaleDateString()}` : 'until further notice'}.
                     </p>
                     <Link href="/contact" className="mt-2 inline-block font-semibold underline">Contact us</Link>
                   </div>

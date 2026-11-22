@@ -4,7 +4,7 @@ import {
   getCoordinateRequestForBeach,
   submitCoordinateRequest,
   cancelCoordinateRequest,
-} from '@/lib/services/coordinateRequests';
+} from '@/lib/services/coordinates';
 
 const noStoreHeaders = { 'Cache-Control': 'no-store, max-age=0' };
 
@@ -16,11 +16,11 @@ export async function GET(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const beachId = searchParams.get('beach_id');
+    const beachId = searchParams.get('beachid');
 
     if (!beachId) {
       return NextResponse.json(
-        { error: 'A beach_id query parameter is required.' },
+        { error: 'A beachid query parameter is required.' },
         { status: 400, headers: noStoreHeaders }
       );
     }
@@ -28,11 +28,11 @@ export async function GET(request: NextRequest) {
     // Verify ownership if not admin
     if (auth.role !== 'admin') {
       const { data: beach } = await (auth.adminClient.from('beaches') as any)
-        .select('id, owner_id')
+        .select('id, ownerid')
         .eq('id', beachId)
         .maybeSingle();
 
-      if (!beach || beach.owner_id !== auth.user.id) {
+      if (!beach || beach.ownerid !== auth.user.id) {
         return NextResponse.json(
           { error: 'You are not authorized to view requests for this beach.' },
           { status: 403, headers: noStoreHeaders }
@@ -57,16 +57,16 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { beach_id, requested_latitude, requested_longitude, requested_location, requester_note } = body;
+    const { beachid, requestedlatitude, requestedlongitude, requestedlocation, requesternote } = body;
 
-    if (!beach_id || typeof beach_id !== 'string') {
+    if (!beachid || typeof beachid !== 'string') {
       return NextResponse.json(
-        { error: 'beach_id is required.' },
+        { error: 'beachid is required.' },
         { status: 400, headers: noStoreHeaders }
       );
     }
 
-    if (requested_latitude === undefined || requested_longitude === undefined) {
+    if (requestedlatitude === undefined || requestedlongitude === undefined) {
       return NextResponse.json(
         { error: 'Valid latitude and longitude coordinates are required.' },
         { status: 400, headers: noStoreHeaders }
@@ -76,11 +76,11 @@ export async function POST(request: NextRequest) {
     // Verify ownership if not admin
     if (auth.role !== 'admin') {
       const { data: beach } = await (auth.adminClient.from('beaches') as any)
-        .select('id, owner_id')
-        .eq('id', beach_id)
+        .select('id, ownerid')
+        .eq('id', beachid)
         .maybeSingle();
 
-      if (!beach || beach.owner_id !== auth.user.id) {
+      if (!beach || beach.ownerid !== auth.user.id) {
         return NextResponse.json(
           { error: 'You are not authorized to submit requests for this beach.' },
           { status: 403, headers: noStoreHeaders }
@@ -89,12 +89,12 @@ export async function POST(request: NextRequest) {
     }
 
     const savedRequest = await submitCoordinateRequest({
-      beachId: beach_id,
+      beachId: beachid,
       ownerId: auth.user.id,
-      requestedLatitude: requested_latitude,
-      requestedLongitude: requested_longitude,
-      requestedLocation: requested_location,
-      requesterNote: requester_note,
+      requestedLatitude: requestedlatitude,
+      requestedLongitude: requestedlongitude,
+      requestedLocation: requestedlocation,
+      requesterNote: requesternote,
     });
 
     return NextResponse.json(
@@ -119,11 +119,11 @@ export async function DELETE(request: NextRequest) {
     }
 
     const { searchParams } = new URL(request.url);
-    const beachId = searchParams.get('beach_id');
+    const beachId = searchParams.get('beachid');
 
     if (!beachId) {
       return NextResponse.json(
-        { error: 'A beach_id query parameter is required.' },
+        { error: 'A beachid query parameter is required.' },
         { status: 400, headers: noStoreHeaders }
       );
     }
@@ -131,11 +131,11 @@ export async function DELETE(request: NextRequest) {
     // Verify ownership if not admin
     if (auth.role !== 'admin') {
       const { data: beach } = await (auth.adminClient.from('beaches') as any)
-        .select('id, owner_id')
+        .select('id, ownerid')
         .eq('id', beachId)
         .maybeSingle();
 
-      if (!beach || beach.owner_id !== auth.user.id) {
+      if (!beach || beach.ownerid !== auth.user.id) {
         return NextResponse.json(
           { error: 'You are not authorized to cancel requests for this beach.' },
           { status: 403, headers: noStoreHeaders }

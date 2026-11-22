@@ -24,16 +24,16 @@ import {
   Route,
 } from 'lucide-react';
 import type { BeachRecord } from '@/lib/db/beaches';
-import { VirtualTourModal } from '@/components/virtual-tour-modal';
-import { PhotoViewerModal, type PhotoViewerItem } from '@/components/cottages/cottage-photos-modal';
-import { CottageCard } from '@/components/cottages/cottage-card';
-import { FacilityCard } from '@/components/FacilityCard';
+import { VirtualTourModal } from '@/components/vtmodal';
+import { PhotoViewerModal, type PhotoViewerItem } from '@/components/cottages/cottagephotos';
+import { CottageCard } from '@/components/cottages/cottagecard';
+import { FacilityCard } from '@/components/facilitycard';
 import { getFacilityCategoryLabel } from '@/lib/utils/facility-categories';
-import { OpeningStatusPill } from '@/components/opening-status-pill';
+import { OpeningStatusPill } from '@/components/status';
 import { formatOpeningHoursGroups } from '@/lib/utils/opening-status';
 import { getFacilityFeeItems } from '@/lib/utils/facility-pricing';
 import { maskReviewerName } from '@/lib/utils/mask-reviewer-name';
-import { BeachTripPlanner } from '@/components/beach-trip-planner';
+import { BeachTripPlanner } from '@/components/tripplanner';
 import { showToast } from '@/components/ui/feedback-toasts';
 import { useRealtimeSync, notifyRealtimeSync } from '@/lib/realtime-sync';
 
@@ -81,8 +81,8 @@ function parseResortRules(value: string | null): ResortRuleItem[] {
 }
 
 function getEntranceFeeValues(beach: BeachRecord) {
-  const legacyValues = beach.entrance_fee?.split('|') || [];
-  const adultFee = beach.entrance_fee_adults || legacyValues[0] || beach.entrance_fee;
+  const legacyValues = beach.entrancefee?.split('|') || [];
+  const adultFee = beach.entrance_fee_adults || legacyValues[0] || beach.entrancefee;
   const childFee = beach.entrance_fee_children || legacyValues[1];
   const formatFee = (value: string | null | undefined) =>
     value ? (value.startsWith('₱') ? value : `₱${value}`) : 'Contact resort';
@@ -202,7 +202,7 @@ export default function BeachProfilePage({
   const resortPosts = beach.posts || [];
 
   return (
-    <div className="min-h-screen bg-white dark:bg-black text-slate-900 dark:text-white font-sans transition-colors duration-200">
+    <div className="min-h-screen bg-white dark:bg-black text-slate-900 dark:text-white font-display transition-colors duration-200">
       
       {/* ── 1. FULL-WIDTH HERO COVER (Flat corners, edge-to-edge backdrop, NO badges or buttons on cover) ── */}
       <div className="relative w-full h-72 sm:h-84 md:h-96 rounded-none overflow-hidden bg-slate-950">
@@ -238,7 +238,7 @@ export default function BeachProfilePage({
         {/* Clean Hero Bottom: Title & Rating ONLY (No overlay buttons or badges) */}
         <div className="absolute bottom-6 left-4 right-4 sm:left-8 sm:right-8 flex items-end justify-between gap-4 text-white z-20">
           <div className="space-y-1">
-            <h1 className="text-2xl sm:text-3xl lg:text-4xl font-extrabold tracking-tight font-sans text-white drop-shadow-md">
+            <h1 className="font-display text-xl font-semibold tracking-tight text-white drop-shadow-md sm:text-2xl">
               {beach.name}
             </h1>
             <p className="text-xs sm:text-sm text-brand-teal-200 flex items-center gap-1 font-medium">
@@ -247,10 +247,10 @@ export default function BeachProfilePage({
             </p>
           </div>
 
-          {Number(beach.average_rating) > 0 && (
+          {Number(beach.averagerating) > 0 && (
             <div className="bg-black/60 backdrop-blur-md text-white px-3.5 py-1.5 rounded-full text-xs font-extrabold flex items-center gap-1.5 border border-white/20 shadow-md">
               <Star className="w-4 h-4 fill-brand-sun-400 text-brand-sun-700" />
-              <span>{Number(beach.average_rating).toFixed(1)}</span>
+              <span>{Number(beach.averagerating).toFixed(1)}</span>
             </div>
           )}
         </div>
@@ -271,29 +271,29 @@ export default function BeachProfilePage({
               <span>{beach.location || 'Location not provided'}</span>
             </div>
 
-            {beach.contact_phone && (
+            {beach.contactphone && (
               <a
-                href={`tel:${beach.contact_phone}`}
+                href={`tel:${beach.contactphone}`}
                 className="flex items-center gap-1.5 text-slate-700 dark:text-neutral-300 hover:text-brand-navy-500 dark:hover:text-white transition-colors font-medium"
               >
                 <Phone className="w-3.5 h-3.5 text-brand-navy-500 dark:text-brand-teal-300 flex-shrink-0" />
-                <span>{beach.contact_phone}</span>
+                <span>{beach.contactphone}</span>
               </a>
             )}
 
-            {beach.contact_email && (
+            {beach.contactemail && (
               <a
-                href={`mailto:${beach.contact_email}`}
+                href={`mailto:${beach.contactemail}`}
                 className="flex items-center gap-1.5 text-slate-700 dark:text-neutral-300 hover:text-brand-navy-500 dark:hover:text-white transition-colors font-medium"
               >
                 <Mail className="w-3.5 h-3.5 text-brand-navy-500 dark:text-brand-teal-300 flex-shrink-0" />
-                <span>{beach.contact_email}</span>
+                <span>{beach.contactemail}</span>
               </a>
             )}
 
-            {beach.facebook_url && (
+            {beach.facebookurl && (
               <a
-                href={beach.facebook_url}
+                href={beach.facebookurl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-brand-navy-500 font-bold hover:underline"
@@ -306,9 +306,9 @@ export default function BeachProfilePage({
               </a>
             )}
 
-            {beach.instagram_url && (
+            {beach.instagramurl && (
               <a
-                href={beach.instagram_url}
+                href={beach.instagramurl}
                 target="_blank"
                 rel="noopener noreferrer"
                 className="inline-flex items-center gap-1.5 text-pink-600 font-bold hover:underline"
@@ -393,10 +393,10 @@ export default function BeachProfilePage({
           {activeTab === 'general' && (
             <div className="space-y-8">
               <div className="space-y-3">
-                {beach.virtual_tour_url ? (
+                {beach.virtualtoururl ? (
                   <div className="relative w-full h-80 sm:h-96 md:h-[460px] overflow-hidden bg-black border border-slate-200 dark:border-neutral-800 shadow-md">
                     <iframe
-                      src={beach.virtual_tour_url}
+                      src={beach.virtualtoururl}
                       title={`${beach.name} 360 Tour`}
                       className="w-full h-full border-0"
                       allow="accelerometer; autoplay; clipboard-write; encrypted-media; fullscreen; gyroscope; magnetometer; picture-in-picture; web-share; vr; xr-spatial-tracking"
@@ -447,37 +447,37 @@ export default function BeachProfilePage({
                     <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400">Operating Schedule</span>
                   </div>
                   <div className="space-y-1.5">
-                    {formatOpeningHoursGroups(beach.opening_hours).map((group) => (
+                    {formatOpeningHoursGroups(beach.openinghours).map((group) => (
                       <div key={`${group.days}-${group.hours}`} className="flex flex-col gap-3 rounded-xl bg-white p-3 dark:bg-neutral-900/60 sm:flex-row sm:items-center sm:justify-between">
                         <div className="min-w-0">
                           <span className="block text-[11px] font-medium text-slate-500 dark:text-neutral-400">{group.days}</span>
                           <span className="block text-base font-extrabold text-brand-navy-500 dark:text-brand-teal-300">{group.hours}</span>
                         </div>
-                        <OpeningStatusPill hours={beach.opening_hours} />
+                        <OpeningStatusPill hours={beach.openinghours} />
                       </div>
                     ))}
                   </div>
                 </div>
               </div>
 
-              {(beach.peak_days || beach.peak_hours || beach.best_visiting_time) && (
+              {(beach.peakdays || beach.peakhours || beach.bestvisitingtime) && (
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                  {beach.peak_days && (
+                  {beach.peakdays && (
                     <div className="p-4 rounded-2xl bg-white dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 space-y-1">
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Peak Visiting Days</span>
-                      <p className="text-sm font-bold text-brand-navy-500 dark:text-brand-teal-300">{beach.peak_days}</p>
+                      <p className="text-sm font-bold text-brand-navy-500 dark:text-brand-teal-300">{beach.peakdays}</p>
                     </div>
                   )}
-                  {beach.peak_hours && (
+                  {beach.peakhours && (
                     <div className="p-4 rounded-2xl bg-white dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 space-y-1">
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Peak Visiting Hours</span>
-                      <p className="text-sm font-bold text-brand-navy-500 dark:text-brand-teal-300">{beach.peak_hours}</p>
+                      <p className="text-sm font-bold text-brand-navy-500 dark:text-brand-teal-300">{beach.peakhours}</p>
                     </div>
                   )}
-                  {beach.best_visiting_time && (
+                  {beach.bestvisitingtime && (
                     <div className="p-4 rounded-2xl bg-white dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 space-y-1">
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Best Time to Visit</span>
-                      <p className="text-sm font-bold text-brand-navy-500 dark:text-brand-teal-300">{beach.best_visiting_time}</p>
+                      <p className="text-sm font-bold text-brand-navy-500 dark:text-brand-teal-300">{beach.bestvisitingtime}</p>
                     </div>
                   )}
                 </div>
@@ -521,7 +521,7 @@ export default function BeachProfilePage({
                 <div className="space-y-5">
                   {resortPosts.length > 0 ? resortPosts.map((post, index) => (
                     <div
-                      key={post.id || `${post.image_url}-${index}`}
+                      key={post.id || `${post.imageurl}-${index}`}
                       className="rounded-2xl border border-slate-200 dark:border-neutral-800 bg-white dark:bg-neutral-900/50 overflow-hidden shadow-xs space-y-3"
                     >
                       <div className="p-4 flex items-center gap-3 border-b border-slate-100 dark:border-neutral-800">
@@ -530,9 +530,9 @@ export default function BeachProfilePage({
                         </div>
                         <div>
                           <h4 className="text-xs font-bold text-slate-900 dark:text-white">{beach.name}</h4>
-                          {post.created_at && (
+                          {post.createdat && (
                             <span className="text-[10px] text-slate-400">
-                              {new Date(post.created_at).toLocaleDateString()}
+                              {new Date(post.createdat).toLocaleDateString()}
                             </span>
                           )}
                         </div>
@@ -544,9 +544,9 @@ export default function BeachProfilePage({
                         </div>
                       )}
 
-                      {post.image_url && (
+                      {post.imageurl && (
                         <div className="relative w-full h-72 sm:h-96 bg-slate-900">
-                          <Image src={post.image_url} alt="Resort update" fill className="object-cover" sizes="800px" />
+                          <Image src={post.imageurl} alt="Resort update" fill className="object-cover" sizes="800px" />
                         </div>
                       )}
                     </div>
@@ -587,12 +587,12 @@ export default function BeachProfilePage({
                   </p>
                 </div>
 
-                {beach.cottage_fee && (
+                {beach.cottagefee && (
                   <div className="p-5 rounded-2xl bg-white dark:bg-neutral-900/60 border border-slate-200 dark:border-neutral-800 flex items-center justify-between shadow-2xs">
                     <div>
                       <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">Base Cottage Daily Rate</span>
                       <div className="text-lg font-extrabold text-brand-navy-500 dark:text-brand-teal-300">
-                        ₱{beach.cottage_fee}
+                        ₱{beach.cottagefee}
                       </div>
                     </div>
                     <span className="text-xs text-slate-500 dark:text-neutral-400">Day access per cottage unit</span>
@@ -605,7 +605,7 @@ export default function BeachProfilePage({
                       <CottageCard
                         key={cottage.id}
                         name={cottage.name}
-                        imageUrl={cottage.image_url}
+                        imageUrl={cottage.imageurl}
                         photoCount={cottage.photos?.length || 0}
                         price={cottage.price}
                         capacity={cottage.capacity}
@@ -615,8 +615,8 @@ export default function BeachProfilePage({
                             name: cottage.name,
                             photos: cottage.photos?.length
                               ? cottage.photos
-                              : cottage.image_url
-                                ? [{ image_url: cottage.image_url }]
+                              : cottage.imageurl
+                                ? [{ imageurl: cottage.imageurl }]
                                 : [],
                             description: cottage.description,
                             capacity: cottage.capacity,
@@ -664,7 +664,7 @@ export default function BeachProfilePage({
                         key={facility.id}
                         name={facility.name}
                         category={facility.category}
-                        imageUrl={facility.image_url}
+                        imageUrl={facility.imageurl}
                         description={facility.description}
                         basePrice={facility.price}
                         rates={facility.rates}
@@ -674,8 +674,8 @@ export default function BeachProfilePage({
                             name: facility.name,
                             photos: facility.photos?.length
                               ? facility.photos
-                              : facility.image_url
-                                ? [{ image_url: facility.image_url }]
+                              : facility.imageurl
+                                ? [{ imageurl: facility.imageurl }]
                                 : [],
                             description: facility.description,
                             infoLabel: getFacilityCategoryLabel(facility.category),
@@ -776,10 +776,10 @@ export default function BeachProfilePage({
                       Share your experience and browse authentic visitor feedback for {beach.name}.
                     </p>
                   </div>
-                  {Number(beach.average_rating) > 0 && (
+                  {Number(beach.averagerating) > 0 && (
                     <div className="flex items-center gap-1.5 px-3.5 py-1.5 rounded-full bg-brand-sun-50 dark:bg-brand-navy-900/30 border border-brand-sun-200 dark:border-brand-navy-800 text-brand-navy-700 dark:text-brand-sun-400 text-xs font-extrabold">
                       <Star className="w-4 h-4 fill-brand-sun-400 text-brand-sun-700" />
-                      <span>{Number(beach.average_rating).toFixed(1)}</span>
+                      <span>{Number(beach.averagerating).toFixed(1)}</span>
                     </div>
                   )}
                 </div>
@@ -993,9 +993,9 @@ export default function BeachProfilePage({
                           <p className="text-xs sm:text-sm text-slate-700 dark:text-slate-300 leading-relaxed">
                             {rev.comment}
                           </p>
-                          {rev.created_at && (
+                          {rev.createdat && (
                             <time className="block text-[11px] text-slate-400">
-                              {new Date(rev.created_at).toLocaleDateString()}
+                              {new Date(rev.createdat).toLocaleDateString()}
                             </time>
                           )}
                         </article>
@@ -1012,7 +1012,7 @@ export default function BeachProfilePage({
       <VirtualTourModal
         isOpen={showTourModal}
         onClose={() => setShowTourModal(false)}
-        tourUrl={beach.virtual_tour_url}
+        tourUrl={beach.virtualtoururl}
         beachName={beach.name}
       />
       {selectedDetail && (

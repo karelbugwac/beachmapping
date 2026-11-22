@@ -8,9 +8,9 @@ import { formatFacilityFeeAmount, getFacilityFeeItems } from '@/lib/utils/facili
 
 export interface FacilityCardPhoto {
   id?: string;
-  image_url: string;
-  storage_path?: string;
-  sort_order?: number;
+  imageurl: string;
+  storagepath?: string;
+  sortorder?: number;
 }
 
 interface FacilityCardProps {

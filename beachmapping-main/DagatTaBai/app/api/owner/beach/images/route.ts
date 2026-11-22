@@ -28,7 +28,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Only compressed WebP or JPEG images are accepted.' }, { status: 400 });
     }
 
-    const requestedBeachId = formData.get('beach_id');
+    const requestedBeachId = formData.get('beachid');
     let beachId = 'general';
 
     if (typeof requestedBeachId === 'string' && requestedBeachId.trim()) {
@@ -36,7 +36,7 @@ export async function POST(request: Request) {
     } else {
       const { data: beach } = await (auth.adminClient.from('beaches') as any)
         .select('id')
-        .eq('owner_id', auth.user.id)
+        .eq('ownerid', auth.user.id)
         .maybeSingle();
       if (beach?.id) {
         beachId = beach.id;

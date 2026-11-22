@@ -2,7 +2,7 @@ import { NextResponse } from 'next/server';
 import { createAdminClient, createServerSupabaseClient } from '@/lib/supabase/server';
 import { hashPin } from '@/lib/services/pin';
 import { isAccountStatus, isSuspensionActive } from '@/lib/utils/account-status';
-import { persistExpiredSuspension } from '@/lib/server/account-status';
+import { persistExpiredSuspension } from '@/lib/server/accountstatus';
 import { ADMIN_MESSAGES } from '@/lib/validation/admin-messages';
 
 export async function POST(request: Request) {
@@ -46,13 +46,13 @@ export async function POST(request: Request) {
       const [emailLookup, nameLookup] = await Promise.all([
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (adminSupabase.from('profiles') as any)
-          .select('id, email, full_name, role, pin')
+          .select('id, email, fullname, role, pin')
           .in('email', [adminEmail, previousAdminEmail])
           .in('role', ['admin', 'beach_manager']),
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
         (adminSupabase.from('profiles') as any)
-          .select('id, email, full_name, role, pin')
-          .in('full_name', ['Administrator', 'administrator'])
+          .select('id, email, fullname, role, pin')
+          .in('fullname', ['Administrator', 'administrator'])
           .in('role', ['admin', 'beach_manager']),
       ]);
 
@@ -99,7 +99,7 @@ export async function POST(request: Request) {
           adminProfile = {
             id: authUser.id,
             email: adminEmail,
-            full_name: 'Administrator',
+            fullname: 'Administrator',
             role: 'admin',
             pin: pinHash,
           };
@@ -118,7 +118,7 @@ export async function POST(request: Request) {
           adminProfile = {
             id: authData.user.id,
             email: adminEmail,
-            full_name: 'Administrator',
+            fullname: 'Administrator',
             role: 'admin',
             pin: pinHash,
           };
@@ -126,11 +126,11 @@ export async function POST(request: Request) {
 
         const { error: profileUpsertError } = await (adminSupabase.from('profiles') as any).upsert({
           id: adminProfile.id,
-          full_name: 'Administrator',
+          fullname: 'Administrator',
           email: adminEmail,
           role: 'admin',
           pin: pinHash,
-          updated_at: new Date().toISOString(),
+          updatedat: new Date().toISOString(),
         });
         if (profileUpsertError) throw profileUpsertError;
       } else if (authUser) {
@@ -161,15 +161,15 @@ export async function POST(request: Request) {
 
       // Always update the PIN in database to ensure consistency
       const { error: pinUpdateError } = await (adminSupabase.from('profiles') as any)
-        .update({ pin: pinHash, updated_at: new Date().toISOString() })
+        .update({ pin: pinHash, updatedat: new Date().toISOString() })
         .eq('id', adminProfile.id);
       if (pinUpdateError) throw pinUpdateError;
 
       // Always update the password in Supabase auth (and strip any oversized base64 avatar from user_metadata to prevent Set-Cookie header overflow)
       const existingMeta = (authUser?.user_metadata || {}) as Record<string, unknown>;
       const cleanedMeta =
-        typeof existingMeta.profile_image_url === 'string' && existingMeta.profile_image_url.startsWith('data:')
-          ? { ...existingMeta, profile_image_url: null }
+        typeof existingMeta.profileimageurl === 'string' && existingMeta.profileimageurl.startsWith('data:')
+          ? { ...existingMeta, profileimageurl: null }
           : undefined;
 
       const { error: passwordSyncError } = await adminSupabase.auth.admin.updateUserById(
@@ -189,8 +189,8 @@ export async function POST(request: Request) {
         .update({
           email: adminEmail,
           role: 'admin',
-          full_name: 'Administrator',
-          updated_at: new Date().toISOString(),
+          fullname: 'Administrator',
+          updatedat: new Date().toISOString(),
         })
         .eq('id', adminProfile.id);
       if (adminEmailSyncError) throw adminEmailSyncError;
@@ -238,25 +238,25 @@ export async function POST(request: Request) {
       }
 
       const ownerProfileColumnSets = [
-        'id, email, full_name, role, pin, account_status, status_reason, status_reason_type, suspended_until, pin_reset_required, status, suspension_reason, suspended_at, suspension_ends_at',
-        'id, email, full_name, role, pin, status, suspension_reason, suspended_at, suspension_ends_at',
-        'id, email, full_name, role, pin',
+        'id, email, fullname, role, pin, accountstatus, statusreason, statusreasontype, suspendeduntil, pinresetrequired, status, suspensionreason, suspendedat, suspensionendsat',
+        'id, email, fullname, role, pin, status, suspensionreason, suspendedat, suspensionendsat',
+        'id, email, fullname, role, pin',
       ] as const;
       let ownerProfile: {
         id: string;
         email: string | null;
-        full_name: string | null;
+        fullname: string | null;
         role: string;
         pin: string | null;
-        account_status?: string | null;
-        status_reason?: string | null;
-        status_reason_type?: string | null;
-        suspended_until?: string | null;
-        pin_reset_required?: boolean;
+        accountstatus?: string | null;
+        statusreason?: string | null;
+        statusreasontype?: string | null;
+        suspendeduntil?: string | null;
+        pinresetrequired?: boolean;
         status?: string | null;
-        suspension_reason?: string | null;
-        suspended_at?: string | null;
-        suspension_ends_at?: string | null;
+        suspensionreason?: string | null;
+        suspendedat?: string | null;
+        suspensionendsat?: string | null;
       } | null = null;
       let ownerLookupError: { code?: string } | null = null;
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -281,20 +281,20 @@ export async function POST(request: Request) {
         );
       }
 
-      const ownerStatus = ownerProfile.account_status || ownerProfile.status || 'active';
-      const suspendedUntil = ownerProfile.suspended_until || ownerProfile.suspension_ends_at || null;
+      const ownerStatus = ownerProfile.accountstatus || ownerProfile.status || 'active';
+      const suspendedUntil = ownerProfile.suspendeduntil || ownerProfile.suspensionendsat || null;
       if (ownerStatus === 'suspended' && !isSuspensionActive('suspended', suspendedUntil)) {
         await persistExpiredSuspension(adminSupabase, ownerProfile.id);
-        ownerProfile.account_status = 'active';
+        ownerProfile.accountstatus = 'active';
       } else if (isAccountStatus(ownerStatus) && isSuspensionActive(ownerStatus, suspendedUntil)) {
         const sessionClient = await createServerSupabaseClient();
         await sessionClient.auth.signOut();
         return NextResponse.json({
           error: ADMIN_MESSAGES.suspended,
           code: 'ACCOUNT_SUSPENDED',
-          reason_type: ownerProfile.status_reason_type || null,
-          reason: ownerProfile.status_reason || ownerProfile.suspension_reason || null,
-          suspended_until: suspendedUntil,
+          reasontype: ownerProfile.statusreasontype || null,
+          reason: ownerProfile.statusreason || ownerProfile.suspensionreason || null,
+          suspendeduntil: suspendedUntil,
         }, { status: 403 });
       }
 
@@ -308,7 +308,7 @@ export async function POST(request: Request) {
         );
       }
 
-      if (ownerProfile.pin_reset_required) {
+      if (ownerProfile.pinresetrequired) {
         const sessionClient = await createServerSupabaseClient();
         const { error: passwordError } = await sessionClient.auth.signInWithPassword({
           email,
@@ -337,7 +337,7 @@ export async function POST(request: Request) {
       }
       if (ownerProfile.pin === cleanPin) {
         const { error: pinUpdateError } = await (adminSupabase.from('profiles') as any)
-          .update({ pin: pinHash, updated_at: new Date().toISOString() })
+          .update({ pin: pinHash, updatedat: new Date().toISOString() })
           .eq('id', ownerProfile.id);
         if (pinUpdateError) throw pinUpdateError;
       }
@@ -349,9 +349,9 @@ export async function POST(request: Request) {
         email,
         role: ownerProfile.role,
         status: 'active',
-        suspension_reason: ownerProfile.status_reason || ownerProfile.suspension_reason || ownerMetadata.status_reason || null,
-        suspended_at: ownerProfile.suspended_at || ownerMetadata.status_updated_at || null,
-        suspension_ends_at: suspendedUntil,
+        suspensionreason: ownerProfile.statusreason || ownerProfile.suspensionreason || ownerMetadata.statusreason || null,
+        suspendedat: ownerProfile.suspendedat || ownerMetadata.statusupdatedat || null,
+        suspensionendsat: suspendedUntil,
         redirect: '/owner/dashboard',
       });
     }

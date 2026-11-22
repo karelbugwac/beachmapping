@@ -18,7 +18,7 @@ async function runTests() {
   try {
     const res = await fetch('http://localhost:3000/api/beaches/ranola');
     const ranola = await res.json();
-    console.log(`[PASS] /api/beaches/ranola: slug=${ranola.slug}, 360 tour=${ranola.virtual_tour_url ? 'PRESENT' : 'NONE'}`);
+    console.log(`[PASS] /api/beaches/ranola: slug=${ranola.slug}, 360 tour=${ranola.virtualtoururl ? 'PRESENT' : 'NONE'}`);
   } catch (err) {
     console.error('[FAIL] /api/beaches/ranola error:', err);
   }
@@ -27,7 +27,7 @@ async function runTests() {
   try {
     const res = await fetch('http://localhost:3000/api/beaches/majestique');
     const majestique = await res.json();
-    console.log(`[PASS] /api/beaches/majestique: slug=${majestique.slug}, 360 tour=${majestique.virtual_tour_url || 'Under Maintenance'}`);
+    console.log(`[PASS] /api/beaches/majestique: slug=${majestique.slug}, 360 tour=${majestique.virtualtoururl || 'Under Maintenance'}`);
   } catch (err) {
     console.error('[FAIL] /api/beaches/majestique error:', err);
   }

@@ -7,19 +7,19 @@ import { IMAGE_UPLOAD_CONFIG } from '@/lib/utils/image-upload-config';
 const noStoreHeaders = { 'Cache-Control': 'no-store, max-age=0' };
 
 function toOwnerBeach(row: any) {
-  const feeParts = typeof row.entrance_fee === 'string' ? row.entrance_fee.split('|') : [];
+  const feeParts = typeof row.entrancefee === 'string' ? row.entrancefee.split('|') : [];
   const adultFee = row.general_information_fee ?? (feeParts[0] ?? null);
   const childFee = row.child_entrance_fee_value ?? (feeParts[1] ?? null);
   const seniorFee = row.senior_entrance_fee_value ?? (feeParts[2] ?? null);
   return {
     ...row,
-    cover_image: row.cover_image_url || null,
-    profile_image: row.profile_image_url || null,
+    cover_image: row.coverimageurl || null,
+    profile_image: row.profileimageurl || null,
     images: Array.isArray(row.images) ? row.images : [],
-    opening_hours: (() => {
-      if (typeof row.opening_hours === 'string' && row.opening_hours.startsWith('{')) {
+    openinghours: (() => {
+      if (typeof row.openinghours === 'string' && row.openinghours.startsWith('{')) {
         try {
-          return JSON.parse(row.opening_hours);
+          return JSON.parse(row.openinghours);
         } catch {
           return {
             Mon: '',
@@ -32,8 +32,8 @@ function toOwnerBeach(row: any) {
           };
         }
       }
-      if (typeof row.opening_hours === 'object') {
-        return row.opening_hours;
+      if (typeof row.openinghours === 'object') {
+        return row.openinghours;
       }
       return {
         Mon: '',
@@ -45,13 +45,13 @@ function toOwnerBeach(row: any) {
         Sun: ''
       };
     })(),
-    entrance_fee: adultFee == null && childFee == null && seniorFee == null ? null : `${adultFee ?? ''}|${childFee ?? ''}|${seniorFee ?? ''}`,
+    entrancefee: adultFee == null && childFee == null && seniorFee == null ? null : `${adultFee ?? ''}|${childFee ?? ''}|${seniorFee ?? ''}`,
     entrance_fee_adults: adultFee == null ? '' : String(adultFee),
     entrance_fee_children: childFee == null ? '' : String(childFee),
     entrance_fee_senior: seniorFee == null ? '' : String(seniorFee),
-    cottage_fee: row.cottage_fee || null,
+    cottagefee: row.cottagefee || null,
     rules: row.rules || null,
-    average_rating: Number(row.average_rating || 0),
+    averagerating: Number(row.averagerating || 0),
     amenities: [],
     activities: [],
     external_links: [],
@@ -95,17 +95,17 @@ function getOwnedGalleryStoragePath(
 
 async function toOwnerBeachWithFees(adminSupabase: ReturnType<typeof createAdminClient>, row: any) {
   const { data: generalInformation, error } = await (adminSupabase
-    .from('beach_general_information') as any)
-    .select('entrance_fee, child_entrance_fee, senior_entrance_fee')
-    .eq('beach_id', row.id)
+    .from('beachinfo') as any)
+    .select('entrancefee, childentrancefee, seniorentrancefee')
+    .eq('beachid', row.id)
     .maybeSingle();
   if (error) throw error;
 
   return toOwnerBeach({
     ...row,
-    general_information_fee: generalInformation?.entrance_fee ?? null,
-    child_entrance_fee_value: generalInformation?.child_entrance_fee ?? null,
-    senior_entrance_fee_value: generalInformation?.senior_entrance_fee ?? null,
+    general_information_fee: generalInformation?.entrancefee ?? null,
+    child_entrance_fee_value: generalInformation?.childentrancefee ?? null,
+    senior_entrance_fee_value: generalInformation?.seniorentrancefee ?? null,
   });
 }
 
@@ -117,7 +117,7 @@ export async function GET(request: Request) {
     }
     const ownerId = auth.user.id;
     const url = new URL(request.url);
-    const requestedBeachId = url.searchParams.get('beach_id');
+    const requestedBeachId = url.searchParams.get('beachid');
     const requestedSlug = url.searchParams.get('slug');
 
     const adminSupabase = createAdminClient();
@@ -131,7 +131,7 @@ export async function GET(request: Request) {
         query = query.eq('slug', requestedSlug);
       }
       if (auth.role !== 'admin') {
-        query = query.eq('owner_id', ownerId);
+        query = query.eq('ownerid', ownerId);
       }
       const { data, error } = await query.maybeSingle();
       if (error) throw error;
@@ -144,7 +144,7 @@ export async function GET(request: Request) {
     // Otherwise, fetch all beaches belonging to this owner (or all beaches if admin)
     let query = (adminSupabase.from('beaches') as any).select('*');
     if (auth.role !== 'admin') {
-      query = query.eq('owner_id', ownerId);
+      query = query.eq('ownerid', ownerId);
     }
     const { data, error } = await query.order('name');
 
@@ -222,9 +222,9 @@ export async function POST(request: Request) {
     let result;
     let removedGalleryStoragePaths: string[] = [];
     if (typeof body.id === 'string' && body.id) {
-      // Find existing beach to preserve slug, owner_id, coordinates, and virtual_tour_url if needed
+      // Find existing beach to preserve slug, ownerid, coordinates, and virtualtoururl if needed
       const { data: existing, error: existingError } = await (adminSupabase.from('beaches') as any)
-        .select('slug, owner_id, virtual_tour_url, latitude, longitude, location, opening_hours, images, cover_image_url, profile_image_url')
+        .select('slug, ownerid, virtualtoururl, latitude, longitude, location, openinghours, images, coverimageurl, profileimageurl')
         .eq('id', body.id)
         .maybeSingle();
       if (existingError) throw existingError;
@@ -244,13 +244,13 @@ export async function POST(request: Request) {
       }
       const retainedImageUrls = new Set([
         ...getImageUrls(submittedImages),
-        body.cover_image || body.cover_image_url || null,
-        body.profile_image || body.profile_image_url || null,
+        body.cover_image || body.coverimageurl || null,
+        body.profile_image || body.profileimageurl || null,
       ].filter((url): url is string => typeof url === 'string' && url.length > 0));
       const oldImageUrls = [
         ...getImageUrls(existing.images),
-        existing.cover_image_url,
-        existing.profile_image_url,
+        existing.coverimageurl,
+        existing.profileimageurl,
       ].filter((url): url is string => typeof url === 'string' && url.length > 0);
       const beachMediaPublicRoot = adminSupabase.storage.from('beach-media').getPublicUrl('').data.publicUrl;
       removedGalleryStoragePaths = [...new Set(
@@ -259,7 +259,7 @@ export async function POST(request: Request) {
           .map((url) => getOwnedGalleryStoragePath(
             beachMediaPublicRoot,
             url,
-            existing.owner_id,
+            existing.ownerid,
             body.id
           ))
           .filter((storagePath): storagePath is string => Boolean(storagePath))
@@ -277,32 +277,32 @@ export async function POST(request: Request) {
       const beachPayload = {
         name,
         slug: existing?.slug || slug,
-        owner_id: existing?.owner_id || ownerId,
+        ownerid: existing?.ownerid || ownerId,
         description: body.description || '',
         // Owners may edit the address, but only admins can directly change approved pin coordinates.
         location,
         latitude,
         longitude,
-        cover_image_url: body.cover_image || body.cover_image_url || null,
-        profile_image_url: body.profile_image || body.profile_image_url || null,
+        coverimageurl: body.cover_image || body.coverimageurl || null,
+        profileimageurl: body.profile_image || body.profileimageurl || null,
         // Beach owners cannot directly edit 360 virtual tours; only admins can modify directly
-        virtual_tour_url: auth.role === 'admin' ? (body.virtual_tour_url || null) : (existing?.virtual_tour_url || null),
+        virtualtoururl: auth.role === 'admin' ? (body.virtualtoururl || null) : (existing?.virtualtoururl || null),
         images: Array.isArray(body.images) ? body.images : [],
-        opening_hours: typeof body.opening_hours === 'object'
-          ? JSON.stringify(body.opening_hours)
-          : (body.opening_hours ?? existing?.opening_hours ?? ''),
-        entrance_fee: formatFeeString(adultFee, childFee, seniorFee),
-        cottage_fee: body.cottage_fee || null,
+        openinghours: typeof body.openinghours === 'object'
+          ? JSON.stringify(body.openinghours)
+          : (body.openinghours ?? existing?.openinghours ?? ''),
+        entrancefee: formatFeeString(adultFee, childFee, seniorFee),
+        cottagefee: body.cottagefee || null,
         rules: body.rules || null,
-        contact_phone: body.contact_phone || null,
-        contact_email: body.contact_email || null,
-        facebook_url: body.facebook_url || null,
-        instagram_url: body.instagram_url || null,
-        peak_days: body.peak_days || null,
-        peak_hours: body.peak_hours || null,
-        best_visiting_time: body.best_visiting_time || null,
+        contactphone: body.contactphone || null,
+        contactemail: body.contactemail || null,
+        facebookurl: body.facebookurl || null,
+        instagramurl: body.instagramurl || null,
+        peakdays: body.peakdays || null,
+        peakhours: body.peakhours || null,
+        bestvisitingtime: body.bestvisitingtime || null,
         status: 'active',
-        updated_at: new Date().toISOString(),
+        updatedat: new Date().toISOString(),
       };
 
       let query = (adminSupabase.from('beaches') as any)
@@ -310,7 +310,7 @@ export async function POST(request: Request) {
         .eq('id', body.id);
 
       if (auth.role !== 'admin') {
-        query = query.eq('owner_id', ownerId);
+        query = query.eq('ownerid', ownerId);
       }
       result = await query.select('*').maybeSingle();
       if (!result.error && !result.data) {
@@ -327,29 +327,29 @@ export async function POST(request: Request) {
       const beachPayload = {
         name,
         slug,
-        owner_id: ownerId,
+        ownerid: ownerId,
         description: body.description || '',
         location,
         latitude: hasValidCoordinatePair ? parsedLatitude : null,
         longitude: hasValidCoordinatePair ? parsedLongitude : null,
-        cover_image_url: body.cover_image || body.cover_image_url || null,
-        profile_image_url: body.profile_image || body.profile_image_url || null,
+        coverimageurl: body.cover_image || body.coverimageurl || null,
+        profileimageurl: body.profile_image || body.profileimageurl || null,
         // New beaches created by owners start without a verified virtual tour until admin approves one
-        virtual_tour_url: auth.role === 'admin' ? (body.virtual_tour_url || null) : null,
+        virtualtoururl: auth.role === 'admin' ? (body.virtualtoururl || null) : null,
         images: Array.isArray(body.images) ? body.images : [],
-        opening_hours: typeof body.opening_hours === 'object' ? JSON.stringify(body.opening_hours) : (body.opening_hours || ''),
-        entrance_fee: formatFeeString(adultFee, childFee, seniorFee),
-        cottage_fee: body.cottage_fee || null,
+        openinghours: typeof body.openinghours === 'object' ? JSON.stringify(body.openinghours) : (body.openinghours || ''),
+        entrancefee: formatFeeString(adultFee, childFee, seniorFee),
+        cottagefee: body.cottagefee || null,
         rules: body.rules || null,
-        contact_phone: body.contact_phone || null,
-        contact_email: body.contact_email || null,
-        facebook_url: body.facebook_url || null,
-        instagram_url: body.instagram_url || null,
-        peak_days: body.peak_days || null,
-        peak_hours: body.peak_hours || null,
-        best_visiting_time: body.best_visiting_time || null,
+        contactphone: body.contactphone || null,
+        contactemail: body.contactemail || null,
+        facebookurl: body.facebookurl || null,
+        instagramurl: body.instagramurl || null,
+        peakdays: body.peakdays || null,
+        peakhours: body.peakhours || null,
+        bestvisitingtime: body.bestvisitingtime || null,
         status: 'active',
-        updated_at: new Date().toISOString(),
+        updatedat: new Date().toISOString(),
       };
       result = await (adminSupabase.from('beaches') as any)
         .insert(beachPayload)
@@ -361,25 +361,25 @@ export async function POST(request: Request) {
 
     const savedBeach = result.data;
     const { data: existingGeneralInformation, error: generalInformationReadError } =
-      await (adminSupabase.from('beach_general_information') as any)
-        .select('general_information, entrance_fee_notes, senior_entrance_fee')
-        .eq('beach_id', savedBeach.id)
+      await (adminSupabase.from('beachinfo') as any)
+        .select('generalinformation, entrancefeenotes, seniorentrancefee')
+        .eq('beachid', savedBeach.id)
         .maybeSingle();
     if (generalInformationReadError) throw generalInformationReadError;
 
     const { error: generalInformationSaveError } = await (adminSupabase
-      .from('beach_general_information') as any)
+      .from('beachinfo') as any)
       .upsert(
         {
-          beach_id: savedBeach.id,
-          entrance_fee: adultFee,
-          child_entrance_fee: childFee,
-          senior_entrance_fee: seniorFee,
-          general_information: existingGeneralInformation?.general_information ?? null,
-          entrance_fee_notes: existingGeneralInformation?.entrance_fee_notes ?? null,
-          updated_at: new Date().toISOString(),
+          beachid: savedBeach.id,
+          entrancefee: adultFee,
+          childentrancefee: childFee,
+          seniorentrancefee: seniorFee,
+          generalinformation: existingGeneralInformation?.generalinformation ?? null,
+          entrancefeenotes: existingGeneralInformation?.entrancefeenotes ?? null,
+          updatedat: new Date().toISOString(),
         },
-        { onConflict: 'beach_id' }
+        { onConflict: 'beachid' }
       );
     if (generalInformationSaveError) throw generalInformationSaveError;
 
@@ -403,7 +403,7 @@ export async function POST(request: Request) {
         success: true,
         beach: await toOwnerBeachWithFees(adminSupabase, {
           ...savedBeach,
-          entrance_fee: adultFee == null && childFee == null && seniorFee == null
+          entrancefee: adultFee == null && childFee == null && seniorFee == null
             ? null
             : `${adultFee ?? ''}|${childFee ?? ''}|${seniorFee ?? ''}`,
         }),

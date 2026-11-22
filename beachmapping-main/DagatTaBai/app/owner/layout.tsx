@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { usePathname } from 'next/navigation';
-import { AppShell } from '@/components/owner/AppShell';
+import { AppShell } from '@/components/owner/app';
 import type { BeachRecord } from '@/lib/db/beaches';
 import { useRealtimeSync } from '@/lib/realtime-sync';
 
@@ -64,7 +64,7 @@ export default function OwnerLayout({
     <AppShell
       beachName={beach?.name || 'Your Beach'}
       beachSlug={beach?.slug || beach?.id}
-      openingHours={parseOpeningHours(beach?.opening_hours)}
+      openingHours={parseOpeningHours(beach?.openinghours)}
       reviewCount={reviewCount}
       unreadNotifications={0}
     >

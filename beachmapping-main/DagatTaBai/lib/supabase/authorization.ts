@@ -20,7 +20,7 @@ export async function authorizeRoles(allowedRoles: string[]) {
   const metadata = (data.user.user_metadata || {}) as Record<string, unknown>;
 
   const { data: initialProfile, error: profileError } = await (adminClient.from('profiles') as any)
-    .select('role, status, suspension_reason, suspended_at, suspension_ends_at')
+    .select('role, status, suspensionreason, suspendedat, suspensionendsat')
     .eq('id', data.user.id)
     .maybeSingle();
   let profile = initialProfile;
@@ -43,7 +43,7 @@ export async function authorizeRoles(allowedRoles: string[]) {
     profile = {
       ...legacyProfile.data,
       status: metadata.status === 'suspended' ? 'suspended' : 'active',
-      suspension_ends_at: typeof metadata.suspension_ends_at === 'string'
+      suspensionendsat: typeof metadata.suspension_ends_at === 'string'
         ? metadata.suspension_ends_at
         : null,
     };

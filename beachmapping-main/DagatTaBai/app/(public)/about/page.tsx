@@ -113,7 +113,7 @@ export default function AboutPage() {
   };
 
   return (
-    <div className="flex flex-col min-h-screen bg-white dark:bg-black text-slate-900 dark:text-white font-sans transition-colors duration-200 overflow-x-hidden">
+    <div className="flex flex-col min-h-screen bg-white dark:bg-black text-slate-900 dark:text-white font-display transition-colors duration-200 overflow-x-hidden">
       
       {/* ── SECTION 1: WHAT SETS US APART (WHITE BACKGROUND - HOMEPAGE SECTION 2 STYLE, NO CARDS) ── */}
       <section className="w-full bg-white dark:bg-black border-b border-slate-100 dark:border-neutral-900 transition-colors duration-200 relative">
@@ -121,7 +121,7 @@ export default function AboutPage() {
           
           <ScrollReveal direction="up" duration={650}>
             <div className="text-center max-w-2xl mx-auto mb-12 sm:mb-16">
-              <h1 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-brand-navy-500 dark:text-brand-teal-300 leading-tight">
+              <h1 className="font-display text-xl sm:text-2xl font-semibold tracking-tight text-brand-navy-500 dark:text-brand-teal-300 leading-tight">
                 What Sets Us Apart
               </h1>
               <p className="mt-2 text-xs sm:text-sm text-slate-600 dark:text-slate-400">
@@ -138,7 +138,7 @@ export default function AboutPage() {
               <div className="h-10 flex items-center justify-center">
                 <HeartHandshake className="w-9 h-9 text-brand-navy-500 dark:text-brand-teal-300 stroke-[1.8] transition-transform duration-300 group-hover:scale-110" />
               </div>
-              <h2 className="text-xs sm:text-sm font-bold tracking-widest uppercase text-slate-900 dark:text-white font-heading">
+              <h2 className="text-xs sm:text-sm font-medium tracking-widest uppercase text-slate-900 dark:text-white font-display">
                 Trust Over Trends
               </h2>
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-xs">
@@ -151,7 +151,7 @@ export default function AboutPage() {
               <div className="h-10 flex items-center justify-center">
                 <Search className="w-9 h-9 text-brand-navy-500 dark:text-brand-teal-300 stroke-[1.8] transition-transform duration-300 group-hover:scale-110" />
               </div>
-              <h2 className="text-xs sm:text-sm font-bold tracking-widest uppercase text-slate-900 dark:text-white font-heading">
+              <h2 className="text-xs sm:text-sm font-medium tracking-widest uppercase text-slate-900 dark:text-white font-display">
                 More Than a Quick Search
               </h2>
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-xs">
@@ -164,7 +164,7 @@ export default function AboutPage() {
               <div className="h-10 flex items-center justify-center">
                 <HandHeart className="w-9 h-9 text-brand-navy-500 dark:text-brand-teal-300 stroke-[1.8] transition-transform duration-300 group-hover:scale-110" />
               </div>
-              <h2 className="text-xs sm:text-sm font-bold tracking-widest uppercase text-slate-900 dark:text-white font-heading">
+              <h2 className="text-xs sm:text-sm font-medium tracking-widest uppercase text-slate-900 dark:text-white font-display">
                 Shared Growth, Shared Value
               </h2>
               <p className="text-xs text-slate-600 dark:text-slate-400 leading-relaxed max-w-xs">
@@ -182,7 +182,7 @@ export default function AboutPage() {
         <div className="max-w-4xl mx-auto text-center">
           <ScrollReveal direction="up" duration={650} className="space-y-6 flex flex-col items-center">
             
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-white leading-tight">
+            <h2 className="font-display text-lg font-semibold tracking-tight text-white leading-tight sm:text-xl">
               Our Mission
             </h2>
 
@@ -204,7 +204,7 @@ export default function AboutPage() {
         <div className="max-w-4xl mx-auto text-center">
           <ScrollReveal direction="up" duration={650} className="space-y-6 flex flex-col items-center">
             
-            <h2 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-brand-navy-500 dark:text-brand-teal-300 leading-tight">
+            <h2 className="font-display text-lg font-semibold tracking-tight text-brand-navy-500 dark:text-brand-teal-300 leading-tight sm:text-xl">
               Our Vision
             </h2>
 
@@ -227,7 +227,7 @@ export default function AboutPage() {
           
           <ScrollReveal direction="up" duration={650}>
             <div className="text-center max-w-2xl mx-auto mb-10 sm:mb-12">
-              <h2 className="text-2xl sm:text-3xl lg:text-4xl font-sans font-bold tracking-tight text-white leading-tight">
+              <h2 className="font-display text-lg font-semibold tracking-tight text-white leading-tight sm:text-xl">
                 Meet Our Team
               </h2>
             </div>
@@ -321,12 +321,12 @@ export default function AboutPage() {
 
       <section className="w-full bg-white dark:bg-black px-4 py-12 text-center sm:px-6 lg:px-8">
         <div className="mx-auto max-w-3xl space-y-4">
-          <h2 className="text-xl font-bold text-brand-navy-500 dark:text-brand-teal-300 sm:text-2xl">
+          <h2 className="font-display text-lg font-medium text-brand-navy-500 dark:text-brand-teal-300 sm:text-xl">
             Have a question?
           </h2>
           <Link
             href="/contact"
-            className="inline-flex min-h-11 items-center justify-center rounded-full bg-brand-navy-500 px-6 py-2.5 text-xs sm:text-sm font-display uppercase tracking-[0.12em] font-medium text-white shadow-sm transition-colors hover:bg-brand-navy-600 dark:bg-brand-teal-600 dark:hover:bg-brand-teal-500"
+            className="inline-flex min-h-11 items-center justify-center rounded-full bg-[#F4BF3E] hover:bg-[#e0a92e] px-6 py-2.5 text-xs sm:text-sm font-display normal-case font-medium text-black shadow-md transition-all duration-200 hover:-translate-y-0.5 active:translate-y-0"
           >
             Contact us
           </Link>

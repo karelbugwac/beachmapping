@@ -1,6 +1,6 @@
 import { NextRequest } from 'next/server';
 import { askGeminiAssistantStream } from '@/lib/services/gemini';
-import { matchBaiInstantAnswer, getBaiApologyFallback } from '@/lib/services/baiKnowledgeBase';
+import { matchBaiInstantAnswer, getBaiApologyFallback } from '@/lib/services/baiknowledge';
 import { getCurrentSession } from '@/lib/db/auth';
 import { createAdminClient } from '@/lib/supabase/server';
 import { checkRateLimit } from '@/lib/utils/rate-limit';
@@ -86,9 +86,9 @@ export async function POST(req: NextRequest) {
               .then(async (user) => {
                 if (!user) return;
                 const adminClient = createAdminClient();
-                await (adminClient.from('ai_chat_messages') as any).insert([
-                  { user_id: user.id, role: 'user', content: message.trim().slice(0, 500) },
-                  { user_id: user.id, role: 'assistant', content: fullReply.slice(0, 8000) },
+                await (adminClient.from('chatmessages') as any).insert([
+                  { userid: user.id, role: 'user', content: message.trim().slice(0, 500) },
+                  { userid: user.id, role: 'assistant', content: fullReply.slice(0, 8000) },
                 ]);
               })
               .catch(() => {

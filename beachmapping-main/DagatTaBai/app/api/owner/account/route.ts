@@ -12,7 +12,7 @@ export async function POST(request: Request) {
     }
 
     const { error: profileError } = await (auth.adminClient.from('profiles') as any)
-      .update({ pin: hashPin(newPin), updated_at: new Date().toISOString() })
+      .update({ pin: hashPin(newPin), updatedat: new Date().toISOString() })
       .eq('id', auth.user.id);
     if (profileError) throw profileError;
 
