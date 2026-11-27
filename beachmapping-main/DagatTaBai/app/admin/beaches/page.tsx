@@ -121,6 +121,12 @@ export default function AdminBeachesPage() {
   const [coordRejectReason, setCoordRejectReason] = useState('');
   const [isProcessingCoordAction, setIsProcessingCoordAction] = useState(false);
 
+  // Suspend Beach & Owner Account Modal
+  const [suspendingBeach, setSuspendingBeach] = useState<BeachRecord | null>(null);
+  const [suspendBeachReasonType, setSuspendBeachReasonType] = useState('Violation of community guidelines');
+  const [suspendBeachReason, setSuspendBeachReason] = useState('');
+  const [isSuspendingBeach, setIsSuspendingBeach] = useState(false);
+
   // Beach Details & Management Modal State
   const [editingBeach, setEditingBeach] = useState<BeachRecord | null>(null);
   const [editTab, setEditTab] = useState<'basic' | 'reviews' | 'tour' | 'coordinates' | 'rates' | 'photos' | 'posts' | 'dos'>('basic');
@@ -335,13 +341,25 @@ export default function AdminBeachesPage() {
     });
   }, [beaches, searchQuery, filterMode, reports, pendingTourRequests, pendingCoordRequests]);
 
-  const toggleBeachStatus = async (beach: BeachRecord) => {
+  const toggleBeachStatus = async (beach: BeachRecord, customReason?: string, customReasonType?: string) => {
     const status = beach.status === 'active' ? 'suspended' : 'active';
+    if (status === 'suspended' && customReason === undefined) {
+      setSuspendingBeach(beach);
+      setSuspendBeachReasonType('Violation of community guidelines');
+      setSuspendBeachReason('');
+      return;
+    }
     try {
+      setIsSuspendingBeach(true);
       const response = await fetch('/api/admin/beaches', {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ id: beach.id, status }),
+        body: JSON.stringify({
+          id: beach.id,
+          status,
+          suspensionreason: status === 'suspended' ? customReason : null,
+          reasontype: status === 'suspended' ? customReasonType : null,
+        }),
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Failed to update beach status.');
@@ -352,14 +370,18 @@ export default function AdminBeachesPage() {
         setEditingBeach((prev) => (prev ? { ...prev, status: data.beach.status } : null));
         setEditForm((prev) => ({ ...prev, status: data.beach.status }));
       }
+      setSuspendingBeach(null);
+      setSuspendBeachReason('');
       if (status === 'active') {
-        showToast(`"${beach.name}" activated.`, 'success');
+        showToast(`"${beach.name}" and owner account activated.`, 'success');
       } else {
-        showToast(`"${beach.name}" suspended.`, 'error');
+        showToast(`"${beach.name}" and owner account suspended.`, 'error');
       }
-      notifyRealtimeSync('beaches');
+      notifyRealtimeSync('all');
     } catch (error: unknown) {
       showToast(error instanceof Error ? error.message : 'Failed to update beach status.', 'error');
+    } finally {
+      setIsSuspendingBeach(false);
     }
   };
 
@@ -1267,6 +1289,18 @@ export default function AdminBeachesPage() {
 
                     <button
                       type="button"
+                      onClick={() => void toggleBeachStatus(beach)}
+                      className={`inline-flex items-center gap-1 rounded-lg border px-2.5 py-1.5 text-xs font-bold transition cursor-pointer ${
+                        isActive
+                          ? 'border-amber-200 dark:border-amber-900/50 bg-amber-50 dark:bg-amber-950/30 text-amber-700 dark:text-amber-300 hover:bg-amber-100'
+                          : 'border-emerald-200 dark:border-emerald-900/50 bg-emerald-50 dark:bg-emerald-950/30 text-emerald-700 dark:text-emerald-300 hover:bg-emerald-100'
+                      }`}
+                    >
+                      {isActive ? 'Suspend' : 'Activate'}
+                    </button>
+
+                    <button
+                      type="button"
                       onClick={() => void handleDeleteBeach(beach)}
                       disabled={deletingBeachId === beach.id}
                       className="inline-flex items-center gap-1 rounded-lg border border-rose-200 dark:border-rose-900/50 bg-rose-50 dark:bg-rose-950/30 px-2.5 py-1.5 text-xs font-bold text-rose-600 dark:text-rose-300 hover:bg-rose-100 disabled:opacity-50 transition cursor-pointer"
@@ -2124,6 +2158,75 @@ export default function AdminBeachesPage() {
                 className="px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 text-white text-xs font-bold shadow-xs cursor-pointer"
               >
                 Reject
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Suspend Beach & Owner Account Modal */}
+      {suspendingBeach && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-black/60 backdrop-blur-xs">
+          <div className="w-full max-w-md bg-white dark:bg-neutral-900 border border-slate-200 dark:border-neutral-800 rounded-2xl p-6 shadow-2xl space-y-4">
+            <div>
+              <h3 className="text-base font-extrabold text-brand-navy-500 dark:text-white">
+                Suspend &ldquo;{suspendingBeach.name}&rdquo;
+              </h3>
+              <p className="mt-1 text-xs text-slate-500 dark:text-neutral-400">
+                This beach will be hidden from the user side, and the beach owner will be signed out and shown this reason when trying to access their account.
+              </p>
+            </div>
+
+            <div className="space-y-3">
+              <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
+                Category
+                <select
+                  value={suspendBeachReasonType}
+                  onChange={(e) => setSuspendBeachReasonType(e.target.value)}
+                  className="mt-1.5 w-full rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black px-3 py-2 text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400"
+                >
+                  <option value="Violation of community guidelines">Violation of community guidelines</option>
+                  <option value="Fake or misleading information">Fake or misleading information</option>
+                  <option value="Spam or abuse">Spam or abuse</option>
+                  <option value="Suspected fraud">Suspected fraud</option>
+                  <option value="Owner request">Owner request</option>
+                  <option value="Other">Other</option>
+                </select>
+              </label>
+
+              <label className="block text-xs font-bold text-slate-700 dark:text-neutral-300">
+                Reason (shown to the beach owner) *
+                <textarea
+                  rows={3}
+                  required
+                  value={suspendBeachReason}
+                  onChange={(e) => setSuspendBeachReason(e.target.value)}
+                  placeholder="Explain why this beach and owner account are being suspended..."
+                  className="mt-1.5 w-full p-3 rounded-xl border border-slate-200 dark:border-neutral-700 bg-white dark:bg-black text-xs font-semibold focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-teal-400 focus:border-brand-teal-600"
+                />
+              </label>
+            </div>
+
+            <div className="flex items-center justify-end gap-2 pt-2">
+              <button
+                type="button"
+                disabled={isSuspendingBeach}
+                onClick={() => {
+                  setSuspendingBeach(null);
+                  setSuspendBeachReason('');
+                }}
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-neutral-400 hover:bg-slate-100 dark:hover:bg-neutral-800 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isSuspendingBeach || !suspendBeachReason.trim()}
+                onClick={() => void toggleBeachStatus(suspendingBeach, suspendBeachReason.trim(), suspendBeachReasonType)}
+                className="inline-flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-600 hover:bg-rose-700 disabled:opacity-50 text-white text-xs font-bold shadow-xs cursor-pointer"
+              >
+                {isSuspendingBeach && <Loader2 className="w-3.5 h-3.5 animate-spin" />}
+                <span>Suspend Beach &amp; Owner</span>
               </button>
             </div>
           </div>

@@ -372,6 +372,16 @@ export async function POST(request: NextRequest) {
 
     const owner = target.role === 'beach_owner' || target.role === 'beach_manager';
     if (owner) {
+      try {
+        await (auth.adminClient.from('beaches') as any)
+          .update({
+            status: to === 'suspended' ? 'suspended' : 'active',
+            updatedat: now,
+          })
+          .eq('ownerid', id);
+      } catch (beachSyncErr) {
+        console.warn('Could not sync owner beach status:', beachSyncErr);
+      }
       invalidateBeachesCache();
       revalidatePath('/', 'layout');
       revalidatePath('/map');

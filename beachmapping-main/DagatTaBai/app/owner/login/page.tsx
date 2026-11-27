@@ -330,7 +330,7 @@ export default function OwnerLoginPage() {
 
                 {suspensionInfo && (
                   <div role="alert" className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-900 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-200">
-                    <p className="font-bold">Your account has been disabled.</p>
+                    <p className="font-bold">Your account has been suspended.</p>
                     {suspensionInfo.reasontype && <p className="mt-1 font-semibold">Category: {suspensionInfo.reasontype}</p>}
                     {suspensionInfo.reason && <p className="mt-1 whitespace-pre-wrap">Reason: {suspensionInfo.reason}</p>}
                     <p className="mt-1">
@@ -397,7 +397,7 @@ export default function OwnerLoginPage() {
                 )}
                 {suspensionInfo && (
                   <div role="alert" className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-900 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-200">
-                    <p className="font-bold">Your account has been disabled.</p>
+                    <p className="font-bold">Your account has been suspended.</p>
                     {suspensionInfo.reasontype && <p className="mt-1 font-semibold">Category: {suspensionInfo.reasontype}</p>}
                     {suspensionInfo.reason && <p className="mt-1 whitespace-pre-wrap">Reason: {suspensionInfo.reason}</p>}
                     <p className="mt-1">

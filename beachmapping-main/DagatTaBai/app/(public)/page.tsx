@@ -113,6 +113,26 @@ export default function HomePage() {
   const [loadVirtualTour, setLoadVirtualTour] = useState(true);
   const [selectedTour, setSelectedTour] = useState<VirtualTourItem | null>(null);
   const [activeTourIndex, setActiveTourIndex] = useState(0);
+  const [activeBeachSlugs, setActiveBeachSlugs] = useState<Set<string> | null>(null);
+
+  const fetchActiveBeaches = async () => {
+    try {
+      const res = await fetch('/api/beaches', { cache: 'no-store' });
+      if (res.ok) {
+        const data = await res.json();
+        if (Array.isArray(data)) {
+          const slugs = new Set<string>();
+          for (const b of data) {
+            if (b?.slug) slugs.add(String(b.slug).toLowerCase());
+            if (b?.name) slugs.add(String(b.name).toLowerCase());
+          }
+          setActiveBeachSlugs(slugs);
+        }
+      }
+    } catch {
+      // Ignore error and keep default list
+    }
+  };
 
   useEffect(() => {
     fetch('/api/auth/session', { cache: 'no-store' })
@@ -144,6 +164,7 @@ export default function HomePage() {
 
   useEffect(() => {
     void fetchSystemTestimonials();
+    void fetchActiveBeaches();
   }, []);
 
   useEffect(() => {
@@ -157,7 +178,17 @@ export default function HomePage() {
 
   useRealtimeSync(() => {
     void fetchSystemTestimonials();
+    void fetchActiveBeaches();
   });
+
+  const visibleVirtualTours = activeBeachSlugs
+    ? VIRTUAL_TOURS.filter(
+        (tour) =>
+          activeBeachSlugs.has(tour.slug.toLowerCase()) ||
+          activeBeachSlugs.has(tour.id.toLowerCase()) ||
+          activeBeachSlugs.has(tour.name.toLowerCase())
+      )
+    : VIRTUAL_TOURS;
 
   useEffect(() => {
     if (!loadVirtualTour) return;
@@ -545,7 +576,7 @@ export default function HomePage() {
           {/* Card Grid */}
           <ScrollReveal direction="up" duration={500}>
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
-              {VIRTUAL_TOURS.map((tour, idx) => (
+              {visibleVirtualTours.map((tour, idx) => (
                 <div
                   key={tour.id}
                   className="group relative overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 bg-white dark:bg-neutral-900 flex flex-col"

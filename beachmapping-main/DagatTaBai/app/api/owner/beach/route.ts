@@ -94,6 +94,9 @@ function getOwnedGalleryStoragePath(
 }
 
 async function toOwnerBeachWithFees(adminSupabase: ReturnType<typeof createAdminClient>, row: any) {
+  if (typeof row.status === 'string' && row.status === 'suspended') {
+    throw new Error('Your beach listing and account are currently suspended.');
+  }
   const { data: generalInformation, error } = await (adminSupabase
     .from('beachinfo') as any)
     .select('entrancefee, childentrancefee, seniorentrancefee')

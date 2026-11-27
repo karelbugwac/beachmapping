@@ -63,7 +63,44 @@ export function HeroMapSection({
   const [userRole, setUserRole] = useState<'visitor' | 'owner' | 'other'>(isAuthenticated ? 'other' : 'visitor');
   const [currentSlide, setCurrentSlide] = useState(0);
   const [isPaused, setIsPaused] = useState(false);
+  const [activeSlugs, setActiveSlugs] = useState<Set<string> | null>(null);
   const touchStartX = useRef<number | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    const loadActiveSlugs = async () => {
+      try {
+        const res = await fetch('/api/beaches', { cache: 'no-store' });
+        if (!res.ok) return;
+        const data = await res.json();
+        if (active && Array.isArray(data)) {
+          const slugs = new Set<string>();
+          for (const b of data) {
+            if (b?.slug) slugs.add(String(b.slug).toLowerCase());
+            if (b?.name) slugs.add(String(b.name).toLowerCase());
+          }
+          setActiveSlugs(slugs);
+        }
+      } catch {
+        // Fallback to all slides
+      }
+    };
+    void loadActiveSlugs();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const visibleSlides = React.useMemo(() => {
+    if (!activeSlugs) return HERO_SLIDES;
+    const filtered = HERO_SLIDES.filter(
+      (s) =>
+        activeSlugs.has(s.slug.toLowerCase()) ||
+        activeSlugs.has(s.id.toLowerCase()) ||
+        activeSlugs.has(s.resortName.toLowerCase())
+    );
+    return filtered.length > 0 ? filtered : HERO_SLIDES;
+  }, [activeSlugs]);
 
   useEffect(() => {
     let isMounted = true;
@@ -120,16 +157,17 @@ export function HeroMapSection({
 
   // Automatic slideshow timer: transitions cleanly every 3 seconds
   useEffect(() => {
-    if (isPaused) return;
+    if (isPaused || visibleSlides.length === 0) return;
     const interval = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % HERO_SLIDES.length);
+      setCurrentSlide((prev) => (prev + 1) % visibleSlides.length);
     }, 3000);
     return () => clearInterval(interval);
-  }, [isPaused]);
+  }, [isPaused, visibleSlides.length]);
 
   const goToSlide = useCallback((index: number) => {
-    setCurrentSlide((index + HERO_SLIDES.length) % HERO_SLIDES.length);
-  }, []);
+    if (visibleSlides.length === 0) return;
+    setCurrentSlide((index + visibleSlides.length) % visibleSlides.length);
+  }, [visibleSlides.length]);
 
   const nextSlide = useCallback(() => {
     goToSlide(currentSlide + 1);
@@ -159,7 +197,8 @@ export function HeroMapSection({
   const showOwnerButton = userRole === 'owner';
   const resolvedCtaText = ctaText || (isAuthenticated || userRole !== 'visitor' ? 'Explore Beaches' : '-> Start Exploring');
   const resolvedCtaHref = ctaHref || (isAuthenticated || userRole !== 'visitor' ? '/map' : '/register');
-  const activeSlide = HERO_SLIDES[currentSlide];
+  const safeIndex = currentSlide % visibleSlides.length;
+  const activeSlide = visibleSlides[safeIndex] || HERO_SLIDES[0];
 
   return (
     <section
@@ -170,8 +209,8 @@ export function HeroMapSection({
     >
       {/* ── Background Slides: Smooth Crossfade + Subtle Ken-Burns Zoom ── */}
       <div className="absolute inset-0 z-0 bg-black">
-        {HERO_SLIDES.map((slide, idx) => {
-          const isActive = idx === currentSlide;
+        {visibleSlides.map((slide, idx) => {
+          const isActive = idx === safeIndex;
           return (
             <div
               key={slide.id}

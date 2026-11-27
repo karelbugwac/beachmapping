@@ -19,7 +19,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json(beaches, {
       headers: {
         ...rateLimit.headers,
-        'Cache-Control': 'public, max-age=60, s-maxage=120, stale-while-revalidate=300',
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
       },
     });
   } catch (err: unknown) {

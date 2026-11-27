@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { revalidatePath } from 'next/cache';
 import { authorizeRoles } from '@/lib/supabase/authorization';
 import { invalidateBeachesCache } from '@/lib/db/beaches';
+import { insertAccountNotification } from '@/lib/server/accountstatus';
 import { getTourRequestForBeach, approveTourRequest } from '@/lib/services/tourrequests';
 import { getCoordinateRequestForBeach, approveCoordinateRequest } from '@/lib/services/coordinates';
 
@@ -43,6 +44,9 @@ export async function PATCH(request: NextRequest) {
       cottagefee,
       rules,
       images,
+      suspensionreason,
+      reasontype,
+      suspendeduntil,
     } = body;
 
     if (typeof id !== 'string') {
@@ -109,6 +113,126 @@ export async function PATCH(request: NextRequest) {
     if (error) throw error;
     if (!data) return NextResponse.json({ error: 'Beach listing not found.' }, { status: 404 });
 
+    // If status was changed (suspended or activated), also suspend/activate the beach owner's account
+    if (status !== undefined) {
+      let ownerId: string | null = data.ownerid || null;
+      if (!ownerId && data.contactemail) {
+        const { data: ownerProfile } = await (auth.adminClient.from('profiles') as any)
+          .select('id, role')
+          .ilike('email', String(data.contactemail).trim())
+          .maybeSingle();
+        if (ownerProfile?.id && ['beach_owner', 'beach_manager'].includes(ownerProfile.role)) {
+          ownerId = ownerProfile.id;
+        }
+      }
+      if (!ownerId && data.name) {
+        const { data: appMatch } = await (auth.adminClient.from('ownerapplications') as any)
+          .select('applicantuserid, applicantemail')
+          .ilike('beachname', String(data.name).trim())
+          .maybeSingle();
+        if (appMatch?.applicantuserid) {
+          ownerId = appMatch.applicantuserid;
+        } else if (appMatch?.applicantemail) {
+          const { data: ownerProfile } = await (auth.adminClient.from('profiles') as any)
+            .select('id, role')
+            .ilike('email', String(appMatch.applicantemail).trim())
+            .maybeSingle();
+          if (ownerProfile?.id && ['beach_owner', 'beach_manager'].includes(ownerProfile.role)) {
+            ownerId = ownerProfile.id;
+          }
+        }
+      }
+
+      if (ownerId && ownerId !== auth.user.id) {
+        const nowIso = new Date().toISOString();
+        const isSuspending = status === 'suspended';
+        const cleanReason =
+          isSuspending
+            ? (typeof suspensionreason === 'string' && suspensionreason.trim()
+                ? suspensionreason.trim()
+                : `Your beach listing "${data.name}" has been suspended by the administrator.`)
+            : null;
+        const cleanReasonType =
+          isSuspending
+            ? (typeof reasontype === 'string' && reasontype.trim()
+                ? reasontype.trim()
+                : 'Beach listing suspended')
+            : null;
+        const cleanSuspendedUntil =
+          isSuspending && typeof suspendeduntil === 'string' && suspendeduntil.trim()
+            ? suspendeduntil.trim()
+            : null;
+
+        try {
+          await (auth.adminClient.from('profiles') as any)
+            .update({
+              accountstatus: isSuspending ? 'suspended' : 'active',
+              status: isSuspending ? 'suspended' : 'active',
+              statusreason: cleanReason,
+              suspensionreason: cleanReason,
+              statusreasontype: cleanReasonType,
+              suspendeduntil: cleanSuspendedUntil,
+              suspensionendsat: cleanSuspendedUntil,
+              suspendedat: isSuspending ? nowIso : null,
+              statuschangedby: auth.user.id,
+              statuschangedat: nowIso,
+              updatedat: nowIso,
+            })
+            .eq('id', ownerId);
+        } catch {
+          // Best-effort if DB trigger blocks profile write
+        }
+
+        try {
+          const { data: authTargetData } = await auth.adminClient.auth.admin.getUserById(ownerId);
+          const existingAppMeta = (authTargetData?.user?.app_metadata || {}) as Record<string, any>;
+          await auth.adminClient.auth.admin.updateUserById(ownerId, {
+            ban_duration: 'none',
+            app_metadata: {
+              ...existingAppMeta,
+              accountstatus: isSuspending ? 'suspended' : 'active',
+              status: isSuspending ? 'suspended' : 'active',
+              statusreason: cleanReason,
+              statusreasontype: cleanReasonType,
+              suspendeduntil: cleanSuspendedUntil,
+              statuschangedby: auth.user.id,
+              statuschangedat: nowIso,
+            },
+          });
+        } catch (err) {
+          console.warn('Could not sync owner auth app_metadata on beach status change:', err);
+        }
+
+        try {
+          await (auth.adminClient.from('adminlog') as any).insert({
+            adminid: auth.user.id,
+            targetuserid: ownerId,
+            action: 'status_change',
+            fromstatus: isSuspending ? 'active' : 'suspended',
+            tostatus: isSuspending ? 'suspended' : 'active',
+            reason: cleanReason || `Beach "${data.name}" activated`,
+            reasontype: cleanReasonType,
+          });
+        } catch {
+          // Non-fatal
+        }
+
+        try {
+          await insertAccountNotification(auth.adminClient, {
+            userid: ownerId,
+            type: 'accountstatus',
+            title: isSuspending ? 'Beach & account suspended' : 'Beach & account activated',
+            message: isSuspending
+              ? `Your beach "${data.name}" and owner account have been suspended. Reason: ${cleanReason}`
+              : `Your beach "${data.name}" and owner account have been re-activated.`,
+            actionurl: '/owner/account',
+          });
+        } catch {
+          // Non-fatal
+        }
+      }
+    }
+
     // Sync any pending tour or coordinate requests if admin directly updated those fields
     try {
       if (virtualtoururl !== undefined && updates.virtualtoururl) {
@@ -143,6 +267,8 @@ export async function PATCH(request: NextRequest) {
     }
 
     invalidateBeachesCache();
+    revalidatePath('/', 'layout');
+    revalidatePath('/map');
     return NextResponse.json({ success: true, beach: data });
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Failed to update beach listing.';
