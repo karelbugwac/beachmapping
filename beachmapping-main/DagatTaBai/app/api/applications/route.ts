@@ -6,7 +6,8 @@ import { authorizeRoles } from '@/lib/supabase/authorization';
 import { IMAGE_UPLOAD_CONFIG } from '@/lib/utils/image-upload-config';
 import { detectImageMime } from '@/lib/utils/image-validation';
 import { FULL_NAME_MESSAGES, validateFullName } from '@/lib/validation/fullName';
-import { isSuspensionActive, type AccountStatus } from '@/lib/utils/account-status';
+import { type AccountStatus } from '@/lib/utils/account-status';
+import { resolveEffectiveAccountStatus } from '@/lib/server/accountstatus';
 import {
   isPendingApplicationConflict,
   PENDING_APPLICATION_MESSAGE,
@@ -59,26 +60,35 @@ export async function GET() {
         .map((application) => application.applicantuserid)
         .filter((id): id is string => Boolean(id))
     )];
-    const { data: profiles, error: profilesError } = applicantIds.length
-      ? await auth.adminClient.from('profiles')
-        .select('id, accountstatus, suspendeduntil, statusreason')
-        .in('id', applicantIds)
-      : { data: [], error: null };
+    const [{ data: profiles, error: profilesError }, { data: authUsersData }] = applicantIds.length
+      ? await Promise.all([
+          auth.adminClient.from('profiles')
+            .select('id, accountstatus, suspendeduntil, statusreason, statusreasontype, statuschangedat')
+            .in('id', applicantIds),
+          auth.adminClient.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+        ])
+      : [{ data: [], error: null }, { data: { users: [] } }];
     if (profilesError) {
       console.error('Failed to fetch applicant account statuses:', profilesError);
       return NextResponse.json({ error: 'Failed to load applications.' }, { status: 500 });
     }
 
+    const authUserById = new Map<string, any>();
+    for (const u of authUsersData?.users || []) {
+      authUserById.set(u.id, u);
+    }
+
     const profileById = new Map<string, { accountstatus: AccountStatus; statusreason: string | null }>(
-      (profiles || []).map((profile) => [
-        profile.id,
-        {
-          accountstatus: isSuspensionActive(profile.accountstatus, profile.suspendeduntil)
-            ? 'suspended'
-            : profile.accountstatus === 'suspended' ? 'active' : profile.accountstatus,
-          statusreason: profile.statusreason,
-        },
-      ])
+      (profiles || []).map((profile: any) => {
+        const effective = resolveEffectiveAccountStatus(profile, authUserById.get(profile.id));
+        return [
+          profile.id,
+          {
+            accountstatus: effective.accountstatus,
+            statusreason: effective.statusreason,
+          },
+        ];
+      })
     );
     const applicationsWithAccountStatus = applications.map((application) => ({
       ...application,

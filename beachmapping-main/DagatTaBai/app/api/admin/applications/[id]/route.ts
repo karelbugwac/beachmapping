@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createAdminClient } from '@/lib/supabase/server';
 import { authorizeRoles } from '@/lib/supabase/authorization';
-import { isSuspensionActive } from '@/lib/utils/account-status';
+import { resolveEffectiveAccountStatus } from '@/lib/server/accountstatus';
 
 export async function GET(
   request: Request,
@@ -33,16 +33,22 @@ export async function GET(
       return NextResponse.json({ error: 'Application not found' }, { status: 404 });
     }
 
-    const { data: applicantProfile, error: applicantProfileError } = data.applicantuserid
-      ? await auth.adminClient.from('profiles')
-        .select('accountstatus, suspendeduntil, statusreason, profileimageurl')
-        .eq('id', data.applicantuserid)
-        .maybeSingle()
-      : { data: null, error: null };
+    const [{ data: applicantProfile, error: applicantProfileError }, applicantAuthResult] = data.applicantuserid
+      ? await Promise.all([
+          auth.adminClient.from('profiles')
+            .select('accountstatus, suspendeduntil, statusreason, statusreasontype, statuschangedat, profileimageurl')
+            .eq('id', data.applicantuserid)
+            .maybeSingle(),
+          auth.adminClient.auth.admin.getUserById(data.applicantuserid),
+        ])
+      : [{ data: null, error: null }, { data: null }];
     if (applicantProfileError) {
       console.error('Unable to load applicant account status:', applicantProfileError);
       return NextResponse.json({ error: 'Unable to load the applicant account status.' }, { status: 500 });
     }
+    const effectiveApplicant = data.applicantuserid
+      ? resolveEffectiveAccountStatus(applicantProfile as any, applicantAuthResult?.data?.user)
+      : null;
 
     const signDocument = async (path: string | null | undefined, bucket: string) => {
       if (!path) return { thumbnail_url: null, full_url: null, download_url: null, file_type: null };
@@ -101,12 +107,8 @@ export async function GET(
           ...applicationData,
           applicant_profile_image_url: applicantProfile?.profileimageurl || null,
           documents,
-          accountstatus: applicantProfile
-            ? isSuspensionActive(applicantProfile.accountstatus, applicantProfile.suspendeduntil)
-              ? 'suspended'
-              : applicantProfile.accountstatus === 'suspended' ? 'active' : applicantProfile.accountstatus
-            : null,
-          account_status_reason: applicantProfile?.statusreason || null,
+          accountstatus: effectiveApplicant ? effectiveApplicant.accountstatus : null,
+          account_status_reason: effectiveApplicant?.statusreason || null,
           business_permit_url: documents.permit.full_url,
           proof_of_ownership_url: documents.ownership.full_url,
           valid_id_url: documents.valid_id.full_url,

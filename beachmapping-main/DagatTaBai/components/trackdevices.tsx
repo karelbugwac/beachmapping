@@ -1,11 +1,24 @@
 'use client';
 
 import { useEffect } from 'react';
+import { usePathname } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { showToast } from '@/components/ui/feedback-toasts';
 import { generateUUID } from '@/lib/utils/uuid';
 
 const DEVICE_STORAGE_KEY = 'dtb_login_device_id';
+
+function isDedicatedAuthPage(pathname: string | null): boolean {
+  if (!pathname) return false;
+  return (
+    pathname === '/admin/login' ||
+    pathname === '/owner/login' ||
+    pathname === '/login' ||
+    pathname === '/register' ||
+    pathname === '/forgot-password' ||
+    pathname === '/reset-password'
+  );
+}
 
 function getDeviceId(): string {
   try {
@@ -66,12 +79,18 @@ async function detectClientLocation(): Promise<string | null> {
 }
 
 export function LoginDeviceTracker() {
+  const pathname = usePathname();
+
   useEffect(() => {
+    if (isDedicatedAuthPage(pathname)) return;
+
     const supabase = createClient();
     const trackedUsers = new Set<string>();
+    let cancelled = false;
 
     const waitForServerSession = async (userId: string) => {
       for (let attempt = 0; attempt < 6; attempt += 1) {
+        if (cancelled) return false;
         const response = await fetch('/api/auth/session', { cache: 'no-store' });
         if (response.ok) {
           const result = await response.json();
@@ -87,6 +106,7 @@ export function LoginDeviceTracker() {
     };
 
     const trackLogin = async (userId: string) => {
+      if (cancelled || isDedicatedAuthPage(window.location.pathname)) return;
       if (trackedUsers.has(userId)) return;
       trackedUsers.add(userId);
 
@@ -97,6 +117,10 @@ export function LoginDeviceTracker() {
         }
 
         const clientLocation = await detectClientLocation();
+        if (cancelled || isDedicatedAuthPage(window.location.pathname)) {
+          trackedUsers.delete(userId);
+          return;
+        }
 
         const response = await fetch('/api/auth/track-device', {
           method: 'POST',
@@ -107,6 +131,10 @@ export function LoginDeviceTracker() {
           }),
         });
         const result = await response.json().catch(() => null);
+        if (response.status === 401) {
+          trackedUsers.delete(userId);
+          return;
+        }
         if (!response.ok) throw new Error(result?.error || 'Could not record this sign-in device.');
 
         if (result?.isNewLocation) {
@@ -123,6 +151,10 @@ export function LoginDeviceTracker() {
     };
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((event, session) => {
+      if (event === 'SIGNED_OUT') {
+        trackedUsers.clear();
+        return;
+      }
       if ((event === 'INITIAL_SESSION' || event === 'SIGNED_IN') && session?.user) {
         void trackLogin(session.user.id);
       }
@@ -134,10 +166,11 @@ export function LoginDeviceTracker() {
     window.addEventListener('dtb_login_completed', handleCompletedLogin);
 
     return () => {
+      cancelled = true;
       subscription.unsubscribe();
       window.removeEventListener('dtb_login_completed', handleCompletedLogin);
     };
-  }, []);
+  }, [pathname]);
 
   return null;
 }

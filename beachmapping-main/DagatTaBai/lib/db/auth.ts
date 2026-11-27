@@ -1,7 +1,7 @@
 import { createServerSupabaseClient, createAdminClient } from '@/lib/supabase/server';
 import { FULL_NAME_MESSAGES, validateFullName } from '@/lib/validation/fullName';
 import { isAccountSuspended } from '@/lib/utils/account-suspension';
-import { isSuspensionActive } from '@/lib/utils/account-status';
+import { isSuspensionActive, resolveEffectiveAccountStatus } from '@/lib/utils/account-status';
 import { persistExpiredSuspension } from '@/lib/server/accountstatus';
 import { ADMIN_MESSAGES } from '@/lib/validation/admin-messages';
 import { EMAIL_TAKEN_MESSAGE, isDuplicateAuthEmailError } from '@/lib/validation/registration';
@@ -16,6 +16,7 @@ export interface AuthUser {
   location?: string | null;
   status: 'active' | 'suspended';
   suspensionreason: string | null;
+  statusreasontype?: string | null;
   suspendedat: string | null;
   suspensionendsat: string | null;
   createdat?: string;
@@ -34,6 +35,7 @@ export async function getCurrentSession(): Promise<AuthUser | null> {
     location?: string | null;
     accountstatus?: string | null;
     statusreason?: string | null;
+    statusreasontype?: string | null;
     suspendeduntil?: string | null;
     statuschangedat?: string | null;
     status?: string | null;
@@ -46,8 +48,11 @@ export async function getCurrentSession(): Promise<AuthUser | null> {
     'id, fullname, email, role, profileimageurl, location, accountstatus, statusreason, statusreasontype, suspendeduntil, statuschangedat, status, suspensionreason, suspendedat, suspensionendsat, createdat',
     'id, fullname, email, role, profileimageurl, location, status, suspensionreason, suspendedat, suspensionendsat, createdat',
     'id, fullname, email, role, profileimageurl, location, createdat',
+    'id, full_name, email, role, profile_image_url, location, created_at',
+    'id, email, role',
   ] as const;
-  const profiles = supabase.from('profiles') as any;
+  const adminSupabase = createAdminClient();
+  const profiles = adminSupabase.from('profiles') as any;
   let profile: SessionProfile | null = null;
   let profileError: unknown;
   for (const columns of profileColumnSets) {
@@ -55,20 +60,39 @@ export async function getCurrentSession(): Promise<AuthUser | null> {
       .select(columns)
       .eq('id', data.user.id)
       .maybeSingle();
-    profile = result.data;
+    if (result.data) {
+      profile = {
+        ...result.data,
+        fullname: result.data.fullname ?? result.data.full_name,
+        profileimageurl: result.data.profileimageurl ?? result.data.profile_image_url,
+        createdat: result.data.createdat ?? result.data.created_at,
+      };
+    } else {
+      profile = null;
+    }
     profileError = result.error;
     if (!profileError) break;
   }
-  if (profileError) throw profileError;
+  if (profileError) {
+    console.warn('Could not load full profile columns in getCurrentSession:', profileError);
+  }
+
+  let freshAuthUser: any = data.user;
+  try {
+    const { data: adminAuthData } = await adminSupabase.auth.admin.getUserById(data.user.id);
+    if (adminAuthData?.user) freshAuthUser = adminAuthData.user;
+  } catch {
+    // Fallback to session user if admin lookup fails
+  }
 
   const email = data.user.email || '';
-  const metadata = (data.user.user_metadata || {}) as Record<string, any>;
+  const metadata = (freshAuthUser.user_metadata || {}) as Record<string, any>;
   const fullName =
     profile?.fullname ||
     metadata.full_name ||
     metadata.name ||
     (email ? email.split('@')[0] : 'User');
-  const profileRole = profile?.role;
+  const profileRole = profile?.role || metadata.role || freshAuthUser.app_metadata?.role || (email.toLowerCase() === 'official.dagattabai@gmail.com' ? 'admin' : undefined);
   const role: AuthUser['role'] =
     profileRole === 'user' ||
     profileRole === 'beach_owner' ||
@@ -82,14 +106,13 @@ export async function getCurrentSession(): Promise<AuthUser | null> {
     metadata.avatar_url ||
     metadata.picture ||
     null;
-  const accountStatus = profile?.accountstatus || profile?.status || metadata.status || 'active';
-  const suspensionUntil = profile?.suspendeduntil || profile?.suspensionendsat ||
-    (typeof metadata.suspension_ends_at === 'string' ? metadata.suspension_ends_at : null);
+  const effective = resolveEffectiveAccountStatus(profile, freshAuthUser);
   const suspension = {
-    status: isSuspensionActive(accountStatus, suspensionUntil) ? 'suspended' as const : 'active' as const,
-    suspensionreason: profile?.statusreason || profile?.suspensionreason || metadata.status_reason || null,
-    suspendedat: profile?.statuschangedat || profile?.suspendedat || metadata.status_updated_at || null,
-    suspensionendsat: suspensionUntil,
+    status: effective.status,
+    suspensionreason: effective.statusreason,
+    statusreasontype: effective.statusreasontype,
+    suspendedat: effective.statuschangedat,
+    suspensionendsat: effective.suspendeduntil,
   };
 
   return {
@@ -280,12 +303,19 @@ export async function loginLocalUser(
     if (error || !data.user) return { error: error?.message || 'Invalid email address or password.' };
 
     let profile: any = null;
+    let freshAuthUser: any = data.user;
     try {
       const adminSupabase = createAdminClient();
-      const { data: profData, error: profileError } = await (adminSupabase.from('profiles') as any)
-        .select('id, fullname, email, role, profileimageurl, accountstatus, statusreason, statusreasontype, suspendeduntil, status, suspensionreason, suspendedat, suspensionendsat, createdat')
-        .eq('id', data.user.id)
-        .maybeSingle();
+      const [{ data: profData, error: profileError }, { data: adminAuthData }] = await Promise.all([
+        (adminSupabase.from('profiles') as any)
+          .select('id, fullname, email, role, profileimageurl, accountstatus, statusreason, statusreasontype, suspendeduntil, statuschangedat, status, suspensionreason, suspendedat, suspensionendsat, createdat')
+          .eq('id', data.user.id)
+          .maybeSingle(),
+        adminSupabase.auth.admin.getUserById(data.user.id),
+      ]);
+      if (adminAuthData?.user) {
+        freshAuthUser = adminAuthData.user;
+      }
       if (profileError) throw profileError;
       if (profData) {
         profile = profData;
@@ -305,7 +335,7 @@ export async function loginLocalUser(
             },
             { onConflict: 'id' }
           )
-          .select('id, fullname, email, role, profileimageurl, accountstatus, statusreason, statusreasontype, suspendeduntil, status, suspensionreason, suspendedat, suspensionendsat, createdat')
+          .select('id, fullname, email, role, profileimageurl, accountstatus, statusreason, statusreasontype, suspendeduntil, statuschangedat, status, suspensionreason, suspendedat, suspensionendsat, createdat')
           .maybeSingle();
         if (insertedProfile) {
           profile = insertedProfile;
@@ -316,24 +346,24 @@ export async function loginLocalUser(
       return { error: 'Could not verify account status. Please try again.' };
     }
 
-    const metadata = (data.user.user_metadata || {}) as Record<string, any>;
-    const accountStatus = profile?.accountstatus || profile?.status || 'active';
-    const suspendedUntil = profile?.suspendeduntil || profile?.suspensionendsat || null;
-    if (accountStatus === 'suspended' && !isSuspensionActive('suspended', suspendedUntil)) {
-      await persistExpiredSuspension(createAdminClient(), data.user.id);
+    const metadata = (freshAuthUser.user_metadata || {}) as Record<string, any>;
+    const effective = resolveEffectiveAccountStatus(profile, freshAuthUser);
+    const wasSuspended = profile?.accountstatus === 'suspended' || freshAuthUser.app_metadata?.accountstatus === 'suspended';
+    if (wasSuspended && effective.accountstatus === 'active') {
+      await persistExpiredSuspension(createAdminClient(), data.user.id).catch(() => {});
       if (profile) {
         profile.accountstatus = 'active';
         profile.status = 'active';
       }
-    } else if (isSuspensionActive(accountStatus, suspendedUntil)) {
+    } else if (effective.accountstatus === 'suspended') {
       const { error: signOutError } = await supabase.auth.signOut();
-      if (signOutError) console.error('Could not clear suspended user session:', signOutError);
+      if (signOutError) console.error('Could not clear disabled user session:', signOutError);
       return {
         error: ADMIN_MESSAGES.suspended,
         suspendedAccount: {
-          reason: profile?.statusreason || profile?.suspensionreason || null,
-          reasonType: profile?.statusreasontype || null,
-          suspendedUntil,
+          reason: effective.statusreason,
+          reasonType: effective.statusreasontype,
+          suspendedUntil: effective.suspendeduntil,
         },
       };
     }

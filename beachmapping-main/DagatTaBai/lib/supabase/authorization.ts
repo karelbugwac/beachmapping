@@ -1,5 +1,5 @@
 import { createAdminClient, createServerSupabaseClient } from '@/lib/supabase/server';
-import { isAccountSuspended } from '@/lib/utils/account-suspension';
+import { resolveEffectiveAccountStatus } from '@/lib/utils/account-status';
 
 export function roleAuthorizationFailureStatus(
   role: string | null | undefined,
@@ -20,7 +20,7 @@ export async function authorizeRoles(allowedRoles: string[]) {
   const metadata = (data.user.user_metadata || {}) as Record<string, unknown>;
 
   const { data: initialProfile, error: profileError } = await (adminClient.from('profiles') as any)
-    .select('role, status, suspensionreason, suspendedat, suspensionendsat')
+    .select('role, accountstatus, status, statusreason, suspensionreason, statusreasontype, suspendedat, suspendeduntil, suspensionendsat, statuschangedat')
     .eq('id', data.user.id)
     .maybeSingle();
   let profile = initialProfile;
@@ -48,11 +48,16 @@ export async function authorizeRoles(allowedRoles: string[]) {
         : null,
     };
   }
-  if (isAccountSuspended(profile)) {
-    return { authorized: false as const, status: 403, message: 'Your account has been suspended.' };
+  const effective = resolveEffectiveAccountStatus(profile, data.user);
+  if (effective.accountstatus === 'suspended') {
+    return { authorized: false as const, status: 403, message: 'Your account has been disabled.' };
   }
 
-  const resolvedRole: string = profile?.role || '';
+  const resolvedRole: string =
+    profile?.role ||
+    (metadata.role as string) ||
+    (data.user.app_metadata?.role as string) ||
+    (data.user.email?.toLowerCase() === 'official.dagattabai@gmail.com' ? 'admin' : '');
 
   const failureStatus = roleAuthorizationFailureStatus(resolvedRole, allowedRoles);
   if (failureStatus) {

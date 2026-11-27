@@ -69,7 +69,7 @@ interface AccountDetails {
 const statusLabels: Record<AccountStatus, string> = {
   active: 'Active',
   under_review: 'Under review',
-  suspended: 'Suspended',
+  suspended: 'Disabled',
 };
 
 const safeStatusErrors = new Set([
@@ -513,11 +513,11 @@ export function AdminAccountManagement() {
         };
       });
       if (details?.account.id === statusAccount.id) setDetails(null);
-      setModalSuccess(editingSuspensionReason ? 'Suspension details updated.' : targetStatus === 'suspended' ? 'Account suspended.' : targetStatus === 'active' ? 'Account reinstated.' : 'Account set under review.');
+      setModalSuccess(editingSuspensionReason ? 'Disable details updated.' : targetStatus === 'suspended' ? 'Account disabled.' : targetStatus === 'active' ? 'Account enabled.' : 'Account set under review.');
       if (targetStatus === 'suspended' && !editingSuspensionReason) {
         setNotice(suspendDuration === 'indefinite'
-          ? 'Account suspended until you lift it.'
-          : `Account suspended until ${dateFromInput(suspendDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}.`);
+          ? 'Account disabled until you enable it.'
+          : `Account disabled until ${dateFromInput(suspendDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}.`);
       }
       statusSuccessTimeoutRef.current = window.setTimeout(() => {
         statusSuccessTimeoutRef.current = null;
@@ -575,7 +575,7 @@ export function AdminAccountManagement() {
     { value: 'all', label: 'All' },
     { value: 'active', label: 'Active' },
     { value: 'under_review', label: 'Under review' },
-    { value: 'suspended', label: 'Suspended' },
+    { value: 'suspended', label: 'Disabled' },
   ];
   const weekDates = weekStart
     ? Array.from({ length: 7 }, (_, index) => dateInputValue(addLocalDays(dateFromInput(weekStart), index)))
@@ -748,9 +748,9 @@ export function AdminAccountManagement() {
                             <ActionItem icon={<Eye />} label="View" onClick={() => void openDetails(account)} />
                                       {disabled && <p className="px-2.5 py-2 text-left text-[11px] font-semibold text-slate-500">You cannot change your own account status.</p>}
                                       {canManageStatus && account.accountstatus === 'active' && <ActionItem icon={<Clock />} label="Set under review" onClick={() => openStatus(account, 'under_review')} />}
-                            {canManageStatus && ['active', 'under_review'].includes(account.accountstatus) && <ActionItem icon={<Shield />} label="Suspend" onClick={() => openStatus(account, 'suspended')} />}
+                            {canManageStatus && ['active', 'under_review'].includes(account.accountstatus) && <ActionItem icon={<Shield />} label="Disable" onClick={() => openStatus(account, 'suspended')} />}
                             {canManageStatus && account.accountstatus === 'suspended' && <ActionItem icon={<Shield />} label="Edit reason" onClick={() => openStatus(account, 'suspended')} />}
-                            {canManageStatus && ['under_review', 'suspended'].includes(account.accountstatus) && <ActionItem icon={<Shield />} label="Reinstate" onClick={() => openStatus(account, 'active')} />}
+                            {canManageStatus && ['under_review', 'suspended'].includes(account.accountstatus) && <ActionItem icon={<Shield />} label="Enable" onClick={() => openStatus(account, 'active')} />}
                             {!disabled && account.role === 'user' && <ActionItem icon={<Mail />} label="Reset password" onClick={() => { setOpenMenuId(null); setResetAction('reset_password'); setResetAccount(account); setModalError(''); setModalSuccess(''); }} />}
                             {!disabled && account.role === 'beach_owner' && <ActionItem icon={<Shield />} label="Reset PIN" onClick={() => { setOpenMenuId(null); setResetAction('reset_pin'); setResetAccount(account); setModalError(''); setModalSuccess(''); }} />}
                           </div>
@@ -792,8 +792,8 @@ export function AdminAccountManagement() {
         >
           <h2 id="account-status-title" className="text-xl font-extrabold text-slate-900 dark:text-white">
             {targetStatus === 'suspended'
-              ? editingSuspensionReason ? `Edit suspension` : 'Suspend this account'
-              : targetStatus === 'under_review' ? `Set under review: ${statusAccount.name}` : `Reinstate ${statusAccount.name}`}
+              ? editingSuspensionReason ? `Edit disable reason` : 'Disable this account'
+              : targetStatus === 'under_review' ? `Set under review: ${statusAccount.name}` : `Enable ${statusAccount.name}`}
           </h2>
           {targetStatus === 'suspended' && <p className="mt-1 text-sm text-slate-600 dark:text-neutral-300">For how long? The user is signed out right away.</p>}
           <div className="mt-2">
@@ -960,7 +960,7 @@ export function AdminAccountManagement() {
                   value={reason}
                   required
                   maxLength={500}
-                  placeholder="Explain why this account is being suspended…"
+                  placeholder="Explain why this account is being disabled…"
                   onBlur={() => {
                     if (!reason.trim()) setReasonError(ADMIN_MESSAGES.reasonTooShort);
                   }}
@@ -991,12 +991,12 @@ export function AdminAccountManagement() {
               <div className="rounded-[14px] border border-teal-200 bg-teal-50 p-3.5 text-slate-900 dark:border-teal-900 dark:bg-teal-950/40 dark:text-teal-100">
                 <p className="text-sm font-bold">
                   {suspendDuration === 'indefinite'
-                    ? 'Suspended until you lift it'
+                    ? 'Disabled until you enable it'
                     : suspendDate ? `Back on ${formatLongDate(suspendDate)}` : 'Choose an end date'}
                 </p>
                 <p className="mt-1 text-xs text-slate-700 dark:text-teal-200">
                   {suspendDuration === 'indefinite'
-                    ? 'Access returns when you reinstate the account.'
+                    ? 'Access returns when you enable the account.'
                     : suspendDate
                       ? `${localDayOffset(suspendDate)} ${localDayOffset(suspendDate) === 1 ? 'day' : 'days'} from today. Access returns automatically.`
                       : 'Select an end date to continue.'}
@@ -1004,7 +1004,7 @@ export function AdminAccountManagement() {
               </div>
               {['beach_owner', 'beach_manager'].includes(statusAccount.role) && (
                 <p className="rounded-xl bg-brand-sun-50 p-3 text-xs font-medium text-brand-navy-700 dark:bg-brand-navy-900/50 dark:text-brand-sun-200">
-                  Their beach listing will be hidden from the public pages and the map until the suspension is lifted. Nothing is deleted.
+                  Their beach listing will be hidden from the public pages and the map until the account is enabled. Nothing is deleted.
                 </p>
               )}
             </div>
@@ -1027,7 +1027,7 @@ export function AdminAccountManagement() {
                 className="inline-flex min-h-[50px] w-full items-center justify-center gap-2 rounded-xl bg-rose-700 px-4 py-3 text-sm font-bold text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose-700 focus-visible:ring-offset-2 disabled:opacity-50"
               >
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                {editingSuspensionReason ? 'Save changes' : 'Suspend account'}
+                {editingSuspensionReason ? 'Save changes' : 'Disable account'}
               </button>
             )}
             <button
@@ -1048,7 +1048,7 @@ export function AdminAccountManagement() {
                 className="inline-flex min-w-24 items-center justify-center gap-2 rounded-full bg-brand-navy-500 px-4 py-2 text-sm font-bold text-white disabled:opacity-50 hover:bg-brand-navy-600"
               >
                 {submitting && <Loader2 className="h-4 w-4 animate-spin" />}
-                {targetStatus === 'under_review' ? 'Set under review' : 'Confirm reinstate'}
+                {targetStatus === 'under_review' ? 'Set under review' : 'Enable account'}
               </button>
             )}
           </div>
@@ -1104,7 +1104,7 @@ export function AdminAccountManagement() {
               <dl className="mt-4 space-y-3 rounded-xl bg-slate-50 p-3 text-xs dark:bg-neutral-800/50">
                 {details.account.statusreasontype && <div><dt className="font-bold text-slate-500">Reason type</dt><dd className="mt-1">{details.account.statusreasontype}</dd></div>}
                 <div><dt className="font-bold text-slate-500">Reason</dt><dd className="mt-1 whitespace-pre-wrap text-slate-800 dark:text-neutral-200">{details.account.statusreason || 'No reason recorded.'}</dd></div>
-                {details.account.accountstatus === 'suspended' && <div><dt className="font-bold text-slate-500">Suspended until</dt><dd className="mt-1">{formatDate(details.account.suspendeduntil)}</dd></div>}
+                {details.account.accountstatus === 'suspended' && <div><dt className="font-bold text-slate-500">Disabled until</dt><dd className="mt-1">{formatDate(details.account.suspendeduntil)}</dd></div>}
                 <div><dt className="font-bold text-slate-500">Changed by</dt><dd className="mt-1">{details.changedby?.fullname || details.changedby?.email || 'System'}</dd></div>
                 <div><dt className="font-bold text-slate-500">Changed at</dt><dd className="mt-1">{formatDate(details.account.statuschangedat)}</dd></div>
               </dl>
@@ -1112,7 +1112,7 @@ export function AdminAccountManagement() {
               <div className="mt-2 max-h-52 space-y-2 overflow-y-auto">
                 {details.history.length ? details.history.map((item) => (
                   <div key={item.id} className="rounded-xl border border-slate-100 p-3 text-xs dark:border-neutral-800">
-                    <div className="flex justify-between gap-2 font-bold"><span>{item.action === 'status_change' ? `${item.fromstatus || 'Created'} → ${item.tostatus || 'Updated'}` : item.action === 'reason_edit' ? 'Suspension reason updated' : item.action === 'reset_pin' ? 'PIN reset' : 'Password reset email'}</span><span className="shrink-0 text-slate-400">{formatDate(item.createdat)}</span></div>
+                    <div className="flex justify-between gap-2 font-bold"><span>{item.action === 'status_change' ? `${item.fromstatus || 'Created'} → ${item.tostatus || 'Updated'}` : item.action === 'reason_edit' ? 'Disable reason updated' : item.action === 'reset_pin' ? 'PIN reset' : 'Password reset email'}</span><span className="shrink-0 text-slate-400">{formatDate(item.createdat)}</span></div>
                     {item.reasontype && <p className="mt-1 font-semibold text-slate-500">{item.reasontype}</p>}
                     {item.reason && <p className="mt-1 whitespace-pre-wrap text-slate-600 dark:text-neutral-300">{item.reason}</p>}
                   </div>

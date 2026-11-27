@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { cookies } from 'next/headers';
 import { createAdminClient, createServerSupabaseClient } from '@/lib/supabase/server';
+import { resolveEffectiveAccountStatus } from '@/lib/utils/account-status';
 import {
   getClientRateLimitKey,
   peekRateLimit,
@@ -80,16 +81,41 @@ export async function GET(request: NextRequest) {
       oauthRedirect = '/home'; // Default fallback
     }
 
-    // Check if user exists in profiles table (should be auto-created by trigger)
-    const { data: profile, error: profileError } = await (supabase.from('profiles') as any)
-      .select('id, accountstatus, status, suspendeduntil, suspensionendsat, profileimageurl')
-      .eq('id', data.user.id)
-      .maybeSingle();
+    // Check if user exists in profiles table using admin client so missing DB functions do not block reads
+    const adminSupabase = createAdminClient();
+    const [{ data: profile, error: profileError }, { data: freshAuthData }] = await Promise.all([
+      (adminSupabase.from('profiles') as any)
+        .select('id, accountstatus, status, statusreason, suspensionreason, statusreasontype, suspendeduntil, suspensionendsat, statuschangedat, suspendedat, profileimageurl')
+        .eq('id', data.user.id)
+        .maybeSingle(),
+      adminSupabase.auth.admin.getUserById(data.user.id),
+    ]);
+
+    // Check if account is disabled (in profile or auth.users app_metadata) BEFORE allowing login
+    const effective = resolveEffectiveAccountStatus(profile, freshAuthData?.user || data.user);
+    if (effective.accountstatus === 'suspended') {
+      await supabase.auth.signOut().catch(() => {});
+      try {
+        const cookieStore = await cookies();
+        for (const c of cookieStore.getAll()) {
+          if (c.name.startsWith('sb-')) {
+            cookieStore.delete(c.name);
+          }
+        }
+      } catch {
+        // Best-effort auth cookie cleanup
+      }
+      const params = new URLSearchParams({ error: 'account_disabled' });
+      if (effective.statusreason) params.set('reason', effective.statusreason);
+      if (effective.statusreasontype) params.set('reasontype', effective.statusreasontype);
+      if (effective.suspendeduntil) params.set('suspendeduntil', effective.suspendeduntil);
+      return NextResponse.redirect(`${siteUrl}/login?${params.toString()}`);
+    }
 
     // If profile doesn't exist, create it (fallback in case trigger failed)
     if (!profile || profileError) {
       try {
-        const { error: upsertError } = await (supabase.from('profiles') as any).upsert({
+        const { error: upsertError } = await (adminSupabase.from('profiles') as any).upsert({
           id: data.user.id,
           fullname: data.user.user_metadata?.name || data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'User',
           email: data.user.email,
@@ -102,7 +128,7 @@ export async function GET(request: NextRequest) {
           console.error('Profile upsert error:', upsertError);
           // If profileimageurl column doesn't exist yet, try without it
           console.warn('Retrying without profileimageurl');
-          const { error: retryError } = await (supabase.from('profiles') as any).upsert({
+          const { error: retryError } = await (adminSupabase.from('profiles') as any).upsert({
             id: data.user.id,
             fullname: data.user.user_metadata?.name || data.user.user_metadata?.full_name || data.user.email?.split('@')[0] || 'User',
             email: data.user.email,
@@ -117,27 +143,15 @@ export async function GET(request: NextRequest) {
       } catch (err) {
         console.error('Profile creation exception:', err);
       }
-    } else {
-      // Check if account is suspended
-      const accountStatus = profile.accountstatus || profile.status || 'active';
-      const suspendedUntil = profile.suspendeduntil || profile.suspensionendsat || null;
-      const isSuspensionActive = accountStatus === 'suspended' && (!suspendedUntil || new Date(suspendedUntil) > new Date());
-      
-      if (isSuspensionActive) {
-        await supabase.auth.signOut().catch(() => {});
-        return NextResponse.redirect(`${siteUrl}/login?error=account_suspended`);
-      }
-
+    } else if (data.user.user_metadata?.avatar_url && (!profile.profileimageurl)) {
       // Update profile if metadata has changed
-      if (data.user.user_metadata?.avatar_url && (!profile.profileimageurl)) {
-        try {
-          await (supabase.from('profiles') as any).update({
-            profileimageurl: data.user.user_metadata.avatar_url,
-            updatedat: new Date().toISOString(),
-          }).eq('id', data.user.id);
-        } catch (err) {
-          console.warn('Profile image update failed:', err);
-        }
+      try {
+        await (adminSupabase.from('profiles') as any).update({
+          profileimageurl: data.user.user_metadata.avatar_url,
+          updatedat: new Date().toISOString(),
+        }).eq('id', data.user.id);
+      } catch (err) {
+        console.warn('Profile image update failed:', err);
       }
     }
 

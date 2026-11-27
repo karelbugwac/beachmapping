@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { authorizeRoles } from '@/lib/supabase/authorization';
-import { isAccountSuspended } from '@/lib/utils/account-suspension';
+import { resolveEffectiveAccountStatus } from '@/lib/server/accountstatus';
 import { validateAdminMutationRequest } from '@/lib/server/adminrequest';
 
 export async function GET(request: NextRequest) {
@@ -104,12 +104,8 @@ export async function GET(request: NextRequest) {
       const profile = profileMap.get(u.id);
       const metadata = u.user_metadata || {};
       const userReviews = reviewsByUser.get(u.id) || [];
-      const currentSuspension = isAccountSuspended({
-        status: profile?.accountstatus === 'suspended' || profile?.status === 'suspended' || metadata.status === 'suspended'
-          ? 'suspended'
-          : 'active',
-        suspensionendsat: profile?.suspendeduntil || profile?.suspensionendsat || metadata.suspension_ends_at || null,
-      });
+      const effective = resolveEffectiveAccountStatus(profile, u);
+      const currentSuspension = effective.accountstatus === 'suspended';
 
       // Determine precise account status: active, deactivated, suspended
       let status: 'active' | 'deactivated' | 'suspended' = 'active';
@@ -127,13 +123,13 @@ export async function GET(request: NextRequest) {
         email: profile?.email || u.email || 'No email',
         role: profile?.role || metadata.role || 'user',
         status,
-        accountstatus: currentSuspension ? 'suspended' : profile?.accountstatus === 'under_review' ? 'under_review' : 'active',
-        statusreason: profile?.statusreason || profile?.suspensionreason || metadata.status_reason || null,
-        statusreasontype: profile?.statusreasontype || null,
-        statusupdatedat: profile?.statuschangedat || profile?.suspendedat || metadata.status_updated_at || null,
-        statuschangedat: profile?.statuschangedat || null,
-        suspendeduntil: profile?.suspendeduntil || null,
-        suspensionendsat: profile?.suspendeduntil || profile?.suspensionendsat || metadata.suspension_ends_at || null,
+        accountstatus: effective.accountstatus,
+        statusreason: effective.statusreason,
+        statusreasontype: effective.statusreasontype,
+        statusupdatedat: effective.statuschangedat,
+        statuschangedat: effective.statuschangedat,
+        suspendeduntil: effective.suspendeduntil,
+        suspensionendsat: effective.suspendeduntil,
         location: profile?.location || null,
         profileimageurl: profile?.profileimageurl || null,
         joined: profile?.createdat || u.created_at,

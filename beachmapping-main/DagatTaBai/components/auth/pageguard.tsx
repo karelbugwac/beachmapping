@@ -37,14 +37,28 @@ export function PageRestorationGuard() {
       void fetch('/api/auth/session', { cache: 'no-store', credentials: 'same-origin' })
         .then(async (response) => {
           if (!response.ok) throw new Error('Session verification failed.');
-          const result: { user?: { role?: string; status?: string } | null } = await response.json();
+          const result: {
+            user?: {
+              role?: string;
+              status?: string;
+              suspensionreason?: string | null;
+              statusreasontype?: string | null;
+              suspensionendsat?: string | null;
+            } | null;
+          } = await response.json();
           if (currentSequence !== validationSequence) return;
           if (!result.user) {
             window.location.replace(getLoginPath(portal, window.location.pathname));
             return;
           }
           if (result.user.status === 'suspended') {
-            window.location.replace('/suspended');
+            void fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+            const params = new URLSearchParams({ error: 'account_disabled' });
+            if (result.user.suspensionreason) params.set('reason', result.user.suspensionreason);
+            if (result.user.statusreasontype) params.set('reasontype', result.user.statusreasontype);
+            if (result.user.suspensionendsat) params.set('suspendeduntil', result.user.suspensionendsat);
+            const targetLogin = portal === 'owner' ? '/owner/login' : '/login';
+            window.location.replace(`${targetLogin}?${params.toString()}`);
             return;
           }
           if (portal === 'admin' && result.user.role !== 'admin') {

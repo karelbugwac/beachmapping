@@ -4,21 +4,23 @@ import { authorizeRoles } from '@/lib/supabase/authorization';
 import { createAdminClient } from '@/lib/supabase/server';
 import { isAdministratorAccount, validateAdminMutationRequest, noStoreHeaders } from '@/lib/server/adminrequest';
 import { isAllowedAdminResetTarget } from '@/lib/server/resetpolicy';
+import { insertAccountNotification } from '@/lib/server/accountstatus';
 
 async function checkRateLimit(
   adminClient: ReturnType<typeof createAdminClient>,
   adminId: string,
   targetId: string,
 ) {
-  const reserveRateLimit = adminClient.rpc as unknown as (
-    functionName: 'reserve_admin_reset_rate_limit',
-    args: { p_admin_id: string; p_target_user_id: string }
-  ) => Promise<{ data: number | null; error: { message: string } | null }>;
-  const { data: retryAfter, error } = await reserveRateLimit('reserve_admin_reset_rate_limit', {
+  const { data: retryAfter, error } = await (adminClient as any).rpc('reserve_admin_reset_rate_limit', {
     p_admin_id: adminId,
     p_target_user_id: targetId,
   });
-  if (error) throw new Error(error.message);
+  if (error) {
+    if (error.code === '42P01' || error.code === '42883' || error.code === 'PGRST202') {
+      return null;
+    }
+    throw new Error(error.message);
+  }
   if (typeof retryAfter !== 'number') throw new Error('The reset rate limit could not be verified.');
   return retryAfter > 0 ? retryAfter : null;
 }
@@ -88,15 +90,14 @@ export async function POST(
         .eq('id', id);
       if (resetError) throw resetError;
 
-      const { error: notificationError } = await (auth.adminClient.from('usernotifications') as any).insert({
+      const { error: notificationError } = await insertAccountNotification(auth.adminClient, {
         userid: id,
-        logindeviceid: null,
         type: 'pin_reset',
         title: 'Create a new owner PIN',
         message: 'Your PIN was reset by an administrator. Create a new PIN the next time you sign in.',
         actionurl: '/owner/reset-pin',
       });
-      if (notificationError) throw notificationError;
+      if (notificationError) console.warn('Could not insert PIN reset notification:', notificationError);
     }
 
     const { error: auditError } = await (auth.adminClient.from('adminlog') as any).insert({

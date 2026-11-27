@@ -78,13 +78,17 @@ export function AccountSuspensionGate() {
 
   useEffect(() => {
     if (!account || account.status !== 'suspended') return;
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    dialogRef.current?.querySelector<HTMLElement>('a, button')?.focus();
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [account]);
+    const isOwnerAccount = account.role === 'beach_owner' || account.role === 'beach_manager';
+    const params = new URLSearchParams({ error: 'account_disabled' });
+    if (account.suspensionreason) params.set('reason', account.suspensionreason);
+    if ((account as any).statusreasontype) params.set('reasontype', (account as any).statusreasontype);
+    if (account.suspensionendsat) params.set('suspendeduntil', account.suspensionendsat);
+    void fetch('/api/auth/logout', { method: 'POST' })
+      .catch(() => {})
+      .finally(() => {
+        router.replace(isOwnerAccount ? `/owner/login?${params.toString()}` : `/login?${params.toString()}`);
+      });
+  }, [account, router]);
 
   const logOut = async () => {
     setLoggingOut(true);
@@ -130,7 +134,7 @@ export function AccountSuspensionGate() {
 
   const isOwner = account?.role === 'beach_owner' || account?.role === 'beach_manager';
   const title = isSuspended
-    ? isOwner ? 'Your beach listing account has been suspended' : 'Your account has been suspended'
+    ? isOwner ? 'Your beach listing account has been disabled' : 'Your account has been disabled'
     : 'We could not verify your account status';
 
   return (
@@ -172,7 +176,7 @@ export function AccountSuspensionGate() {
           {isSuspended ? (
             <>
               <p><span className="font-semibold">Reason:</span> {account.suspensionreason?.trim() || 'No reason was provided. Please contact support.'}</p>
-              <p><span className="font-semibold">Suspended on:</span> {formatDate(account.suspendedat)}</p>
+              <p><span className="font-semibold">Disabled on:</span> {formatDate(account.suspendedat)}</p>
               <p><span className="font-semibold">Duration:</span> {account.suspensionendsat ? `Until ${formatDate(account.suspensionendsat)}` : 'Indefinite'}</p>
               <p className="pt-1">If you believe this is a mistake, please contact support.</p>
             </>

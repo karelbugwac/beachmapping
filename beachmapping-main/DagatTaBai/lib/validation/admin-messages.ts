@@ -5,7 +5,7 @@ export const ADMIN_MESSAGES = {
   serverError: 'Something went wrong. Please try again.',
   reasonTypeRequired: 'Please choose a reason type.',
   statusChanged: 'Your account status has changed.',
-  suspended: 'Your account is suspended.',
+  suspended: 'Your account has been disabled.',
   reasonTooShort: 'Please give a reason of at least 10 characters.',
   reasonTooLong: 'The reason must be 500 characters or fewer.',
   suspensionReasonInvalid: "The reason contains characters that aren't allowed. Please use letters, numbers and basic punctuation only.",

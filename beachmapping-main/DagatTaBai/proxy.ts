@@ -110,22 +110,42 @@ export async function proxy(request: NextRequest) {
     pinresetrequired?: boolean;
     accountstatus?: string;
     statusreason?: string | null;
+    statusreasontype?: string | null;
     suspendeduntil?: string | null;
+    statuschangedat?: string | null;
     status?: string;
     suspensionreason?: string | null;
     suspendedat?: string | null;
     suspensionendsat?: string | null;
   } | null = null;
+  let adminAuthUser: { app_metadata?: Record<string, unknown>; user_metadata?: Record<string, unknown> } | null = null;
   if (checkSuspension || isOwnerRoute || isAdminRoute || isOwnerApiRoute ||
     isApplicationStatusRoute || isNotificationsPage) {
+    const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+    const queryClient = serviceRoleKey
+      ? createServerClient(
+          process.env.NEXT_PUBLIC_SUPABASE_URL || 'https://placeholder-project.supabase.co',
+          serviceRoleKey,
+          { cookies: { getAll: () => [], setAll: () => {} } }
+        )
+      : supabase;
+    if (serviceRoleKey) {
+      try {
+        const { data: freshAuth } = await queryClient.auth.admin.getUserById(data.user.id);
+        if (freshAuth?.user) adminAuthUser = freshAuth.user as any;
+      } catch {
+        // Fallback to session user
+      }
+    }
     const profileColumnSets = [
+      'role, accountstatus, statusreason, statusreasontype, suspendeduntil, statuschangedat, pinresetrequired, status, suspensionreason, suspendedat, suspensionendsat',
       'role, accountstatus, statusreason, suspendeduntil, pinresetrequired, status, suspensionreason, suspendedat, suspensionendsat',
       'role, status, suspensionreason, suspendedat, suspensionendsat',
       'role',
     ] as const;
     let profileError: { code?: string } | null = null;
     for (const columns of profileColumnSets) {
-      const result = await (supabase.from('profiles') as any)
+      const result = await (queryClient.from('profiles') as any)
         .select(columns)
         .eq('id', data.user.id)
         .maybeSingle();
@@ -145,30 +165,70 @@ export async function proxy(request: NextRequest) {
       isApplicationStatusRoute ||
       isNotificationsPage
     )) {
-      return setPrivateHeaders(NextResponse.json({ error: 'Could not verify account permissions.' }, { status: 503 }));
+      const metaRole = (data.user.user_metadata?.role as string) || (data.user.app_metadata?.role as string);
+      if (isAdminRoute && (metaRole === 'admin' || data.user.email?.toLowerCase() === 'official.dagattabai@gmail.com')) {
+        profileStatus = { role: 'admin', status: 'active' };
+      } else {
+        return setPrivateHeaders(NextResponse.json({ error: 'Could not verify account permissions.' }, { status: 503 }));
+      }
     }
   }
 
-  const metadata = (data.user.user_metadata || {}) as Record<string, unknown>;
-  const accountStatus = profileStatus?.accountstatus === 'suspended' || profileStatus?.status === 'suspended' || metadata.status === 'suspended'
-    ? 'suspended'
-    : 'active';
-  const suspendedUntil = profileStatus?.suspendeduntil ||
-    profileStatus?.suspensionendsat ||
-    (typeof metadata.suspensionendsat === 'string' ? metadata.suspensionendsat : null);
+  const metadata = ((adminAuthUser?.user_metadata || data.user.user_metadata) || {}) as Record<string, unknown>;
+  const appMetadata = ((adminAuthUser?.app_metadata || data.user.app_metadata) || {}) as Record<string, unknown>;
+  const profileChangedAt = profileStatus?.statuschangedat || profileStatus?.suspendedat || null;
+  const appChangedAt = typeof appMetadata.statuschangedat === 'string' ? appMetadata.statuschangedat : null;
+  const useAppMeta = Boolean(
+    appMetadata.accountstatus &&
+    (!profileChangedAt || (appChangedAt && Date.parse(appChangedAt) >= Date.parse(profileChangedAt)))
+  );
+  const rawAccountStatus = useAppMeta
+    ? appMetadata.accountstatus
+    : profileStatus?.accountstatus || profileStatus?.status || appMetadata.accountstatus || appMetadata.status || metadata.status || 'active';
+  const accountStatus = rawAccountStatus === 'suspended' ? 'suspended' : 'active';
+  const suspendedUntil = useAppMeta
+    ? (typeof appMetadata.suspendeduntil === 'string' ? appMetadata.suspendeduntil : null)
+    : profileStatus?.suspendeduntil ||
+      profileStatus?.suspensionendsat ||
+      (typeof appMetadata.suspendeduntil === 'string' ? appMetadata.suspendeduntil : null) ||
+      (typeof metadata.suspensionendsat === 'string' ? metadata.suspensionendsat : null);
   if (checkSuspension && isSuspensionActive(accountStatus, suspendedUntil)) {
+    const resolvedReason = (useAppMeta && typeof appMetadata.statusreason === 'string' ? appMetadata.statusreason : null) ||
+      profileStatus?.statusreason ||
+      profileStatus?.suspensionreason ||
+      (typeof appMetadata.statusreason === 'string' ? appMetadata.statusreason : null) ||
+      (typeof metadata.statusreason === 'string' ? metadata.statusreason : null) ||
+      null;
+    const resolvedReasonType = (useAppMeta && typeof appMetadata.statusreasontype === 'string' ? appMetadata.statusreasontype : null) ||
+      profileStatus?.statusreasontype ||
+      (typeof appMetadata.statusreasontype === 'string' ? appMetadata.statusreasontype : null) ||
+      null;
     if (isApiRoute) {
       return NextResponse.json({
         code: 'ACCOUNT_SUSPENDED',
-        reason: profileStatus?.statusreason || profileStatus?.suspensionreason ||
-          (typeof metadata.statusreason === 'string' ? metadata.statusreason : null),
+        reason: resolvedReason,
+        reasontype: resolvedReasonType,
         suspendeduntil: suspendedUntil,
       }, {
         status: 403,
         headers: { 'Cache-Control': 'private, no-store, max-age=0' },
       });
     }
-    return setPrivateHeaders(NextResponse.redirect(new URL('/suspended', request.url)));
+    const targetLoginPath = (isOwnerRoute || profileStatus?.role === 'beach_owner' || profileStatus?.role === 'beach_manager')
+      ? '/owner/login'
+      : '/login';
+    const loginRedirectUrl = new URL(targetLoginPath, request.url);
+    loginRedirectUrl.searchParams.set('error', 'account_disabled');
+    if (resolvedReason) loginRedirectUrl.searchParams.set('reason', resolvedReason);
+    if (resolvedReasonType) loginRedirectUrl.searchParams.set('reasontype', resolvedReasonType);
+    if (suspendedUntil) loginRedirectUrl.searchParams.set('suspendeduntil', suspendedUntil);
+    const redirectResponse = NextResponse.redirect(loginRedirectUrl);
+    for (const cookie of request.cookies.getAll()) {
+      if (cookie.name.startsWith('sb-')) {
+        redirectResponse.cookies.delete(cookie.name);
+      }
+    }
+    return setPrivateHeaders(redirectResponse);
   }
 
   const isOwnerProfile = profileStatus?.role === 'beach_owner' || profileStatus?.role === 'beach_manager';
@@ -185,7 +245,11 @@ export async function proxy(request: NextRequest) {
   }
 
   if (isAdminRoute) {
-    if (profileStatus?.role !== 'admin') {
+    const isMetaAdmin =
+      metadata.role === 'admin' ||
+      data.user.app_metadata?.role === 'admin' ||
+      data.user.email?.toLowerCase() === 'official.dagattabai@gmail.com';
+    if (profileStatus?.role !== 'admin' && !isMetaAdmin) {
       return setPrivateHeaders(NextResponse.redirect(new URL('/unauthorized', request.url)));
     }
     return setPrivateHeaders(response);

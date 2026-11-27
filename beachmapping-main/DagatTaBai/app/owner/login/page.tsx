@@ -13,6 +13,7 @@ import {
   AlertCircle,
 } from 'lucide-react';
 import { createClient } from '@/lib/supabase/client';
+import { clearToasts } from '@/components/ui/feedback-toasts';
 import { getSafeInternalRedirect } from '@/lib/utils/safe-redirect';
 
 export default function OwnerLoginPage() {
@@ -45,6 +46,23 @@ export default function OwnerLoginPage() {
       return () => clearTimeout(timer);
     }
   }, [toast]);
+
+  // Check URL params if redirected because account is disabled
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const err = params.get('error');
+    if (err === 'account_disabled' || err === 'account_suspended') {
+      clearToasts();
+      setToast(null);
+      void createClient().auth.signOut().catch(() => {});
+      setSuspensionInfo({
+        reason: params.get('reason') || null,
+        reasontype: params.get('reasontype') || null,
+        suspendeduntil: params.get('suspendeduntil') || null,
+      });
+      window.history.replaceState({}, '', '/owner/login');
+    }
+  }, []);
 
   // Focus on first pin input when moving to step 2
   useEffect(() => {
@@ -170,7 +188,10 @@ export default function OwnerLoginPage() {
 
       const data = await res.json();
 
-      if (data.code === 'ACCOUNT_SUSPENDED') {
+      if (data.code === 'ACCOUNT_SUSPENDED' || data.code === 'ACCOUNT_DISABLED') {
+        clearToasts();
+        setToast(null);
+        void createClient().auth.signOut().catch(() => {});
         setSuspensionInfo({ reason: data.reason || null, reasontype: data.reasontype || null, suspendeduntil: data.suspendeduntil || null });
         setPinError('');
         return;
@@ -180,13 +201,25 @@ export default function OwnerLoginPage() {
       }
 
       const supabase = createClient();
-      const { error: signInError } = await supabase.auth.signInWithPassword({
-        email: data.email,
-        password: pin,
-      });
-
-      if (signInError) {
-        throw new Error(signInError.message || 'Could not establish owner session.');
+      const { data: existingSession } = await supabase.auth.getSession();
+      if (!existingSession.session) {
+        if (data.accessToken && data.refreshToken) {
+          const { error: setSessionError } = await supabase.auth.setSession({
+            access_token: data.accessToken,
+            refresh_token: data.refreshToken,
+          });
+          if (setSessionError) {
+            console.warn('Client owner setSession warning:', setSessionError.message);
+          }
+        } else if (data.tokenHash) {
+          const { error: otpError } = await supabase.auth.verifyOtp({
+            token_hash: data.tokenHash,
+            type: 'magiclink',
+          });
+          if (otpError) {
+            console.warn('Client owner verifyOtp warning:', otpError.message);
+          }
+        }
       }
 
       // Success floating toast (Center aligned, green background, white text, 5s duration, NO "x")
@@ -294,6 +327,18 @@ export default function OwnerLoginPage() {
                     {emailError}
                   </p>
                 )}
+
+                {suspensionInfo && (
+                  <div role="alert" className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-900 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-200">
+                    <p className="font-bold">Your account has been disabled.</p>
+                    {suspensionInfo.reasontype && <p className="mt-1 font-semibold">Category: {suspensionInfo.reasontype}</p>}
+                    {suspensionInfo.reason && <p className="mt-1 whitespace-pre-wrap">Reason: {suspensionInfo.reason}</p>}
+                    <p className="mt-1">
+                      This restriction is in effect {suspensionInfo.suspendeduntil ? `until ${new Date(suspensionInfo.suspendeduntil).toLocaleDateString()}` : 'until further notice'}.
+                    </p>
+                    <Link href="/contact" className="mt-2 inline-block font-semibold underline">Contact us</Link>
+                  </div>
+                )}
               </div>
 
               <button
@@ -352,11 +397,11 @@ export default function OwnerLoginPage() {
                 )}
                 {suspensionInfo && (
                   <div role="alert" className="mt-3 rounded-xl border border-rose-200 bg-rose-50 p-3 text-xs text-rose-900 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-200">
-                    <p className="font-bold">Your account is suspended.</p>
-                    {suspensionInfo.reasontype && <p className="mt-1 font-semibold">{suspensionInfo.reasontype}</p>}
-                    {suspensionInfo.reason && <p className="mt-1 whitespace-pre-wrap">{suspensionInfo.reason}</p>}
+                    <p className="font-bold">Your account has been disabled.</p>
+                    {suspensionInfo.reasontype && <p className="mt-1 font-semibold">Category: {suspensionInfo.reasontype}</p>}
+                    {suspensionInfo.reason && <p className="mt-1 whitespace-pre-wrap">Reason: {suspensionInfo.reason}</p>}
                     <p className="mt-1">
-                      This suspension is in effect {suspensionInfo.suspendeduntil ? `until ${new Date(suspensionInfo.suspendeduntil).toLocaleDateString()}` : 'until further notice'}.
+                      This restriction is in effect {suspensionInfo.suspendeduntil ? `until ${new Date(suspensionInfo.suspendeduntil).toLocaleDateString()}` : 'until further notice'}.
                     </p>
                     <Link href="/contact" className="mt-2 inline-block font-semibold underline">Contact us</Link>
                   </div>

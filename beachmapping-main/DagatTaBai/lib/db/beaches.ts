@@ -2,6 +2,7 @@ import { createAdminClient, createServerSupabaseClient } from '@/lib/supabase/se
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { Database } from '@/lib/supabase/types';
 import { isSuspensionActive } from '@/lib/utils/account-status';
+import { resolveEffectiveAccountStatus } from '@/lib/server/accountstatus';
 import { getValidBeachCoordinates } from '@/lib/utils/beach-coordinates';
 
 export interface BeachPhoto {
@@ -206,24 +207,36 @@ export async function getAllBeaches(): Promise<BeachRecord[]> {
   }
 
   try {
-    const { data: profiles, error: profileError } = await (createAdminClient()
-      .from('profiles') as any)
-      .select('id, accountstatus, suspendeduntil')
-      .eq('accountstatus', 'suspended');
+    const adminClient = createAdminClient();
+    const [{ data: profiles, error: profileError }, { data: authUsersData }] = await Promise.all([
+      (adminClient.from('profiles') as any)
+        .select('id, accountstatus, suspendeduntil, statuschangedat')
+        .in('role', ['beach_owner', 'beach_manager']),
+      adminClient.auth.admin.listUsers({ page: 1, perPage: 1000 }),
+    ]);
     if (profileError) {
       console.error('Profiles query error:', profileError);
       throw profileError;
     }
-    const suspensionProfiles = profiles as Array<{
-      id: string;
-      accountstatus: 'active' | 'under_review' | 'suspended';
-      suspendeduntil: string | null;
-    }> | null;
-    const suspendedOwners = new Set(
-      (suspensionProfiles || [])
-        .filter((profile) => isSuspensionActive(profile.accountstatus, profile.suspendeduntil))
-        .map((profile) => profile.id)
-    );
+    const authUserById = new Map<string, any>();
+    for (const u of authUsersData?.users || []) {
+      authUserById.set(u.id, u);
+    }
+    const suspendedOwners = new Set<string>();
+    for (const profile of profiles || []) {
+      const effective = resolveEffectiveAccountStatus(profile, authUserById.get(profile.id));
+      if (effective.accountstatus === 'suspended') {
+        suspendedOwners.add(profile.id);
+      }
+    }
+    for (const u of authUsersData?.users || []) {
+      if (u.app_metadata?.accountstatus === 'suspended') {
+        const effective = resolveEffectiveAccountStatus(null, u);
+        if (effective.accountstatus === 'suspended') {
+          suspendedOwners.add(u.id);
+        }
+      }
+    }
 
     const approvedTours = new Map<string, string>(); // Virtual tours are stored directly on beaches table
   const seenIds = new Set<string>();
@@ -405,13 +418,17 @@ export async function getBeachBySlug(slug: string): Promise<BeachRecord | null> 
     if (dbBeach) {
       const b = dbBeach as any;
       if (b.ownerid) {
-        const { data: ownerProfile, error: ownerError } = await (createAdminClient()
-          .from('profiles') as any)
-          .select('accountstatus, suspendeduntil')
-          .eq('id', b.ownerid)
-          .maybeSingle();
+        const adminClient = createAdminClient();
+        const [{ data: ownerProfile, error: ownerError }, { data: ownerAuth }] = await Promise.all([
+          (adminClient.from('profiles') as any)
+            .select('accountstatus, suspendeduntil, statuschangedat')
+            .eq('id', b.ownerid)
+            .maybeSingle(),
+          adminClient.auth.admin.getUserById(b.ownerid),
+        ]);
         if (ownerError) throw ownerError;
-        if (ownerProfile && isSuspensionActive(ownerProfile.accountstatus, ownerProfile.suspendeduntil)) {
+        const effectiveOwner = resolveEffectiveAccountStatus(ownerProfile, ownerAuth?.user);
+        if (effectiveOwner.accountstatus === 'suspended') {
           slugBeachCache.set(normalized, { data: null, expiresAt: now + BEACH_CACHE_TTL_MS });
           return null;
         }

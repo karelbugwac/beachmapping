@@ -70,7 +70,7 @@ export async function POST(request: NextRequest) {
 
   // The installed Supabase client types do not expose the project's SQL RPC signature.
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const { error } = await (rpcClient.rpc as any)('register_login_device', {
+  const { error } = await (rpcClient as any).rpc('register_login_device', {
     p_device_id: deviceId,
     p_browser: browser,
     p_platform: platform,

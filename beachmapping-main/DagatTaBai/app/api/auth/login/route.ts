@@ -89,7 +89,7 @@ export async function POST(request: NextRequest) {
       if (suspendedAccount) {
         return NextResponse.json(
           {
-            error: error || 'Your account is suspended.',
+            error: error || 'Your account has been disabled.',
             code: 'ACCOUNT_SUSPENDED',
             reason: suspendedAccount.reason,
             reasontype: suspendedAccount.reasonType,

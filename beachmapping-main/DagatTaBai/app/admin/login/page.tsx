@@ -18,27 +18,34 @@ export default function AdminLoginPage() {
   const submittingRef = useRef(false);
 
   useEffect(() => {
-    // Clear any existing non-admin session when visiting login page
-    const clearSession = async () => {
+    // Check existing session when visiting login page:
+    // If already an admin, redirect straight to the dashboard;
+    // otherwise clear any non-admin session.
+    const checkOrClearSession = async () => {
       try {
         const supabase = createClient();
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
-          const { data: profileData } = await supabase.from('profiles')
-            .select('role')
-            .eq('id', user.id)
-            .maybeSingle();
-          const profile = profileData as { role: string | null } | null;
-          if (profile?.role !== 'admin') {
-            await signOutAndClearClientState(user.id);
+          const isAdmin =
+            user.email?.toLowerCase() === 'official.dagattabai@gmail.com' ||
+            user.user_metadata?.role === 'admin' ||
+            user.app_metadata?.role === 'admin';
+          if (isAdmin) {
+            const redirect = getSafeInternalRedirect(
+              new URLSearchParams(window.location.search).get('redirect'),
+              '/admin/dashboard'
+            );
+            window.location.replace(redirect);
+            return;
           }
+          await signOutAndClearClientState(user.id);
         }
       } catch (error) {
-        console.error('Error clearing non-admin session:', error);
+        console.error('Error checking/clearing session on admin login:', error);
       }
     };
 
-    void clearSession();
+    void checkOrClearSession();
     // Focus first PIN input on mount
     setTimeout(() => {
       inputRefs.current[0]?.focus();
@@ -126,14 +133,27 @@ export default function AdminLoginPage() {
         throw new Error(data.error || 'Invalid 6-digit Administrator PIN.');
       }
 
-      // Establish client-side Supabase session
+      // Establish client-side Supabase session if needed
       const supabase = createClient();
-      const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-        email: data.email || 'official.dagattabai@gmail.com',
-        password: nextPin,
-      });
-      if (authError || !authData.session) {
-        throw new Error(authError?.message || 'Could not establish an admin session. Please try again.');
+      const { data: existingSession } = await supabase.auth.getSession();
+      if (!existingSession.session) {
+        if (data.accessToken && data.refreshToken) {
+          const { error: setSessionError } = await supabase.auth.setSession({
+            access_token: data.accessToken,
+            refresh_token: data.refreshToken,
+          });
+          if (setSessionError) {
+            console.warn('Client setSession fallback warning:', setSessionError.message);
+          }
+        } else if (data.tokenHash) {
+          const { error: otpError } = await supabase.auth.verifyOtp({
+            token_hash: data.tokenHash,
+            type: 'magiclink',
+          });
+          if (otpError) {
+            console.warn('Client verifyOtp fallback warning:', otpError.message);
+          }
+        }
       }
 
       showToast('Successful Login!', 'success');

@@ -13,7 +13,7 @@ import {
   ChevronLeft,
   X,
 } from 'lucide-react';
-import { showToast } from '@/components/ui/feedback-toasts';
+import { clearToasts, showToast } from '@/components/ui/feedback-toasts';
 import { getSafeInternalRedirect } from '@/lib/utils/safe-redirect';
 
 function UserLoginForm() {
@@ -64,6 +64,18 @@ function UserLoginForm() {
         return;
       }
 
+      if (authError === 'account_suspended' || authError === 'account_disabled') {
+        clearToasts();
+        void createClient().auth.signOut().catch(() => {});
+        setSuspendedAccount({
+          reason: searchParams.get('reason') || null,
+          reasontype: searchParams.get('reasontype') || null,
+          suspendeduntil: searchParams.get('suspendeduntil') || null,
+        });
+        router.replace('/login', { scroll: false });
+        return;
+      }
+
       const errorMessages: Record<string, string> = {
         google_auth_failed: 'Google sign in failed. Please check your credentials.',
         code_exchange_failed: 'Authentication session exchange failed.',
@@ -99,6 +111,7 @@ function UserLoginForm() {
     setLoginErrorMessage(null);
     setLoading(true);
     setSuspendedAccount(null);
+    clearToasts();
     try {
       const res = await fetch('/api/auth/login', {
         method: 'POST',
@@ -107,7 +120,9 @@ function UserLoginForm() {
       });
 
       const data = await res.json();
-      if (data.code === 'ACCOUNT_SUSPENDED') {
+      if (data.code === 'ACCOUNT_SUSPENDED' || data.code === 'ACCOUNT_DISABLED') {
+        clearToasts();
+        void createClient().auth.signOut().catch(() => {});
         setSuspendedAccount({ reason: data.reason || null, reasontype: data.reasontype || null, suspendeduntil: data.suspendeduntil || null });
         return;
       }
@@ -130,7 +145,13 @@ function UserLoginForm() {
       window.dispatchEvent(new CustomEvent('dtb_login_completed', {
         detail: { userId: data.user.id },
       }));
-      const redirectUrl = getSafeInternalRedirect(searchParams.get('redirect'), '/home');
+      const defaultRedirect =
+        data.user?.role === 'admin'
+          ? '/admin/dashboard'
+          : data.user?.role === 'beach_owner' || data.user?.role === 'beach_manager'
+          ? '/owner/dashboard'
+          : '/home';
+      const redirectUrl = getSafeInternalRedirect(searchParams.get('redirect'), defaultRedirect);
       router.push(redirectUrl);
       router.refresh();
     } catch (err: unknown) {
@@ -362,11 +383,11 @@ function UserLoginForm() {
 
         {suspendedAccount && (
           <div role="alert" className="mt-4 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-900 dark:border-rose-900 dark:bg-rose-950/30 dark:text-rose-200">
-            <p className="font-bold">Your account is suspended.</p>
-            {suspendedAccount.reasontype && <p className="mt-1 font-semibold">{suspendedAccount.reasontype}</p>}
-            {suspendedAccount.reason && <p className="mt-1 whitespace-pre-wrap">{suspendedAccount.reason}</p>}
+            <p className="font-bold">Your account has been disabled.</p>
+            {suspendedAccount.reasontype && <p className="mt-1 font-semibold">Category: {suspendedAccount.reasontype}</p>}
+            {suspendedAccount.reason && <p className="mt-1 whitespace-pre-wrap">Reason: {suspendedAccount.reason}</p>}
             <p className="mt-1">
-              This suspension is in effect {suspendedAccount.suspendeduntil ? `until ${new Date(suspendedAccount.suspendeduntil).toLocaleDateString()}` : 'until further notice'}.
+              This restriction is in effect {suspendedAccount.suspendeduntil ? `until ${new Date(suspendedAccount.suspendeduntil).toLocaleDateString()}` : 'until further notice'}.
             </p>
             <Link href="/contact" className="mt-2 inline-block font-semibold underline">Contact us</Link>
           </div>

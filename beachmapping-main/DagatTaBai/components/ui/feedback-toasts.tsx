@@ -16,6 +16,16 @@ export function showToast(message: string, kind: ToastKind = 'success') {
   );
 }
 
+export function clearToasts() {
+  if (typeof window === 'undefined') return;
+  try {
+    window.sessionStorage.removeItem('dtb:pending-toast');
+  } catch {
+    // Ignore storage errors
+  }
+  window.dispatchEvent(new CustomEvent('dagattabai:toast-clear'));
+}
+
 function canonicalToastMessage(raw: string, kind: ToastKind): string {
   const trimmed = raw.trim();
   if (kind === 'destructive' || /delete/i.test(trimmed)) {
@@ -88,7 +98,14 @@ export function FeedbackToasts() {
       );
     };
 
+    const handleClear = () => {
+      timers.forEach(clearTimeout);
+      timers.clear();
+      setToasts([]);
+    };
+
     window.addEventListener('dagattabai:toast', handleToast);
+    window.addEventListener('dagattabai:toast-clear', handleClear);
     try {
       const pendingMessage = window.sessionStorage.getItem('dtb:pending-toast');
       if (pendingMessage) {
@@ -102,6 +119,7 @@ export function FeedbackToasts() {
     }
     return () => {
       window.removeEventListener('dagattabai:toast', handleToast);
+      window.removeEventListener('dagattabai:toast-clear', handleClear);
       timers.forEach(clearTimeout);
     };
   }, []);
